@@ -1,0 +1,283 @@
+---
+title: Joining Services via AWS IAM Role
+description: Use the IAM join method to add services to your Teleport cluster on AWS
+version: '13.x'
+---
+
+This guide will explain how to use the **IAM join method** to configure Teleport
+processes to join your Teleport cluster without sharing any secrets when they
+are running in AWS.
+
+The IAM join method is available to any Teleport process running anywhere with
+access to IAM credentials, such as an EC2 instance with an attached IAM role.
+No specific permissions or IAM policy is required: an IAM role with no attached
+policies is sufficient. No IAM credentials are required on the Teleport Auth
+Service.
+
+Support for joining a cluster with the Proxy Service behind a layer 7 load
+balancer or reverse proxy is available in Teleport 13.0+.
+
+For other methods of joining a Teleport process to a cluster, see [Joining
+Teleport Services to a Cluster](/ver/13.x/agents/join-services-to-your-cluster).
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- An AWS EC2 instance to host a Teleport service, with the Teleport binary
+  installed.
+
+Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+remotely:
+
+```code
+$ tsh login --proxy=teleport.example.com --user=email@example.com
+$ tctl status
+# Cluster  teleport.example.com
+# Version  13.2.0
+# CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+```
+
+You can run subsequent `tctl` commands in this guide on your local machine.
+
+For full privileges, you can also run `tctl` commands on your Auth Service host.
+
+```code
+$ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+$ tctl status
+# Cluster  myinstance.teleport.sh
+# Version  13.2.0
+# CA pin   sha256:sha-hash-here
+```
+
+You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/4. Set up AWS IAM credentials
+
+Every Teleport process using the IAM method to join your Teleport cluster needs
+AWS IAM credentials in order to call the `sts:GetCallerIdentity` API. No
+specific IAM policy or permissions are needed. Any IAM user or role can call
+this API.
+
+If running Teleport on an EC2 instance, it is sufficient to attach any IAM role
+to the instance. To attach an IAM role from the EC2 dashboard, select `Actions >
+Security > Modify IAM role`. It is not necessary for the role to have any
+attached IAM policies at all. If your instance does not otherwise need AWS
+credentials, it is preferred to create and attach an empty role with no attached
+policies.
+
+## Step 2/4. Create the AWS joining token
+
+Under the hood, services will prove that they are running in your AWS account by
+sending a pre-signed `sts:GetCallerIdentity` request to the Teleport Auth
+Service. The service's identity must match an allow rule configured in your AWS
+service joining token.
+
+Create the following `token.yaml` with an `allow` rule specifying your AWS
+account and the ARN that the Teleport process's identity must match.
+
+```
+# token.yaml
+kind: token
+version: v2
+metadata:
+  # the token name is not a secret because instances must prove that they are
+  # running in your AWS account to use this token
+  name: iam-token
+spec:
+  # use the minimal set of roles required (e.g. Node, App, Kube, DB, WindowsDesktop)
+  roles: [Node]
+
+  # set the join method allowed for this token
+  join_method: iam
+
+  allow:
+  # specify the AWS account which Teleport processes may join from
+  - aws_account: "111111111111"
+  # multiple allow rules are supported
+  - aws_account: "222222222222"
+  # aws_arn is optional and allows you to restrict the IAM role of joining
+  # Teleport processes
+  - aws_account: "333333333333"
+    aws_arn: "arn:aws:sts::333333333333:assumed-role/teleport-node-role/i-*"
+```
+
+The token name `iam-token` is just an example and can be any value you want to
+use, as long as you use the same value for `join_params.token_name` in Step 3.
+
+The optional `aws_arn` field in the allow rules supports wildcard characters:
+
+- `*` to match any combination of characters
+- `?` to match any single character
+
+Run the following command to create the token:
+
+```code
+$ tctl create -f token.yaml
+```
+
+## Step 3/4. Configure your services
+
+The IAM join method can be used for Teleport processes running the SSH, Proxy,
+Kubernetes, Application, or Database Service.
+
+Configure your Teleport service with a custom `teleport.yaml` file. Use the
+`join_params` section with `token_name` matching your token created in Step 2
+and `method: iam` as shown in the following example config:
+
+```
+# /etc/teleport.yaml
+version: v3
+teleport:
+  join_params:
+    token_name: iam-token
+    method: iam
+  proxy_server: teleport.example.com:443
+ssh_service:
+  enabled: yes
+auth_service:
+  enabled: no
+proxy_service:
+  enabled: no
+```
+
+In the `teleport.proxy_server` field, replace the value with the host and web
+port of your Teleport Proxy Service or Teleport Enterprise Cloud tenant, e.g.,
+`mytenant.teleport.sh:443`.
+
+## Step 4/4. Launch your Teleport process
+
+Grant your Teleport instance access to credentials that it can use to authenticate to
+AWS. If you are running your Teleport instance on an EC2 instance, you should use the EC2
+Instance Metadata Service method. Otherwise, you must use environment variables:
+
+<Tabs>
+  <Tab title="Instance Metadata Service">
+    Teleport will detect when it is running on an EC2 instance and use the Instance
+    Metadata Service to fetch credentials.
+
+    The EC2 instance should be configured to use an EC2 instance profile. For more
+    information, see: [Using Instance Profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html).
+  </Tab>
+
+  <Tab title="Environment Variables">
+    Teleport's built-in AWS client reads credentials from the following environment
+    variables:
+
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+    - `AWS_DEFAULT_REGION`
+
+    When you start your Teleport instance, the service reads environment variables from a
+    file at the path `/etc/default/teleport`. Obtain these credentials from your
+    organization. Ensure that `/etc/default/teleport` has the following content,
+    replacing the values of each variable:
+
+    ```text
+    AWS_ACCESS_KEY_ID=00000000000000000000
+    AWS_SECRET_ACCESS_KEY=0000000000000000000000000000000000000000
+    AWS_DEFAULT_REGION=<YOUR_REGION>
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Have multiple sources of AWS credentials?">
+  Teleport's AWS client loads credentials from different sources in the following
+  order:
+
+  - Environment Variables
+  - Shared credentials file
+  - Shared configuration file (Teleport always enables shared configuration)
+  - EC2 Instance Metadata (credentials only)
+
+  While you can provide AWS credentials via a shared credentials file or shared
+  configuration file, you will need to run your Teleport instance with the `AWS_PROFILE`
+  environment variable assigned to the name of your profile of choice.
+
+  If you have a specific use case that the instructions above do not account for,
+  consult the documentation for the [AWS SDK for
+  Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/) for a detailed
+  description of credential loading behavior.
+</Accordion>
+
+Configure your Teleport instance to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+your Teleport instance.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run your Teleport instance, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run your Teleport instance, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of your Teleport instance with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+Once you have started Teleport, confirm that your service is able to connect to and
+join your cluster.

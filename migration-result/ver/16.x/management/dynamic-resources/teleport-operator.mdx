@@ -1,0 +1,112 @@
+---
+title: Teleport Kubernetes Operator
+description: Easily manage Teleport resources from Kubernetes
+version: '16.x'
+---
+
+The Teleport Kubernetes Operator provides a way for Kubernetes users to manage some Teleport resources through
+Kubernetes, following [the Operator Pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
+
+The Teleport Kubernetes Operator is deployed alongside its custom resource definitions. Once deployed, users
+can use a Kubernetes client like `kubectl` or their existing CI/CD Kubernetes pipelines to create Teleport
+custom resources. The Teleport Kubernetes Operator watches for those resources and does API calls to Teleport to
+reach the desired state.
+
+Since Teleport version 15, the operator can be deployed both:
+
+- alongside self-hosted Teleport clusters deployed with the `teleport-cluster` Helm chart.
+  This deployment method differs from version 14. In version 15 and above, the operator
+  is no longer deployed as a sidecar. An operator outage cannot affect Teleport's availability.
+- against a remote Teleport instance (such as Teleport Cloud or deployed with Terraform)
+
+The operator supports multiple replicas within a single cluster by electing a
+leader with a Kubernetes lease.
+
+<Warning>
+  Only one operator deployment should run against a Teleport cluster. Else, different operators
+  could cause instability and non-deterministic behaviour.
+</Warning>
+
+Currently supported Teleport resources are:
+
+- users
+- roles
+- OIDC connectors
+- SAML connectors
+- GitHub connectors
+- Login Rules
+
+### Setting up the operator
+
+If you are self-hosting Teleport using the `teleport-cluster` Helm chart,
+follow [the guide for Helm-deployed clusters](/ver/16.x/management/dynamic-resources/teleport-operator-helm).
+
+If you are hosting Teleport out of Kubernetes (Teleport Cloud, Terraform, ...),
+follow [the standalone operator guide](/ver/16.x/management/dynamic-resources/teleport-operator-standalone).
+
+### Troubleshooting
+
+The Teleport Operator watches for new resources or changes in Kubernetes.
+When a change happens, it triggers the reconciliation loop. This loop is in
+charge of validating the resource, checking if it already exists in Teleport
+and making calls to the Teleport API to create/update/delete the resource.
+The reconciliation loop also adds a `status` field on the Kubernetes resource.
+
+If an error happens and the reconciliation loop is not successful, an item in
+`status.conditions` will describe what went wrong. This allows users to diagnose
+errors by inspecting Kubernetes resources with `kubectl`:
+
+```code
+$ kubectl describe teleportusers myuser
+```
+
+For example, if a user has been granted a nonexistent role the status will look like:
+
+```yaml
+apiVersion: resources.teleport.dev/v2
+kind: TeleportUser
+# [...]
+status:
+  conditions:
+  - lastTransitionTime: "2022-07-25T16:15:52Z"
+    message: Teleport resource has the Kubernetes origin label.
+    reason: OriginLabelMatching
+    status: "True"
+    type: TeleportResourceOwned
+  - lastTransitionTime: "2022-07-25T17:08:58Z"
+    message: 'Teleport returned the error: role my-non-existing-role is not found'
+    reason: TeleportError
+    status: "False"
+    type: SuccessfullyReconciled
+```
+
+Here `SuccessfullyReconciled` is `False` and the error is `role my-non-existing-role is not found`.
+
+If the status is not present or does not give sufficient information to solve
+the issue, check the operator logs:
+
+```shell
+$ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME>
+```
+
+<Note>
+  In case of multi-replica deployments, only one operator instance is running
+  the reconciliation loop. This operator is called the leader and is the only
+  one producing reconciliation logs. The other operator instances are waiting
+  with the following log:
+
+  ```
+  leaderelection.go:248] attempting to acquire leader lease teleport/431e83f4.teleport.dev...
+  ```
+
+  To diagnose reconciliation issues, you will have to inspect all pods to find
+  the one reconciling the resources.
+</Note>
+
+If the Kubernetes resource has no status update and the operator does not produce
+any logs regarding the resource, please check if the resource lives in the same
+namespace as the operator.  The operator only watches for resource in its own namespace.
+
+## Next steps
+
+Check out [access controls documentation](/ver/16.x/access-controls/introduction)

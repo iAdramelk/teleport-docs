@@ -1,0 +1,722 @@
+---
+title: Generating Short-Lived Host Certificates with Machine ID
+description: Issuing Host Certificates with Machine ID for OpenSSH servers.
+version: '14.x'
+---
+
+Host certificates are generally created on Teleport for access to OpenSSH servers that can not otherwise join a Teleport cluster.
+While long-lived certificates may be applied for this purpose, short-lived and regularly rotated host certificates generated
+through Teleport help to provide a number of security benefits over their long-lived counterparts. Regular certificate rotation reduces risk by ensuring that any potentially stolen
+certificates are usable for a shorter period of time. Additionally, when coupled with Teleport's [RBAC](/ver/14.x/access-controls/guides/role-templates)
+support and host certificate **Principals** and **Predicates**, you can apply limitations to both the process of creating host certificates,
+as well as the host certificates themselves.
+
+In this guide, you will learn how to create host certificates through Machine ID for OpenSSH servers, allowing for the benefits of host certificates with OpenSSH nodes,
+and reducing risk by ensuring that short-lived certificates adhering to the principle of least privilege can be successfully applied to Teleport clusters.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+remotely:
+
+{/* Ignoring scope linting since we use this partial throughout the docs and
+cannot guarantee that it will line up with a page's configured scopes*/}
+
+{/*lint ignore scopes*/}
+
+```code
+$ tsh login --proxy=teleport.example.com --user=email@example.com
+$ tctl status
+# Cluster  teleport.example.com
+# Version  14.0.0-dev
+# CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+```
+
+You can run subsequent `tctl` commands in this guide on your local machine.
+
+For full privileges, you can also run `tctl` commands on your Auth Service host.
+
+{/*lint ignore scopes*/}
+
+```code
+$ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+$ tctl status
+# Cluster  myinstance.teleport.sh
+# Version  13.2.0
+# CA pin   sha256:sha-hash-here
+```
+
+You must run subsequent `tctl` commands in this guide on your local machine.
+
+- A Linux based host that can support Machine ID. This "Machine ID Host" is the host that will be used to create Host Certificates using `tbot`.
+  This host should additionally have OpenSSH server `sshd` version 6.9 or above running. The SSH port on this host must be open to traffic from the Teleport Proxy Service host.
+
+  ```code
+  $ ssh -V
+  ```
+
+## Step 1/5. Download and install Teleport
+
+Use the appropriate commands for your environment to install your package:
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Teleport Team">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    ```
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+      Before installing a `teleport` binary with a version besides
+      v13, read our compatibility rules to ensure that the
+      binary is compatible with Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+
+  <Tab title="Open Source">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 14.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Enterprise">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v14" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+
+  <Tab title="Enterprise Cloud">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport apt repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Enterprise Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+Next, log in to your cluster from your local machine using `tsh` to ensure that your device will be able to interact with the cluster:
+
+```code
+$ tsh login --proxy=myteleportcluster.com --user=teleport-username
+```
+
+## Step 2/5. Create a role to issue `tbot` certificates
+
+In order to create certificates `tbot` requires a `role` that provides the necessary permissions. When we apply a role to a tbot user
+in this case, we restrict a bot user to only create host certificates.
+
+Teleport roles can additionally limit the creation of host certificates to a desired **principal**.
+For example, normally when creating an SSH host certificate a `principal` represents a user or host that the certificate is explicitly applied to.
+
+By checking that a domain name matches the `principal` on a host certificate in the example configuration we use in this guide, access can be limited only to the desired server or servers.
+On Teleport, a **predicate** should be applied to a `principal` to further define the scope of permissions applied to the `principal`.
+
+By using the format of `where: 'predicate(host_cert.principals, "domain.name")'`, a Teleport user can create a role that will only be able to able to
+create host certificates with the designated principal. A list of supported predicates, their behavior, and example configurations are listed below:
+
+| **Predicate**  | **Behavior**                                                                                                                                                | **Example**                                                             |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `all_equal`    | All requested principals must be equal to the set string. If the set string is `foo.example.com`, host certificates limit access only to `foo.example.com`. | `all_equal(host_cert.principals, "foo.example.com")`                    |
+| `all_end_with` | All requested principals must end with the set string. If the set string is `.example.com`, host certificates limit access only to `*.example.com`.         | `all_end_with(host_cert.principals, ".example.com")`                    |
+| `is_subset`    | All requested principals must be contained in the listed set.                                                                                               | `is_subset(host_cert.principals, "foo.example.com", "bar.example.com")` |
+
+In the case of an example role for use within this guide, use a text editor of your choice from your local administrative device with `tsh` access to create a role YAML named `tbotrole.yaml` with the following
+configuration options, replacing `nodename.my.domain.com` with the domain name associated with your OpenSSH server:
+
+```yaml
+kind: role
+metadata:
+  name: hostcert-bot
+version: v5
+spec:
+  allow:
+    rules:
+      - resources:
+          - host_cert
+        verbs:
+          - create
+        where: 'is_subset(host_cert.principals, "nodename.my.domain.com")'
+```
+
+Once complete, create your role to apply to the `tbot` configuration in the next step:
+
+```code
+$ tctl create tbotrole.yaml
+```
+
+## Step 3/5 Create Your `tbot` Configuration
+
+Before you create a bot user, you need to determine which role(s) you want to
+assign to it. You can use the `tctl` command below from your local machine with `tsh` access to examine what roles exist
+on your system:
+
+```code
+$ tctl get roles --format=text
+```
+
+You will see something like the output below on a fresh install of Teleport with the
+preset roles and the addition of the `hostcert-bot` role created previously—your own cluster may have different roles. In this example,
+you want to give the bot the `hostcert-bot` role to allow the bot to generate host certificates.
+
+```
+Role    Allowed to login as                           Node Labels Access to resources
+------- --------------------------------------------- ----------- ----------------------------------------
+access  {{internal.logins}}                           <all nodes> event:list,read,session:read,list
+auditor no-login-6566121f-b602-47f1-a118-c9c618ee5aec             session:list,read,event:list,read
+editor
+hostcert-bot                                                      host_cert:create                               
+```
+
+Your Machine ID host can now join the Teleport Cluster using a number of supported methods. This guide will highlight both the `token` and the IAM method which uses identity tokens bound to an AWS account.
+Note that the following commands may be entered on any device with `tctl` access to the cluster.
+
+While any role with permissions for creating host certificates will work, this guide will make use of the `hostcert-bot` role created previously to ensure that the configuration adheres to the principle of least privilege.
+
+<Tabs>
+  <Tab title="Token-based Joining">
+    ```code
+    $ tctl bots add robot --roles=hostcert-bot
+    ```
+  </Tab>
+
+  <Tab title="IAM Method">
+    First, create an IAM method token that specifies the AWS account from which
+    the bot can join. Create the below file as `iam-token.yaml`:
+
+    ```
+    kind: token
+    version: v2
+    metadata:
+      # The token name is not a secret because instances must prove that they are
+      # running in your AWS account to use this token.
+      name: iam-token
+    spec:
+      # Only allow bots to join using this token.
+      roles: [Bot]
+
+      # Set the join method to be IAM.
+      join_method: iam
+
+      # Define the name of the bot that will be allowed to use this token.
+      bot_name: robot
+
+      allow:
+      # Restrict the AWS account and (optionally) ARN that can use this token.
+      # This information can be obtained from running the
+      # "aws sts get-caller-identity" command from the CLI.
+      - aws_account: "111111111111"
+        aws_arn: "arn:aws:sts::111111111111:assumed-role/teleport-bot-role/i-*"
+    ```
+
+    With the `iam-token-yaml` file created, enter the following command:
+
+    ```
+    $ tctl create -f iam-token.yaml
+    ```
+
+    Next, create the bot user.
+
+    ```
+    $ tctl bots add robot --token=iam-token --roles=hostcert-bot
+    ```
+  </Tab>
+</Tabs>
+
+### Generating a configuration file
+
+Machine ID may now be configured using the `tbot configure` command on the Machine ID host.
+
+First, create a basic configuration file using the following parameters:
+
+<Tabs>
+  <Tab title="Token-based Joining">
+    ```code
+    $ tbot configure \
+       --data-dir=/var/lib/teleport/bot \
+       --token=abcd123-insecure-do-not-use-this \
+       --join-method=token \
+       --certificate-ttl=1h0m0s \
+       --ca-pin=sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678 \
+       --auth-server=auth.example.com:3025
+    ```
+
+    ```code
+    $ tbot configure \
+       --data-dir=/var/lib/teleport/bot \
+       --token=abcd123-insecure-do-not-use-this \
+       --join-method=token \
+       --certificate-ttl=1h0m0s \
+       --ca-pin=sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678 \
+       --auth-server=example.teleport.sh:443
+    ```
+  </Tab>
+
+  <Tab title="IAM method">
+    ```code
+    $ tbot configure \
+       --data-dir=/var/lib/teleport/bot \
+       --token=iam-token \
+       --join-method=iam \
+       --certificate-ttl=1h0m0s \
+       --ca-pin=sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678 \
+       --auth-server=auth.example.com:3025
+    ```
+
+    ```code
+    $ tbot configure \
+       --data-dir=/var/lib/teleport/bot \
+       --token=iam-token \
+       --join-method=iam \
+       --certificate-ttl=1h0m0s \
+       --ca-pin=sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678 \
+       --auth-server=example.teleport.sh:443
+    ```
+  </Tab>
+</Tabs>
+
+Replace the following fields with values from your own cluster:
+
+<Tabs>
+  <Tab title="Cloud">
+    - `token` is the token output by the `tctl bots add` command or the name of your IAM method token.
+    - `ca-pin` is the CA Pin for your Teleport cluster, and is output by the `tctl bots add` command.
+    - `data-dir` is where Machine ID writes its private data, including its own short-lived renewable certificates. These should not be used by applications and tools.
+    - `auth-server` is the address of your Teleport Cloud Tenant, for example `example.teleport.sh:443`.
+    - `certificate-ttl` is the option that will determine the time until expiration for any `tbot` issued certificates, including host certificates. The default TTL is for one hour, meaning that all generated certificates will expire after one hour's time.
+  </Tab>
+
+  <Tab title={["oss","enterprise"]}>
+    - `token` is the token output by the `tctl bots add` command or the name of your IAM method token.
+    - `ca-pin` is the CA Pin for your Teleport cluster, and is output by the `tctl bots add` command.
+    - `data-dir` is where Machine ID writes its private data, including its own short-lived renewable certificates. These should not be used by applications and tools.
+    - `certificate-ttl` is the option that will determine the time until expiration for any `tbot` issued certificates, including host certificates. The default TTL is for one hour, meaning that all generated certificates will expire after one hour's time.
+    - `auth-server` is the address of your Teleport Auth Server, for example
+      `auth.example.com:3025`. If your Machine ID host is in a different network
+      than your Auth Server, use the public web address of your Proxy Service
+      instead (e.g., `auth.example.com:443`).
+  </Tab>
+</Tabs>
+
+Using a text editor of your choice, write the output generated by the `tbot configure` command to a configuration YAML file. In this example we'll be using `tbot.yaml`.
+
+### Setting the destination directory
+
+Once complete, the Machine ID host configuration will still require a destination directory to be manually referenced within the configuration file. The destination directory is where Machine ID will write certificates
+which can be used by application and tools to start Machine ID. In the configuration yaml `tbot.yaml`, this configuration will additionally be used to designate the principal,
+in this case the domain name that we'll be applying to the `tbot` configuration to access a Node.
+The new configuration YAML will require a `destination` field and `ssh_host_cert` subfield that resembles the following, replacing `nodename.my.domain.com` with your own required domain name:
+
+```
+destinations:
+  - directory:
+      path: /opt/machine-id
+    configs:
+      - ssh_host_cert:
+          principals: [nodename.my.domain.com]
+```
+
+Once completed, your `tbot.yaml` configuration should resemble the following:
+
+```
+onboarding:
+  token: "1234abcd5678efgh9"
+  ca_path: ""
+  ca_pins:
+  - sha256:1234abcd5678efgh910ijklmnop
+  join_method: token
+storage:
+  directory:
+    path: /var/lib/teleport/bot
+    symlinks: secure
+    acls: try
+destinations:
+  - directory:
+      path: /opt/machine-id
+    configs:
+      - ssh_host_cert:
+          principals: [nodename.my.domain.com]
+debug: false
+auth_server: example.teleport.sh:443
+certificate_ttl: 1h0m0s
+renewal_interval: 20m0s
+oneshot: false
+```
+
+Note the `renewal_interval` field, which will determine the cadence in which new certificates will be generated. Machine ID uses a default of 20 minutes for the `renewal_interval`, however this field may be adjusted as needed.
+
+## Step 4/5 Start Machine ID and create a host certificate
+
+Using your configuration file, the `tbot start` command will start running Machine ID on your Machine ID host in a loop,
+writing renewable certificates to `/var/lib/teleport/bot` according to your configuration, and the short-lived certificates including the host certificate your bot will use to `/opt/machine-id`.
+
+In a production environment you will want to run Machine ID in the background using a service manager like systemd. However, in this guide you will run it in the foreground to better understand how it works.
+
+```code
+$ export TELEPORT_ANONYMOUS_TELEMETRY=1
+$ tbot start -c tbot.yaml
+```
+
+`TELEPORT_ANONYMOUS_TELEMETRY` enables the submission of anonymous usage
+telemetry. This helps us shape the future development of `tbot`. You can disable
+this by omitting this.
+
+Now that Machine ID has successfully started, let's investigate the /opt/machine-id directory to see what was written to disk.
+
+```code
+$ ls -1 /opt/machine-id
+identity
+key
+key-cert.pub
+key.pub
+known_hosts
+ssh_config
+ssh_host
+ssh_host-cert.pub
+ssh_host-user-ca.pub
+teleport-database-ca.crt
+teleport-host-ca.crt
+teleport-user-ca.crt
+tlscert
+```
+
+Included in the output is the host certificate, private key, and user CA file Machine ID will have generated. The `ssh_host-cert.pub` file is the public host certificate, the `ssh_host` file
+is a private key file bound to the certificate, and the `ssh_host-user-ca.pub` file is the public user CA file. To confirm that the outputted files have been created correctly,
+view the public host certificate's contents by entering the following command:
+
+```code
+$ sudo ssh-keygen -L -f /opt/machine-id/key-cert.pub
+```
+
+The contents of the public certificate will appear, and will contain a `principals` field which will contain the `nodename.my.domain.com` domain entered in a previous step.
+Your output will resemble the following:
+
+```
+        Type: ssh-rsa-cert-v01@openssh.com host certificate
+        Public key: RSA-CERT SHA256:abcde123efghijk567lmnop
+        Signing CA: RSA SHA256:abcde123efghijk567lmnop (using rsa-sha2-512)
+        Key ID: ""
+        Serial: 0
+        Valid: from 2022-09-30T13:16:36 to 2022-09-30T17:17:36
+        Principals:
+                nodename.my.domain.com
+        Critical Options: (none)
+        Extensions:
+                x-teleport-authority UNKNOWN OPTION (len 55)
+                x-teleport-role UNKNOWN OPTION (len 8)
+```
+
+## Step 5/5 Configuring SSHD and connecting to the Teleport Cluster
+
+In order to ensure that the Machine ID host is able to authorize and authenticate itself to the cluster using `sshd`, `sshd` must now be configured to
+use the generated certificate files.
+
+Using a text editor of your choice, open the `sshd` configuration file, usually found at `/etc/ssh/sshd_config`, and add the following lines:
+
+```ini
+## Path to the private Key File affiliated with the host certificate.
+HostKey /opt/machine-id/ssh_host
+
+## Ensures that the OpenSSH server is offering the generated public host certificate when connections are attempted.
+HostCertificate /opt/machine-id/ssh_host-cert.pub
+
+## Ensures that the server will trust certificates signed by the remote CA
+TrustedUserCAKeys /opt/machine-id/ssh_host-user-ca.pub
+```
+
+Once saved, restart `sshd` to apply the new configuration:
+
+```code
+$ systemctl restart sshd
+```
+
+The Machine ID host is now fully configured to accept connections from a `tsh` user.
+To confirm this, enter the following command from your local machine logged into the cluster using `tsh`:
+
+```code
+$ tsh ssh -p 22 root@nodename.my.domain.com
+```
+
+The connection should successfully complete without the need to manually enter any additional credentials.
+
+## Next steps
+
+Now that host certificates have been created with Teleport, they can be applied to OpenSSH configurations as needed. For more information regarding the next steps
+to connect to OpenSSH with Teleport, see the following documentation:
+
+- [Using Teleport With OpenSSH](/ver/14.x/server-access/guides/openssh)
+- [Using SSH Host Certificates](https://goteleport.com/blog/how-to-ssh-properly/)
+- [Machine ID Configuration Reference](/ver/14.x/machine-id/reference/configuration)
+- [Joining Nodes using the IAM method](/ver/14.x/agents/join-services-to-your-cluster/aws-ec2)
+
+[More information about `TELEPORT_ANONYMOUS_TELEMETRY`.](/ver/14.x/machine-id/reference/telemetry)

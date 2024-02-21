@@ -1,0 +1,1242 @@
+---
+title: Teleport GKE Auto-Discovery
+description: How to configure auto-discovery of Google Kubernetes Engine clusters in Teleport.
+version: '14.x'
+---
+
+The Teleport Discovery Service can automatically register your Google Kubernetes
+Engine (GKE) clusters with Teleport. With Teleport Kubernetes Auto-Discovery,
+you can configure the Teleport Kubernetes Service and Discovery Service once,
+then create GKE clusters without needing to register them with Teleport after
+each creation.
+
+In this guide, we will show you how to get started with Teleport Kubernetes
+Auto-Discovery for GKE.
+
+## Overview
+
+Teleport Kubernetes Auto-Discovery involves two components.
+
+The first, the Discovery Service, is responsible for watching your cloud
+provider and checking if there are any new clusters or if there have been any
+modifications to previously discovered clusters. The second, the Kubernetes
+Service, monitors the clusters created by the Discovery Service. It proxies
+communications between users and the API servers of these clusters.
+
+<Tip>
+  This guide presents the Discovery Service and Kubernetes Service running in the
+  same process, however both can run independently and on different machines.
+
+  For example, you can run an instance of the Kubernetes Service in each
+  Kubernetes cluster you want to register with Teleport, and an instance of the
+  Discovery Service in any network you wish.
+</Tip>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- A Google Cloud account with permissions to create GKE clusters, IAM roles, and
+  service accounts.
+- The `gcloud` CLI tool. Follow the [Google Cloud documentation
+  page](https://cloud.google.com/sdk/docs/install-sdk) to install and
+  authenticate to `gcloud`.
+- One or more GKE clusters running. Your Kubernetes user must have permissions
+  to create `ClusterRole` and `ClusterRoleBinding` resources in your clusters.
+- A Linux host where you will run the Teleport Discovery and Kubernetes
+  services. You can run this host on any cloud provider or even use a local
+  machine.
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/3. Obtain Google Cloud credentials
+
+The Teleport Discovery Service and Kubernetes Service use a Google Cloud service
+account to discover GKE clusters and manage access from Teleport users. In this
+step, you will create a service account and download a credentials file for the
+Teleport Discovery Service.
+
+### Create an IAM role for the Discovery Service
+
+The Teleport Discovery Service needs permissions to retrieve GKE clusters
+associated with your Google Cloud project.
+
+To grant these permissions, create a file called `GKEKubernetesAutoDisc.yaml`
+with the following content:
+
+```yaml
+title: GKE Cluster Discoverer
+description: "Get and list GKE clusters"
+stage: GA
+includedPermissions:
+- container.clusters.get
+- container.clusters.list
+```
+
+Create the role, assigning the `--project` flag to the name of your Google Cloud
+project:
+
+```code
+$ gcloud iam roles create GKEKubernetesAutoDisc \
+  --project=google-cloud-project \
+  --file=GKEKubernetesAutoDisc.yaml
+```
+
+### Create an IAM role for the Kubernetes Service
+
+The Teleport Kubernetes Service needs Google Cloud IAM permissions in order to
+forward user traffic to your GKE clusters.
+
+Create a file called `GKEAccessManager.yaml` with the following content:
+
+```yaml
+title: GKE Cluster Access Manager
+description: "Manage access to GKE clusters"
+stage: GA
+includedPermissions:
+- container.clusters.get
+- container.clusters.impersonate
+- container.pods.get
+- container.selfSubjectAccessReviews.create
+- container.selfSubjectRulesReviews.create
+```
+
+Create the role, assigning the `--project` flag to the name of your Google Cloud
+project. If you receive a prompt indicating that certain permissions are in
+`TESTING`, enter `y`:
+
+```code
+$ gcloud iam roles create GKEAccessManager \
+  --project=google-cloud-project \
+  --file=GKEAccessManager.yaml
+```
+
+### Create a service account
+
+Now that you have declared roles for the Discovery Service and Kubernetes
+Service, create a service account so you can assign these roles.
+
+Run the following command to create a service account called
+`teleport-discovery-kubernetes`:
+
+```code
+$ gcloud iam service-accounts create teleport-discovery-kubernetes \
+  --description="Teleport Discovery Service and Kubernetes Service" \
+  --display-name="teleport-discovery-kubernetes"
+```
+
+Grant the roles you defined earlier to your service account, assigning
+`PROJECT_ID` to the name of your Google Cloud project:
+
+```code
+$ PROJECT_ID=google-cloud-project
+$ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
+   --member="serviceAccount:teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com" \
+   --role="projects/${PROJECT_ID?}/roles/GKEKubernetesAutoDisc"
+$ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
+   --member="serviceAccount:teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com" \
+   --role="projects/${PROJECT_ID?}/roles/GKEAccessManager"
+```
+
+<Accordion
+  title="Deploying the Kubernetes Service and Discovery Service
+separately?"
+>
+  Create a service account for each service:
+
+  ```code
+  $ gcloud iam service-accounts create teleport-discovery-service \
+    --description="Teleport Discovery Service" \
+    --display-name="teleport-discovery-service"
+  $ gcloud iam service-accounts create teleport-kubernetes-service \
+    --description="Teleport Kubernetes Service" \
+    --display-name="teleport-kubernetes-service"
+  ```
+
+  Grant the roles you defined earlier to your service account, assigning
+  `PROJECT_ID` to the name of your Google Cloud project:
+
+  ```code
+  $ PROJECT_ID=google-cloud-project
+  $ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
+     --member="serviceAccount:teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com" \
+     --role="projects/${PROJECT_ID?}/roles/GKEKubernetesAutoDisc"
+  $ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
+     --member="serviceAccount:teleport-kubernetes-service@${PROJECT_ID?}.iam.gserviceaccount.com" \
+     --role="projects/${PROJECT_ID?}/roles/GKEAccessManager"
+  ```
+</Accordion>
+
+### Retrieve credentials for your Teleport services
+
+Now that you have created a Google Cloud service account and attached roles to
+it, associate your service account with the Teleport Kubernetes Service and
+Discovery Service.
+
+The process is different depending on whether you are deploying the Teleport
+Kubernetes Service and Discovery Service on Google Cloud or some other way
+(e.g., via Amazon EC2 or on a local network).
+
+<Tabs>
+  <Tab title="Google Cloud">
+    Stop your VM so you can attach your service account to it:
+
+    ```code
+    $ gcloud compute instances stop vm-name --zone=google-cloud-region
+    ```
+
+    Attach your service account to the instance, assigning the name of your VM to VM-NAME
+    and the name of your Google Cloud region to GOOGLE-CLOUD-REGION:
+
+    ```code
+    $ gcloud compute instances set-service-account vm-name \
+       --service-account teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com \
+       --zone google-cloud-region \
+       --scopes=cloud-platform
+    ```
+
+    <Accordion title="Running the Kubernetes and Discovery Services separately?">
+      Stop each VM you plan to use to run the Teleport Kubernetes Service and
+      Discovery Service.
+
+      Attach the `teleport-kubernetes-service` service account to the VM running the
+      Kubernetes Service:
+
+      ```code
+      $ gcloud compute instances set-service-account ${VM1_NAME?} \
+         --service-account teleport-kubernetes-service@${PROJECT_ID?}.iam.gserviceaccount.com \
+         --zone google-cloud-region \
+         --scopes=cloud-platform
+      ```
+
+      Attach the `teleport-discovery-service` service account to the VM running the
+      Discovery Service:
+
+      ```code
+      $ gcloud compute instances set-service-account ${VM2_NAME?} \
+         --service-account teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com \
+         --zone google-cloud-region \
+         --scopes=cloud-platform
+      ```
+    </Accordion>
+
+    <Warning>
+      You must use the `scopes` flag in the `gcloud compute instances
+      set-service-account` command. Otherwise, your Google Cloud VM will fail to
+      obtain the required authorization to access the GKE API.
+    </Warning>
+
+    Once you have attached the service account, restart your VM:
+
+    ```code
+    $ gcloud compute instances start vm-name --zone google-cloud-region
+    ```
+  </Tab>
+
+  <Tab title="Other Platform">
+    Download a credentials file for the service account used by the Discovery
+    Service and Kubernetes Service:
+
+    ```code
+    $ PROJECT_ID=google-cloud-project
+    $ gcloud iam service-accounts keys create google-cloud-credentials.json \
+        --iam-account=teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com
+    ```
+
+    Move your credentials file to the host running the Teleport Discovery Service
+    and Kubernetes Service the path
+    `/var/lib/teleport/google-cloud-credentials.json`. We will use this credentials
+    file when running this service later in this guide.
+
+    <Accordion
+      title="Deploying the Kubernetes Service and Discovery Service
+separately?"
+    >
+      Download separate credentials files for each service:
+
+      ```code
+      $ PROJECT_ID=google-cloud-project
+      $ gcloud iam service-accounts keys create discovery-service-credentials.json \
+          --iam-account=teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com
+      $ gcloud iam service-accounts keys create kube-service-credentials.json \
+          --iam-account=teleport-kubernetes-service@${PROJECT_ID?}.iam.gserviceaccount.com
+      ```
+
+      Move `discovery-service-credentials.json` to the host running the Teleport
+      Discovery Service at the path `/var/lib/teleport/google-cloud-credentials.json`.
+
+      Move `kubernetes-service-credentials.json` to the host running the Teleport
+      Kubernetes Service at the path
+      `/var/lib/teleport/google-cloud-credentials.json`.
+
+      We will use these credentials files when running this services later in this
+      guide.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+## Step 2/3. Configure Teleport to discover GKE clusters
+
+Now that you have created a service account that can discover GKE clusters and a
+cluster role that can manage access, configure the Teleport Discovery Service to
+detect GKE clusters and the Kubernetes Service to proxy user traffic.
+
+### Install Teleport
+
+Install Teleport on the host you are using to run the Kubernetes Service and
+Discovery Service:
+
+Use the appropriate commands for your environment to install your package:
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Teleport Team">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    ```
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+      Before installing a `teleport` binary with a version besides
+      v13, read our compatibility rules to ensure that the
+      binary is compatible with Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+
+  <Tab title="Open Source">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 14.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Enterprise">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v14" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+
+  <Tab title="Enterprise Cloud">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport apt repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Enterprise Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### Create a join token
+
+The Teleport Discovery Service and Kubernetes Service require an authentication
+token in order to to join the cluster. Generate one by running the following
+`tctl` command:
+
+```code
+$ tctl tokens add --type=discovery,kube --format=text
+abcd123-insecure-do-not-use-this
+```
+
+Copy the token (e.g., `abcd123-insecure-do-not-use-this` above) and save the token in
+`/tmp/token` on the machine that will run the Discovery Service and Kubernetes
+Service, for example:
+
+```code
+$ echo abcd123-insecure-do-not-use-this | sudo tee /tmp/token
+# abcd123-insecure-do-not-use-this
+```
+
+<Accordion title="Running the Kubernetes and Discovery Services separately?">
+  Generate separate tokens for the Kubernetes Service and Discovery Service by
+  running the following `tctl` commands:
+
+  ```code
+  $ tctl tokens add --type=discovery --format=text
+  # efgh456-insecure-do-not-use-this
+  $ tctl tokens add --type=kube --format=text
+  # ijkl789-insecure-do-not-use-this
+  ```
+
+  Copy each token (e.g., `efgh456-insecure-do-not-use-this` and
+  `ijkl789-insecure-do-not-use-this` above) and save it in `/tmp/token` on the machine
+  that will run the appropriate service.
+</Accordion>
+
+### Configure the Kubernetes Service and Discovery Service
+
+On the host running the Kubernetes Service and Discovery Service, create a
+Teleport configuration file with the following content at `/etc/teleport.yaml`:
+
+<Warning>
+  Discovery Service exposes a configuration parameter - `discovery_service.discovery_group` -
+  that allows you to group discovered resources into different sets. This parameter
+  is used to prevent Discovery Agents watching different sets of cloud resources
+  from colliding against each other and deleting resources created by another services.
+
+  When running multiple Discovery Services, you must ensure that each service is configured
+  with the same `discovery_group` value if they are watching the same cloud resources
+  or a different value if they are watching different cloud resources.
+
+  It is possible to run a mix of configurations in the same Teleport cluster meaning
+  that some Discovery Services can be configured to watch the same cloud resources
+  while others watch different resources. As an example, a 4-agent high availability
+  configuration analyzing data from two different cloud accounts would run with
+  the following configuration.
+
+  - 2 Discovery Services configured with `discovery_group: "prod"` polling data
+    from Production account.
+  - 2 Discovery Services configured with `discovery_group: "staging"` polling data
+    from Staging account.
+</Warning>
+
+```yaml
+version: v3
+teleport:
+  join_params:
+    token_name: "/tmp/token"
+    method: token
+  proxy_server: "teleport.example.com:443"
+auth_service:
+  enabled: off
+proxy_service:
+  enabled: off
+ssh_service:
+  enabled: off
+discovery_service:
+  enabled: "yes"
+  discovery_group: "gke-myproject"
+  gcp:
+    - types: ["gke"]
+      locations: ["*"]
+      project_ids: ["myproject"] # replace with my project ID
+      tags:
+        "*" : "*"
+kubernetes_service:
+  enabled: "yes"
+  resources:
+  - labels:
+      "*": "*"
+```
+
+<Accordion
+  title="Running the Kubernetes Service and Discovery Service on
+separate hosts?"
+>
+  Follow the instructions in this section with two configuration files. The
+  configuration file you will save at `/etc/teleport.yaml` on the Kubernetes
+  Service host will include the following:
+
+  ```yaml
+  version: v3
+  teleport:
+    join_params:
+      token_name: "/tmp/token"
+      method: token
+    proxy_server: "teleport.example.com:443"
+  auth_service:
+    enabled: off
+  proxy_service:
+    enabled: off
+  ssh_service:
+    enabled: off
+  kubernetes_service:
+    enabled: "yes"
+    resources:
+    - labels:
+        "*": "*"
+  ```
+
+  On the Discovery Service host, the file will include the following:
+
+  ```yaml
+  version: v3
+  teleport:
+    join_params:
+      token_name: "/tmp/token"
+      method: token
+    proxy_server: "teleport.example.com:443"
+  auth_service:
+    enabled: off
+  proxy_service:
+    enabled: off
+  ssh_service:
+    enabled: off
+  discovery_service:
+    enabled: "yes"
+    gcp:
+      - types: ["gke"]
+        locations: ["*"]
+        project_ids: ["myproject"] # replace with my project ID
+        tags:
+          "*" : "*"
+  ```
+</Accordion>
+
+Edit this configuration for your environment as explained below.
+
+#### `proxy_server`
+
+Replace `teleport.example.com:443` with the host and port of your Teleport
+Proxy Service (e.g., `mytenant.teleport.sh:443` for a Teleport Cloud tenant).
+
+#### `discovery_service.gcp`
+
+Each item in `discovery_service.gcp` is a **matcher** for Kubernetes clusters
+running on GKE. The Discovery Service periodically executes a request to the
+Google Cloud API based on each matcher to list GKE clusters. In this case, we
+have declared a single matcher.
+
+Each matcher searches for clusters that match *all* properties of the matcher,
+i.e., that belong to the specified locations and projects and have the
+specified tags. The Discovery Service registers GKE clusters that match *any*
+configured matcher.
+
+This means that if you declare the following two matchers, the Discovery Service
+will register clusters in project `myproj-dev` running in `us-east1`, as well as
+clusters in project `myproj-prod` running in `us-east2`, but *not* clusters in
+`myproj-dev` running in `us-east2`:
+
+```yaml
+discovery_service:
+  enabled: "yes"
+  gcp:
+    - types: ["gke"]
+      locations: ["us-east1"]
+      project_ids: ["myproj-dev"]
+      tags:
+        "*" : "*"
+    - types: ["gke"]
+      locations: ["us-east2"]
+      project_ids: ["myproj-prod"]
+      tags:
+        "*" : "*"
+```
+
+#### `discovery_service.gcp[0].types`
+
+Each matcher's `types` field must be set to an array with a single string
+value, `gke`.
+
+#### `discovery_service.gcp[0].project_ids`
+
+In your matcher, replace `myproject` with the ID of your Google Cloud project.
+The `project_ids` field must include at least one value, and it must not be the
+wildcard character (`*`).
+
+#### `discovery_service.gcp[0].locations`
+
+Each matcher's `locations` field contains an array of Google Cloud region or
+zone names that the matcher will search for GKE clusters. The wildcard
+character, `*`, configures the matcher to search all locations.
+
+#### `discovery_service.gcp[0].tags`
+
+Like `locations`, `tags` consists of a map where each key is a string that
+represents the key of a tag, and each value is either a single string or an
+array of strings, representing one tag value or a list of tag values.
+
+A wildcard key or value matches any tag key or value in your Google Cloud
+account. If you include another value, the matcher will match all GKE clusters
+with the provided tag.
+
+### Start the Kubernetes Service and Discovery Service
+
+On the host where you will run the Kubernetes Service, execute the following
+command, depending on:
+
+- Whether you installed Teleport using a package manager or via a TAR archive
+- Whether you are running the Discovery and Kubernetes Service on Google Cloud
+  or another platform
+
+<Tabs dropdownCaption="How your host is running:" dropdownSelected="Google Cloud">
+  <Tab title="Package Manager ">
+    On the host where you will run the Teleport Kubernetes Service and Discovery
+    Service, start the Teleport service:
+
+    ```code
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive ">
+    On the host where you will run the Teleport Kubernetes Service and Discovery
+    Service, create a systemd service configuration for Teleport, enable the
+    Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="Package Manager">
+    When you installed Teleport via package manager, the installation process
+    created a configuration for the init system `systemd` to run Teleport as a
+    daemon.
+
+    This service reads environment variables from a file at the path
+    `/etc/default/teleport`. Teleport's built-in Google Cloud client reads the
+    credentials file at the location given by the `GOOGLE_APPLICATION_CREDENTIALS`
+    variable.
+
+    Ensure that `/etc/default/teleport` has the following content:
+
+    ```
+    GOOGLE_APPLICATION_CREDENTIALS="/var/lib/teleport/google-cloud-credentials.json"
+    ```
+
+    Start the Teleport service:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you are running the Teleport Discovery Service and Kubernetes
+    Service, create a systemd configuration that you can use to run Teleport in the
+    background:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    ```
+
+    This service reads environment variables from a file at the path
+    `/etc/default/teleport`. Teleport's built-in Google Cloud client reads the
+    credentials file at the location given by the `GOOGLE_APPLICATION_CREDENTIALS`
+    variable.
+
+    Ensure that `/etc/default/teleport` has the following content:
+
+    ```
+    GOOGLE_APPLICATION_CREDENTIALS="/var/lib/teleport/google-cloud-credentials.json"
+    ```
+
+    Start the Discovery Service and Kubernetes Service:
+
+    ```code
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+## Step 3/3. Connect to your GKE cluster
+
+### Allow access to your Kubernetes cluster
+
+Ensure that you are in the correct Kubernetes context for the cluster you would
+like to enable access to:
+
+```code
+$ kubectl config current-context
+```
+
+<Accordion title="Using the wrong context?">
+  Retrieve all available contexts:
+
+  ```code
+  $ kubectl config get-contexts
+  ```
+
+  Switch to your context, replacing `CONTEXT_NAME` with the name of your chosen
+  context:
+
+  ```code
+  $ kubectl config use-context CONTEXT_NAME
+  Switched to context CONTEXT_NAME
+  ```
+</Accordion>
+
+### Kubernetes authentication
+
+To authenticate to a Kubernetes cluster via Teleport, your Teleport roles must
+allow access as at least one Kubernetes user or group. Ensure that you have a
+Teleport role that grants access to the cluster you plan to interact with.
+
+Run the following command to get the Kubernetes user for your current context:
+
+```code
+$ kubectl config view \
+-o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
+```
+
+Create a file called `kube-access.yaml` with the following content, replacing
+`USER` with the output of the command above.
+
+```yaml
+kind: role
+metadata:
+  name: kube-access
+version: v6
+spec:
+  allow:
+    kubernetes_labels:
+      '*': '*'
+    kubernetes_resources:
+      - kind: pod
+        namespace: "*"
+        name: "*"
+    kubernetes_groups:
+    - viewers
+    kubernetes_users:
+    # Replace USER with the Kubernetes user for your current context.
+    - USER
+  deny: {}
+```
+
+Apply your changes:
+
+```code
+$ tctl create -f kube-access.yaml
+```
+
+Assign the `kube-access` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `kube-access` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `kube-access` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `kube-access` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `kube-access` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+Now that Teleport RBAC is configured, you can authenticate to your Kubernetes
+cluster via Teleport. To interact with your Kubernetes cluster, you will need to
+configure authorization within Kubernetes.
+
+### Kubernetes authorization
+
+To configure authorization within your Kubernetes cluster, you need to create Kubernetes `RoleBinding`s or
+`ClusterRoleBindings` that grant permissions to the subjects listed in `kubernetes_users` and
+`kubernetes_groups`.
+
+For example, you can grant some limited read-only permissions to the `viewers` group used in the `kube-access`
+role defined above:
+
+Create a file called `viewers-bind.yaml` with the following contents:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: viewers-crb
+subjects:
+- kind: Group
+  # Bind the group "viewers", corresponding to the kubernetes_groups we assigned our "kube-access" role above
+  name: viewers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  # "view" is a default ClusterRole that grants read-only access to resources
+  # See: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Apply the `ClusterRoleBinding` with `kubectl`:
+
+```code
+$ kubectl apply -f viewers-bind.yaml
+```
+
+Log out of Teleport and log in again.
+
+### Access your cluster
+
+When you ran the Discovery Service, it discovered your GKE cluster and
+registered the cluster with Teleport. You can confirm this by running the
+following `tctl` command:
+
+```code
+$ tctl get kube_clusters
+kind: kube_cluster
+metadata:
+  description: GKE cluster "mycluster-gke" in us-east1
+  id: 0000000000000000000
+  labels:
+    location: us-east1
+    project-id: myproject
+    teleport.dev/cloud: GCP
+    teleport.dev/origin: cloud
+  name: mycluster-gke
+spec:
+  aws: {}
+  azure: {}
+version: v3
+```
+
+Run the following command to list the Kubernetes clusters that your Teleport
+user has access to. The list should now include your GKE cluster:
+
+```code
+$ tsh kube ls
+Kube Cluster Name   Labels                                                                                                   Selected
+------------------- -------------------------------------------------------------------------------------------------------- --------
+mycluster-gke location=us-east1 project-id=myproject teleport.dev/cloud=GCP teleport.dev/origin=cloud
+```
+
+Log in to your cluster, replacing `mycluster-gke` with the name of a cluster
+you listed previously:
+
+```code
+$ tsh kube login mycluster-gke
+Logged into kubernetes cluster "mycluster-gke". Try 'kubectl version' to test the connection.
+```
+
+As you can see, Teleport GKE Auto-Discovery enabled you to access a GKE cluster
+in your Google Cloud account without requiring you to register that cluster
+manually within Teleport. When you create or remove clusters in GKE, Teleport
+will update its state to reflect the available clusters in your account.
+
+## Troubleshooting
+
+### Discovery Service
+
+To check if the Discovery Service is working correctly, you can check if any Kubernetes
+clusters have been discovered. To do this, you can use the `tctl get kube_cluster`
+command and inspect if the expected clusters have already been imported into Teleport.
+
+If some clusters do not appear in the list, check if the filtering labels match
+the missing cluster tags or look into the service logs for permission errors.
+
+### Kubernetes Service
+
+If the `tctl get kube_cluster` command returns the discovered clusters, but the
+`tsh kube ls` command does not include them, check that you have set the
+`kubernetes_service.resources` section correctly.
+
+```yaml
+kubernetes_service:
+  enabled: "yes"
+  resources:
+  - tags:
+      "env": "prod"
+```
+
+If the section is correctly configured, but clusters still do not appear or
+return authentication errors, please check if permissions have been correctly configured
+in your target cluster or that you have the correct permissions to list Kubernetes clusters
+in Teleport.

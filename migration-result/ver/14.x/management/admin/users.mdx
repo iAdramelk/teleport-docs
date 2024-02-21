@@ -1,0 +1,225 @@
+---
+title: Local Users
+description: Learn how to manage local users in Teleport. Local users are stored on the Auth Service instead of a third-party identity provider.
+version: '14.x'
+---
+
+In Teleport, **local users** are users managed directly via Teleport, rather
+than a third-party identity provider.
+
+Local user accounts can be used alongside external user accounts managed via
+GitHub as well as OIDC and SAML
+2.0.
+
+This guide shows you how to:
+
+- [Add local users](/ver/14.x/management/admin/users#adding-local-users)
+- [Edit existing users](/ver/14.x/management/admin/users#editing-users)
+- [Delete users](/ver/14.x/management/admin/users#deleting-users)
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Adding local users
+
+A user identity in Teleport exists in the scope of a cluster.
+A Teleport administrator creates Teleport user accounts and maps them to the roles they can use.
+
+Let's look at this table:
+
+| Teleport User | Allowed OS Logins | Description                                                                            |
+| ------------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `joe`         | `joe`, `root`     | Teleport user `joe` can log in to member Nodes as user `joe` or `root` on the OS.      |
+| `bob`         | `bob`             | Teleport user `bob` can log in to member Nodes only as OS user `bob`.                  |
+| `kim`         |                   | If no OS login is specified, it defaults to the same name as the Teleport user, `kim`. |
+
+Let's add a new user to Teleport using the `tctl` tool:
+
+```code
+$ tctl users add joe --logins=joe,root --roles=access,editor
+```
+
+```code
+$ tctl users add joe --logins=joe,root --roles=access,editor,reviewer
+```
+
+Teleport generates an auto-expiring token (with a TTL of one hour) and prints
+the token URL, which must be used before the TTL expires.
+
+```code
+User "joe" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
+https://<proxy_host>:443/web/invite/<token>
+
+NOTE: Make sure <proxy_host>:443 points at a Teleport proxy which users can access.
+```
+
+The user completes registration by visiting this URL in their web browser,
+picking a password, and configuring second-factor authentication. If the
+credentials are correct, the Teleport Auth Server generates and signs a new
+certificate, and the client stores this key and will use it for subsequent
+logins.
+
+The key will automatically expire after 12 hours by default, after which
+the user will need to log back in with their credentials. This TTL can be
+configured to a different value.
+
+Once authenticated, the account will become visible via `tctl`:
+
+```code
+$ tctl users ls
+
+# User           Allowed Logins
+# ----           --------------
+# admin          admin,root
+# kim            kim
+# joe            joe,root
+```
+
+## Editing users
+
+Admins can edit user entries via `tctl`.
+
+For example, to see the full list of user records, an administrator can execute:
+
+```code
+$ tctl get users
+```
+
+To edit the user `joe`:
+
+```code
+# Dump the user definition into a file:
+$ tctl get user/joe > joe.yaml
+# ... edit the contents of joe.yaml
+
+# Update the user record:
+$ tctl create -f joe.yaml
+```
+
+## Deleting users
+
+Admins can delete a local user via `tctl`:
+
+```code
+$ tctl users rm joe
+```
+
+## Next steps
+
+<Tabs>
+  <Tab title="Teleport Enterprise/Enterprise Cloud">
+    In addition to users, you can use `tctl` to manage roles and other dynamic
+    resources. See our [Teleport Resources Reference](/ver/14.x/reference/resources).
+
+    For all available `tctl` commands and flags, see our [CLI Reference](/ver/14.x/reference/cli#tctl).
+
+    You can also configure Teleport so that users can log in using an SSO provider.
+    For more information, see:
+
+    - [Single Sign-On](/ver/14.x/access-controls/sso)
+  </Tab>
+
+  <Tab title="Teleport Team/Community Edition">
+    In addition to users, you can use `tctl` to manage roles and other dynamic
+    resources. See our [Teleport Resources Reference](/ver/14.x/reference/resources).
+
+    For all available `tctl` commands and flags, see our
+    [CLI Reference](/ver/14.x/reference/cli#tctl).
+
+    You can also configure Teleport so that users can log in using GitHub. For more
+    information, see [GitHub SSO](/ver/14.x/access-controls/sso/github-sso).
+  </Tab>
+</Tabs>

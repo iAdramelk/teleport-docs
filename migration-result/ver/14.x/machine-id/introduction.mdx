@@ -1,0 +1,56 @@
+---
+title: Machine ID
+description: Teleport Machine ID introduction, demo and resources.
+version: '14.x'
+---
+
+Machine ID is a service that programmatically issues and renews short-lived
+certificates to any service account (e.g., a CI/CD server) by retrieving
+credentials from the Teleport Auth Service. This enables fine-grained
+role-based access controls and audit.
+
+<iframe width="712" height="400" src="https://www.youtube-nocookie.com/embed/QWd0eqIa9mA?" frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+
+<br />
+
+Machine ID supports the following Teleport features:
+
+- [Server Access](/ver/14.x/machine-id/getting-started)
+- [Database Access](/ver/14.x/machine-id/guides/databases)
+- [Kubernetes Access](/ver/14.x/machine-id/guides/kubernetes) (*in Teleport v10.1*)
+- [Application Access](/ver/14.x/machine-id/guides/applications) (*in Teleport v10.1*)
+  - Note: [AWS Console](/ver/14.x/application-access/cloud-apis/aws-console) and API access are currently unsupported.
+- [Teleport API Access](/ver/14.x/api/introduction)
+
+These features are supported in Teleport Enterprise and Teleport Cloud.
+
+The following features are **not** yet supported by Machine ID:
+
+- [Desktop Access](/ver/14.x/desktop-access/introduction)
+- [User Impersonation](/ver/14.x/access-controls/guides/impersonation): Machine
+  ID uses Role Impersonation which cannot be combined with User Impersonation
+- Multifactor authentication like [WebAuthn](/ver/14.x/access-controls/guides/webauthn) and [Passwordless](/ver/14.x/access-controls/guides/passwordless)
+- [AWS Console Access](/ver/14.x/application-access/cloud-apis/aws-console)
+
+## Getting started
+
+- [Getting started](/ver/14.x/machine-id/getting-started): Getting started with Teleport Machine ID
+- [Architecture](/ver/14.x/machine-id/architecture): A technical overview of how Machine ID works
+
+## Guides
+
+- [Using Machine ID with Ansible](/ver/14.x/machine-id/guides/ansible): How to integrate Machine ID with Ansible.
+- [Using Machine ID with Applications](/ver/14.x/machine-id/guides/applications): How to use Machine ID to connect automated services to applications.
+- [Using Machine ID with Databases](/ver/14.x/machine-id/guides/databases): How to use Machine ID to connect custom applications to your databases.
+- [Using Machine ID with GitHub Actions](/ver/14.x/machine-id/guides/github-actions): How to use Machine ID to SSH into Teleport nodes from GitHub Actions.
+- [Using Machine ID with GitHub Actions and Kubernetes](/ver/14.x/machine-id/guides/github-actions-kubernetes): How to use Machine ID to access Kubernetes clusters from GitHub Actions.
+- [Using Machine ID with CircleCI](/ver/14.x/machine-id/guides/circleci): How to use Machine ID to to access Teleport resources from CircleCI.
+- [Using Machine ID with Jenkins](/ver/14.x/machine-id/guides/jenkins): How to integrate Machine ID with Jenkins.
+- [Using Machine ID with Kubernetes](/ver/14.x/machine-id/guides/kubernetes): How to use Machine ID to connect automated services to Kubernetes clusters.
+- [Using Machine ID with GitLab CI](/ver/14.x/machine-id/guides/gitlab): How to use Machine ID to SSH into Teleport nodes from GitLab CI.
+- [Generating Short-Lived Host Certificates with Machine ID](/ver/14.x/machine-id/guides/host-certificate): How to use Machine ID to generate a host certificate for an OpenSSH server.
+
+## FAQ & Troubleshooting
+
+Finally, check out [Frequently Asked Questions](/ver/14.x/machine-id/faq) and the
+[troubleshooting guide](/ver/14.x/machine-id/troubleshooting) for common questions and issues.

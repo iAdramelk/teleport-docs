@@ -1,0 +1,1753 @@
+---
+title: Database Access with AWS ElastiCache and AWS MemoryDB for Redis
+description: How to configure Teleport database access with AWS ElastiCache and AWS MemoryDB for Redis.
+version: '15.x'
+---
+
+Teleport can provide secure access to AWS ElastiCache and MemoryDB for Redis via the  [Teleport Database
+Service](/database-access/introduction). This allows for
+fine-grained access control through [Teleport's RBAC](/database-access/rbac).
+
+In this guide, you will:
+
+1. Configure an AWS ElastiCache and MemoryDB for Redis cluster database with IAM authentication.
+2. Join the AWS ElastiCache and MemoryDB for Redis database to your Teleport cluster.
+3. Connect to the AWS ElastiCache and MemoryDB for Redis database via the Teleport Database Service.
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ![Teleport Database Access RDS Self-Hosted](../../../assets/redis_elasticache_selfhosted-9e5e02a7fb.png)
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    ![Teleport Database Access RDS Cloud](../../../assets/redis_elasticache_cloud-ad5248af50.png)
+  </Tab>
+</Tabs>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- AWS account with at least one ElastiCache or MemoryDB for Redis clusters
+  **In-transit encryption via (TLS) must be enabled**.
+- Permissions to create and attach IAM policies.
+- `redis-cli` version `6.2` or newer installed and added to your system's `PATH` environment variable.
+- A host, e.g., an EC2 instance, where you will run the Teleport Database
+  Service.
+- A running Teleport Discovery Service if you plan to use [Database
+  Auto-Discovery](/database-access/guides/aws-discovery).
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/7. Create a Teleport user
+
+<Tip>
+  To modify an existing user to provide access to the Database Service, see [Database Access Access Controls](/database-access/rbac)
+</Tip>
+
+<Tabs>
+  <Tab title="Teleport Team/Community Edition">
+    Create a local Teleport user with the built-in `access` role:
+
+    ```code
+    $ tctl users add \
+      --roles=access \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise/Enterprise Cloud">
+    Create a local Teleport user with the built-in `access` and `requester` roles:
+
+    ```code
+    $ tctl users add \
+      --roles=access,requester \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+</Tabs>
+
+| Flag         | Description                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--roles`    | List of roles to assign to the user. The builtin `access` role allows them to connect to any database server registered with Teleport.   |
+| `--db-users` | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| `--db-names` | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+
+<Warning>
+  Database names are only enforced for PostgreSQL and MongoDB databases.
+</Warning>
+
+For more detailed information about database access controls and how to restrict
+access see [RBAC](/database-access/rbac) documentation.
+
+## Step 2/7. Create a Database Service configuration
+
+The Database Service requires a valid auth token to connect to the cluster. Generate
+one by running the following command against your Teleport Auth Service and save
+it in `/tmp/token` on the node that will run the Database Service:
+
+```code
+$ tctl tokens add --type=db
+```
+
+<Accordion title="Alternative methods">
+  For users with a lot of infrastructure in AWS, or who might create or recreate
+  many instances, consider alternative methods for joining new EC2 instances running
+  Teleport:
+
+  - [Configure Teleport to Automatically Enroll EC2 instances](/server-access/guides/ec2-discovery)
+  - [Joining Teleport Services via AWS IAM
+    Role](/agents/join-services-to-your-cluster/aws-iam)
+  - [Joining Teleport Services via AWS EC2 Identity Document](/agents/join-services-to-your-cluster/aws-ec2)
+</Accordion>
+
+<Tabs>
+  <Tab title="ElastiCache">
+    Install Teleport on the host where you will run the Teleport Database Service:
+
+    Select an edition, then follow the instructions for that edition to install Teleport.
+
+    <Tabs dropdownView dropdownCaption="Teleport Edition">
+      <Tab title="Teleport Community Edition">
+        ```code
+        $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+        ```
+      </Tab>
+
+      <Tab title="Teleport Team">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+            $ sudo yum install teleport-ent-updater
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+          Before installing a `teleport` binary with a version besides
+          v13, read our compatibility rules to ensure that the
+          binary is compatible with Teleport Cloud.
+
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are 1 major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Services and resource services do not support Auth Services that are on
+            an older major version, and will fail to connect to older Auth Services by
+            default. This behavior can be overridden by passing `--skip-version-check`
+            when starting Proxy Services and resource services.
+        </Accordion>
+      </Tab>
+
+      <Tab title="Teleport Enterprise">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo apt-get install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo dnf install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo zypper install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Tarball">
+            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+            will update after one is filled out.
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+
+            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+            will be slightly different:
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+      </Tab>
+
+      <Tab title="Teleport Enterprise Cloud">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+            $ sudo yum install teleport-ent-updater
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+          Before installing a `teleport` binary with a version besides v13,
+          read our compatibility rules to ensure that the binary is compatible with
+          Teleport Enterprise Cloud.
+
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are 1 major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Services and resource services do not support Auth Services that are on
+            an older major version, and will fail to connect to older Auth Services by
+            default. This behavior can be overridden by passing `--skip-version-check`
+            when starting Proxy Services and resource services.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    Databases can be registered dynamically by Discovery Service, `tctl`, etc.
+
+    Generate a Database Service configuration that monitors the dynamic database
+    resources:
+
+    ```code
+    $ sudo teleport db configure create \
+       -o file \
+       --proxy=mytenant.teleport.sh:443 \
+       --token=/tmp/token \
+       --dynamic-resources-labels env=prod
+    ```
+
+    This command will place the Database Service configuration at the
+    `/etc/teleport.yaml` location.
+
+    <Accordion title="Enable auto-discovery for AWS ElastiCache in Discovery Service?">
+      In your Teleport Discovery Service's configuration, use AWS matcher type
+      `elasticache`, and update `region` and `tags` that match your ElastiCache
+      databases:
+
+      ```yaml
+      discovery_service:
+        enabled: "yes"
+        aws:
+        - types: ["elasticache"]
+          regions: ["us-west-1"]
+          tags:
+            "env": "prod" # Match database resource tags where tag:env=prod
+      ```
+
+      Restart the Discovery Service.
+    </Accordion>
+  </Tab>
+
+  <Tab title="MemoryDB">
+    Install Teleport on the host where you will run the Teleport Database Service:
+
+    Select an edition, then follow the instructions for that edition to install Teleport.
+
+    <Tabs dropdownView dropdownCaption="Teleport Edition">
+      <Tab title="Teleport Community Edition">
+        ```code
+        $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+        ```
+      </Tab>
+
+      <Tab title="Teleport Team">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+            $ sudo yum install teleport-ent-updater
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+          Before installing a `teleport` binary with a version besides
+          v13, read our compatibility rules to ensure that the
+          binary is compatible with Teleport Cloud.
+
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are 1 major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Services and resource services do not support Auth Services that are on
+            an older major version, and will fail to connect to older Auth Services by
+            default. This behavior can be overridden by passing `--skip-version-check`
+            when starting Proxy Services and resource services.
+        </Accordion>
+      </Tab>
+
+      <Tab title="Teleport Enterprise">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo apt-get install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v15. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo dnf install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo zypper install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Tarball">
+            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+            will update after one is filled out.
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+
+            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+            will be slightly different:
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+      </Tab>
+
+      <Tab title="Teleport Enterprise Cloud">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+            $ sudo yum install teleport-ent-updater
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v15` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+          Before installing a `teleport` binary with a version besides v13,
+          read our compatibility rules to ensure that the binary is compatible with
+          Teleport Enterprise Cloud.
+
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are 1 major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Services and resource services do not support Auth Services that are on
+            an older major version, and will fail to connect to older Auth Services by
+            default. This behavior can be overridden by passing `--skip-version-check`
+            when starting Proxy Services and resource services.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    Databases can be registered dynamically by Discovery Service, `tctl`, etc.
+
+    Generate a Database Service configuration that monitors the dynamic database
+    resources:
+
+    ```code
+    $ sudo teleport db configure create \
+       -o file \
+       --proxy=mytenant.teleport.sh:443 \
+       --token=/tmp/token \
+       --dynamic-resources-labels env=prod
+    ```
+
+    This command will place the Database Service configuration at the
+    `/etc/teleport.yaml` location.
+
+    <Accordion title="Enable auto-discovery for AWS MemoryDB in Discovery Service?">
+      In your Teleport Discovery Service's configuration, use AWS matcher type
+      `memorydb`, and update `region` and `tags` that match your MemoryDB
+      databases:
+
+      ```yaml
+      discovery_service:
+        enabled: "yes"
+        aws:
+        - types: ["memorydb"]
+          regions: ["us-west-1"]
+          tags:
+            "env": "prod" # Match database resource tags where tag:env=prod
+      ```
+
+      Restart the Discovery Service.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+## Step 3/7. Create an IAM policy for Teleport
+
+Teleport needs AWS IAM permissions to be able to:
+
+- Modify ElastiCache and MemoryDB user passwords for Teleport-managed users.
+- Save user passwords in AWS Secrets Manager for Teleport-managed users.
+- Connect to an ElastiCache Redis cluster using IAM auth for ElastiCache IAM users.
+
+Before you can generate IAM permissions, you must provide the Teleport Database
+Service access to AWS credentials.
+
+Grant the Database Service access to credentials that it can use to authenticate to
+AWS. If you are running the Database Service on an EC2 instance, you should use the EC2
+Instance Metadata Service method. Otherwise, you must use environment variables:
+
+<Tabs>
+  <Tab title="Instance Metadata Service">
+    Teleport will detect when it is running on an EC2 instance and use the Instance
+    Metadata Service to fetch credentials.
+
+    The EC2 instance should be configured to use an EC2 instance profile. For more
+    information, see: [Using Instance Profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html).
+  </Tab>
+
+  <Tab title="Environment Variables">
+    Teleport's built-in AWS client reads credentials from the following environment
+    variables:
+
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+    - `AWS_DEFAULT_REGION`
+
+    When you start the Database Service, the service reads environment variables from a
+    file at the path `/etc/default/teleport`. Obtain these credentials from your
+    organization. Ensure that `/etc/default/teleport` has the following content,
+    replacing the values of each variable:
+
+    ```text
+    AWS_ACCESS_KEY_ID=00000000000000000000
+    AWS_SECRET_ACCESS_KEY=0000000000000000000000000000000000000000
+    AWS_DEFAULT_REGION=<YOUR_REGION>
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Have multiple sources of AWS credentials?">
+  Teleport's AWS client loads credentials from different sources in the following
+  order:
+
+  - Environment Variables
+  - Shared credentials file
+  - Shared configuration file (Teleport always enables shared configuration)
+  - EC2 Instance Metadata (credentials only)
+
+  While you can provide AWS credentials via a shared credentials file or shared
+  configuration file, you will need to run the Database Service with the `AWS_PROFILE`
+  environment variable assigned to the name of your profile of choice.
+
+  If you have a specific use case that the instructions above do not account for,
+  consult the documentation for the [AWS SDK for
+  Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/) for a detailed
+  description of credential loading behavior.
+</Accordion>
+
+<Tabs>
+  <Tab title="ElastiCache">
+    Teleport can bootstrap IAM permissions for the Database Service based on its
+    configuration:
+
+    <Tabs>
+      <Tab title="Auto-discovery">
+        Teleport can bootstrap IAM permissions for the Database Service based on
+        Discovery Service's configuration while bootstrapping the Discovery Service
+        using the `teleport discovery bootstrap` command. You can use this command in
+        automatic or manual mode:
+
+        - In automatic mode, Teleport will attempt to create appropriate IAM policies
+          and attach them to the specified IAM role. This requires IAM permissions to
+          create and attach IAM policies.
+        - In manual mode, Teleport will print required IAM policies. You can then create
+          and attach them manually using the AWS management console. Add `--manual`
+          flag to the command to enable manual mode.
+
+        ```code
+        $ teleport discovery bootstrap \
+          --attach-to-role arn:aws:iam::aws-account-id:role/discovery-iam-role-name \
+          --policy-name TeleportDatabaseDiscovery \
+          --database-service-role arn:aws:iam::aws-account-id:role/database-iam-role-name \
+          --database-service-policy-name TeleportDatabaseAccess \
+          -c path to Discovery's teleport.yaml
+        ```
+      </Tab>
+
+      <Tab title="Static config">
+        Teleport can bootstrap IAM permissions for the Database Service based on its
+        configuration using the `teleport db configure bootstrap` command. You can use
+        this command in automatic or manual mode:
+
+        - In automatic mode, Teleport will attempt to create appropriate IAM policies
+          and attach them to the specified IAM identity (user or role). This requires
+          IAM permissions to create and attach IAM policies.
+        - In manual mode, Teleport will print required IAM policies. You can then create
+          and attach them manually using the AWS management console.
+
+        <Tabs>
+          <Tab title="Automatic / IAM User">
+            Use this command to bootstrap the permissions automatically when
+            your Teleport Database Service runs as an IAM user (for example, uses an AWS
+            credentials file).
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user TeleportUser
+            ```
+          </Tab>
+
+          <Tab title="Automatic / IAM Role">
+            Use this command to bootstrap the permissions automatically when
+            your Teleport Database Service runs as an IAM role (for example, on an EC2
+            instance with an attached IAM role).
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role TeleportRole
+            ```
+          </Tab>
+
+          <Tab title="Manual / IAM User">
+            Use this command to display required IAM policies which you will then create in your AWS console:
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-user arn:aws:iam::123456789012:user/TeleportUser
+            ```
+          </Tab>
+
+          <Tab title="Manual / IAM Role">
+            Use this command to display required IAM policies which you will then create in your AWS console:
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-role arn:aws:iam::123456789012:role/TeleportRole
+            ```
+          </Tab>
+        </Tabs>
+
+        <Accordion title="Bootstrapping with assume_role_arn in config">
+          When `assume_role_arn` is configured for databases or AWS matchers,
+          `teleport db configure bootstrap` will determine permissions required for the
+          bootstrap target AWS IAM identity using the following logic:
+
+          - When the target does not match `assume_role_arn` in any database resource or
+            AWS matcher in the configuration file, the target is assumed to be the
+            Teleport Database Service's AWS IAM identity and permissions are bootstrapped
+            for all the configured static databases and AWS matchers.
+          - When an `--attach-to-role` target matches an `assume_role_arn` setting for
+            static databases or AWS matchers in the configuration file, permissions will
+            be bootstrapped only for those static databases or AWS matchers.
+
+          You will need to run the bootstrap command once with the Teleport Database
+          Service's IAM identity as the policy attachment target, and once for each AWS
+          IAM role that is used for `assume_role_arn`.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    Alternatively, you can create or print the required IAM policies with the
+    following commands and manually attach them to the IAM role:
+
+    - `teleport db configure aws create-iam --types elasticache`
+    - `teleport db configure aws print-iam --types elasticache`
+  </Tab>
+
+  <Tab title="MemoryDB">
+    Teleport can bootstrap IAM permissions for the Database Service based on its
+    configuration:
+
+    <Tabs>
+      <Tab title="Auto-discovery">
+        Teleport can bootstrap IAM permissions for the Database Service based on
+        Discovery Service's configuration while bootstrapping the Discovery Service
+        using the `teleport discovery bootstrap` command. You can use this command in
+        automatic or manual mode:
+
+        - In automatic mode, Teleport will attempt to create appropriate IAM policies
+          and attach them to the specified IAM role. This requires IAM permissions to
+          create and attach IAM policies.
+        - In manual mode, Teleport will print required IAM policies. You can then create
+          and attach them manually using the AWS management console. Add `--manual`
+          flag to the command to enable manual mode.
+
+        ```code
+        $ teleport discovery bootstrap \
+          --attach-to-role arn:aws:iam::aws-account-id:role/discovery-iam-role-name \
+          --policy-name TeleportDatabaseDiscovery \
+          --database-service-role arn:aws:iam::aws-account-id:role/database-iam-role-name \
+          --database-service-policy-name TeleportDatabaseAccess \
+          -c path to Discovery's teleport.yaml
+        ```
+      </Tab>
+
+      <Tab title="Static config">
+        Teleport can bootstrap IAM permissions for the Database Service based on its
+        configuration using the `teleport db configure bootstrap` command. You can use
+        this command in automatic or manual mode:
+
+        - In automatic mode, Teleport will attempt to create appropriate IAM policies
+          and attach them to the specified IAM identity (user or role). This requires
+          IAM permissions to create and attach IAM policies.
+        - In manual mode, Teleport will print required IAM policies. You can then create
+          and attach them manually using the AWS management console.
+
+        <Tabs>
+          <Tab title="Automatic / IAM User">
+            Use this command to bootstrap the permissions automatically when
+            your Teleport Database Service runs as an IAM user (for example, uses an AWS
+            credentials file).
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user TeleportUser
+            ```
+          </Tab>
+
+          <Tab title="Automatic / IAM Role">
+            Use this command to bootstrap the permissions automatically when
+            your Teleport Database Service runs as an IAM role (for example, on an EC2
+            instance with an attached IAM role).
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role TeleportRole
+            ```
+          </Tab>
+
+          <Tab title="Manual / IAM User">
+            Use this command to display required IAM policies which you will then create in your AWS console:
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-user arn:aws:iam::123456789012:user/TeleportUser
+            ```
+          </Tab>
+
+          <Tab title="Manual / IAM Role">
+            Use this command to display required IAM policies which you will then create in your AWS console:
+
+            ```code
+            $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-role arn:aws:iam::123456789012:role/TeleportRole
+            ```
+          </Tab>
+        </Tabs>
+
+        <Accordion title="Bootstrapping with assume_role_arn in config">
+          When `assume_role_arn` is configured for databases or AWS matchers,
+          `teleport db configure bootstrap` will determine permissions required for the
+          bootstrap target AWS IAM identity using the following logic:
+
+          - When the target does not match `assume_role_arn` in any database resource or
+            AWS matcher in the configuration file, the target is assumed to be the
+            Teleport Database Service's AWS IAM identity and permissions are bootstrapped
+            for all the configured static databases and AWS matchers.
+          - When an `--attach-to-role` target matches an `assume_role_arn` setting for
+            static databases or AWS matchers in the configuration file, permissions will
+            be bootstrapped only for those static databases or AWS matchers.
+
+          You will need to run the bootstrap command once with the Teleport Database
+          Service's IAM identity as the policy attachment target, and once for each AWS
+          IAM role that is used for `assume_role_arn`.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    Alternatively, you can create or print the required IAM policies with the
+    following commands and manually attach them to the IAM role:
+
+    - `teleport db configure aws create-iam --types memorydb`
+    - `teleport db configure aws print-iam --types memorydb`
+  </Tab>
+</Tabs>
+
+## Step 4/7. Start the Database Service
+
+Configure the Database Service to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+the Database Service.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run the Database Service, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run the Database Service, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of the Database Service with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+## Step 5/6. Configure authentication for ElastiCache or MemoryDB users
+
+There are a few authentication options when creating an ElastiCache or MemoryDB
+user.
+
+If your ElastiCache for Redis cluster supports IAM authentication, the
+Teleport Database Service can connect to your ElastiCache cluster using a
+short-lived AWS IAM authentication token.
+AWS IAM authentication is available for ElastiCache for Redis version 7.0 or
+above. [Redis ACL](https://redis.io/docs/manual/security/acl/) must be enabled
+as well. IAM authentication is the preferred method for authentication.
+
+The second option is to allow Teleport to manage ElastiCache or MemoryDB users.
+The Teleport Database Service rotates any passwords managed by Teleport every
+15 minutes, saves these passwords in AWS Secrets Manager, and automatically
+sends an `AUTH` command with the saved password when connecting the client to
+the Redis server.
+
+<Tabs>
+  <Tab title="ElastiCache IAM user">
+    To enable Redis ACL, please see [Authenticating users with Role-Based Access
+    Control for
+    ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Clusters.RBAC.html).
+
+    Some additional limitations apply when using IAM authentication - for more
+    information, see:
+    [ElastiCache Auth IAM Limits](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth-iam.html#auth-iam-limits).
+
+    There are a few requirements for configuring an ElastiCache IAM-enabled user:
+
+    - the user must have identical username and user id properties.
+    - the user must have authentication mode set to "IAM".
+    - the user must be attached to an ElastiCache user group.
+
+    Create an ElastiCache IAM-enabled user.
+    The following example creates an ElastiCache user with the access string
+    `on ~* +@all` that represents an active user with access to all available keys
+    and commands:
+
+    ```code
+    $ aws elasticache create-user \
+      --user-name iam-user-01 \
+      --user-id iam-user-01 \
+      --authentication-mode Type=iam \
+      --engine redis \
+      --access-string "on ~* +@all"
+    ```
+
+    <Note>
+      You may prefer a less permissive access string for your ElastiCache users.
+      For more information about ElastiCache access strings, please see:
+      [ElastiCache Cluster RBAC Access String](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Clusters.RBAC.html#Access-string).
+    </Note>
+
+    Create an ElastiCache user group and attach it to your ElastiCache replication
+    group:
+
+    ```code
+    $ aws elasticache create-user-group \
+      --user-group-id iam-user-group-01 \
+      --engine redis \
+      --user-ids default iam-user-01
+    $ aws elasticache modify-replication-group \
+      --replication-group-id replication-group-01 \
+      --user-group-ids-to-add iam-user-group-01
+    ```
+
+    Once the ElastiCache user has been created, verify that the user is configured
+    to satisfy the requirements for IAM authentication:
+
+    ![ElastiCache IAM-enabled User](../../../assets/redis-aws-iam-user@2x-3e6a860a1f.png)
+  </Tab>
+
+  <Tab title="Teleport-managed user">
+    To enable Redis ACL, please see [Authenticating users with Role-Based Access
+    Control for
+    ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Clusters.RBAC.html)
+    and [Authenticating users with Access Control Lists for
+    MemoryDB](https://docs.aws.amazon.com/memorydb/latest/devguide/clusters.acls.html).
+
+    Once an ElastiCache or MemoryDB user is created with the desired access, add an
+    AWS resource tag `teleport.dev/managed` with the value `true` to this user:
+
+    ![Managed User Tag](../../../assets/redis-aws-managed-user-tag-1bb86b7c3c.png)
+
+    The Database Service will automatically discover this user if it is associated
+    with a registered database. Keep in mind that it may take the Database Service
+    some time (up to 20 minutes) to discover this user once the tag is added.
+  </Tab>
+</Tabs>
+
+If you choose not to use the above options, Teleport will not automatically
+authenticate with the Redis server.
+
+You can either set up a "no password" configuration for your ElastiCache or
+MemoryDB user, or manually enter an `AUTH` command with the password you have
+configured after a successful client connection. However, it is strongly
+advised to use one of the first two options or a strong password for better
+security.
+
+## Step 6/6. Connect
+
+Once the Database Service has started and joined the cluster, log in to see the
+registered databases:
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh login --proxy=teleport.example.com --user=alice
+    $ tsh db ls
+    # Name                        Description                                               Labels
+    # --------------------------- --------------------------------------------------------- --------
+    # my-cluster-mode-elasticache ElastiCache cluster in us-west-1 (configuration endpoint) ...
+    # my-elasticache              ElastiCache cluster in us-west-1 (primary endpoint)       ...
+    # my-elasticache-reader       ElastiCache cluster in us-west-1 (reader endpoint)        ...
+    # my-memorydb                 MemoryDB cluster in us-west-1                             ...
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ tsh login --proxy=mytenant.teleport.sh --user=alice
+    $ tsh db ls
+    # Name                        Description                                               Labels
+    # --------------------------- --------------------------------------------------------- --------
+    # my-cluster-mode-elasticache ElastiCache cluster in us-west-1 (configuration endpoint) ...
+    # my-elasticache              ElastiCache cluster in us-west-1 (primary endpoint)       ...
+    # my-elasticache-reader       ElastiCache cluster in us-west-1 (reader endpoint)        ...
+    # my-memorydb                 MemoryDB cluster in us-west-1                             ...
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  You can override the database name by applying the `TeleportDatabaseName` AWS tag to the resource. The value of the tag will be used as the database name.
+</Note>
+
+To retrieve credentials for a database and connect to it:
+
+```code
+$ tsh db connect --db-user=my-database-user my-elasticache
+```
+
+If flag `--db-user` is not provided, Teleport logs in as the `default` user.
+
+Now, depending on the authentication configurations, you may need to send an
+`AUTH` command to authenticate with the Redis server:
+
+<Tabs>
+  <Tab title="Redis with ACL">
+    The Database Service automatically authenticates Teleport-managed and
+    IAM-enabled users with the Redis server. No `AUTH` command is required
+    after successful connection.
+
+    If you are connecting as a user that is not managed by Teleport and is not
+    IAM-enabled, the connection normally starts as the `default` user.
+    Now you can authenticate the database user with its password:
+
+    ```
+    AUTH my-database-user <USER_PASSWORD>
+    ```
+  </Tab>
+
+  <Tab title="Redis with AUTH token">
+    Now you can authenticate with the shared AUTH token:
+
+    ```
+    AUTH <SHARED_AUTH_TOKEN>
+    ```
+  </Tab>
+
+  <Tab title="Redis without AUTH">
+    For Redis deployments without the ACL system or legacy `requirepass`
+    directive enabled, no `AUTH` command is required.
+  </Tab>
+</Tabs>
+
+To log out of the database and remove credentials:
+
+```code
+# Remove credentials for a particular database instance.
+$ tsh db logout my-elasticache
+# Remove credentials for all database instances.
+$ tsh db logout
+```
+
+## Troubleshooting
+
+### Certificate error
+
+If your `tsh db connect` error includes the following text, you likely have an RDS database created before July 28, 2020, which presents an X.509 certificate that is incompatible with Teleport:
+
+```text
+x509: certificate relies on legacy Common Name field, use SANs instead
+```
+
+AWS provides instructions to rotate your [SSL/TLS certificate](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL-certificate-rotation.html).
+
+### No credential providers error
+
+If you see the error `NoCredentialProviders: no valid providers in chain` in Database Service logs then Teleport
+is not detecting the required credentials to connect via AWS IAM permissions. Check whether
+the credentials or security role has been applied in the machine running the Teleport Database Service.
+
+### Timeout errors
+
+The Teleport Database Service needs connectivity to your database endpoints. That may require
+enabling inbound traffic on the database from the Database Service on the same VPC or routing rules from another VPC. Using the `nc`
+program you can verify connections to databases:
+
+```code
+$ nc -zv postgres-instance-1.sadas.us-east-1.rds.amazonaws.com 5432
+# Connection to postgres-instance-1.sadas.us-east-1.rds.amazonaws.com (172.31.24.172) 5432 port [tcp/postgresql] succeeded!
+```
+
+### Not authorized to perform `sts:AssumeRole`
+
+The Database Service assumes an IAM role in one of following situations:
+
+- An IAM role is used as `db_user` when accessing AWS services that require IAM
+  roles as database users, such as DynamoDB, Keyspaces, Opensearch, and
+  Redshift Serverless.
+- The `assume_role_arn` field is specified for the database resources or
+  dynamic resource matchers.
+
+<Accordion title="Role chaining">
+  When both of the above conditions are true for a database connection, the
+  Database Service performs a role chaining by assuming the IAM role specified
+  `assume_role_arn` first then using that IAM role to assume the IAM role for
+  `db_user`.
+</Accordion>
+
+You may encounter the following error if the trust relationship is not
+configured properly between the IAM roles:
+
+```text
+AccessDenied: User: arn:aws:sts::111111111111:assumed-role/database-service-role/i-* is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::111111111111:role/database-user-role
+```
+
+To allow IAM Role `role1` to assume IAM Role `role2`, the following is
+generally required:
+
+<Accordion title="1. Configure Trust Relationships on role2">
+  `role1` or its AWS account should be set as `Principal` in `role2`'s trust
+  policy.
+
+  <Tabs>
+    <TabsItem label="Role as principal">
+      ```json
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111111111111:role/role1"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+      ```
+    </TabsItem>
+
+    <TabsItem label="Account as principal">
+      ```json
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111111111111:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+      ```
+    </TabsItem>
+
+    <TabsItem label="Cross-account with external-id">
+      ```json
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:role/role1"
+            },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+              "StringEquals": {
+                "sts:ExternalId": "example-external-id"
+              }
+            }
+          }
+        ]
+      }
+      ```
+    </TabsItem>
+  </Tabs>
+</Accordion>
+
+<Accordion title="2. Configure Permissions Policies on role1">
+  `role1` requires `sts:AssumeRole` permissions, for example:
+
+  ```json
+  {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Resource": "arn:aws:iam::111111111111:role/role2"
+          }
+      ]
+  }
+  ```
+
+  Note that this policy can be omitted when `role1` and `role2` are in the same
+  AWS account and `role1`'s full ARN is configured as Principal in `role2`'s
+  trust policy.
+</Accordion>
+
+<Accordion title="3. Configure Permissions Boundary on role1">
+  `role1` also requires `sts:AssumeRole` permissions in its boundary policy, for
+  example:
+
+  ```json
+  {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Resource": "*"
+          }
+      ]
+  }
+  ```
+
+  Note that this is only required when a boundary policy is attached to `role1`.
+</Accordion>
+
+You can test the trust relationship by running this AWS CLI command as `role1`:
+
+```code
+aws sts assume-role --role-arn arn:aws:iam::111111111111:role/role2 --role-session-name test-trust-relationship
+```
+
+Learn more on [how to use trust policies with IAM
+roles](https://aws.amazon.com/blogs/security/how-to-use-trust-policies-with-iam-roles/).
+
+## Next steps
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn how to [restrict access](/database-access/rbac) to certain users and databases.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn more about [dynamic database registration](/database-access/guides/dynamic-registration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- View the [High Availability (HA)](/database-access/guides/ha) guide.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- See the YAML configuration [reference](/database-access/reference/configuration) for updating dynamic resource matchers or static database definitions.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Take a look at the full CLI [reference](/database-access/reference/cli).

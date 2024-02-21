@@ -1,0 +1,889 @@
+---
+title: Web Application Access
+description: In this getting started guide, learn how to connect an application to your Teleport cluster by running the Teleport Application Service.
+version: '16.x'
+---
+
+Download the latest version of Teleport for your platform from the [downloads page](https://goteleport.com/download)
+and follow the installation [instructions](/ver/16.x/installation).
+
+## Start Auth/Proxy service
+
+Create a configuration file for a Teleport service that will be running
+the Auth and Proxy Services:
+
+```yaml
+teleport:
+  data_dir: /var/lib/teleport
+auth_service:
+  enabled: "yes"
+proxy_service:
+  enabled: "yes"
+  # Set public address proxy will be reachable at.
+  public_addr: teleport.example.com:3080
+ssh_service:
+  enabled: "no"
+```
+
+<Accordion title="Best practices for production security">
+  When running Teleport in production, you should adhere to the following best
+  practices to avoid security incidents:
+
+  - Avoid using `sudo` in production environments unless it's necessary.
+  - Create new, non-root, users and use test instances for experimenting with Teleport.
+  - Run Teleport's services as a non-root user unless required. Only the SSH
+    Service requires root access. Note that you will need root permissions (or
+    the `CAP_NET_BIND_SERVICE` capability) to make Teleport listen on a port
+    numbered \< `1024` (e.g. `443`).
+  - Follow the **principle of least privilege**. Don't give users
+    permissive roles when more a restrictive role will do.
+    For example, don't assign users the built-in `access,editor` roles, which give
+    them permissions to access and edit all cluster resources. Instead, define roles
+    with the minimum required permissions for each user and configure
+    **access requests** to provide temporary elevated permissions.
+  - When you enroll Teleport resources—for example, new databases or applications—you
+    should save the invitation token to a file.
+    If you enter the token directly on the command line, a malicious user could view
+    it by running the `history` command on a compromised system.
+
+  You should note that these practices aren't necessarily reflected in the examples used
+  in documentation. Examples in the documentation are primarily intended for demonstration
+  and for development environments.
+</Accordion>
+
+Configure your Teleport instance to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+your Teleport instance.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run your Teleport instance, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run your Teleport instance, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of your Teleport instance with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+### Generate a token
+
+A join token is required to authorize a Teleport Application Service to
+join the cluster. Generate a short-lived join token and save it for example
+in `/tmp/token`:
+
+```code
+# Log in to your cluster with tsh so you can use tctl from your local machine.
+# You can also run tctl on your Auth Service host without running "tsh login"
+# first.
+$ tsh login --user=myuser --proxy=teleport.example.com
+$ tctl tokens add \
+    --type=app \
+    --app-name=grafana \
+    --app-uri=http://localhost:3000
+```
+
+### TLS requirements
+
+TLS is required to secure the Teleport Access Platform and any connected
+applications. When setting up Teleport, the minimum requirement is a certificate
+for the Teleport Proxy Service and a wildcard certificate for its sub-domain. This is where
+everyone will log into Teleport.
+
+<Tip>
+  Teleport assigns a subdomain to each application you configure for Application
+  Access. For example, if you enroll Grafana as a resource, Teleport assigns the resource
+  to the `grafana.teleport.example.com` subdomain.
+
+  If you host the Teleport cluster on your own network, you should update your DNS
+  configuration to account for application subdomains.
+  You can update DNS in one of two ways:
+
+  - Create a single DNS address (A) or canonical name (CNAME) record using wildcard substitution
+    for the subdomain name. For example, create a DNS record with the name `*.teleport.example.com`.
+  - Create a separate DNS address (A) or canonical name (CNAME) record for each application subdomain.
+
+  Modifying DNS ensures that the certificate authority—for example, Let's Encrypt—can issue a
+  certificate for each subdomain and that clients can verify Teleport hosts regardless of the
+  application they are accessing.
+
+  If you use the Teleport cloud platform, no DNS updates are needed because your Teleport
+  cluster automatically provides the subdomains and signed TLS certificates for your
+  applications under your tenant address.
+</Tip>
+
+In this example:
+
+- `teleport.example.com` hosts the Teleport Auth Service and the Teleport Proxy Service that are the
+  that form the core cluster services of the Teleport Access Platform.
+- `*.teleport.example.com` hosts all of the applications, for example, `grafana.teleport.example.com`.
+
+If you are running Teleport on the internet, we recommend using Let's Encrypt to
+receive your key and certificate automatically. For private networks or custom
+deployments, use your own private key and certificate.
+
+<Tabs>
+  <Tab title="Public internet deployment with Let's Encrypt">
+    Let's Encrypt verifies that you control the domain name of your Teleport cluster
+    by communicating with the HTTPS server listening on port 443 of your Teleport
+    Proxy Service.
+
+    You can configure the Teleport Proxy Service to complete the Let's Encrypt
+    verification process when it starts up.
+
+    On the host where you will start the Teleport Auth Service and Proxy Service,
+    run the following `teleport configure` command. Assign
+    TELE.EXAMPLE.COM to the
+    domain name of your Teleport cluster and USER\@EXAMPLE.COM to
+    an email address used for notifications (you can use any domain):
+
+    ```code
+    $ sudo teleport configure -o file \
+        --acme --acme-email=user@example.com \
+        --cluster-name=tele.example.com
+    ```
+
+    Port 443 on your Teleport Proxy Service host must allow traffic from all sources.
+  </Tab>
+
+  <Tab title="Private network deployment">
+    On your Teleport host, place a valid private key and a certificate chain in `/var/lib/teleport/privkey.pem`
+    and `/var/lib/teleport/fullchain.pem` respectively.
+
+    The leaf certificate must have a subject that corresponds to the domain of your Teleport host, e.g., `*.teleport.example.com`.
+
+    On the host where you will start the Teleport Auth Service and Proxy Service,
+    run the following `teleport configure` command. Assign TELE.EXAMPLE.COM to the domain name of your Teleport cluster.
+
+    ```code
+    $ sudo teleport configure -o file \
+        --cluster-name=tele.example.com \
+        --public-addr=tele.example.com:443 \
+        --cert-file=/var/lib/teleport/fullchain.pem \
+        --key-file=/var/lib/teleport/privkey.pem
+    ```
+  </Tab>
+</Tabs>
+
+### Create a user
+
+A Teleport user needs their role's permission to access an application. Teleport
+comes with a built-in `access` role that grants access to all apps:
+
+```code
+$ tctl --config=/path/to/teleport.yaml users add --roles=access appuser
+```
+
+## Start the Application Service with CLI flags
+
+Install Teleport:
+
+Select an edition, then follow the instructions for that edition to install Teleport.
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Teleport Community Edition">
+    The following command updates the repository for the package manager on the
+    local operating system and installs the provided Teleport version:
+
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent=14.3.3
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum install -y yum-utils
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-14.3.3
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-14.3.3
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent=14.3.3
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+      Before installing a `teleport` binary with a version besides
+      v14, read our compatibility rules to ensure that the
+      binary is compatible with Teleport Cloud.
+
+      Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+      include a major version, minor version, and patch version, separated by dots.
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are one major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Service instances and agents do not support Auth Service instances that
+        are on an older major version, and will fail to connect to older Auth Service
+        instances by default. You can override version checks by passing
+        `--skip-version-check` when starting agents and Proxy Service instances.
+    </Accordion>
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum install -y yum-utils
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo zypper install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent=14.3.3
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum install -y yum-utils
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-14.3.3
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-14.3.3
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent=14.3.3
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+      Before installing a `teleport` binary with a version besides v14,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Enterprise Cloud.
+
+      Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+      include a major version, minor version, and patch version, separated by dots.
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are one major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Service instances and agents do not support Auth Service instances that
+        are on an older major version, and will fail to connect to older Auth Service
+        instances by default. You can override version checks by passing
+        `--skip-version-check` when starting agents and Proxy Service instances.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+You can start the Teleport Application Service with a single CLI command:
+
+```code
+$ sudo teleport start \
+    --roles=app \
+    --token=/tmp/token \
+    --auth-server=teleport.example.com:3080 \
+    --app-name="grafana" \
+    --app-uri="http://localhost:3000" \
+    --labels=env=dev
+```
+
+Note that the `--auth-server` flag must point to the Teleport cluster's proxy
+endpoint because the Application Service always connects back to the cluster over
+a reverse tunnel.
+
+### Application name
+
+{/*
+Note: this section of the docs is linked to from error messages in the product.
+Please make sure to update lib/srv/servicecfg/app.go if you change this section
+header or move this page.
+*/}
+
+An application name should make a valid sub-domain (\<=63 characters, no spaces, only `a-z 0-9 -` allowed).
+
+After Teleport is running, users can access the app at `app-name.proxy_public_addr.com`
+e.g. `grafana.teleport.example.com`. You can also override `public_addr` e.g
+`grafana.acme.com` if you configure the appropriate DNS entry to point to the
+Teleport proxy server.
+
+## Start the Teleport Application Service with a config file
+
+Example `teleport.yaml` configuration:
+
+```yaml
+version: v3
+teleport:
+  # Data directory for the Application Proxy service. If running on the same
+  # node as Auth/Proxy service, make sure to use different data directories.
+  data_dir: /var/lib/teleport-app
+  # Instructs the service to load the auth token from the specified file
+  # during initial registration with the cluster.
+  auth_token: /tmp/token
+  # Proxy address to connect to. Note that it has to be the proxy address
+  # because the app service always connects to the cluster over a reverse
+  # tunnel.
+  proxy_server: teleport.example.com:3080
+app_service:
+    enabled: yes
+    # Teleport provides a small debug app called "dumper" that can be used
+    # to make sure application access is working correctly. It outputs JWTs,
+    #  so it can be useful when extending your application.
+    debug_app: true
+    # This section contains definitions of all applications proxied by this
+    # service. It can contain multiple items.
+    apps:
+      # Name of the application. Used for identification purposes.
+    - name: "grafana"
+      # URI and port the application is available at.
+      uri: "http://localhost:3000"
+      # Optional application public address to override.
+      public_addr: "grafana.teleport.example.com"
+      # Optional static labels to assign to the app. Used in RBAC.
+      labels:
+        env: "prod"
+      # Optional dynamic labels to assign to the app. Used in RBAC.
+      commands:
+      - name: "os"
+        command: ["/usr/bin/uname"]
+        period: "5s"
+auth_service:
+  enabled: "no"
+ssh_service:
+  enabled: "no"
+proxy_service:
+  enabled: "no"
+```
+
+Start the Application Service:
+
+```code
+$ sudo teleport start --config=/path/to/teleport.yaml
+```
+
+## Advanced options
+
+### Running the dumper application
+
+For testing and debugging purposes, we provide a built-in debug app called "dumper".
+It can be turned on using `debug_app: true`.
+
+```yaml
+app_service:
+   enabled: yes
+   debug_app: true
+```
+
+The dumper app will dump all the request headers in the response.
+
+### Customize public address
+
+By default applications are available at `<app-name>.<proxy-host>:<proxy-port>`
+address. To override the public address, specify the `public_addr` field:
+
+```yaml
+- name: "jira"
+  uri: "https://localhost:8001"
+  public_addr: "jira.example.com"
+```
+
+### Skip TLS certificate verification
+
+<Warning>
+  This is insecure and not recommended for use in production.
+</Warning>
+
+Teleport checks if the certificates presented by the applications are signed
+by a trusted Certificate Authority. When using self-signed certificates for
+internal applications, use `insecure_skip_verify: true` to skip this
+verification step:
+
+```yaml
+- name: "app"
+  uri: "https://localhost:8443"
+  public_addr: "app.example.com"
+  insecure_skip_verify: true
+```
+
+### Deeplink to a subdirectory
+
+Some applications are available in a subdirectory. Examples include the
+[Kubernetes Dashboard.](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/).
+The URI should be updated to include the subdirectory:
+
+```yaml
+- name: "k8s"
+  uri: "http://10.0.1.60:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#/overview"
+  public_addr: "k8s.example.com"
+```
+
+### Rewrite redirect
+
+To support web apps that perform internal redirects, application access
+provides an option to rewrite the hostname of the `Location` header on
+redirect responses to the application's public address:
+
+```yaml
+- name: "jenkins"
+  uri: "https://localhost:8001"
+  public_addr: "jenkins.example.com"
+  rewrite:
+    # Rewrite the "Location" header on redirect responses replacing the
+    # host with the public address of this application.
+    redirect:
+    - "localhost"
+    - "jenkins.internal.dev"
+```
+
+### Headers passthrough
+
+You can configure application access to inject additional headers in the
+requests forwarded to a web application.
+
+<Tabs>
+  <Tab title="teleport.yaml syntax">
+    For apps defined in the `teleport.yaml` configuration, the `headers` field of
+    each app is a list of strings. Be careful to quote the entire value to ensure it
+    is parsed correctly.
+
+    ```yaml
+    - name: "dashboard"
+      uri: https://localhost:4321
+      public_addr: dashboard.example.com
+      rewrite:
+        headers:
+        # Inject a static header.
+        - "X-Custom-Header: example"
+        # Inject headers with internal/external user traits.
+        - "X-Internal-Trait: {{internal.logins}}"
+        - "X-External-Trait: {{external.env}}"
+        # Inject header with Teleport-signed JWT token.
+        - "Authorization: Bearer {{internal.jwt}}"
+        # Override Host header.
+        - "Host: dashboard.example.com"
+    ```
+  </Tab>
+
+  <Tab title="Dynamic registration syntax">
+    In a dynamic `app` resource, configure header rewrites with the
+    `spec.rewrite.headers` field. The value is a list of mappings that specify the
+    name and value of each header you would like to rewrite.
+
+    ```yaml
+    kind: app
+    version: v3
+    metadata:
+      name: "dashboard"
+    spec:
+      uri: https://localhost:4321
+      public_addr: dashboard.example.com
+      rewrite:
+        headers:
+          # Inject a static header.
+          - name: X-Custom-Header
+            value: example
+          # Inject headers with internal/external user traits.
+          - name: X-Internal-Trait
+            value: "{{internal.logins}}"
+          - name: X-External-Trait
+            value: "{{external.env}}"
+          # Inject header with Teleport-signed JWT token.
+          - name: Authorization
+            value: "Bearer {{internal.jwt}}"
+          # Override Host header.
+          - name: Host
+            value: dashboard.example.com
+    ```
+  </Tab>
+</Tabs>
+
+Headers injected this way override any headers with the same names that may
+be sent by an application. The following headers are reserved and can't be
+rewritten:
+
+- `Teleport-Jwt-Assertion`
+- `Cf-Access-Token`
+- Any header matching the pattern `X-Teleport-*`
+- Any header matching the pattern `X-Forwarded-*`
+
+Rewritten header values support the same templating variables as
+[role templates](/ver/16.x/access-controls/guides/role-templates). In the
+example above, `X-Internal-Trait` header will be populated with the value of
+internal user trait `logins` and `X-External-Trait` header will get the value of
+the user's external `env` trait coming from the identity provider.
+
+Additionally, the `{{internal.jwt}}` template variable will be replaced with
+a JWT token signed by Teleport that contains user identity information. See
+[Integrating with JWTs](/ver/16.x/application-access/jwt/introduction) for more details.
+
+For full details on configuring Teleport roles, including how Teleport
+populates the `external` and `internal` traits, see the [Teleport Access
+Controls Reference](/ver/16.x/access-controls/reference).
+
+### Configuring the JWT token
+
+By default, Teleport includes a user's roles and traits in the JWT
+generated for application access. If your application doesn't care
+about these values, or you are encountering an error due to exceeding
+the size limit of HTTP headers, you can configure Teleport to omit
+this information from the token.
+
+```yaml
+- name: "dashboard"
+  uri: https://localhost:4321
+  public_addr: dashboard.example.com
+  rewrite:
+    # Specify whether to include roles or traits in the JWT.
+    # Options:
+    # - roles-and-traits: include both roles and traits
+    # - roles: include only roles
+    # - traits: include only traits
+    # - none: exclude both roles and traits from the JWT token
+    # Default: roles-and-traits
+    jwt_claims: roles-and-traits
+    headers:
+    # Inject header with Teleport-signed JWT token.
+    - "Authorization: Bearer {{internal.jwt}}"
+```
+
+## View applications in Teleport
+
+Teleport provides a UI for quickly launching connected applications.
+
+They can be viewed by navigating to a cluster's web UI and selecting the "Applications" tab.
+The URL structure looks like this:
+
+`https://[cluster-url:cluster-port]/web/cluster/[cluster-name]/apps`
+
+## Logging out of applications
+
+When you log into an application, you'll get a certificate and login session
+per your defined RBAC. If you want to force log out before this period you can
+do so by hitting the `/teleport-logout` endpoint:
+
+- `https://internal-app.teleport.example.com/teleport-logout`

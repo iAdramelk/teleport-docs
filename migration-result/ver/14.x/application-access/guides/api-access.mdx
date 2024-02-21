@@ -1,0 +1,236 @@
+---
+title: Access REST APIs With Teleport Application Access
+description: How to access REST APIs with Teleport application access.
+version: '14.x'
+---
+
+The Teleport Application Service can be used to access applications' (REST or
+Teleport's own gRPC) APIs with tools like
+[curl](https://man7.org/linux/man-pages/man1/curl.1.html) or Postman.
+
+<Note>
+  Use [TCP application access](/ver/14.x/application-access/guides/tcp) for non-HTTP APIs (like gRPC).
+</Note>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+- For simplicity's sake, we'll use Grafana running in a
+  [Docker container](https://grafana.com/docs/grafana/latest/installation/docker/)
+  and execute API queries against it. You can launch Grafana too with a single Docker
+  command:
+
+  ```code
+  $ docker run -d -p 3000:3000 grafana/grafana
+  ```
+
+  Connect Grafana to your Teleport cluster by adding the following section in
+  the Teleport App Service YAML configuration file:
+
+  ```yaml
+  app_service:
+    enabled: yes
+    apps:
+    - name: "grafana"
+      description: "Test Grafana server"
+      uri: "http://localhost:3000"
+      labels:
+        "env": "dev"
+  ```
+
+## Accessing the API
+
+Log into your Teleport cluster and view available applications:
+
+```code
+$ tsh login --proxy=teleport.example.com
+$ tsh apps ls
+
+# Application Description         Public Address               Labels
+# ----------- ------------------- ---------------------------- -------
+# grafana     Test Grafana server grafana.teleport.example.com env=dev
+```
+
+Retrieve short-lived X.509 certificate for the application:
+
+```code
+$ tsh apps login grafana
+# Logged into app grafana. Example curl command:
+
+$ curl \
+  --cert /Users/alice/.tsh/keys/teleport.example.com/alice-app/cluster-name/grafana-x509.pem \
+  --key /Users/alice/.tsh/keys/teleport.example.com/alice \
+  https://grafana.teleport.example.com:3080
+```
+
+The login message shows an example `curl` command you can run to call the
+target application's API through Teleport App Access.
+
+<Note>
+  Note the paths to your user's certificate/key pair in the command - `curl` will use a client certificate to authenticate with Teleport.
+
+  The Teleport Proxy Service is usually configured with a wildcard certificate issued by a public certificate authority such as Let's Encrypt. If your Teleport Proxy Service has been configured to use a self-signed certificate instead, you will need to include it in your `curl` command using `--cacert <path>`.
+</Note>
+
+As Grafana's API requires authentication, let's update the `curl` command to
+provide basic auth information using default Grafana username/password and
+call its `/api/users` endpoint:
+
+```code
+$ curl --user admin:admin \
+  --cert /Users/alice/.tsh/keys/teleport.example.com/alice-app/cluster-name/grafana-x509.pem \
+  --key /Users/alice/.tsh/keys/teleport.example.com/alice \
+    https://grafana.teleport.example.com:3080/api/users
+
+# [{"id":1,"name":"","login":"admin","email":"admin@localhost","avatarUrl":"/avatar/46d229b033af06a191ff2267bca9ae56","isAdmin":true,"isDisabled":false,"lastSeenAt":"2021-03-18T17:25:59Z","lastSeenAtAge":"\u003c 1m","authLabels":[]}]
+```
+
+The app's X.509 certificate will expire on its own after the TTL allowed by
+your user's role. You can also remove it explicitly:
+
+```code
+$ tsh apps logout
+# Logged out of app "grafana"
+```
+
+## Application information
+
+```code
+$ tsh apps config
+```
+
+shows current app URI and paths to the secrets.
+
+This is useful when configuring CLI tools (such as `curl`) or GUI tools (such as Postman).
+
+Let's print the app information in a table format:
+
+```code
+$ tsh apps config
+
+# Name:      grafana
+# URI:       https://grafana.teleport.example.com:3080
+# CA:        /Users/alice/.tsh/keys/teleport.example.com/certs.pem
+# Cert:      /Users/alice/.tsh/keys/teleport.example.com/alice-app/cluster-name/grafana-x509.pem
+# Key:       /Users/alice/.tsh/keys/teleport.example.com/alice
+```
+
+We can also provide different `--format` values to print specific parts
+of the app configuration:
+
+```code
+$ tsh apps config --format=uri
+# https://grafana-root.gravitational.io:3080
+
+$ tsh apps config --format=ca
+# /Users/alice/.tsh/keys/teleport.example.com/certs.pem
+
+$ tsh apps config --format=cert
+# /Users/alice/.tsh/keys/teleport.example.com/alice-app/cluster-name/grafana-x509.pem
+
+$ tsh apps config --format=key
+# /Users/alice/.tsh/keys/teleport.example.com/alice
+```
+
+This can be useful in automation for simple templating e.g. to construct an
+appropriate `curl` command. Using our Grafana `/api/users` example above:
+
+```code
+$ curl --user admin:admin \
+  --cert $(tsh apps config --format=cert) \
+  --key $(tsh apps config --format=key) \
+    $(tsh apps config --format=uri)/api/users
+```

@@ -1,0 +1,218 @@
+---
+title: Get Started with Kubernetes Application Discovery
+description: Detailed guide for configuring Kubernetes Application Discovery.
+version: '15.x'
+---
+
+Teleport can automatically detect applications running in your Kubernetes
+clusters and register them with your Teleport cluster. In this setup, users with
+Kubernetes-hosted infrastructure can configure secure access to any new
+applications they deploy with no need for manual intervention beyond the initial
+setup step.
+
+In this guide, we show you how to enable Kubernetes application auto-discovery.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- A Kubernetes cluster version >=
+  v1.17.0
+
+- Helm >= 3.4.2
+
+  Verify that Helm and Kubernetes are installed and up to date.
+
+  ```code
+  $ helm version
+  # version.BuildInfo{Version:"v3.4.2"}
+
+  $ kubectl version
+  # Client Version: version.Info{Major:"1", Minor:"17+"}
+  # Server Version: version.Info{Major:"1", Minor:"17+"}
+  ```
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/2. Create a join token
+
+Create a join token for a new Teleport agent that will run the Teleport
+Kubernetes Service, Application Service, and Discovery Service:
+
+```code
+$ tctl tokens add --type=kube,app,discovery
+```
+
+Enabling the `discovery` role by default will automatically start the discovery
+of Kubernetes services and registration of Teleport applications from them. And
+enabling `app` role on the chart will start the process of proxying all new
+Teleport applications created from discovered Kubernetes services.
+
+## Step 2/2. Deploy the agent
+
+If you want to install a new Teleport agent in your Kubernetes cluster, you can
+use the `teleport-kube-agent` Helm chart. If you already have a Teleport agent
+installed, you can upgrade it to enable the Kubernetes Application Discovery
+by adding the `kube`, `app`, and `discovery` to roles as shown below.
+
+<Tabs>
+  <Tab title="Install a new agent">
+    Deploy a new Teleport agent running your configured services by installing the
+    `teleport-kube-agent` Helm chart:
+
+    ```code
+    $ helm install teleport-agent teleport/teleport-kube-agent \
+      --set roles=kube\,app\,discovery \
+      --set kubeClusterName=main-cluster \
+      --set proxyAddr=proxy-address \
+      --set authToken=token \
+      --create-namespace \
+      --namespace=teleport
+    ```
+  </Tab>
+
+  <Tab title="Upgrade an existing agent">
+    If you want to have an existing `teleport-kube-agent` installation and want to enable
+    Kubernetes App Discovery, you need to update the existing installation role to
+    include `kube`, `app`, and `discovery` roles:
+
+    ```code
+    $ helm upgrade teleport-agent teleport/teleport-kube-agent \
+      --reuse-values \
+      --set roles=kube\,app\,discovery \
+      --set authToken=token \
+      --namespace=teleport
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+First, make sure that all expected agents for the Teleport Discovery,
+Application, and Kubernetes Services are running. The token you created for them
+must have the required roles.
+
+If agents are running, but you don't see expected apps appearing in Teleport,
+there could be two main reasons:
+
+- The Teleport Discovery Service can't find relevant Kubernetes services.
+- The Teleport Application Service can't proxy discovered applications.
+
+Make sure that Kubernetes service account under which the Discovery Service is
+running has enough permissions to list the cluster's services. Also make sure
+that labels and namespaces configuration is correct.
+
+For the Application Service, make sure that labels in `resources` field are defined correctly, specifically that label
+`teleport.dev/kubernetes-cluster` matches `discovery_group` field of the Discovery Service running in the Kubernetes cluster.
+
+## Next steps
+
+You can configure the scope of the Discovery Service. For more information, see
+[`teleport-kube-agent` helm chart
+documentation](/reference/helm-reference/teleport-kube-agent).

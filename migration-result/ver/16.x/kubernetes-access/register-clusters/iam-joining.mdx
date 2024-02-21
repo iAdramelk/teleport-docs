@@ -1,0 +1,655 @@
+---
+title: Register a Kubernetes Cluster using IAM Joining
+description: Connecting a Kubernetes cluster to Teleport with IAM joining.
+version: '16.x'
+---
+
+In this guide, we will show you how to register a Kubernetes cluster with
+Teleport by using the agent's IAM identity to automatically join the Teleport cluster.
+
+You can register multiple Kubernetes clusters with Teleport by deploying the
+Teleport Kubernetes Service on each cluster you want to register without having
+to distribute a joining secret to the Kubernetes cluster.
+
+Once the Kubernetes cluster is registered for the first time, the agent will store
+its Teleport identity in a Kubernetes secret. The agent will use this identity
+to automatically join the cluster on subsequent restarts.
+
+Support for joining a cluster with the Proxy Service behind a layer 7 load
+balancer or reverse proxy is available in Teleport 13.0+.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/ver/16.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/ver/16.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- A Kubernetes cluster version >=
+  v1.17.0
+- An existing [IAM OpenID Connect (OIDC)](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html) provider for your cluster
+- Helm >= 3.4.2
+- AWS CLI >= `2.10.3` or `1.27.81`
+
+Verify that Helm and Kubernetes are installed and up to date.
+
+```code
+$ helm version
+# version.BuildInfo{Version:"v3.4.2"}
+
+$ kubectl version
+# Client Version: version.Info{Major:"1", Minor:"17+"}
+# Server Version: version.Info{Major:"1", Minor:"17+"}
+```
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/3. Create a Kubernetes service account with an IAM identity
+
+Teleport supports a mode where agents running in AWS can join the cluster using the
+IAM identity they are running as. It allows you to register Kubernetes
+clusters running in AWS without having to distribute a joining secret to the
+Kubernetes cluster.
+
+To securely join the cluster without relying on the EKS node's Identity, a Teleport agent
+must run as a separate Kubernetes service account with an attached IAM role. Relying
+on the node's identity is not recommended as it can be easily compromised since every
+pod running on the node has access to the node's identity if IAM Roles for Service Accounts
+(IRSA) is not configured.
+
+For IRSA to work correctly, it requires the Kubernetes cluster to have an IAM OpenID Connect
+that maps IAM roles to Kubernetes service accounts.
+
+The Kubernetes service account must have access to the `sts:GetCallerIdentity` API but
+does not require any other permissions.
+
+To create the IAM policy, run the following command:
+
+```code
+$ cat >iam-policy.json <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "sts:GetCallerIdentity",
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+```
+
+Then create the IAM policy:
+
+```code
+$ aws iam create-policy --policy-name kube-iam-policy --policy-document file://iam-policy.json
+{
+    "Policy": {
+        "PolicyName": "kube-iam-policy",
+        "PolicyId": "ANPAW2Y2Q2Y2Y2Y2Y2Y2Y",
+        "Arn": "arn:aws:iam::aws:policy/kube-iam-policy",
+        "Path": "/",
+        "DefaultVersionId": "v1",
+        "AttachmentCount": 0,
+        "PermissionsBoundaryUsageCount": 0,
+        "IsAttachable": true,
+        "Description": "",
+        "CreateDate": "2021-03-18T15:12:00+00:00",
+        "UpdateDate": "2021-03-18T15:12:00+00:00"
+    }
+}
+```
+
+Now we need to create the Kubernetes service account and map it to the IAM role. There
+are two ways of doing this. You can use `eksctl` if your cluster was provisioned
+using it or you can use the AWS CLI method.
+
+<Tabs>
+  <Tab title="Using eksctl">
+    `eksctl` supports automatic creation of new IAM roles and mapping it into the Kubernetes Service
+    Account in the target namespace.
+
+    ```code
+    $ eksctl create iamserviceaccount \
+        --name teleport-kube-agent-sa \
+        --namespace teleport-agent \
+        --cluster kube-cluster \
+        --region aws-region \
+        --attach-policy-arn arn:aws:iam::aws:policy/kube-iam-policy \
+        --role-name kube-iam-role \
+        --approve
+    ```
+
+    The referenced parameters are:
+
+    - TELEPORT-KUBE-AGENT-SA is the name of the Kubernetes service account.
+    - TELEPORT-AGENT is the namespace where the Teleport Kubernetes Service is
+      running.
+    - AWS-REGION is the AWS region where the cluster is running.
+    - KUBE-IAM-POLICY is the name of the IAM policy created in the previous step.
+    - KUBE-CLUSTER  is the name of the Kubernetes cluster.
+    - KUBE-IAM-ROLE is the name of the IAM role to create.
+
+    Once the command completes, you should see a new IAM role created in your AWS account
+    and a new Kubernetes service account created in the target namespace.
+  </Tab>
+
+  <Tab title="Using AWS CLI">
+    Creating a new IAM role and mapping it into the Kubernetes service account in the
+    target namespace using the AWS CLI requires some additional steps.
+
+    First, we need to create the target namespace in the Kubernetes cluster and the
+    Kubernetes service account.
+
+    ```code
+    $ kubectl create ns teleport-agent
+    namespace/teleport-agent created
+
+    $ kubectl create sa teleport-kube-agent-sa -n  teleport-agent
+    serviceaccount/teleport-kube-agent-sa created
+    ```
+
+    Then we need to create the IAM role and trust relationship. For that, we need
+    to get the AWS account ID and the OIDC provider URL. If your cluster doesn't have
+    one configured check the following guide: [IAM OpenID Connect (OIDC)](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
+
+    To extract the AWS account ID you can use the following command:
+
+    ```code
+    $ account_id=$(aws sts get-caller-identity --query "Account" --output text)
+    ```
+
+    The OIDC provider URL can be extracted from the cluster configuration:
+
+    ```code
+    $ oidc_provider=$(aws eks describe-cluster --name kube-cluster --region aws-region --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
+    $ echo $oidc_provider
+    oidc.eks.eu-west-1.amazonaws.com/id/[...]
+    ```
+
+    If the output of the command is empty, you need to configure the OIDC provider as
+    mentioned above.
+
+    To create the IAM role and trust relationship, run the following command:
+
+    ```code
+    $ cat >trust-relationship.json <<EOF
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Federated": "arn:aws:iam::$account_id:oidc-provider/$oidc_provider"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+            "StringEquals": {
+              "$oidc_provider:aud": "sts.amazonaws.com",
+              "$oidc_provider:sub": "system:serviceaccount:teleport-agent:teleport-kube-agent-sa"
+            }
+          }
+        }
+      ]
+    }
+    EOF
+    ```
+
+    To create the IAM role, run the following command:
+
+    ```code
+    $ aws iam create-role --role-name kube-iam-role --assume-role-policy-document file://trust-relationship.json --description "my-role-description"
+    ```
+
+    Then attach the service account with the IAM role annotation:
+
+    ```code
+    $ kubectl annotate serviceaccount -n teleport-agent teleport-kube-agent-sa eks.amazonaws.com/role-arn=arn:aws:iam::$account_id:role/kube-iam-role
+    ```
+
+    At this point, the IAM role is ready to be used by the Teleport Kubernetes Service's service account.
+  </Tab>
+</Tabs>
+
+## Step 2/3. Create the AWS joining token
+
+Create a dynamic token which will allow agents from your AWS account to join
+your Teleport cluster using the roles defined.
+
+Under the hood, Kubernetes Service instances will prove that they are running in your AWS account by
+sending a signed Identity Document which matches an allow rule
+configured in your AWS joining token.
+
+Create the following `token.yaml` with an `allow` rule specifying your AWS
+account and the AWS ARN the agents will be running as.
+
+```code
+$ cat >token.yaml <<EOF
+kind: token
+version: v2
+metadata:
+  # the token name is not a secret because instances must prove that they are
+  # running in your AWS account to use this token
+  name: kube-iam-token
+spec:
+  # use the minimal set of roles required
+  roles: [Kube]
+  # set the join method allowed for this token
+  join_method: iam
+  allow:
+  # aws_arn is optional and allows you to restrict the IAM role of joining Agents
+  # to a specific IAM role
+  - aws_account: "$account_id"
+    aws_arn: "arn:aws:sts::$account_id:assumed-role/kube-iam-role/*"
+EOF
+```
+
+Run `tctl create token.yaml` to create the token.
+
+## Step 3/3. Deploy the Teleport Kubernetes Service
+
+Set up the Teleport Helm repository.
+
+Allow Helm to install charts that are hosted in the Teleport Helm repository:
+
+```code
+$ helm repo add teleport https://charts.releases.teleport.dev
+```
+
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
+
+```code
+$ helm repo update
+```
+
+Switch `kubectl` to the Kubernetes cluster and run:
+
+```code
+# Deploy a Kubernetes agent. It dials back to the Teleport cluster tele.example.com.
+$ CLUSTER=iam-cluster
+$ PROXY=tele.example.com:443
+$ helm install teleport-agent teleport/teleport-kube-agent \
+  --set kubeClusterName=${CLUSTER?} \
+  --set roles="kube\,app\,discovery" \
+  --set proxyAddr=${PROXY?} \
+  --set joinParams.method=iam \
+  --set joinParams.tokenName=kube-iam-token \
+  --set serviceAccount.create=false # do not create a new service account # \
+  --set serviceAccount.name=teleport-kube-agent-sa # use the existing service account # \
+  --create-namespace \
+  --namespace=teleport-agent \
+  --version 15.0.0-dev
+```
+
+Make sure that the Teleport agent pod is running. You should see one Teleport
+agent pod pod with a single ready container:
+
+```code
+$ kubectl -n teleport-agent get pods
+NAME               READY   STATUS    RESTARTS   AGE
+teleport-agent-0   1/1     Running   0          32s
+```
+
+List connected clusters using `tsh kube ls` and switch between
+them using `tsh kube login`:
+
+```code
+$ tsh kube ls
+
+# Kube Cluster Name Selected
+# ----------------- --------
+# iam-cluster
+
+# kubeconfig now points to the iam-cluster cluster
+$ tsh kube login iam-cluster
+# Logged into Kubernetes cluster "iam-cluster". Try 'kubectl version' to test the connection.
+
+# kubectl command executed on `iam-cluster` but is routed through the `tele.example.com` cluster.
+$ kubectl get pods
+```
+
+If the agent pod is healthy and ready but you cannot see your Kubernetes cluster,
+it is likely related to RBAC permissions associated with your roles.
+On the other hand, if you can see your Kubernetes cluster but unable to see any pods,
+it's likely that your Teleport role does not allow access to pods in the Kubernetes cluster.
+For both cases, please refer to the section below.
+
+<Accordion title="Not seeing Kubernetes clusters?">
+  ### Kubernetes authentication
+
+  To authenticate to a Kubernetes cluster via Teleport, your Teleport roles must
+  allow access as at least one Kubernetes user or group. Ensure that you have a
+  Teleport role that grants access to the cluster you plan to interact with.
+
+  Run the following command to get the Kubernetes user for your current context:
+
+  ```code
+  $ kubectl config view \
+  -o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
+  ```
+
+  Create a file called `kube-access.yaml` with the following content, replacing
+  `USER` with the output of the command above.
+
+  ```yaml
+  kind: role
+  metadata:
+    name: kube-access
+  version: v7
+  spec:
+    allow:
+      kubernetes_labels:
+        '*': '*'
+      kubernetes_resources:
+        - kind: '*'
+          namespace: '*'
+          name: '*'
+          verbs: ['*']
+      kubernetes_groups:
+      - viewers
+      kubernetes_users:
+      # Replace USER with the Kubernetes user for your current context.
+      - USER
+    deny: {}
+  ```
+
+  Apply your changes:
+
+  ```code
+  $ tctl create -f kube-access.yaml
+  ```
+
+  Assign the `kube-access` role to your Teleport user by running the appropriate
+  commands for your authentication provider:
+
+  <Tabs>
+    <Tab title="Local User">
+      1. Retrieve your local user's configuration resource:
+
+         ```code
+         $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+         ```
+
+      2. Edit `out.yaml`, adding `kube-access` to the list of existing roles:
+
+         ```diff
+           roles:
+            - access
+            - auditor
+            - editor
+         +  - kube-access 
+         ```
+
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f out.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    </Tab>
+
+    <Tab title="GitHub">
+      1. Retrieve your `github` authentication connector:
+
+         ```code
+         $ tctl get github/github --with-secrets > github.yaml
+         ```
+
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+         github.yaml file immediately after updating the resource.
+
+      2. Edit `github.yaml`, adding `kube-access` to the `teams_to_roles` section.
+
+         The team you should map to this role depends on how you have designed your
+         organization's role-based access controls (RBAC). However, the team must include your user account and
+         should be the smallest team possible within your organization.
+
+         Here is an example:
+
+         ```diff
+           teams_to_roles:
+             - organization: octocats
+               team: admins
+               roles:
+                 - access
+         +       - kube-access
+         ```
+
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f github.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    </Tab>
+
+    <Tab title="SAML">
+      1. Retrieve your `saml`  configuration resource:
+
+         ```code
+         $ tctl get --with-secrets saml/mysaml > saml.yaml
+         ```
+
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+         saml.yaml file immediately after updating the resource.
+
+      2. Edit `saml.yaml`, adding `kube-access` to the `attributes_to_roles` section.
+
+         The attribute you should map to this role depends on how you have designed your
+         organization's role-based access controls (RBAC). However, the group must include your
+         user account and should be the smallest group possible within your organization.
+
+         Here is an example:
+
+         ```diff
+           attributes_to_roles:
+             - name: "groups"
+               value: "my-group"
+               roles:
+                 - access
+         +       - kube-access
+         ```
+
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f saml.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    </Tab>
+
+    <Tab title="OIDC">
+      1. Retrieve your `oidc`  configuration resource:
+
+         ```code
+         $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+         ```
+
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+         oidc.yaml file immediately after updating the resource.
+
+      2. Edit `oidc.yaml`, adding `kube-access` to the `claims_to_roles` section.
+
+         The claim you should map to this role depends on how you have designed your organization's
+         role-based access controls (RBAC). However, the group must include your user account and
+         should be the smallest group possible within your organization.
+
+         Here is an example:
+
+         ```diff
+           claims_to_roles:
+             - name: "groups"
+               value: "my-group"
+               roles:
+                 - access
+         +       - kube-access
+         ```
+
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f oidc.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    </Tab>
+  </Tabs>
+
+  Now that Teleport RBAC is configured, you can authenticate to your Kubernetes
+  cluster via Teleport. To interact with your Kubernetes cluster, you will need to
+  configure authorization within Kubernetes.
+
+  ### Kubernetes authorization
+
+  To configure authorization within your Kubernetes cluster, you need to create Kubernetes `RoleBinding`s or
+  `ClusterRoleBindings` that grant permissions to the subjects listed in `kubernetes_users` and
+  `kubernetes_groups`.
+
+  For example, you can grant some limited read-only permissions to the `viewers` group used in the `kube-access`
+  role defined above:
+
+  Create a file called `viewers-bind.yaml` with the following contents:
+
+  ```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: viewers-crb
+  subjects:
+  - kind: Group
+    # Bind the group "viewers", corresponding to the kubernetes_groups we assigned our "kube-access" role above
+    name: viewers
+    apiGroup: rbac.authorization.k8s.io
+  roleRef:
+    kind: ClusterRole
+    # "view" is a default ClusterRole that grants read-only access to resources
+    # See: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
+    name: view
+    apiGroup: rbac.authorization.k8s.io
+  ```
+
+  Apply the `ClusterRoleBinding` with `kubectl`:
+
+  ```code
+  $ kubectl apply -f viewers-bind.yaml
+  ```
+
+  Log out of Teleport and log in again.
+</Accordion>
+
+## Next steps
+
+To see all of the options you can set in the values file for the
+`teleport-kube-agent` Helm chart, consult our [reference
+guide](/ver/16.x/reference/helm-reference/teleport-kube-agent).

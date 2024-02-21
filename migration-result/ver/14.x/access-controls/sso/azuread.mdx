@@ -1,0 +1,566 @@
+---
+title: SSH Authentication with Active Directory (AD) on Azure
+description: How to configure SSH access with Active Directory (AD) on Azure using Teleport
+h1: SSH Authentication with Azure Active Directory (AD)
+version: '14.x'
+---
+
+This guide will cover how to configure Microsoft Azure Active Directory to issue
+SSH credentials to specific groups of users with a SAML Authentication Connector. When used in combination with role-based access control (RBAC), it allows SSH administrators to define policies like:
+
+- Only members of the "DBA" Azure AD group can SSH into machines running PostgreSQL.
+- Developers must never SSH into production servers.
+
+The following steps configure an example SAML authentication connector matching Azure AD groups with security roles.  You can choose to configure other options.
+
+## Prerequisites
+
+Before you get started you’ll need:
+
+- An Azure AD admin account with access to creating non-gallery applications (P2 License)
+- To register one or more users in the directory
+- To create at least two security groups in Azure AD and assign one or more users to each group
+- Teleport role with access to maintaining `saml` resources.  This is available in the default `editor` role.
+
+<Tabs>
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
+      details on how to set this up, see our Enterprise [Getting
+      Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+### Enable default SAML authentication
+
+Configure Teleport to use SAML authentication as the default instead of the local
+user database.
+
+You can either edit the Teleport Auth Service configuration file or create a dynamic
+resource.
+
+<Tabs>
+  <Tab title="Dynamic Resources (All Editions)">
+    Use `tctl` to edit the `cluster_auth_preference` value:
+
+    ```code
+    $ tctl edit cluster_auth_preference
+    ```
+
+    Set the value of `spec.type` to `saml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      ...
+      name: cluster-auth-preference
+    spec:
+      ...
+      type: saml
+      ...
+    version: v2
+    ```
+
+    After you save and exit the editor, `tctl` will update the resource:
+
+    ```text
+    cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: saml
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  If you need to log in again before configuring your SAML provider, use the flag <nobr>`--auth=local`</nobr>.
+</Tip>
+
+## Configure Azure AD
+
+1. Select **Azure AD -> Enterprise Applications**
+
+   ![Select Enterprise Applications From Manage](../../../../../assets/azuread-1-home-669f2daf28.png)
+
+2. Select **New application**
+
+   ![Select New Applications From Manage](../../../../../assets/azuread-2-newapp-0d484bf59a.png)
+
+3. Select **Create your own application**, enter the application name (e.g Teleport),
+   and select **Integrate any other application you don't find in the gallery (Non-gallery)**.
+
+   ![Select Non-gallery application](../../../../../assets/azuread-3-createnongalleryapp-556670960b.png)
+
+4. Select **Properties** under **Manage** and set **User assignment required?** to **No**
+
+![Turn off user assignment](../../../../../assets/azuread-4-turnoffuserassign-b371fd9f33.png)
+
+5. Select **Single sign-on** under **Manage** and choose **SAML**
+
+   ![Select SAML](../../../../../assets/azuread-5-selectsaml-b72a5c4219.png)
+
+6. Edit the **Basic SAML Configuration**
+
+   ![Edit Basic SAML Configuration](../../../../../assets/azuread-6-editbasicsaml-2b8a335236.png)
+
+7. For **Entity ID** and **Reply URL**, enter the following, assigning MYTENANT.TELEPORT.SH:443 to the host and HTTPS port of your
+   Teleport Proxy Service (or Teleport Team/Enterprise Cloud tenant):
+
+   ```var
+   https://mytenant.teleport.sh:443/v1/webapi/saml/acs/azure-saml
+   ```
+
+   ![Put in Entity ID and Reply URL](../../../../../assets/azuread-7-entityandreplyurl-f98588c035.png)
+
+8. Edit **User Attributes & Claims**
+
+   - Edit the claim name.
+   - Change the name identifier format to **Default**. Make sure the source attribute is `user.userprincipalname`.
+
+   ![Confirm Name Identifier](../../../../../assets/azuread-8a-nameidentifier-cfb6f52633.png)
+
+   - Add a group claim to make user security groups available to the connector
+
+   ![Put in Security group claim](../../../../../assets/azuread-8b-groupclaim-d7fd9a18cb.png)
+
+   - Add a claim that transforms an Azure AD username in order to pass it to Teleport.
+
+   ![Add a transformed username](../../../../../assets/azuread-8c-usernameclaim-59dc4f52ff.png)
+
+9. In **SAML Signing Certificate**, click the link to download the **Federation Metadata XML**.
+
+   ![Download Federation Metadata XML](../../../../../assets/azuread-9-fedmeatadataxml-bb0997eea1.png)
+
+<Warning>
+  This is an important document.  The Federation Metadata XML file sets the SSO location and other important values. Transmit the Federation Metadata XML file securely so it is not malformed.  Using the `entity_descriptor_url` setting allows for loading from the source.
+</Warning>
+
+## Create a SAML Connector
+
+Now, create a SAML connector resource. Write the following to `azure-connector.yaml`:
+
+```yaml
+kind: saml
+version: v2
+metadata:
+  # the name of the connector
+  name: azure-saml
+spec:
+  display: "Microsoft"
+
+  # enables/disables idp-initiated saml login
+  allow_idp_initiated: false
+
+  # acs is the Assertion Consumer Service URL. This should be the address of
+  # the Teleport proxy that your identity provider will communicate with.
+  # The last segment of the URL must be identical to the connector metadata name.
+  acs: https://teleport.example.com:3080/v1/webapi/saml/acs/azure-saml
+  attributes_to_roles:
+    - {name: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups", value: "930210...", roles: ["editor"]}
+    - {name: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups", value: "93b110...", roles: ["dev"]}
+  # Populate entity_descriptor with the federator data xml or set entity_descriptor_url to automatically load from the SSO
+  entity_descriptor: |
+    <federationmedata.xml contents>
+```
+
+<Accordion title="IdP-initiated SSO">
+  Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
+  log in to Teleport with one click from the dashboard provided by the IdP.
+
+  This feature is potentially unsafe and should be used with caution.
+
+  Enabling IdP-initiated login comes with notable security risks such as:
+
+  - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
+  - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
+</Accordion>
+
+Replace the `acs` field with your Teleport address, update the group IDs in the `attributes_to_roles` field with the actual Azure AD group ID values, and insert the downloaded Federation Metadata XML into the `entity_descriptor` field.
+
+Create the connector using `tctl`:
+
+```code
+$ tctl create azure-connector.yaml
+```
+
+<Tip>
+  Teleport will generate a signing key pair and update the SAML connector with the `signing_key_pair`
+  property.
+
+  ![Sample Connector Transform](../../../../../assets/azuread-12-sampleconnector-08ac102851.png)
+
+  Alternatively, you can generate your own keypair when creating a connector using `openssl`:
+
+  ```code
+  $ openssl req  -nodes -new -x509  -keyout server.key -out server.cer
+  ```
+</Tip>
+
+## Create a new Teleport role
+
+Create a Teleport role resource that will use external username data from the Azure AD connector to determine which Linux logins to allow on a host.
+
+Users with the following `dev` role are only allowed to log in to nodes with the `access: relaxed` Teleport label. They can log in as either `ubuntu` or a username that
+arrives via the Azure AD connector. Users with this role cannot obtain admin access to Teleport.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: dev
+spec:
+  options:
+    max_session_ttl: 24h
+  allow:
+    logins: [ "{{external.username}}", ubuntu ]
+    node_labels:
+      access: relaxed
+```
+
+Replace `ubuntu` with the Linux login available on your servers.
+
+```code
+$ tctl create dev.yaml
+```
+
+## Testing
+
+![Login with Microsoft](../../../../../assets/azure-11-loginwithmsft-9d41344e6d.png)
+
+The CLI is the same as before:
+
+```code
+$ tsh --proxy=proxy.example.com login
+```
+
+This command will print the SSO login URL and will try to open it
+automatically in a browser.
+
+<Tip>
+  Teleport can use multiple SAML connectors. In this case a connector name
+  can be passed via `tsh login --auth=connector_name`
+</Tip>
+
+## Token encryption (Optional)
+
+Azure AD's SAML token encryption encrypts the SAML assertions sent to Teleport
+during SSO redirect.
+
+Token encryption is an Azure Active Directory premium feature and requires a
+separate license. Since traffic between Azure AD and the Teleport Proxy Service
+already uses HTTPS, token encryption is optional. To determine whether you
+should enable token encryption, read the Azure AD
+[documentation](https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/howto-saml-token-encryption).
+
+### Set up Teleport token encryption
+
+Start with generating a public/private key and a certificate. You will set up the public
+certificate with Azure AD and the private key with Teleport.
+
+```code
+$ openssl req  -nodes -new -x509  -keyout server.key -out server.cer
+```
+
+If you are modifying the existing connector, write the YAML to a file first:
+
+```code
+$ tctl get saml --with-secrets > azure-out.yaml
+```
+
+You will notice that Teleport has generated a `signing_key_pair`. This key pair
+is used to sign responses.
+
+```yaml
+kind: saml
+metadata:
+  name: azure-saml
+spec:
+  acs: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  attributes_to_roles:
+  - name: http://schemas.microsoft.com/ws/2008/06/identity/claims/groups
+    roles:
+    - editor
+    - access
+    - auditor
+    value: '*'
+  audience: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  cert: ""
+  display: Microsoft
+  entity_descriptor: |
+    <?xml ...
+  entity_descriptor_url: ""
+  issuer: https://sts.windows.net/your-id-here/
+  service_provider_issuer: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  signing_key_pair:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ...
+      -----END RSA PRIVATE KEY-----
+  sso: https://login.microsoftonline.com/your-id-here/saml2
+version: v2
+```
+
+Add `assertion_key_pair` using the data from `server.key` and `server.cer`.
+
+```yaml
+kind: saml
+metadata:
+  name: azure-saml
+spec:
+  acs: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  attributes_to_roles:
+  - name: http://schemas.microsoft.com/ws/2008/06/identity/claims/groups
+    roles:
+    - editor
+    - access
+    - auditor
+    value: '*'
+  audience: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  cert: ""
+  display: Microsoft
+  entity_descriptor: |
+    <?xml ...
+  entity_descriptor_url: ""
+  issuer: https://sts.windows.net/your-id-here/
+  service_provider_issuer: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  signing_key_pair:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ...
+      -----END RSA PRIVATE KEY-----
+  sso: https://login.microsoftonline.com/your-id-here/saml2
+version: v2
+```
+
+<Warning>
+  Make sure to have the same indentation for all lines of the certificate and key, otherwise
+  Teleport will not parse the YAML file.
+</Warning>
+
+After your edits, the file will look like this:
+
+```yaml
+kind: saml
+metadata:
+  name: azure-saml
+spec:
+  acs: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  attributes_to_roles:
+  - name: http://schemas.microsoft.com/ws/2008/06/identity/claims/groups
+    roles:
+    - editor
+    - access
+    - auditor
+    value: '*'
+  audience: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  cert: ""
+  display: Microsoft
+  entity_descriptor: |
+    <?xml ...
+  entity_descriptor_url: ""
+  issuer: https://sts.windows.net/your-id-here/
+  service_provider_issuer: https://teleport.example.com/v1/webapi/saml/acs/azure-saml
+  assertion_key_pair:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      New CERT
+      -----END CERTIFICATE-----
+    private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      New private key
+      -----END RSA PRIVATE KEY-----
+  signing_key_pair:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ...
+      -----END RSA PRIVATE KEY-----
+  sso: https://login.microsoftonline.com/your-id-here/saml2
+version: v2
+```
+
+Update the connector:
+
+```code
+$ tctl create -f azure-out.yaml
+```
+
+### Activate token encryption
+
+- Navigate to **Token Encryption**
+
+![Navigate to token encryption](../../../../../assets/azuread-token-encryption-0-ed4d1bc07d.png)
+
+- Import certificate
+
+![Import certificate](../../../../../assets/azuread-token-encryption-1-import-dd9702e966.png)
+
+- Activate it
+
+![Activate certificate](../../../../../assets/azuread-token-encryption-2-activate-e1b484043b.png)
+
+If the SSO login with this connector is successful, the encryption works.
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Ensure that HTTP/TLS certificates are configured properly for both the Teleport
+  Proxy Service and the SSO provider.
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/ver/14.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+### Failed to process SAML callback
+
+If you encounter a "Failed to process SAML callback" error, take a look at the audit log.
+
+```
+Special characters are not allowed in resource names, please use name composed only from characters,
+hyphens and dots: /web/users/ops_example.com#EXT#@opsexample.onmicrosoft.com/params
+```
+
+The error above is caused by a Name ID format that is not compatible with Teleport's naming conventions.
+
+Change the Name ID format to use email instead:
+
+![Change NameID format to use email](../../../../../assets/azuread-nameid-1d1d64e5e7.png)
+
+## Further reading
+
+- [Teleport Configuration Resources Reference](/ver/14.x/reference/resources)

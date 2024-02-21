@@ -1,0 +1,238 @@
+---
+title: Standalone Kubernetes Operator
+description: Run a standalone operator against a remote Teleport cluster such as Teleport Cloud.
+version: '16.x'
+---
+
+This guide explains how to run the Teleport Kubernetes Operator against any remote Teleport cluster.
+If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, you might want to follow
+[the guide for Helm-deployed clusters](/ver/16.x/management/dynamic-resources/teleport-operator-helm) instead.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/16.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v15.0.0-dev go1.21
+
+      $ tsh version
+      # Teleport v15.0.0-dev go1.21
+      ```
+
+      See [Installation](/ver/16.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v15.0.0-dev go1.21
+
+      $ tsh version
+      # Teleport v15.0.0-dev go1.21
+      ```
+  </Tab>
+</Tabs>
+
+- a Kubernetes cluster. You must be able to create/read Namespace, ServiceAccount,
+  Deployment, Secret, Role, RoleBinding and CustomResourceDefinition resources.
+- [Helm](https://helm.sh/docs/intro/quickstart/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+
+Validate Kubernetes connectivity by running the following command:
+
+```code
+$ kubectl cluster-info
+# Kubernetes control plane is running at https://127.0.0.1:6443
+# CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+# Metrics-server is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy
+```
+
+<Tip>
+  Users wanting to experiment locally with the operator can use [minikube](https://minikube.sigs.k8s.io/docs/start/)
+  to start a local Kubernetes cluster:
+
+  ```code
+  $ minikube start
+  ```
+</Tip>
+
+### Step 1/4 - Create the operator role
+
+In this step we create the role the operator uses to interact with Teleport resources.
+
+Download and apply the operator role manifest:
+
+```code
+$ curl -L https://raw.githubusercontent.com/gravitational/teleport/v15.0.0-dev/integrations/operator/hack/fixture-operator-role.yaml -o operator-role.yaml
+$ tctl create -f operator-role.yaml
+```
+
+<Note>
+  If you upgrade the operator to a new version that adds support for new Teleport
+  resources, you will need to re-apply the operator role manifest. This will grant
+  the operator access to the new resources.
+</Note>
+
+### Step 2/4 - Create the operator join token
+
+The join token is used by the operator on each startup to join the Teleport cluster and retrieve its client certificates.
+
+To establish trust between the connecting operator and Teleport, we are delegating the authentication to Kubernetes. Kubernetes has its own internal CA which signs the ServiceAccount tokens that are mounted in the pods. In the following setup, Teleport will trust SA tokens signed by Kubernetes to join the cluster.
+
+1. Retrieve the Kubernetes JWKS (the keys Teleport can use to validate Kubernetes SA tokens)
+   ```code
+   $ export JWKS="$(kubectl get --raw /openid/v1/jwks)"
+   ```
+2. Create the token manifest that allows serviceaccount teleport-iac-operator from the namespace teleport-iac to join the cluster as the operator.
+   ```code
+   $ cat <<EOF > operator-token.yaml   
+   kind: token
+   version: v2
+   metadata:
+     name: operator-bot
+   spec:
+     roles: [Bot]
+     # bot_name will match the name of the bot created later in this guide.
+     bot_name: operator
+     join_method: kubernetes
+     kubernetes:
+       type: static_jwks
+       static_jwks:
+         jwks: |
+           $JWKS
+       allow:
+       - service_account: "teleport-iac:teleport-operator" # namespace:serviceaccount
+   EOF
+   ```
+3. Then, apply the token manifest:
+   ```code
+   $ tctl create -f operator-token.yaml
+   ```
+4. Finally, retrieve the Teleport cluster name that will be required to use the token:
+   ```code
+   $ export CLUSTER_NAME="$(tctl status | awk '/Cluster/ {print $2}')"
+   ```
+
+### Step 3/4 - Create the operator bot
+
+In Teleport, a bot is a resource allowing a machine to access Teleport.
+Create a bot for the operator with the following command:
+
+```code
+$ tctl bots add operator --token operator-bot --roles operator
+```
+
+### Step 4/4 - Deploy the operator in the Kubernetes cluster
+
+At this point you can configure and run the operator:
+
+Set up the Teleport Helm repository.
+
+Allow Helm to install charts that are hosted in the Teleport Helm repository:
+
+```code
+$ helm repo add teleport https://charts.releases.teleport.dev
+```
+
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
+
+```code
+$ helm repo update
+```
+
+1. Create the Kubernetes namespace that will contain both the operator Pods and the CustomResources to configure Teleport:
+   ```code
+   $ kubectl create namespace teleport-iac
+   ```
+2. Apply the strictest Pod Security Standard on the namespace:
+   ```code
+   $ kubectl label namespace teleport-iac 'pod-security.kubernetes.io/enforce=restricted'
+   ```
+3. Deploy the operator with Helm:
+   ```code
+   $ helm install teleport-operator teleport/teleport-operator -n teleport-iac --set teleportAddress=teleport.example.com:443 --set "teleportClusterName=$CLUSTER_NAME" --set token=operator-bot 
+   ```
+4. Validate that operator is running properly (the operator might take a few seconds to start):
+   ```code
+   $ kubectl get pods -n teleport-iac
+   ```
+
+## Troubleshooting
+
+The Teleport Operator watches for new resources or changes in Kubernetes.
+When a change happens, it triggers the reconciliation loop. This loop is in
+charge of validating the resource, checking if it already exists in Teleport
+and making calls to the Teleport API to create/update/delete the resource.
+The reconciliation loop also adds a `status` field on the Kubernetes resource.
+
+If an error happens and the reconciliation loop is not successful, an item in
+`status.conditions` will describe what went wrong. This allows users to diagnose
+errors by inspecting Kubernetes resources with `kubectl`:
+
+```code
+$ kubectl describe teleportusers myuser
+```
+
+For example, if a user has been granted a nonexistent role the status will look like:
+
+```yaml
+apiVersion: resources.teleport.dev/v2
+kind: TeleportUser
+# [...]
+status:
+  conditions:
+  - lastTransitionTime: "2022-07-25T16:15:52Z"
+    message: Teleport resource has the Kubernetes origin label.
+    reason: OriginLabelMatching
+    status: "True"
+    type: TeleportResourceOwned
+  - lastTransitionTime: "2022-07-25T17:08:58Z"
+    message: 'Teleport returned the error: role my-non-existing-role is not found'
+    reason: TeleportError
+    status: "False"
+    type: SuccessfullyReconciled
+```
+
+Here `SuccessfullyReconciled` is `False` and the error is `role my-non-existing-role is not found`.
+
+If the status is not present or does not give sufficient information to solve
+the issue, check the operator logs:
+
+```shell
+$ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME>
+```
+
+<Note>
+  In case of multi-replica deployments, only one operator instance is running
+  the reconciliation loop. This operator is called the leader and is the only
+  one producing reconciliation logs. The other operator instances are waiting
+  with the following log:
+
+  ```
+  leaderelection.go:248] attempting to acquire leader lease teleport/431e83f4.teleport.dev...
+  ```
+
+  To diagnose reconciliation issues, you will have to inspect all pods to find
+  the one reconciling the resources.
+</Note>
+
+If the Kubernetes resource has no status update and the operator does not produce
+any logs regarding the resource, please check if the resource lives in the same
+namespace as the operator.  The operator only watches for resource in its own namespace.
+
+## Next steps
+
+Helm Chart parameters are documented in the [`teleport-operator` Helm chart reference](/ver/16.x/reference/helm-reference/teleport-operator).

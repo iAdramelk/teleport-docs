@@ -1,0 +1,507 @@
+---
+title: Database Access GUI Clients
+description: How to configure graphical database clients for Teleport database access.
+version: '14.x'
+---
+
+This guide describes how to configure popular graphical database clients to
+work with Teleport.
+
+## Setting up your Teleport environment
+
+### Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+- The Teleport Database Service configured to access a database. See one of our
+  [guides](/ver/14.x/database-access/guides) for how to set up the Teleport
+  Database Service for your database.
+
+### Get connection information
+
+<Tabs>
+  <Tab title="Authenticated Proxy">
+    Starting the local database proxy with the `--tunnel` flag will create an
+    authenticated tunnel that you can use to connect to your database instances.
+    You won't need to configure any credentials when connecting to this tunnel.
+
+    Here is an example on how to start the proxy:
+
+    ```bash
+    # Start the local proxy.
+    $ tsh proxy db --tunnel <database-name>
+    Started authenticated tunnel for the <engine> database "<database-name>" in cluster "<cluster-name>" on 127.0.0.1:62652.
+    ```
+
+    You can optionally specify the database name and the user to use by default
+    when connecting to the database:
+
+    ```code
+    $ tsh proxy db --db-user=my-database-user --db-name=my-schema --tunnel <database-name>
+    ```
+
+    Now, you can connect to the address the proxy command returns. In our example it
+    is `127.0.0.1:62652`.
+  </Tab>
+
+  <Tab title="TLS routing">
+    If you're using Teleport in [TLS routing](/ver/14.x/management/operations/tls-routing)
+    mode where each database protocol is multiplexed on the same web proxy port, use
+    the following command to start a local TLS proxy your GUI database client will
+    be connecting to:
+
+    ```code
+    $ tsh proxy db <database-name>
+    Started DB proxy on 127.0.0.1:61740
+
+    Use following credentials to connect to the <database-name> proxy:
+      ca_file=/Users/r0mant/.tsh/keys/root.gravitational.io/certs.pem
+      cert_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice-db/root/<database-name>-x509.pem
+      key_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice
+    ```
+
+    Use the displayed local proxy host/port and credentials paths when configuring
+    your GUI client below. When entering the hostname, use `localhost` rather than
+    `127.0.0.1`.
+  </Tab>
+
+  <Tab title="Separate ports">
+    If you're not using TLS routing, run the following command to see the database
+    connection information:
+
+    ```code
+    # View configuration for the database you're logged in to.
+    $ tsh db config
+    # View configuration for the specific database when you're logged into multiple.
+    $ tsh db config example
+    ```
+
+    It will display the path to your locally cached certificate and key files:
+
+    ```
+    Name:      example
+    Host:      teleport.example.com
+    Port:      3080
+    User:      postgres
+    Database:  postgres
+    CA:        /Users/alice/.tsh/keys/teleport.example.com/certs.pem
+    Cert:      /Users/alice/.tsh/keys/teleport.example.com/alice-db/root/example-x509.pem
+    Key:       /Users/alice/.tsh/keys/teleport.example.com/alice
+    ```
+
+    The displayed `CA`, `Cert`, and `Key` files are used to connect through pgAdmin
+    4, MySQL Workbench, and other graphical database clients that support mutual
+    TLS authentication.
+  </Tab>
+</Tabs>
+
+Use the following command to start a local TLS proxy your GUI database client
+will be connecting to:
+
+```code
+$ tsh proxy db <database-name>
+Started DB proxy on 127.0.0.1:61740
+
+Use following credentials to connect to the <database-name> proxy:
+  ca_file=/Users/r0mant/.tsh/keys/root.gravitational.io/certs.pem
+  cert_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice-db/root/<database-name>-x509.pem
+  key_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice
+```
+
+Use the displayed local proxy host/port and credentials paths when configuring
+your GUI client below. When entering the hostname, use `localhost` rather than
+`127.0.0.1`.
+
+## MongoDB Compass
+
+[Compass](https://www.mongodb.com/products/compass) is the official MongoDB
+graphical client.
+
+On the "New Connection" panel, click on "Fill in connection fields individually".
+
+![MongoDB Compass new connection](../../../../assets/compass-new-connection@2x-0764764af6.png)
+
+On the "Hostname" tab, enter the hostname and port of the proxy you will use to
+access the database (see
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information)).
+Leave "Authentication" as None.
+
+![MongoDB Compass hostname](../../../../assets/compass-hostname@2x-1562151b3b.png)
+
+On the "More Options" tab, set SSL to "Client and Server Validation" and set the
+CA as well as the client key and certificate. Note that a CA path must be
+provided and be able to validate the certificate presented by your Teleport
+Proxy Service's web endpoint.
+
+![MongoDB Compass more options](../../../../assets/compass-more-options@2x-97c67a3614.png)
+
+Click on the "Connect" button.
+
+## MySQL DBeaver
+
+Right-click in the "Database Navigator" menu in the main view and select Create > Connection:
+
+![DBeaver Add Server](../../../../assets/dbeaver-add-server-acee87e430.png)
+
+In the search bar of the "Connect to a database" window that opens up, type "mysql", select the MySQL driver, and click "Next":
+
+![DBeaver Select Driver](../../../../assets/dbeaver-select-driver-931a5cefc9.png)
+
+In the newly-opened "Connection Settings" tab, use the Host as `localhost` and
+Port as the one returned by the proxy command (`62652` in the example above):
+
+![DBeaver Select Configure Server](../../../../assets/dbeaver-configure-server-bfbb08c2d9.png)
+
+In that same tab, set the username to match the one that you are connecting to
+using Teleport and uncheck the "Save password locally" box:
+
+![DBeaver Select Configure User](../../../../assets/dbeaver-configure-user-12c2f2be0d.png)
+
+Click the "Edit Driver Settings" button on the "Main" tab, check the "No
+Authentication" box, and click "Ok" to save:
+
+![DBeaver Driver Settings](../../../../assets/dbeaver-driver-settings-b8a654964b.png)
+
+Once you are back in the "Connection Settings" window, click "Ok" to finish and
+DBeaver should connect to the remote MySQL server automatically.
+
+## MySQL Workbench
+
+[MySQL Workbench](https://www.mysql.com/products/workbench/) is a GUI
+application that provides comprehensive MySQL administration and SQL development
+tools.
+
+In the MySQL Workbench "Setup New Connection" dialog, fill out "Connection
+Name", "Hostname", "Port", and "Username":
+
+![MySQL Workbench
+Parameters](../../../../assets/workbench-parameters@2x-c52843415e.png)
+
+In the "SSL" tab, set "Use SSL" to `Require and Verify Identity` and enter the
+paths to your CA, certificate, and private key files (see
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information)):
+
+![MySQL Workbench SSL](../../../../assets/workbench-ssl@2x-2152a1b580.png)
+
+Optionally, click "Test Connection" to verify connectivity:
+
+![MySQL Workbench Test](../../../../assets/workbench-test@2x-3f9901c544.png)
+
+Save the connection and connect to the database.
+
+## NoSQL Workbench
+
+From the NoSQL Workbench launch screen, click **Launch** next to **Amazon DynamoDB**.
+From the left-side menu select **Operation builder**, then **+ Add connection**.
+Choose the **DynamoDB local** tab, and point to your proxy's endpoint. This is
+`localhost:62652` in the example above. (See
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information) for
+more information.)
+
+![DynamoDB local connection in NoSQL Workbench](../../../../assets/nosql-workbench-connection-cb86fe4196.png)
+
+## SQL Server with Azure Data Studio
+
+In Azure Data Studio create a connection using your proxy's endpoint. This is
+`localhost,62652` in the example above. On a Windows machine, using an address in
+the format `127.0.0.1,62652` could be required instead of `localhost`. (See
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information) for
+more information.)
+
+Create a connection with Microsoft SQL Server with these settings:
+
+| Connection Detail   | Value                           |
+| ------------------- | ------------------------------- |
+| Server              | `host`,`port` of proxy endpoint |
+| Authentication Type | SQL Login                       |
+| Password            | empty                           |
+| Encrypt             | `False`                         |
+
+Example:
+![Azure Data Studio connection options](../../../../assets/azure-data-studio-connection-455205d44b.png)
+
+Click **Connect** to connect.
+
+## PostgreSQL DBeaver
+
+To connect to your PostgreSQL instance, use the authenticated proxy address.
+This is `127.0.0.1:62652` in the example above (see the “Authenticated Proxy”
+section on [Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information)
+for more information).
+
+Use the "Database native" authentication with an empty password:
+
+![DBeaver Postgres Configure
+Server](../../../../assets/dbeaver-pg-configure-server-34806df4e1.png)
+
+Clicking on "Test connection" should return a connection success message. Then,
+click on "Finish" to save the configuration.
+
+## PostgreSQL pgAdmin 4
+
+[pgAdmin 4](https://www.pgadmin.org/) is a popular graphical client for
+PostgreSQL servers.
+
+To configure a new connection, right-click on "Servers" in the main browser view
+and create a new server:
+
+![pgAdmin Add Server](../../../../assets/pgadmin-add-server@2x-20fe8bed71.png)
+
+In the "General" tab of the new server dialog, enter the server connection name:
+
+![pgAdmin General](../../../../assets/pgadmin-general@2x-412bdd625d.png)
+
+In the "Connection" tab, fill in the hostname, port, user and database name from
+the configuration above:
+
+![pgAdmin Connection](../../../../assets/pgadmin-connection@2x-4ed28dd69f.png)
+
+In the "SSL" tab, set "SSL Mode" to `Verify-Full` and fill in paths for client
+certificate, key and root certificate from the configuration above:
+
+![pgAdmin SSL](../../../../assets/pgadmin-ssl@2x-ed89915c11.png)
+
+Click "Save", and pgAdmin should immediately connect. If pgAdmin prompts you
+for password, leave the password field empty and click OK.
+
+## Microsoft SQL Server Management Studio
+
+In Microsoft SQL Server Management Studio connect to a database engine using
+your proxy's endpoint. This is `localhost,62652` in the example above. Using
+the IP `127.0.0.1,62652` connection could be required on a Windows machine
+instead of `localhost`. (See [Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information) for
+more information.)
+
+Create a connection with Microsoft SQL Server with these settings:
+
+| Connection Detail | Value                           |
+| ----------------- | ------------------------------- |
+| Server type       | Database Engine                 |
+| Server name       | `host`,`port` of proxy endpoint |
+| Authentication    | SQL Server Authentication       |
+| Password          | empty                           |
+| Encryption        | do not enable                   |
+
+Example:
+![Microsoft SQL Server Management Studio connection options](../../../../assets/msft-sql-server-management-studio-connection-f853b4ace5.png)
+
+Click Connect to connect.
+
+## Redis Insight
+
+<Note>
+  Teleport's Redis Insight integration only supports Redis standalone instances.
+</Note>
+
+After opening Redis Insight click `ADD REDIS DATABASE`.
+
+![Redis Insight Startup Screen](../../../../assets/redisinsight-startup-7d93692fe7.png)
+
+Now start a local proxy to your Redis instance:
+
+`tsh proxy db --db-user=alice redis-db-name`.
+
+Click `Add Database Manually`. Use `127.0.0.1` as the `Host`. Use the port printed by
+the `tsh` command you ran in [Get connection information](#get-connection-information).
+
+Provide your Redis username as `Username` and password as `Password`.
+
+![Redis Insight Configuration](../../../../assets/redisinsight-add-config-f64975d00d.png)
+
+Next, check the `Use TLS` and `Verify TLS Certificates` boxes and copy the CA certificate returned by `tsh proxy db`.
+Copy the private key and certificate to corresponding fields.
+
+Click `Add Redis Database`.
+
+![Redis Insight TLS Configuration](../../../../assets/redisinsight-tls-config-23481d5bb3.png)
+
+Congratulations! You have just connected to your Redis instance.
+
+![Redis Insight Connected](../../../../assets/redisinsight-connected-cf5cb6696f.png)
+
+## Snowflake: DBeaver
+
+The Snowflake integration works only in the authenticated proxy mode. Start a local proxy for connections to your Snowflake database by using the command below:
+
+```
+tsh proxy db --tunnel --port 2000 snowflake
+```
+
+Add a new database by clicking the "add" icon in the top-left corner:
+
+![DBeaver Main Screen](../../../../assets/dbeaver-main-screen-62284bb6ab.png)
+
+In the search bar of the "Connect to a database" window that opens up, type "snowflake", select the Snowflake driver, and click "Next":
+
+![DBeaver Select Database](../../../../assets/dbeaver-select-database-5d8c9c7142.png)
+
+Set "Host" to `localhost` and "Port" to the port returned by the `tsh proxy db` command you ran earlier (`2000` in the example above).
+In the "Authentication" section set the "Username" to match the database username passed to Teleport with `--db-user`
+and enter any value (e.g., "teleport") in the "Password" field (the value of
+"Password" will be ignored when establishing a connection but is required by DBeaver to register your database):
+
+![DBeaver Main](../../../../assets/dbeaver-main-92c1f53ea4.png)
+
+Next, click the "Driver properties" tab and set "account" to any value (e.g., "teleport"; as with "Password", the value of
+"account" will be ignored when establishing a connection but is required by DBeaver to register your database). In "User properties", set "ssl" to `off`:
+
+![DBeaver Driver](../../../../assets/dbeaver-driver-603868aeab.png)
+
+Teleport ignores the provided password and the account name as internally it uses values from the Database Agent configuration.
+SSL set to `off` disables only encryption on local machine. Connection to Snowflake is encrypted by Teleport.
+
+Now you can click on "Test Connection..." in the bottom-left corner:
+
+![DBeaver Success](../../../../assets/dbeaver-success-1f86e0aa6a.png)
+
+Congratulations! You have just connected to your Snowflake instance.
+
+## Snowflake: JetBrains (IntelliJ, Goland, DataGrip, PyCharm, etc.)
+
+The Snowflake integration works only in the authenticated proxy mode. Start a local proxy for connections to your Snowflake database by using the command below:
+
+```
+tsh proxy db --tunnel --port 2000 snowflake
+```
+
+In "Database Explorer" click the "add" button, pick "Data Source", and then pick "Snowflake":
+
+![JetBrains Add Database](../../../../assets/jetbrains-add-database-9b230be23f.png)
+
+Next, set "Host" to `localhost` and "Port" to the port returned by the `tsh proxy db` command you ran earlier (`2000` in the example above).
+Set the "Username" to match the one that you are assuming when you connect to Snowflake
+via Teleport and enter any value (e.g., "teleport") in the "Password" field (the value of
+"Password" will be ignored but is required to create a data source in your IDE):
+
+![JetBrains General](../../../../assets/jetbrains-general-7606c4abb2.png)
+
+Switch to the "Advanced" tab, set any value (e.g., "teleport") for "account", and add a new record named `ssl` with value `off` (as with "Password", "account" is ignored while establishing the connection but required by your IDE):
+
+![JetBrains Advanced](../../../../assets/jetbrains-advanced-4fe78954bc.png)
+
+Teleport ignores the provided password and the account name as internally it uses values from the Database Agent configuration.
+Setting "SSL" to `off` only disables encryption on your local machine. The connection to Snowflake is encrypted by Teleport.
+
+Now you can click "Test Connection" to check your configuration.
+
+![JetBrains Success](../../../../assets/jetbrains-success-2c1aae6d96.png)
+
+Congratulations! You have just connected to your Snowflake instance.
+
+## SQL Server DataGrip
+
+In the DataGrip connection configuration menu, use your proxy's endpoint. This
+is `localhost:4242` in the example below. (See
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information) for
+more information.)
+
+Select the "User & Password" authentication option and keep the "Password" field
+empty:
+
+![DataGrip connection options](../../../../assets/datagrip-connection@2x-fc174acca9.png)
+
+Click "OK" to connect.
+
+## SQL Server DBeaver
+
+In the DBeaver connection configuration menu, use your proxy's endpoint. This is
+`localhost:62652` in the example above. (See
+[Get connection information](/ver/14.x/connect-your-client/gui-clients#get-connection-information) for
+more information.)
+
+Use the SQL Server Authentication option and keep the Password field empty:
+
+![DBeaver connection options](../../../../assets/dbeaver-connection@2x-c6ece99463.png)
+
+Click OK to connect.

@@ -1,0 +1,446 @@
+---
+title: OAuth2 and OIDC authentication for SSH
+description: How to configure SSH access with OAuth2 or OIDC (OpenID connect) using Teleport
+h1: OAuth2 / OIDC Authentication for SSH
+version: '13.x'
+---
+
+This guide will explain how to configure an SSO provider using [OpenID Connect](http://openid.net/connect/)
+(also known as OIDC) to issue SSH credentials to a specific groups of users.
+When used in combination with role based access control (RBAC) it allows SSH
+administrators to define policies like:
+
+- Only members of "DBA" group can SSH into machines running PostgreSQL.
+- Developers must never SSH into production servers.
+
+## Prerequisites
+
+- Admin access to the SSO/IdP being integrated with users assigned to groups/roles.
+- Teleport role with access to maintaining `oidc` resources. This is available in the default `editor` role.
+
+<Tabs>
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
+      details on how to set this up, see our Enterprise [Getting
+      Started](/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Enable default OIDC authentication
+
+Configure Teleport to use OIDC authentication as the default instead of the local
+user database.
+
+You can either edit your Teleport configuration file or create a dynamic
+resource.
+
+<Tabs>
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: oidc
+
+    ```
+  </Tab>
+
+  <Tab title="Dynamic Resources (All Editions)">
+    Create a file called `cap.yaml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:    
+      type: oidc
+    version: v2
+    ```
+
+    Create a resource:
+
+    ```code
+    $ tctl create -f cap.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Identity Providers
+
+Register Teleport with the external identity provider you will be using and
+obtain your `client_id` and `client_secret`. This information should be
+documented on the identity providers website. Here are a few links:
+
+- [Auth0 Client Configuration](https://auth0.com/docs/applications)
+- [Google Identity Platform](https://developers.google.com/identity/protocols/OpenIDConnect)
+- [Keycloak Client Registration](https://www.keycloak.org/docs/latest/securing_apps/index.html#_client_registration)
+
+Add your OIDC connector information to `teleport.yaml`. A few examples are
+provided below.
+
+<Tip>
+  For Google Workspace please follow our dedicated [Guide](/ver/13.x/access-controls/sso/google-workspace)
+</Tip>
+
+## OIDC Redirect URL
+
+OIDC relies on HTTP re-directs to return control back to Teleport after
+authentication is complete. The redirect URL must be selected by a Teleport
+administrator in advance.
+
+If the Teleport web proxy is running on `proxy.example.com` host, the redirect URL
+should be `https://proxy.example.com:3080/v1/webapi/oidc/callback`
+
+## OIDC connector configuration
+
+The next step is to add an OIDC connector to Teleport. The connectors are manipulated
+via `tctl` [resource commands](/ver/13.x/reference/resources). To create a new connector,
+create a connector resource file in YAML format, for example `oidc-connector.yaml`.
+
+The file contents are shown below. This connector requests the scope `group`
+from the identity provider then mapping the value to either to `admin` role or
+the `user` role depending on the value returned for `group` within the claims.
+
+```yaml
+#
+# Example resource for an OIDC connector
+# We recommend using OIDC for G Suite, Auth0 and Keycloak
+#
+kind: oidc
+version: v2
+metadata:
+  name: new_oidc_connector
+spec:
+  redirect_url: "https://<cluster-url>/v1/webapi/oidc/callback"
+  client_id: <client id>
+  # connector display name that will be appended to the title of "Login with"
+  # button on the cluster login screen so it will say "Login with Google".
+  # Teleport will provide custom CSS for 'Google'.
+  display: Google
+  client_secret: <client secret>
+  issuer_url: https://<issuer-url>
+  scope: [<scope value>]
+  claims_to_roles:
+    - {claim: "hd", value: "example.com", roles: ["editor"]}
+
+```
+
+Create the connector:
+
+```code
+# Log in to your cluster with tsh so you can use tctl from your local machine.
+# You can also run tctl on your Auth Service host without running "tsh login"
+# first.
+$ tsh login --proxy=teleport.example.com --user=myuser
+$ tctl create oidc-connector.yaml
+```
+
+```code
+# Log in to your Teleport cluster so you can use tctl remotely.
+$ tsh login --proxy=mytenant.teleport.sh --user=myuser
+$ tctl create oidc-connector.yaml
+```
+
+## Create Teleport Roles
+
+The next step is to define Teleport roles. They are created using the same
+`tctl` [resource commands](/ver/13.x/reference/resources) as we used for the auth
+connector.
+
+Below are two example roles that are mentioned above, the first is an admin
+with full access to the system while the second is a developer with limited
+access.
+
+```yaml
+# role-admin.yaml
+kind: "role"
+version: "v3"
+metadata:
+  name: "admin"
+spec:
+  options:
+    max_session_ttl: "90h0m0s"
+  allow:
+    logins: [root]
+    node_labels:
+      "*": "*"
+    rules:
+      - resources: ["*"]
+        verbs: ["*"]
+```
+
+Users are only allowed to login to nodes labelled with `access: relaxed`
+teleport label. Developers can log in as either `ubuntu` to a username that
+arrives in their assertions. Developers also do not have any rules needed to
+obtain admin access.
+
+```yaml
+# role-dev.yaml
+kind: "role"
+version: "v3"
+metadata:
+  name: "dev"
+spec:
+  options:
+    max_session_ttl: "90h0m0s"
+  allow:
+    logins: [ "{{external.username}}", ubuntu ]
+    node_labels:
+      access: relaxed
+```
+
+Create both roles:
+
+```code
+$ tctl create role-admin.yaml
+$ tctl create role-dev.yaml
+```
+
+### Optional: ACR Values
+
+Teleport supports sending Authentication Context Class Reference (ACR) values
+when obtaining an authorization code from an OIDC provider. By default ACR
+values are not set. However, if the `acr_values` field is set, Teleport expects
+to receive the same value in the `acr` claim, otherwise it will consider the
+callback invalid.
+
+In addition, Teleport supports OIDC provider specific ACR value processing
+which can be enabled by setting the `provider` field in OIDC configuration. At
+the moment, the only build-in support is for NetIQ.
+
+A example of using ACR values and provider specific processing is below:
+
+```yaml
+# example connector which uses ACR values
+kind: oidc
+version: v2
+metadata:
+  name: "oidc-connector"
+spec:
+  issuer_url: "https://oidc.example.com"
+  client_id: "xxxxxxxxxxxxxxxxxxxxxxx.example.com"
+  client_secret: "zzzzzzzzzzzzzzzzzzzzzzzz"
+  redirect_url: "https://<cluster-url>:3080/v1/webapi/oidc/callback"
+  display: "Login with Example"
+  acr_values: "foo/bar"
+  provider: netiq
+  scope: [ "group" ]
+  claims_to_roles:
+     - claim: "group"
+       value: "editor"
+       roles: [ "editor" ]
+     - claim: "group"
+       value: "user"
+       roles: [ "access" ]
+```
+
+### Optional: Redirect URL and Timeout
+
+The redirect URL must be accessible by all user, optional redirect timeout.
+
+```yaml
+# Extra parts of OIDC yaml have been removed.
+spec:
+  redirect_url: https://<cluster-url>.example.com:3080/v1/webapi/oidc/callback
+  # Optional Redirect Timeout.
+  # redirect_timeout: 90s
+```
+
+### Optional: Prompt
+
+By default, Teleport will prompt end users to select an account each time they log in
+even if the user only has one account.
+
+Teleport now lets Teleport Admins configure this option. Since `prompt` is optional, by setting the variable to `none`, Teleport will override the default `select_account`.
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  prompt: 'none'
+```
+
+The below example will prompt the end-user for reauthentication and will require consent
+from the client.
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  prompt: 'login consent'
+```
+
+A list of available optional prompt parameters are available from the
+[OpenID website](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest).
+
+### Optional: Disable email verification
+
+By default, Teleport will validate the `email_verified` claim, and users who attempt to sign in without a verified email address will be prevented from doing so.
+
+For testing and other purposes, you may opt out of this behavior by enabling `allow_unverified_email` in your OIDC connector. This option weakens the overall security of the system, so we do not recommend enabling it.
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  allow_unverified_email: true
+```
+
+### Optional: Specify a claim to use as the username
+
+By default, Teleport will use the user's email as their Teleport username.
+
+You can define a `username_claim` to specify the claim that should be used as the username instead.
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  # Use the `preferred_username` claim as the user's Teleport username.
+  username_claim: preferred_username
+```
+
+## Testing
+
+For the Web UI, if the above configuration were real, you would see a button
+that says `Login with Example`. Simply click on that and you will be
+re-directed to a login page for your identity provider and if successful,
+redirected back to Teleport.
+
+For console login, you simple type `tsh --proxy <proxy-addr> ssh <server-addr>`
+and a browser window should automatically open taking you to the login page for
+your identity provider. `tsh` will also output a link the login page of the
+identity provider if you are not automatically redirected.
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Ensure that HTTP/TLS certificates are configured properly for both Teleport
+  proxy and the SSO provider.
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/ver/13.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```

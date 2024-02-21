@@ -1,0 +1,461 @@
+---
+title: OAuth2 and OIDC authentication
+description: How to configure Teleport access with OAuth2 or OpenID connect (OIDC)
+version: '16.x'
+---
+
+This guide will explain how to configure an SSO provider using [OpenID
+Connect](http://openid.net/connect/) (also known as OIDC) to issue Teleport
+credentials to specific groups of users. When used in combination with role-based
+access control (RBAC), OIDC allows Teleport administrators to define
+policies like:
+
+- Only members of the "DBA" group can connect to PostgreSQL databases.
+- Developers must never SSH into production servers.
+
+## Prerequisites
+
+- Admin access to the SSO/IdP being integrated with users assigned to groups/roles.
+- Teleport role with permission to maintain `oidc` resources. This permission is available
+  in the default `editor` role.
+
+- Access to an Enterprise edition of Teleport running in your environment.
+
+  For information about the differences between Teleport editions, see [Comparing
+  editions](/ver/16.x/choose-an-edition/introduction#comparing-editions).
+
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+  You can verify the tools you have installed by running the following commands:
+
+  ```code
+  $ tctl version
+  # Teleport Enterprise v15.0.0-dev go1.21
+
+  $ tsh version
+  # Teleport v15.0.0-dev go1.21
+  ```
+
+  You can download these tools by following the appropriate [Installation
+  instructions](/ver/16.x/installation#installation-instructions) for your environment and Teleport edition.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Identity Providers
+
+Register Teleport with the external identity provider you will be using and
+obtain your `client_id` and `client_secret`. This information should be
+documented on the identity providers website. Here are a few links:
+
+- [Auth0 Client Configuration](https://auth0.com/docs/applications)
+- [Google Identity Platform](https://developers.google.com/identity/protocols/OpenIDConnect)
+- [Keycloak Client Registration](https://www.keycloak.org/docs/latest/securing_apps/index.html#_client_registration)
+
+<Tip>
+  For Google Workspace, see [Teleport Authentication with Google Workspace](/ver/16.x/access-controls/sso/google-workspace)
+</Tip>
+
+Save the relevant information from your identity provider. To make following
+this guide easier, you can add the Client ID here and it will be included in the
+example commands below:
+
+Client ID: \<CLIENT-ID>
+
+## OIDC Redirect URL
+
+OIDC relies on HTTP redirects to return control back to Teleport after
+authentication is complete. The redirect URL must be selected by a Teleport
+administrator in advance.
+
+The redirect URL for OIDC authentication in Teleport is <nobr>MYTENANT.TELEPORT.SH`/v1/webapi/oidc/callback`</nobr>. Replace `mytenant.teleport.sh`
+with your Teleport Cloud tenant or Proxy Service address.
+
+## OIDC connector configuration
+
+The next step is to add an OIDC connector to Teleport. The connectors are
+created, tested, and added or removed using `tctl` [resource
+commands](/ver/16.x/reference/resources) or the Teleport Web UI.
+
+On your workstation, create a file called `client-secret.txt` consisting only of
+your client secret.
+
+To create a new connector, use `tctl sso configure`. The following example creates a
+connector resource file in YAML format named `oidc-connector.yaml`:
+
+```code
+$ tctl sso configure oidc --name <CONNECTOR-NAME> \
+  --issuer-url <PATH-TO-PROVIDER> \
+  --id <CLIENT-ID> \
+  --secret $(cat client-secret.txt) \
+  --claims-to-roles <CLAIM-KEY>,<CLAIM-VALUE>,access \
+  --claims-to-roles <CLAIM-KEY>,<CLAIM-VALUE>,editor > oidc-connector.yaml
+```
+
+- `--name`: Usually the name of the IdP, this is how the connector will be
+  identified in Teleport.
+- `--issuer-url`: This is the base path to the IdP's OIDC configuration endpoint,
+  excluding `.well-known/openid-configuration`. If, for example, the endpoint
+  is `https://example.com/.well-known/openid-configuration`, you would use
+  `https://example.com`.
+- `--id`: The client ID as defined in the IdP. Depending on your identity
+  provider this may be something you can define (for example, `teleport`), or may be an
+  assigned string.
+- `--secret`: The client token/secret provided by the IdP to authorize this client.
+- `--claims-to-roles`: A mapping of OIDC claims/values to be associated with
+  Teleport roles.
+
+For more information on these and all available flags, see the [tctl sso configure
+oidc](/ver/16.x/reference/cli/tctl#tctl-sso-configure-oidc) section of the Teleport CLI
+Reference page.
+
+The file created should look like the example below. This connector requests
+the scope `<CLAIM-KEY>` from the identity provider, then maps the value to
+either the `access` or the `editor` role depending on the value returned for
+that key within the claims:
+
+```yaml
+kind: oidc
+metadata:
+  name: oidc_connector
+spec:
+  claims_to_roles:
+  - claim: groups
+    roles:
+    - access
+    value: users
+  - claim: groups
+    roles:
+    - editor
+    value: admins
+  client_id: <CLIENT-NAME>
+  client_secret: <CLIENT-SECRET>
+  issuer_url: https://idp.example.com/
+  redirect_url: https://mytenant.teleport.sh:443/v1/webapi/oidc/callback
+  max_age: 24h
+version: v3
+
+```
+
+<Accordion title="Practical Example: Keycloak">
+  The following example was generated using Keycloak as the identity provider.
+  Keycloak is being served at `keycloak.example.com`, and the Teleport Proxy
+  Service is listening at `teleport.example.com`. In Keycloak, the client is
+  named `teleport`. Under the `teleport-dedicated` client scope, we've added
+  the "Group Membership" mapper:
+
+  ```yaml
+  kind: oidc
+  metadata:
+    name: keycloak
+  spec:
+    claims_to_roles:
+    - claim: groups
+      roles:
+      - access
+      value: /users
+    - claim: groups
+      roles:
+      - editor
+      value: /admins
+    client_id: teleport
+    client_secret: abc123...
+    issuer_url: https://keycloak.example.com/realms/master
+    redirect_url: https://teleport.example.com:443/v1/webapi/oidc/callback
+  version: v3
+
+  ```
+</Accordion>
+
+Before applying the connector to your cluster, you can test that it's configured
+correctly:
+
+```code
+$ cat oidc-connector | tctl sso test
+```
+
+This should open up your web browser and attempt to log you in to the Teleport
+cluster through your IdP. If it fails, review the output of this command for
+troubleshooting details.
+
+<Tip>
+  The "\[OIDC] Claims" section of the CLI output provides all the details of your
+  user provided by the IdP. This is a good starting point while troubleshooting
+  errors like `Failed to calculate user attributes.`
+</Tip>
+
+After your tests are successful, create the connector:
+
+```code
+$ tctl create -f oidc-connector.yaml
+```
+
+### Optional: ACR Values
+
+Teleport supports sending Authentication Context Class Reference (ACR) values
+when obtaining an authorization code from an OIDC provider. By default ACR
+values are not set. However, if the `acr_values` field is set, Teleport expects
+to receive the same value in the `acr` claim, otherwise it will consider the
+callback invalid.
+
+In addition, Teleport supports OIDC provider specific ACR value processing
+which can be enabled by setting the `provider` field in OIDC configuration. At
+the moment, the only build-in support is for NetIQ.
+
+A example of using ACR values and provider specific processing is below:
+
+```yaml
+# example connector which uses ACR values
+kind: oidc
+version: v2
+metadata:
+  name: "oidc-connector"
+spec:
+  issuer_url: "https://oidc.example.com"
+  client_id: "xxxxxxxxxxxxxxxxxxxxxxx.example.com"
+  client_secret: "zzzzzzzzzzzzzzzzzzzzzzzz"
+  redirect_url: "https://mytenant.teleport.sh/v1/webapi/oidc/callback"
+  display: "Login with Example"
+  acr_values: "foo/bar"
+  provider: netiq
+  scope: [ "group" ]
+  claims_to_roles:
+     - claim: "group"
+       value: "editor"
+       roles: [ "editor" ]
+     - claim: "group"
+       value: "user"
+       roles: [ "access" ]
+```
+
+### Optional: Max age
+
+Teleport has supported setting the `max_age` field since version 13.3.7 to control the
+maximum age of users' sessions before they will be forced to reauthenticate. By
+default `max_age` is unset, meaning once a user authenticates using OIDC they will
+not have to reauthenticate unless the configured OIDC provider forces them to. This
+can be set to a duration of time to force users to reauthenticate more often. If
+`max_age` is set to zero seconds, users will be forced to reauthenticate with their
+OIDC provider every time they authenticate with Teleport.
+
+Note that the specified duration must be in whole seconds. `24h` works because that's
+the same as `1440s`, but `60s500ms` would not be allowed as that is 60.5 seconds.
+
+```yaml
+# Extra parts of OIDC yaml have been removed.
+spec:
+  max_age: 24h
+```
+
+Note that not all OIDC providers support setting `max_age`. Google and GitLab are
+both known not to support it and authentication with those providers will not work
+when the `max_age` field is set.
+
+### Optional: Prompt
+
+Set the Authorization Server prompt for the End-User for reauthentication and consent
+per the OIDC protocol. If no `prompt` value is set, Teleport uses `select_account` as
+default.
+
+```yaml
+# Extra parts of OIDC yaml have been removed.
+spec:
+  # Valid values as defined from https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+  # none: The Authorization Server must not display any authentication or consent user interface pages.
+  # select_account: The Authorization Server should prompt the End-User to select a user account.
+  # login: The Authorization Server should prompt the End-User for reauthentication.
+  # consent: The Authorization Server should prompt the End-User for consent before returning information to the Client.
+  prompt: 'login'
+```
+
+### Optional: Redirect URL and Timeout
+
+The redirect URL must be accessible by all user, optional redirect timeout.
+
+```yaml
+# Extra parts of OIDC yaml have been removed.
+spec:
+  redirect_url: https://<cluster-url>.example.com:3080/v1/webapi/oidc/callback
+  # Optional Redirect Timeout.
+  # redirect_timeout: 90s
+```
+
+### Optional: Disable email verification
+
+By default, Teleport validates the `email_verified` claim, and users who
+attempt to sign in without a verified email address are prevented from doing so:
+
+```text
+ERROR: SSO flow failed.
+identity provider callback failed with error: OIDC provider did not verify email.
+        email not verified by OIDC provider
+```
+
+For testing and other purposes, you can opt out of this behavior by enabling
+`allow_unverified_email` in your OIDC connector. This option weakens the overall
+security of the system, so we do not recommend enabling it.
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  allow_unverified_email: true
+```
+
+### Optional: Specify a claim to use as the username
+
+By default, Teleport will use the user's email as their Teleport username.
+
+You can define a `username_claim` to specify the claim that should be used as
+the username instead:
+
+```yaml
+kind: oidc
+version: v2
+metadata:
+  name: connector
+spec:
+  # Use the `preferred_username` claim as the user's Teleport username.
+  username_claim: preferred_username
+```
+
+## Enable default OIDC authentication
+
+Configure Teleport to use OIDC authentication as the default instead of the local
+user database.
+
+Follow the instructions for your Teleport edition:
+
+<Tabs>
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: oidc
+
+    ```
+  </Tab>
+
+  <Tab title="Dynamic Resources (All Editions)">
+    Create a file called `cap.yaml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:    
+      type: oidc
+    version: v2
+    ```
+
+    Create a resource:
+
+    ```code
+    $ tctl create -f cap.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/ver/16.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.

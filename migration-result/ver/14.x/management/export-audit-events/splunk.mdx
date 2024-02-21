@@ -1,0 +1,999 @@
+---
+title: Export Teleport Audit Events to Splunk
+description: How to configure the Teleport Event Handler plugin to send audit logs to Splunk
+version: '14.x'
+---
+
+Teleport's Event Handler plugin receives audit logs from the Teleport Auth
+Service and forwards them to your log management solution, letting you perform
+historical analysis, detect unusual behavior, and form a better understanding of
+how users interact with your Teleport cluster.
+
+In this guide, we will show you how to configure the Teleport Event Handler
+plugin to send your Teleport audit logs to Splunk. In this setup, the Teleport
+Event Handler plugin forwards audit logs from Teleport to Splunk's Universal
+Forwarder, which stores them in Splunk Cloud Platform or Splunk Enterprise for
+visualization and alerting.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Splunk Cloud Platform or Splunk Enterprise v9.0.1 or above.
+
+- A Linux host where you will run the Teleport Event Handler plugin and Splunk
+  Universal Forwarder. The Universal Forwarder must be installed on the host.
+
+  <Accordion
+    title="Running the Teleport Event Handler and Universal Forwarder on
+  separate hosts"
+  >
+    If you run the Teleport Event Handler and Universal Forwarder on the same
+    host, there is no need to open a port on the host for ingesting logs. However,
+    if you run the Universal Forwarder on a separate host from the Teleport Event
+    Handler, you will need to open a port on the Universal Forwarder host to
+    traffic from the Teleport Event Handler. This guide assumes that the Universal
+    Forwarder is listening on port `9061`.
+  </Accordion>
+
+- On Splunk Enterprise, port `8088` should be open to traffic from the host
+  running the Teleport Event Handler and Universal Forwarder.
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/4. Set up the Teleport Event Handler plugin
+
+The Event Handler plugin is a binary that runs independently of your Teleport
+cluster. It authenticates to your Teleport cluster and your Splunk Universal
+Forwarder using mutual TLS. In this section, you will install the Teleport Event
+Handler plugin on the Linux host where you are running your Universal Forwarder
+and generate credentials that the plugin will use for authentication.
+
+### Install the Teleport Event Handler plugin
+
+Follow the instructions for your environment to install the Teleport Event
+Handler plugin on your Universal Forwarder host:
+
+<Tabs>
+  <Tab title="Linux">
+    ```code
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v12.1.1-linux-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v12.1.1-linux-amd64-bin.tar.gz
+    $ sudo ./teleport-event-handler/install
+    ```
+
+    We currently only build the Event Handler plugin for amd64 machines. For ARM
+    architecture, you can build from source.
+  </Tab>
+
+  <Tab title="macOS">
+    ```code
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v12.1.1-darwin-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v12.1.1-darwin-amd64-bin.tar.gz
+    $ sudo ./teleport-event-handler/install
+    ```
+
+    We currently only build the event handler plugin for amd64 machines. If your
+    macOS machine uses Apple silicon, you will need to [install
+    Rosetta](https://support.apple.com/en-us/HT211861) before you can run the
+    event handler plugin. You can also build from source.
+  </Tab>
+
+  <Tab title="Docker">
+    Ensure that you have Docker installed and running.
+
+    ```code
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:12.1.1
+    ```
+  </Tab>
+
+  <Tab title="Helm">
+    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+
+    ```code
+    $ helm repo add teleport https://charts.releases.teleport.dev
+    ```
+
+    To update the cache of charts from the remote repository, run `helm repo update`:
+
+    ```code
+    $ helm repo update
+    ```
+  </Tab>
+
+  <Tab title="Build via Docker">
+    Ensure that you have Docker installed and running.
+
+    Run the following commands to build the plugin:
+
+    ```code
+    $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
+    $ cd teleport-plugins/event-handler/build.assets
+    $ make build
+    ```
+
+    You can find the compiled binary within your clone of the `teleport-plugins`
+    repo, with the file path, `event-handler/build/teleport-event-handler`.
+  </Tab>
+
+  <Tab title="Build via Go">
+    You will need Go >= 1.20 installed.
+
+    Run the following commands on your Universal Forwarder host:
+
+    ```code
+    $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
+    $ cd teleport-plugins/event-handler
+    $ go build
+    ```
+
+    The resulting executable will have the name `event-handler`. To follow the
+    rest of this guide, rename this file to `teleport-event-handler` and move it
+    to `/usr/local/bin`.
+  </Tab>
+</Tabs>
+
+### Generate a starter config file
+
+Generate a configuration file with placeholder values for the Teleport Event Handler plugin. Later in this guide, we will edit the configuration file for your environment.
+
+<Tabs>
+  <Tab title="Cloud-Hosted">
+    Run the `configure` command to generate a sample configuration. Replace
+    `mytenant.teleport.sh` with the DNS name of your Teleport Team or Teleport
+    Enterprise Cloud tenant:
+
+    ```code
+    $ teleport-event-handler configure . mytenant.teleport.sh:443
+    ```
+  </Tab>
+
+  <Tab title="Self-Hosted">
+    Run the `configure` command to generate a sample configuration. Replace
+    `teleport.example.com:443` with the DNS name and HTTPS port of Teleport's Proxy
+    Service:
+
+    ```code
+    $ teleport-event-handler configure . teleport.example.com:443
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Run the `configure` command to generate a sample configuration. Assign
+    `TELEPORT_CLUSTER_ADDRESS` to the DNS name and port of your Teleport Auth
+    Service or Proxy Service:
+
+    ```code
+    $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
+    $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:12.1.1 configure . ${TELEPORT_CLUSTER_ADDRESS?}
+    ```
+
+    In order to export audit events, you'll need to have the root certificate and the
+    client credentials available as a secret. Use the following command to create
+    that secret in Kubernetes:
+
+    ```code
+    $ kubectl create secret generic teleport-event-handler-client-tls --from-file=ca.crt=ca.crt,client.crt=client.crt,client.key=client.key
+    ```
+
+    This will pack the content of `ca.crt`, `client.crt`, and `client.key` into the
+    secret so the Helm chart can mount them to their appropriate path.
+  </Tab>
+</Tabs>
+
+You'll see the following output:
+
+```txt
+Teleport event handler 14.0.0-dev
+
+[1] mTLS Fluentd certificates generated and saved to ca.crt, ca.key, server.crt, server.key, client.crt, client.key
+[2] Generated sample teleport-event-handler role and user file teleport-event-handler-role.yaml
+[3] Generated sample fluentd configuration file fluent.conf
+[4] Generated plugin configuration file teleport-event-handler.toml
+```
+
+The plugin generates several setup files:
+
+```code
+$ ls -l
+# -rw------- 1 bob bob     1038 Jul  1 11:14 ca.crt
+# -rw------- 1 bob bob     1679 Jul  1 11:14 ca.key
+# -rw------- 1 bob bob     1042 Jul  1 11:14 client.crt
+# -rw------- 1 bob bob     1679 Jul  1 11:14 client.key
+# -rw------- 1 bob bob      541 Jul  1 11:14 fluent.conf
+# -rw------- 1 bob bob     1078 Jul  1 11:14 server.crt
+# -rw------- 1 bob bob     1766 Jul  1 11:14 server.key
+# -rw------- 1 bob bob      260 Jul  1 11:14 teleport-event-handler-role.yaml
+# -rw------- 1 bob bob      343 Jul  1 11:14 teleport-event-handler.toml
+```
+
+| File(s)                            | Purpose                                                             |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| `ca.crt` and `ca.key`              | Self-signed CA certificate and private key for Fluentd              |
+| `server.crt` and `server.key`      | Fluentd server certificate and key                                  |
+| `client.crt` and `client.key`      | Fluentd client certificate and key, all signed by the generated CA  |
+| `teleport-event-handler-role.yaml` | `user` and `role` resource definitions for Teleport's event handler |
+| `fluent.conf`                      | Fluentd plugin configuration                                        |
+
+<Accordion title="Running the Event Handler separately from the log forwarder">
+  This guide assumes that you are running the Event Handler on the same host or
+  Kubernetes pod as your log forwarder. If you are not, you will need to instruct
+  the Event Handler to generate mTLS certificates for subjects besides
+  `localhost`. To do this, use the `--cn` and `--dns-names` flags of the
+  `teleport-event-handler` configure command.
+
+  For example, if your log forwarder is addressable at `forwarder.example.com` and the
+  Event Handler at `handler.example.com`, you would run the following `configure`
+  command:
+
+  ```code
+  $ teleport-event-handler configure --cn=handler.example.com --dns-names=forwarder.example.com
+  ```
+
+  The command generates client and server certificates with the subjects set to
+  the value of `--cn`.
+
+  The `--dns-names` flag accepts a comma-separated list of DNS names. It will
+  append subject alternative names (SANs) to the server certificate (the one you
+  will provide to your log forwarder) for each DNS name in the list. The Event
+  Handler looks up each DNS name before appending it as an SAN and exits with an
+  error if the lookup fails.
+</Accordion>
+
+We'll re-purpose the files generated for Fluentd in our Universal Forwarder configuration.
+
+### Define RBAC resources
+
+The `teleport-event-handler configure` command generated a file called
+`teleport-event-handler-role.yaml`. This file defines a `teleport-event-handler`
+role and a user with read-only access to the `event` API:
+
+```yaml
+kind: role
+metadata:
+  name: teleport-event-handler
+spec:
+  allow:
+    rules:
+      - resources: ['event', 'session']
+        verbs: ['list','read']
+version: v5
+---
+kind: user
+metadata:
+  name: teleport-event-handler
+spec:
+  roles: ['teleport-event-handler']
+version: v2
+```
+
+Move this file to your workstation (or recreate it by pasting the snippet above)
+and use `tctl` on your workstation to create the role and the user:
+
+```code
+$ tctl create -f teleport-event-handler-role.yaml
+# user "teleport-event-handler" has been created
+# role 'teleport-event-handler' has been created
+```
+
+### Enable impersonation of the Teleport Event Handler plugin user
+
+In order for the Teleport Event Handler plugin to forward events from your
+Teleport cluster, it needs signed credentials from the cluster's certificate
+authority.
+
+The `teleport-event-handler` user cannot request this itself, and requires
+another user to **impersonate** this account in order to request credentials. We
+will show you how to enable impersonation for your Teleport user so you can
+retrieve credentials for the Teleport Event Handler.
+
+Create a role that enables your user to impersonate the `teleport-event-handler`
+user. First, paste the following YAML document into a file called
+`teleport-event-handler-impersonator.yaml`:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: teleport-event-handler-impersonator
+spec:
+  options:
+    # max_session_ttl defines the TTL (time to live) of SSH certificates
+    # issued to the users with this role.
+    max_session_ttl: 10h
+
+  # This section declares a list of resource/verb combinations that are
+  # allowed for the users of this role. By default nothing is allowed.
+  allow:
+    impersonate:
+      users: ["teleport-event-handler"]
+      roles: ["teleport-event-handler"]
+```
+
+Next, create the role:
+
+```code
+$ tctl create -f teleport-event-handler-impersonator.yaml
+```
+
+Assign the `teleport-event-handler-impersonator` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `teleport-event-handler-impersonator` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - teleport-event-handler-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `teleport-event-handler-impersonator` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - teleport-event-handler-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `teleport-event-handler-impersonator` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - teleport-event-handler-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `teleport-event-handler-impersonator` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - teleport-event-handler-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+### Export the plugin identity
+
+Like all Teleport users, `teleport-event-handler` needs signed credentials in
+order to connect to your Teleport cluster. You will use the `tctl auth sign`
+command to request these credentials for your plugin.
+
+The following `tctl auth sign` command impersonates the `teleport-event-handler` user,
+generates signed credentials, and writes an identity file to the local
+directory:
+
+```code
+$ tctl auth sign --user=teleport-event-handler --out=auth.pem
+```
+
+The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+
+The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
+uses the SSH credentials to connect to the Proxy Service, which establishes a
+reverse tunnel connection to the Auth Service. The plugin uses this reverse
+tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
+endpoint.
+
+You will refer to this file later when configuring the plugin.
+
+<Note>
+  By default, `tctl auth sign` produces certificates with a relatively short
+  lifetime. For production deployments, we suggest using [Machine
+  ID](/ver/14.x/machine-id/introduction) to programmatically issue and renew
+  certificates for your plugin. See our Machine ID [getting started
+  guide](/ver/14.x/machine-id/getting-started) to learn more.
+
+  Note that you cannot issue certificates that are valid longer than your existing credentials.
+  For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+  valid for at least 1000 hours. This means your user must have a role allowing
+  a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
+  when logging in:
+
+  ```code
+  $ tsh login --proxy=teleport.example.com --ttl=1001h
+  ```
+</Note>
+
+Move the credentials you generated to the host where you are running the
+Teleport Event Handler plugin.
+
+<Warning>
+  Once the Teleport Event Handler's certificate expires, you will need to renew it
+  by running the `tctl auth sign` command again.
+</Warning>
+
+## Step 2/4. Configure the Universal Forwarder
+
+In this step, you will configure the Universal Forwarder to receive audit logs
+from the Teleport Event Handler plugin and forward them to Splunk. The Event
+Handler sends audit logs as HTTP POST requests with the content type
+`application/json`.
+
+We will assume that you assigned `$SPLUNK_HOME` to `/opt/splunkforwarder` when
+installing the Universal Forwarder.
+
+<Accordion title="Finding your $SPLUNK_HOME">
+  To find your `$SPLUNK_HOME`, run the following command to see the location of
+  your Universal Forwarder service definition, which the init system systemd uses
+  to run the Universal Forwarder:
+
+  ```code
+  $ sudo systemctl status SplunkForwarder.service
+  ● SplunkForwarder.service - Systemd service file for Splunk, generated by 'splunk enable boot-start'
+       Loaded: loaded (/lib/systemd/system/SplunkForwarder.service; enabled; vendor preset: enabled)
+       Active: active (running) since Fri 2022-10-07 15:57:37 UTC; 2h 18min ago
+     Main PID: 1772 (splunkd)
+        Tasks: 53 (limit: 2309)
+       Memory: 70.8M (limit: 1.8G)
+       CGroup: /system.slice/SplunkForwarder.service
+               ├─1772 splunkd --under-systemd --systemd-delegate=yes -p 8089 _internal_launch_under_systemd
+               └─1810 [splunkd pid=1772] splunkd --under-systemd --systemd-delegate=yes -p 8089 _internal_launch_under_systemd [process-runner]
+  ```
+
+  View the file at the path shown in the `Loaded:` field. Your `$SPLUNK_HOME`
+  will include the filepath segments in `ExecStart` before `/bin`. In this case,
+  `$SPLUNK_HOME` is `/opt/splunkforwarder/`:
+
+  ```text
+  ExecStart=/opt/splunkforwarder/bin/splunk _internal_launch_under_systemd
+  ```
+</Accordion>
+
+### Create an index for your audit logs
+
+Create an index for your Teleport audit logs by visiting the home page of the
+Splunk UI and navigating to **Settings** > **Indexes**. Click **New Index**.
+Name your index `teleport-audit-logs` and assign the **Index Data Type** field
+to "Events".
+
+![Creating an Index](../../../../../assets/new-index-76085341c9.png)
+
+The values of the remaining fields, **Max raw data size** and **Searchable
+retention (days)** depend on your organization's resources and practices for log
+management.
+
+Click **Save**
+
+### Create a token for the Universal Forwarder
+
+The Universal Forwarder authenticates client traffic using a token. To generate
+a token, visit the home page of the Splunk UI. Navigate to **Settings** > **Data
+inputs** In the **Local inputs** table, find the **HTTP Event Collector** row and
+click **Add new**
+
+Enter a name you can use to recognize the token later so you can
+manage it, e.g., `Teleport Audit Events`. Click **Next**.
+
+![Create a Token](../../../../../assets/new-token-47cd048b38.png)
+
+In the **Input Settings** view (above), next to the **Source type** field, click
+**Select**. In the **Select Source Type** dropdown menu, click **Structured**,
+then **\_json**. Splunk will index incoming logs as JSON, which is the format the
+Event Handler uses to send logs to the Universal Forwarder.
+
+In the **Index** section, select the `teleport-audit-logs` index you created
+earlier. Click **Review** then view the summary and click **Submit**. Copy the
+**Token Value** field and keep it somewhere safe so you can use it later in this
+guide.
+
+### Prepare a certificate file for the Universal Forwarder
+
+The Universal Forwarder signs TLS certificates using a file that contains both
+an X.509-format certificate and an RSA private key. To prepare this, run the
+following commands on the Universal Forwarder host, where `server.crt` and
+`server.key` are two of the files you generated earlier with the
+`teleport-event-handler configure` the command:
+
+```code
+$ cp server.crt server.pem
+$ cat server.key >> server.pem
+```
+
+Allow the Universal Forwarder to access the certificate file:
+
+```code
+$ sudo chown splunk:splunk server.pem
+```
+
+### Configure the HTTP Event Collector
+
+On your Universal Forwarder host, create a file at
+`/opt/splunkforwarder/etc/system/local/inputs.conf` with the following content:
+
+```ini
+[http]
+port = 9061
+disabled = false
+serverCert = server.pem
+sslPassword =
+requireClientCert = true
+
+[http://audit]
+token =
+index = teleport-audit-logs
+allowQueryStringAuth = true
+```
+
+This configuration enables the HTTP input, which will listen on port `9061` and
+receive logs from the Teleport Event Handler Plugin, assigning them to the
+`teleport-audit-logs` index.
+
+Assign `serverCert` to the path to the `server.pem` file you generated earlier.
+
+To assign `sslPassword`, run the following command in the directory that
+contains `fluent.conf`:
+
+```code
+$ cat fluent.conf | grep passphrase
+private_key_passphrase "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+Copy the passphrase and paste it as the value of `sslPassword`.
+
+The `token` field in the `[http://audit]` section enables the Universal
+Forwarder to collect logs from HTTP clients that present a token. Assign `token`
+to the token you generated earlier.
+
+`allowQueryStringAuth` enables the Teleport Event Handler to include the token
+in a query string, rather than the `Authorization` HTTP header (the default).
+This is necessary because the Teleport Event Handler does not currently support
+custom HTTP headers.
+
+### Configure TLS
+
+To configure secure communications between the Universal Forwarder and the
+Teleport Event Handler, create a file called
+`/opt/splunkforwarder/etc/system/local/server.conf` with the following content
+(if this file already exists, add  the following field in the `[sslConfig]`
+section):
+
+```ini
+[sslConfig]
+sslRootCAPath =
+```
+
+Assign `sslRootCAPath` to the path of the `ca.crt` file you generated earlier.
+
+Ensure that the Universal Forwarder can read the CA certificate:
+
+```code
+$ sudo chmod +r ca.crt
+```
+
+### Configure an output
+
+Instruct the Universal Forwarder to send the logs it collects to Splunk.
+
+Create a file at the path `/opt/splunkforwarder/etc/system/local/outputs.conf`
+with the following content:
+
+```ini
+[tcpout]
+sslVerifyServerCert = true
+
+[httpout]
+httpEventCollectorToken =
+uri =
+```
+
+Fill in `httpEventCollectorToken` with the token you generated earlier.
+
+Assign `uri` to the following, replacing `MYHOST` with the hostname of your
+Splunk instance and `8088` with the port you are using for your Splunk HTTP
+Event Collector.
+
+```text
+https://MYHOST:8088
+```
+
+The format of the URL to use will depend on your Splunk deployment. See the
+[list of acceptable URL
+formats](https://docs.splunk.com/Documentation/Splunk/9.0.1/Data/UsetheHTTPEventCollector#Send_data_to_HTTP_Event_Collector)
+in the Splunk documentation.
+
+Note that you must only include the scheme, host, and port of the URL. The
+Universal Forwarder will append the correct URL path of the Splunk ingestion
+API when forwarding logs.
+
+Finally, restart the Universal Forwarder:
+
+```code
+$ sudo systemctl restart SplunkForwarder
+```
+
+## Step 3/4. Run the Teleport Event Handler plugin
+
+Now that you have configured your Universal Forwarder to receive logs via HTTP
+and forward them to Splunk, you will ensure that the Teleport Event Handler
+plugin is configured to authenticate to the Universal Forwarder and your
+Teleport cluster, then run the Teleport Event Handler.
+
+### Complete the Teleport Event Handler configuration
+
+Earlier, we generated a file called `teleport-event-handler.toml` to configure
+the Teleport Event Handler plugin. This file includes settings similar to the
+following:
+
+```toml
+storage = "./storage"
+timeout = "10s"
+batch = 20
+namespace = "default"
+
+[forward.fluentd]
+ca = "/home/ca.crt"
+cert = "/home/client.crt"
+key = "/home/client.key"
+url = "https://localhost:9061/test.log"
+
+[teleport]
+addr = "example.teleport.com:443"
+identity = "identity"
+```
+
+Update the configuration file as follows.
+
+Change `forward.fluentd.url` to the following:
+
+```text
+url = "https://localhost:9061/services/collector/raw?token=MYTOKEN"
+```
+
+Ensure the URL includes the scheme, host and port of your Universal Forwarder's
+HTTP input, plus the URL path that the Universal Forwarder uses for raw data
+(`/services/collector/raw`).
+
+Replace `MYTOKEN` with the token you generated earlier for the Splunk Universal
+Forwarder. If you are running the Universal Forwarder and Event Handler on
+separate hosts, replace `localhost` with your Universal Forwarder's IP address
+or domain name.
+
+Change `forward.fluentd.session-url` to the same value as `forward.fluentd.url`,
+but with the query parameter key `&noop=` appended to the end:
+
+```text
+session-url = "https://localhost:9061/services/collector/raw?token=MYTOKEN&noop="
+```
+
+For audit logs related to Teleport sessions, the Teleport Event Handler appends
+routing information to the URL that our HTTP input configuration does not use.
+Adding the `noop` query parameter causes the Teleport Event Handler to append
+the routing information as the parameter's value so the Universal Forwarder can
+discard it.
+
+Next, edit the `teleport` section of the configuration as follows:
+
+<Tabs>
+  <Tab title="Executable">
+    **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identity`**: Fill this in with the path to the identity file you exported
+    earlier.
+
+    **`client_key`**, **`client_crt`**, **`root_cas`**: Comment these out, since we
+    are not using them in this configuration.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    **`address`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identitySecretName`**: Fill in the `identitySecretName` field with the name
+    of the Kubernetes secret you created earlier.
+  </Tab>
+</Tabs>
+
+Ensure that the Teleport Event Handler can read the identity file:
+
+```code
+$ chmod +r auth.pem
+```
+
+### Start the Teleport Event Handler
+
+Start the Teleport Teleport Event Handler as a daemon. To do so, create a
+systemd service definition at the path
+`/usr/lib/systemd/system/teleport-event-handler.service` with the following
+content:
+
+```ini
+[Unit]
+Description=Teleport Event Handler
+After=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+ExecStart=/usr/local/bin/teleport-event-handler start --config=/etc/teleport-event-handler.toml
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/run/teleport-event-handler.pid
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the plugin:
+
+```code
+$ sudo systemctl enable teleport-event-handler
+$ sudo systemctl start teleport-event-handler
+```
+
+<Accordion title="Choose when to start exporting events">
+  You can configure when you would like the Teleport Event Handler to begin
+  exporting events when you run the `start` command. This example will start
+  exporting from May 5th, 2021:
+
+  ```code
+  $ teleport-event-handler start --config teleport-event-handler.toml --start-time "2021-05-05T00:00:00Z"
+  ```
+
+  You can only determine the start time once, when first running the Teleport
+  Event Handler. If you want to change the time frame later, remove the plugin
+  state directory that you specified in the `storage` field of the handler's
+  configuration file.
+</Accordion>
+
+Once the Teleport Event Handler starts, you will see notifications about scanned
+and forwarded events:
+
+```code
+$ sudo journalctl -u teleport-event-handler
+DEBU   Event sent id:f19cf375-4da6-4338-bfdc-e38334c60fd1 index:0 ts:2022-09-21
+18:51:04.849 +0000 UTC type:cert.create event-handler/app.go:140
+...
+```
+
+## Step 4/4. Visualize your audit logs in Splunk
+
+Since our setup forwards audit logs to Splunk in the structured JSON format,
+Splunk automatically indexes them, so fields will be available immediately for
+use in visualizations. You can use these fields to create dashboards that track
+the way users are interacting with your Teleport cluster.
+
+For example, from the Splunk UI home page, navigate to **Search & Reporting** >
+**Dashboards** > **Create New Dashboard**. Enter "Teleport Audit Log Types" for
+the title of your dashboard and click **Classic Dashboards**. Click **Create**
+then, in the **Edit Dashboard** view, click **Add Panel**.
+
+In the **Add Panel** sidebar, click **New** > **Column Chart**. For the **Search
+String** field, enter the following:
+
+```text
+index="teleport-audit-logs" | timechart count by event
+```
+
+Once you click **Add to Dashboard** you will see a count of Teleport event types
+over time, which gives you a general sense of how users are interacting with
+Teleport:
+
+![Event Types over Time](../../../../../assets/splunk-dashboard-a62c0ffce3.png)
+
+## Troubleshooting connection issues
+
+If the Teleport Event Handler is displaying error logs while connecting to your
+Teleport Cluster, ensure that:
+
+- The certificate the Teleport Event Handler is using to connect to your
+  Teleport cluster is not past its expiration date. This is the value of the
+  `--ttl` flag in the `tctl auth sign` command, which is 12 hours by default.
+- Ensure that in your Teleport Event Handler configuration file
+  (`teleport-event-handler.toml`), you have provided the correct host *and* port
+  for the Teleport Proxy Service.
+
+## Next steps
+
+Now that you are exporting your audit logs to Splunk, consult our [audit log
+reference](/ver/14.x/reference/audit#event-types) so you can plan visualizations
+and alerts.
+
+In this guide, we made use of impersonation to supply credentials to the
+Teleport Event Handler to communicate with your Teleport cluster. To learn more
+about impersonation, read [our
+guide](/ver/14.x/access-controls/guides/impersonation).
+
+While this guide uses the `tctl auth sign` command to issue credentials for the
+Teleport Event Handler, production clusters should use Machine ID for safer,
+more reliable renewals. Read [our guide](/ver/14.x/machine-id/getting-started)
+to getting started with Machine ID.

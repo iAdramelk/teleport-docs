@@ -1,0 +1,245 @@
+---
+title: API Getting Started Guide
+description: Get started working with the Teleport API programmatically using Go.
+version: '14.x'
+---
+
+In this getting started guide we will use the Teleport API Go client to connect
+to a Teleport Auth Service.
+
+Here are the steps we'll walkthrough:
+
+1. Create an API user using a simple role-based authentication method.
+2. Generate credentials for that user.
+3. Create and connect a Go client to interact with Teleport's API.
+
+## Prerequisites
+
+- Install [Go](https://golang.org/doc/install) 1.20+ and Go development environment.
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/3. Create a user
+
+<Accordion title="Before you begin: read security tips">
+  When running Teleport in production, we recommend that you follow the
+  practices below to avoid security incidents. These practices may differ from
+  the examples used in this guide, which are intended for demo environments:
+
+  - Avoid using `sudo` in production environments unless it's necessary.
+  - Create new, non-root, users and use test instances for experimenting with Teleport.
+  - Run Teleport's services as a non-root user unless required. Only the SSH
+    Service requires root access. Note that you will need root permissions (or
+    the `CAP_NET_BIND_SERVICE` capability) to make Teleport listen on a port
+    numbered \< `1024` (e.g. `443`).
+  - Follow the "Principle of Least Privilege" (PoLP). Don't give users
+    permissive roles when giving them more restrictive roles will do instead.
+    For example, don't assign users the built-in `access,editor` roles, which give
+    them permissions to access and edit all cluster resources. Instead, define
+    RBAC roles with the minimum required permissions for each user and configure
+    Access Requests for elevated permissions.
+  - When joining a Teleport resource service (e.g., the Database Service or
+    Application Service) to a cluster, save the invitation token to a file.
+    Otherwise, the token will be visible when examining the `teleport` command
+    that started the agent, e.g., via the `history` command on a compromised
+    system.
+</Accordion>
+
+<Tip>
+  Read [API authorization](/ver/14.x/api/architecture#authorization) to learn more about defining custom roles for your API client.
+</Tip>
+
+Create a user `api-admin` with the built-in role `editor`:
+
+```code
+# Run this directly on your Auth Server unless you are using Teleport Cloud
+# Add a user and login via the Proxy Service
+$ sudo tctl users add api-admin --roles=editor
+```
+
+## Step 2/3. Generate client credentials
+
+Log in as the newly created user with `tsh`.
+
+```code
+# generate tsh profile
+$ tsh login --user=api-admin --proxy=tele.example.com
+```
+
+The [Profile Credentials loader](https://pkg.go.dev/github.com/gravitational/teleport/api/client#LoadProfile)
+will automatically retrieve Credentials from the current profile in the next step.
+
+## Step 3/3. Create a Go project
+
+Set up a new [Go module](https://golang.org/doc/tutorial/create-module) and import the `client` package:
+
+```code
+$ mkdir client-demo && cd client-demo
+$ go mod init client-demo
+$ go get github.com/gravitational/teleport/api/client
+```
+
+<Tip>
+  To ensure compatibility, you should use a version of Teleport's API library that matches
+  the major version of Teleport running in your cluster.
+
+  To find the pseudoversion appropriate for a go.mod file for a specific git tag,
+  run the following command from the `teleport` repository:
+
+  ```code
+  $ go list -f '{{.Version}}' -m "github.com/gravitational/teleport/api@$(git rev-parse v12.1.0)"
+  v0.0.0-20230307032901-49a6de744a3a
+  ```
+</Tip>
+
+Create a file called `main.go`, modifying the `Addrs` strings as needed:
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/gravitational/teleport/api/client"
+)
+
+func main() {
+	ctx := context.Background()
+
+	clt, err := client.New(ctx, client.Config{
+		Addrs: []string{
+			// Teleport Cloud customers should use <tenantname>.teleport.sh
+			"tele.example.com:443",
+			"tele.example.com:3025",
+			"tele.example.com:3024",
+			"tele.example.com:3080",
+ 		},
+		Credentials: []client.Credentials{
+			client.LoadProfile("", ""),
+		},
+	})
+
+	if err != nil {
+		log.Fatalf("failed to create client: %v", err)
+	}
+
+	defer clt.Close()
+	resp, err := clt.Ping(ctx)
+	if err != nil {
+		log.Fatalf("failed to ping server: %v", err)
+	}
+
+	log.Printf("Example success!")
+	log.Printf("Example server response: %s", resp)
+	log.Printf("Server version: %s", resp.ServerVersion)
+}
+```
+
+Now you can run the program and connect the client to the Teleport Auth Server to fetch the server version.
+
+```code
+$ go run main.go
+```
+
+## Next steps
+
+- Learn about [pkg.go.dev](https://pkg.go.dev/github.com/gravitational/teleport/api/client)
+- Learn how to use [the client](https://pkg.go.dev/github.com/gravitational/teleport/api/client#Client)
+- Learn how to [work with credentials](https://pkg.go.dev/github.com/gravitational/teleport/api/client#Credentials)
+- Read about Teleport [API architecture](/ver/14.x/api/architecture) for an in-depth overview of the API and API clients.
+- Read [API authorization](/ver/14.x/api/architecture#authorization) to learn more about defining custom roles for your API client.
+- Review the `client` [pkg.go reference documentation](https://pkg.go.dev/github.com/gravitational/teleport/api/client) for more information about working with the Teleport API programmatically.
+- Familiarize yourself with the [admin manual](/ver/14.x/management/admin) to make the best use of the API.

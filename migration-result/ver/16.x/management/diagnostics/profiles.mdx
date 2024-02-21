@@ -1,0 +1,114 @@
+---
+title: Profiling
+description: Collecting pprof profiles.
+version: '16.x'
+---
+
+Teleport leverages Go's diagnostic capabilities to collect and export
+profiling data. Profiles can help identify the cause of spikes in CPU,
+the source of memory leaks, or the reason for a deadlock.
+
+## Enable profiling
+
+The profiling endpoint is only enabled if the `--debug` flag is supplied.
+
+Teleport's diagnostic HTTP endpoints are disabled by default. You can enable
+them via:
+
+<Tabs>
+  <Tab title="Command line">
+    Start a `teleport` instance with the `--diag-addr` flag set to the local
+    address where the diagnostic endpoint will listen:
+
+    ```code
+    $ sudo teleport start --debug --diag-addr=127.0.0.1:3000
+    ```
+  </Tab>
+
+  <Tab title="Config file">
+    Edit a `teleport` instance's configuration file (`/etc/teleport.yaml` by
+    default) to include the following:
+
+    ```yaml
+    teleport:
+        diag_addr: 127.0.0.1:3000
+    ```
+
+    To enable debug logs:
+
+    ```yaml
+    log:
+        severity: DEBUG
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Ensure you can connect to the diagnostic endpoint">
+  Verify that Teleport is now serving the diagnostics endpoint:
+
+  ```code
+  $ curl http://127.0.0.1:3000/healthz
+  ```
+</Accordion>
+
+## Collecting profiles
+
+Go's standard profiling endpoints are served at `http://127.0.0.1:3000/debug/pprof/`.
+Retrieving a profile requires sending a request to the endpoint corresponding
+to the desired profile type. When debugging an issue it is helpful to collect
+a series of profiles over a period of time.
+
+### CPU
+
+CPU profile shows execution statistics gathered over a user specified period:
+
+```code
+# Download the profile into a file:
+$ curl -o cpu.profile http://127.0.0.1:3000/debug/pprof/profile?seconds=30
+
+# Visualize the profile
+$ go tool pprof -http : cpu.profile
+```
+
+### Goroutine
+
+Goroutine profiles show the stack traces for all running goroutines in the system:
+
+```code
+# Download the profile into a file:
+$ curl -o goroutine.profile http://127.0.0.1:3000/debug/pprof/goroutine
+
+# Visualize the profile
+$ go tool pprof -http : goroutine.profile
+```
+
+### Heap
+
+Heap profiles show allocated objects in the system:
+
+```code
+# Download the profile into a file:
+$ curl -o heap.profile http://127.0.0.1:3000/debug/pprof/heap
+
+# Visualize the profile
+$ go tool pprof  -http : heap.profile
+```
+
+### Trace
+
+Trace profiles capture scheduling, system calls, garbage collections, heap size, and other events that are collected by the Go runtime
+over a user specified period of time:
+
+```code
+# Download the profile into a file:
+$ curl -o trace.out http://127.0.0.1:3000/debug/pprof/trace?seconds=5
+
+# Visualize the profile
+$ go tool trace trace.out
+```
+
+## Further Reading
+
+- More information about diagnostics in the Go ecosystem: [https://go.dev/doc/diagnostics](https://go.dev/doc/diagnostics)
+- Go's profiling endpoints: [https://golang.org/pkg/net/http/pprof/](https://golang.org/pkg/net/http/pprof/)
+- A deep dive on profiling Go programs: [https://go.dev/blog/pprof](https://go.dev/blog/pprof)

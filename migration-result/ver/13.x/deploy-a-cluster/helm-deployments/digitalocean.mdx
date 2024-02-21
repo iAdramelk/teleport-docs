@@ -1,0 +1,289 @@
+---
+title: Get started with Teleport on DigitalOcean Kubernetes
+description: How to get started with Teleport on DigitalOcean Kubernetes
+version: '13.x'
+---
+
+This guide will show you how to get started with Teleport on DigitalOcean
+Kubernetes.
+
+If you are already running Teleport on another platform, you can use your
+existing Teleport deployment to access your Kubernetes cluster. [Follow our
+guide](/ver/13.x/kubernetes-access/getting-started) to connect your Kubernetes
+cluster to Teleport.
+
+<Tip>
+  Teleport Team takes care of this setup for you so you can provide secure access
+  to your infrastructure right away.
+
+  Get started with a [free trial](https://goteleport.com/signup?t_source=docs) of
+  Teleport Team.
+</Tip>
+
+## Prerequisites
+
+- DigitalOcean account.
+- Your workstation configured with [kubectl](https://kubernetes.io/docs/tasks/tools/), [Helm](https://helm.sh/docs/intro/install/), [doctl](https://docs.digitalocean.com/reference/doctl/how-to/install/), and the Teleport [tsh](/ver/13.x/installation) client.
+
+## Step 1/4. Create a DigitalOcean Kubernetes cluster
+
+Create a new [DigitalOcean Kubernetes Cluster](https://cloud.digitalocean.com/kubernetes/clusters/)
+
+![Create DigitalOcean Kubernetes cluster](../../../../../assets/create-k8s-d007776ea2.png)
+
+<br />
+
+While the Kubernetes cluster is being provisioned, follow the "Getting Started" guide as shown below:
+
+![Set up DigitalOcean Kubernetes client](../../../../../assets/setup-k8s-91b0116d94.png)
+
+## Step 2/4. Install Teleport
+
+To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+
+```code
+$ helm repo add teleport https://charts.releases.teleport.dev
+```
+
+To update the cache of charts from the remote repository, run `helm repo update`:
+
+```code
+$ helm repo update
+```
+
+Install Teleport in your Kubernetes cluster using the `teleport-cluster` Helm
+chart:
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ CLUSTERNAME=tele.example.com # replace with your preferred domain name
+    $ EMAIL_ADDR=dodemo@goteleport.com # replace with your email
+    $ helm install teleport-cluster teleport/teleport-cluster \
+      --create-namespace \
+      --namespace=teleport-cluster \
+      --set clusterName=$CLUSTERNAME \
+      --set acme=true \
+      --set acmeEmail=$EMAIL_ADDR \
+      --version 13.2.0
+    NAME: teleport-cluster
+    LAST DEPLOYED: Tue Oct 26 17:01:21 2021
+    NAMESPACE: teleport-cluster
+    STATUS: deployed
+    REVISION: 1
+    TEST SUITE: None
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    Create a namespace for your Teleport cluster resources and configure the
+    PodSecurityAdmission:
+
+    ```code
+    $ kubectl create namespace teleport-cluster
+    namespace/teleport-cluster created
+    $ kubectl label namespace teleport-cluster 'pod-security.kubernetes.io/enforce=baseline'
+    namespace/teleport-cluster labeled
+    ```
+
+    The Teleport Auth Service reads a license file to authenticate your Teleport
+    Enterprise account.
+
+    To obtain your license file, navigate to your [Teleport
+    account](https://teleport.sh) and enter your
+    account name (e.g., `my-license`). After logging in, click
+    the "DOWNLOAD LICENSE KEY" button to download your
+    license file.
+
+    ![License File Download](../../../../../assets/license-fe80b12ff0.png)
+
+    ```code
+    $ kubectl -n teleport-cluster create secret generic license --from-file=license.pem
+    ```
+
+    Install Teleport:
+
+    ```code
+    $ CLUSTERNAME=tele.example.com # replace with your preferred domain name
+    $ EMAIL_ADDR=dodemo@goteleport.com # replace with your email
+    $ helm install teleport-cluster teleport/teleport-cluster \
+      --namespace=teleport-cluster \
+      --set clusterName=$CLUSTERNAME \
+      --set acme=true \
+      --set acmeEmail=$EMAIL_ADDR \
+      --set enterprise=true \
+      --version 13.2.0
+    NAME: teleport-cluster
+    LAST DEPLOYED: Tue Oct 26 17:01:21 2021
+    NAMESPACE: teleport-cluster
+    STATUS: deployed
+    REVISION: 1
+    TEST SUITE: None
+    ```
+  </Tab>
+</Tabs>
+
+### Update DNS for `clusterName`
+
+First, get the external IP (from the `EXTERNAL-IP` field) for the Kubernetes cluster.
+
+```code
+
+$ kubectl --namespace=teleport-cluster get services
+
+NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP       PORT(S)          AGE
+teleport-cluster        LoadBalancer   10.245.163.12   192.168.200.200   443:31959/TCP,3023:30525/TCP,3026:30079/TCP,3024:32437/TCP   19m
+teleport-cluster-auth   ClusterIP      10.245.164.28   <none>            3025/TCP,3026/TCP                                            19m
+```
+
+Once you get the value for the external IP (it may take a few minutes for this field to be populated), update your DNS record such that the clusterName's A record points to this IP address. For example `192.168.200.200` is the external IP in the above case.
+
+![Configure DNS](../../../../../assets/fqdn-ac81fc3020.png)
+
+## Step 3/4. Create and set up Teleport user
+
+Now we create a Teleport user by executing the `tctl` command with `kubectl`.
+
+```code
+$ kubectl --namespace teleport-cluster exec deployment/teleport-cluster-auth -- tctl users add tadmin --roles=access,editor --logins=ubuntu
+
+User "tadmin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
+https://tele.example.com:443/web/invite/<invite-token>
+
+NOTE: Make sure tele.example.com:443 points at a Teleport proxy which users can access.
+```
+
+```code
+$ kubectl --namespace teleport-cluster exec deployment/teleport-cluster-auth -- tctl users add tadmin --roles=access,editor,reviewer --logins=ubuntu
+
+User "tadmin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
+https://tele.example.com:443/web/invite/<invite-token>
+
+NOTE: Make sure tele.example.com:443 points at a Teleport proxy which users can access.
+```
+
+Copy the link shown after executing the above command and open the link in a web browser to complete the user registration process (the link is `https://tele.example.com:443/web/invite/<invite-token>` in the above case).
+
+![Set up user](../../../../../assets/setup-user-2de78912de.png)
+
+After you complete the registration process by setting up a password and enrolling in two-factor authentication, you will be logged in to Teleport Web UI.
+
+In this step, we created a user **tadmin** with roles `access, edit`. These are the default roles available in Teleport. However, to allow this user to access the Kubernetes cluster, we will need to assign **tadmin** a role authorized to access the Kubernetes cluster. So first, let's create a role named **member** with the Kubernetes privilege `system:master`.
+
+### Create a new Kubernetes Role named "member"
+
+Create a file named `member.yaml` with the following spec:
+
+```yaml
+kind: role
+version: v4
+metadata:
+  name: member
+spec:
+  allow:
+    kubernetes_groups: ["system:masters"]
+```
+
+<Warning>
+  `system:masters` is a Kubernetes built-in role that is similar to `sudo` permissions in Linux systems. It is used here for demonstration purposes and should be used in production only when necessary.
+</Warning>
+
+Next, create this role in Kubernetes with the command:
+
+```code
+$ kubectl --namespace=teleport-cluster exec -i deployment/teleport-cluster-auth -- tctl create -f < member.yaml
+```
+
+### Assign the "member" role to user "tadmin"
+
+Now we will assign Teleport user **tadmin** with this role. The example below shows a process using Teleport Web UI:
+First, lets select user edit menu:
+
+![Edit user](../../../../../assets/edit-user-62df22ab07.png)
+
+Second, update the **tadmin** user role to assign the **member** role:
+
+![Update role](../../../../../assets/update-role-0f878b32c7.png)
+
+We've updated the user **tadmin** to have the **member** role, which is allowed to access a Kubernetes cluster with privilege `system:master`.
+
+## Step 4/4. Access your Kubernetes cluster using Teleport
+
+The following steps show how to access the Kubernetes cluster using `tsh`.
+
+### Log in to Teleport
+
+First, authenticate to Teleport using `tsh` as the **tadmin** user we created in the third step.
+
+<Note>
+  The following process will override your global kubectl configuration file. To write your kubectl configuration to a separate file instead of having your global kubectl configuration modified, run the following command:
+
+  ```code
+  $ export KUBECONFIG=${HOME?}/teleport-kubeconfig.yaml
+  ```
+</Note>
+
+```code
+$ tsh login --proxy=tele.example.com:443 --auth=local --user=tadmin
+Enter password for Teleport user tadmin:
+Enter your OTP token:
+540255
+> Profile URL:        https://tele.example.com:443
+  Logged in as:       tadmin
+  Cluster:            tele.example.com
+  Roles:              access, editor, member
+  Logins:             ubuntu
+  Kubernetes:         enabled
+  Valid until:        2021-10-27 06:37:15 +0000 UTC [valid for 12h0m0s]
+  Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
+```
+
+```code
+$ tsh login --proxy=tele.example.com:443 --auth=local --user=tadmin
+Enter password for Teleport user tadmin:
+Enter your OTP token:
+540255
+> Profile URL:        https://tele.example.com:443
+  Logged in as:       tadmin
+  Cluster:            tele.example.com
+  Roles:              access, editor, reviewer, member
+  Logins:             ubuntu
+  Kubernetes:         enabled
+  Valid until:        2021-10-27 06:37:15 +0000 UTC [valid for 12h0m0s]
+  Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
+```
+
+### Select the Kubernetes cluster
+
+```code
+$ tsh kube login tele.example.com
+Logged into kubernetes cluster "tele.example.com". Try 'kubectl version' to test the connection.
+```
+
+### Connect to the Kubernetes cluster
+
+```code
+$ kubectl --namespace=teleport-cluster get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+teleport-cluster-6cc679b6f6-7xr5h   1/1     Running   0          14h
+```
+
+Voila! User **tadmin** was able to list the pods in their DigitalOcean Kubernetes cluster.
+
+Teleport keeps an audit log of access to a Kubernetes cluster. In the screenshot below, the Teleport audit log shows that the user **tadmin** has logged into the cluster.
+
+![View audit log](../../../../../assets/view-activity-e1e28d5e63.png)
+
+## Next steps
+
+To see all of the options you can set in the values file for the
+`teleport-cluster` Helm chart, consult our [reference
+guide](/ver/13.x/reference/helm-reference/teleport-cluster).
+
+Read our guides to additional ways you can protect a Kubernetes cluster with
+Teleport:
+
+- Connect another Kubernetes cluster to Teleport by [deploying the Teleport Kubernetes Service](/ver/13.x/kubernetes-access/getting-started)
+- [Set up Machine ID with Kubernetes](/ver/13.x/machine-id/guides/kubernetes)
+- [Federated Access using Trusted Clusters](/ver/13.x/kubernetes-access/manage-access/federation)
+- [Single-Sign On and Kubernetes Access Control](/ver/13.x/kubernetes-access/controls)

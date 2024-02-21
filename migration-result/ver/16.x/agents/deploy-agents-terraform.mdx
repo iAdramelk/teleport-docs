@@ -1,0 +1,854 @@
+---
+title: "Deploy Teleport Agents with Terraform"
+description: "In this guide, we will show you how to deploy a pool of Teleport agents so you can apply dynamic resources to enroll your infrastructure with Teleport."
+version: '16.x'
+---
+
+An agent is a Teleport instance configured to run one or more Teleport services
+in order to proxy infrastructure resources. For a brief architectural overview
+of how agents run in a Teleport cluster, read the [Introduction to Teleport
+Agents](/ver/16.x/agents/introduction).
+
+This guide shows you how to deploy a pool of Teleport agents running on virtual
+machines by declaring it as code using Terraform.
+
+There are several methods you can use to join a Teleport agent to your cluster,
+which we discuss in the [Joining Services to your
+Cluster](/ver/16.x/agents/join-services-to-your-cluster) guide. In this guide, we will use
+the **join token** method, where the operator stores a secure token on the Auth
+Service, and an agent presents the token in order to join a cluster.
+
+No matter which join method you use, it will involve the following Terraform
+resources:
+
+- Compute instances to run Teleport services
+- A join token for each compute instance in the agent pool
+
+![A Teleport agent pool](../../../../assets/tf-agent-diagram-14b6901ef6.png)
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/ver/16.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/ver/16.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  We recommend following this guide on a fresh Teleport demo cluster so you can
+  see how an agent pool works. After you are familiar with the setup, apply the
+  lessons from this guide to protect your infrastructure. You can get started with
+  a demo cluster using:
+
+  - A demo deployment on a [Linux server](/ver/16.x/index)
+  - A [Teleport Team trial](https://goteleport.com/signup)
+</Tip>
+
+- An AWS, Google Cloud, or Azure account with permissions to create virtual
+  machine instances.
+
+- Cloud infrastructure that enables virtual machine instances to connect to the
+  Teleport Proxy Service. For example:
+
+  - An AWS subnet with a public NAT gateway or NAT instance.
+  - Google Cloud NAT
+  - Azure NAT Gateway
+
+  In minimum-security demo clusters, you can also configure the VM instances you
+  deploy to have public IP addresses.
+
+- Terraform v1.0.0 or higher.
+
+- An identity file for the Teleport Terraform provider. Make sure you are
+  familiar with [how to set up the Teleport Terraform
+  provider](/ver/16.x/management/dynamic-resources/terraform-provider) before
+  following this guide.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/3. Import the Terraform module
+
+1. Navigate to the directory where you plan to organize files for your root
+   Terraform module.
+
+2. Move the identity file for the Teleport Terraform provider into your project
+   directory so the Terraform provider can access it. Name the file
+   `terraform-identity`.
+
+   <Warning>
+     If you don't have an identity file available, make sure you have followed the
+     [prerequisites for this guide](#prerequisites).
+   </Warning>
+
+3. Create a file called `main.tf` with the following content, which imports the
+   `agent-pool-terraform` module for your cloud provider:
+
+<Tabs>
+  <Tab title="AWS">
+    ```hcl
+    module "teleport" {
+      source                = "github.com/gravitational/teleport/examples/agent-pool-terraform/teleport"
+      agent_count           = 2
+      agent_roles           = ["Node"]
+      proxy_service_address = "teleport.example.com:443"
+      teleport_edition      = "oss"
+      teleport_version      = "15.0.0-dev"
+    }
+
+    module "agents" {
+      region           = ""
+      source           = "github.com/gravitational/teleport/examples/agent-pool-terraform/aws"
+      subnet_id        = ""
+      userdata_scripts = module.teleport.userdata_scripts
+    }
+    ```
+  </Tab>
+
+  <Tab title="Google Cloud">
+    ```hcl
+    module "teleport" {
+      source                = "github.com/gravitational/teleport/examples/agent-pool-terraform/teleport"
+      agent_count           = 2
+      agent_roles           = ["Node"]
+      proxy_service_address = "teleport.example.com:443"
+      teleport_edition      = "oss"
+      teleport_version      = "15.0.0-dev"
+    }
+
+    module "agents" {
+      gcp_zone         = "us-east1-b"
+      google_project   = ""
+      source           = "github.com/gravitational/teleport/examples/agent-pool-terraform/gcp"
+      subnet_id        = ""
+      userdata_scripts = module.teleport.userdata_scripts
+    }
+    ```
+  </Tab>
+
+  <Tab title="Azure">
+    ```hcl
+    module "teleport" {
+      source                = "github.com/gravitational/teleport/examples/agent-pool-terraform/teleport"
+      agent_count           = 2
+      agent_roles           = ["Node"]
+      proxy_service_address = "teleport.example.com:443"
+      teleport_edition      = "oss"
+      teleport_version      = "15.0.0-dev"
+    }
+
+    module "agents" {
+      azure_resource_group = ""
+      public_key_path      = ""
+      region               = "East US"
+      source               = "github.com/gravitational/teleport/examples/agent-pool-terraform/azure"
+      subnet_id            = ""
+      userdata_scripts     = module.teleport.userdata_scripts
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Edit the `module "teleport"` block in `main.tf` as follows:
+
+1. Assign `agent_count` to `2` for high availability. As you scale your Teleport
+   usage, you can increase this count to ease the load on each agent.
+
+2. Modify the elements of the `agent_roles` list.
+
+   The Teleport Auth Service associates a join token with one or more roles,
+   identifying the Teleport services that are allowed to use the token. Modify
+   `agent_roles` to include the token roles that correspond to the Teleport
+   services you plan to run on your agent nodes:
+
+   | Role value  | Service it enables           |
+   | ----------- | ---------------------------- |
+   | `App`       | Teleport Application Service |
+   | `Discovery` | Teleport Discovery Service   |
+   | `Db`        | Teleport Database Service    |
+   | `Kube`      | Teleport Kubernetes Service  |
+   | `Node`      | Teleport SSH Service         |
+
+   The elements of the `agent_roles` list also determine which Teleport services
+   the agents deployed by the `agent-pool-terraform` module will run. For
+   example, if the value of `agent_roles` is `["Node", "Db"]`, the configuration
+   file enables the Teleport SSH Service and Teleport Database Service.
+
+   If the value of the `agent_roles` input variable includes the `Node` role,
+   the configuration also adds the `role: agent-pool` label to the Teleport SSH
+   Service on each instance. This makes it easier to access hosts in the agent
+   pool later. The script makes Teleport the only option for accessing agent
+   instances by disabling OpenSSH on startup and deleting any authorized public
+   keys.
+
+3. Assign `proxy_service_address` to the host and HTTPS port of your Teleport
+   Proxy Service, e.g., `mytenant.teleport.sh:443`.
+
+   <Tip>
+     Make sure to include the port.
+   </Tip>
+
+4. Make sure `teleport_edition` matches your Teleport edition. Assign this to
+   `oss`, `cloud`, `enterprise`, or `team`. The default is `oss`.
+
+5. If needed, change the value of `teleport_version` to the version of Teleport
+   you want to run on your agents. It must be either the same major version as
+   your Teleport cluster or one major version behind.
+
+Edit the `module "agents"` block in `main.tf` as follows:
+
+1. If you are deploying your instance in a minimum-security demo environment and
+   do not have a NAT gateway, NAT instance, or other method for connecting your
+   instances to the Teleport Proxy Service, modify the `module` block to
+   associate a public IP address with each agent instance:
+
+   ```hcl
+   insecure_direct_access=true
+   ```
+
+2. Assign the remaining input variables depending on your cloud provider:
+
+<Tabs>
+  <Tab title="AWS">
+    1. Assign `region` to the AWS region where you plan to deploy Teleport agents,
+       such as `us-east-1`.
+    2. For `subnet_id`, include the ID of the subnet where you will deploy Teleport
+       agents.
+  </Tab>
+
+  <Tab title="Google Cloud">
+    1. Assign `google_project` to the name of your Google Cloud project and
+       `gcp_zone` to the zone where you will deploy agents, such as `us-east1-b`.
+    2. For `subnet_id`, include the name or URI of the Google Cloud subnet where you
+       will deploy the Teleport agents.
+  </Tab>
+
+  <Tab title="Azure">
+    1. Assign `azure_resource_group` to the name of the Azure resource group where
+       you are deploying Teleport agents.
+
+    2. The module uses `public_key_path` to pass validation, as Azure VMs must
+       include an RSA public key with at least 2048 bits. Once the module deploys
+       the VMs, a cloud-init script removes the public key and disables OpenSSH. Set
+       this input to the path to a valid public SSH key.
+
+    3. Assign `region` to the Azure region where you plan to deploy Teleport agents,
+       such as `East US`.
+
+    4. For `subnet_id`, include the ID of the subnet where you will deploy Teleport
+       agents. Use the following format:
+
+       ```text
+       /subscriptions/SUBSCRIPTION/resourceGroups/RESOURCE_GROUP/providers/Microsoft.Network/virtualNetworks/NETWORK_NAME/subnets/SUBNET_NAME
+       ```
+  </Tab>
+</Tabs>
+
+## Step 2/3. Add provider configurations
+
+In this step, you will configure the `agent-pool-terraform` module for your
+Teleport cluster and cloud provider.
+
+In your project directory, create a file called `providers.tf` with the
+following content:
+
+<Tabs>
+  <Tab title="AWS">
+    ```hcl
+    terraform {
+      required_providers {
+        aws = {
+          source  = "hashicorp/aws"
+          version = "~> 4.0"
+        }
+
+        teleport = {
+          source  = "terraform.releases.teleport.dev/gravitational/teleport"
+          version = "13.3.7"
+        }
+      }
+    }
+
+    provider "aws" {
+      region = AWS_REGION
+    }
+
+    provider "teleport" {
+      # Update addr to point to your Teleport Cloud tenant URL's host:port
+      addr               = PROXY_SERVICE_ADDRESS
+      identity_file_path = "terraform-identity"
+    }
+    ```
+
+    Replace the following placeholders:
+
+    | Placeholder             | Value                                                                            |
+    | ----------------------- | -------------------------------------------------------------------------------- |
+    | AWS\_REGION             | The AWS region where you will deploy agents, e.g., `us-east-2`                   |
+    | PROXY\_SERVICE\_ADDRESS | The host and port of the Teleport Proxy Service, e.g., `example.teleport.sh:443` |
+  </Tab>
+
+  <Tab title="Google Cloud">
+    ```hcl
+    terraform {
+      required_providers {
+        google = {
+          source  = "hashicorp/google"
+          version = "~> 5.5.0"
+        }
+
+        teleport = {
+          source  = "terraform.releases.teleport.dev/gravitational/teleport"
+          version = "13.3.7"
+        }
+      }
+    }
+
+    provider "google" {
+      project = GOOGLE_CLOUD_PROJECT
+      region  = GOOGLE_CLOUD_REGION
+    }
+
+    provider "teleport" {
+      # Update addr to point to your Teleport Cloud tenant URL's host:port
+      addr               = PROXY_SERVICE_ADDRESS
+      identity_file_path = "terraform-identity"
+    }
+    ```
+
+    Replace the following placeholders:
+
+    | Placeholder             | Value                                                                            |
+    | ----------------------- | -------------------------------------------------------------------------------- |
+    | GOOGLE\_CLOUD\_PROJECT  | Google Cloud project where you will deploy agents.                               |
+    | GOOGLE\_CLOUD\_REGION   | Google Cloud region where you will deploy agents.                                |
+    | PROXY\_SERVICE\_ADDRESS | The host and port of the Teleport Proxy Service, e.g., `example.teleport.sh:443` |
+  </Tab>
+
+  <Tab title="Azure">
+    ```hcl
+    terraform {
+      required_providers {
+        azurerm = {
+          source  = "hashicorp/azurerm"
+          version = "~> 3.0.0"
+        }
+
+        teleport = {
+          source  = "terraform.releases.teleport.dev/gravitational/teleport"
+          version = "13.3.7"
+        }
+      }
+    }
+
+    provider "teleport" {
+      identity_file_path = "terraform-identity"
+      # Update addr to point to your Teleport Cloud tenant URL's host:port
+      addr               = PROXY_SERVICE_ADDRESS
+    }
+
+    provider "azurerm" {
+      features {}
+    }
+    ```
+
+    Replace the following placeholders:
+
+    | Placeholder             | Value                                                                            |
+    | ----------------------- | -------------------------------------------------------------------------------- |
+    | PROXY\_SERVICE\_ADDRESS | The host and port of the Teleport Proxy Service, e.g., `example.teleport.sh:443` |
+  </Tab>
+</Tabs>
+
+## Step 3/3. Verify the deployment
+
+Make sure your cloud provider credentials are available to Terraform using the
+standard approach for your organization.
+
+Apply the Terraform configuration:
+
+```code
+$ terraform init
+$ terraform apply
+```
+
+Once the `apply` command completes, run the following command to verify that
+your agents have deployed successfully. This command, which assumes that the
+agents have the `Node` role, lists all Teleport SSH Service instances with the
+`role=agent-pool` label:
+
+```code
+$ tsh ls role=agent-pool
+Node Name                  Address    Labels
+-------------------------- ---------- ---------------
+ip-10-1-1-187.ec2.internal ⟵ Tunnel   role=agent-pool
+ip-10-1-1-24.ec2.internal  ⟵ Tunnel   role=agent-pool
+```
+
+## Next step: Enroll infrastructure resources
+
+In this section, we describe the two ways to configure your agent pool to
+protect infrastructure resources with Teleport.
+
+### Define dynamic resources in Terraform
+
+You can declare Terraform resources that enroll your infrastructure with
+Teleport. The Teleport Terraform provider currently supports the following:
+
+| Infrastructure Resource | Terraform Resource  |
+| ----------------------- | ------------------- |
+| Application             | `teleport_app`      |
+| Database                | `teleport_database` |
+
+To declare a dynamic resource with Terraform, add a configuration block similar
+to the ones below to a `*.tf` file in your `agent-pool-terraform` project
+directory.
+
+The Teleport Terraform provider creates these on the Auth Service backend, and
+the relevant Teleport services query them in order to proxy user traffic. For a
+full list of supported resources and fields, see the [Terraform provider
+reference](/ver/16.x/reference/terraform-provider).
+
+<Tabs>
+  <Tab title="Application">
+    ```hcl
+    resource "teleport_app" "example" {
+      metadata = {
+        name        = "example"
+        description = "Test app"
+        labels = {
+          // Teleport adds this label by default, so add it here to
+          // ensure a consistent state.
+          "teleport.dev/origin" = "dynamic"
+        }
+      }
+
+      spec = {
+        uri = "localhost:3000"
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Database">
+    ```hcl
+    resource "teleport_database" "example" {
+      metadata = {
+        name        = "example"
+        description = "Test database"
+        labels = {
+          // Teleport adds this label by default, so add it here to
+          // ensure a consistent state.
+          "teleport.dev/origin" = "dynamic"
+        }
+      }
+
+      spec = {
+        protocol = "postgres"
+        uri      = "localhost"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Configure Teleport services in the agent pool
+
+Each Teleport service reads its local configuration file (`/etc/teleport.yaml`
+by default) to determine which infrastructure resources to proxy. You can edit
+this configuration file to enroll resources with Teleport.
+
+In the setup we explored in this guide, you can edit the user data script for
+each instance to add configuration settings to, for example, the
+`database_service` or `kubernetes_service` sections.
+
+To see how to configure each service, read its section of the documentation:
+
+- [SSH Service](/ver/16.x/server-access/introduction)
+- [Database Service](/ver/16.x/database-access/introduction)
+- [Kubernetes Service](/ver/16.x/kubernetes-access/introduction)
+- [Windows Desktop Service](/ver/16.x/desktop-access/introduction)
+- [Application Service](/ver/16.x/application-access/introduction)
+
+## Further reading: How the module works
+
+In this section, we explain the resources configured in the
+`agent-pool-terraform` module.
+
+### Join token
+
+The `agent-pool-terraform` module deploys one virtual machine instance for each
+Teleport agent. Each agent joins the cluster using a token. We create each token
+using the `teleport_provision_token` Terraform resource, specifying the token's
+value with a `random_string` resource:
+
+```hcl
+resource "random_string" "token" {
+  count  = var.agent_count
+  length = 32
+}
+
+resource "teleport_provision_token" "agent" {
+  count = var.agent_count
+  spec = {
+    roles = var.agent_roles
+    name  = random_string.token[count.index].result
+  }
+  metadata = {
+    expires = timeadd(timestamp(), "1h")
+  }
+}
+
+```
+
+When we apply the `teleport_provision_token` resources, the Teleport Terraform
+provider creates them on the Teleport Auth Service backend.
+
+### User data script
+
+Each Teleport agent deployed by the `agent-pool-terraform` module loads a user
+data script that creates a Teleport configuration file for the agent. The
+services enabled by the configuration file depend on the value of the
+`agent_roles` input variable:
+
+```text
+#!/bin/bash
+
+curl https://goteleport.com/static/install.sh | bash -s ${teleport_version} ${teleport_edition}
+
+echo ${token} > /var/lib/teleport/token
+cat<<EOF >/etc/teleport.yaml
+version: v3
+teleport:
+  auth_token: /var/lib/teleport/token
+  proxy_server: ${proxy_service_address}
+%{ if contains(agent_roles, "App") }
+app_service:
+  enabled: false
+  resources:
+  - labels:
+      "*": "*"
+%{ endif }
+auth_service:
+  enabled: false
+%{ if contains(agent_roles, "Db") }
+db_service:
+  enabled: false
+  resources:
+  - labels:
+      "*": "*"
+%{ endif }
+%{ if contains(agent_roles, "Discovery") }
+discovery_service:
+  enabled: false
+%{ endif }
+%{ if contains(agent_roles, "Kube") }
+kubernetes_service:
+  enabled: false
+  resources:
+  - labels:
+      "*": "*"
+%{ endif }
+proxy_service:
+  enabled: false
+%{ if contains(agent_roles, "Node") }
+ssh_service:
+  enabled: true
+  labels:
+    role: agent-pool
+%{ else }
+ssh_service:
+  enabled: false
+%{ endif }
+EOF
+
+systemctl restart teleport;
+
+# Disable OpenSSH and any longstanding authorized keys.
+systemctl disable --now ssh.service
+find / -wholename "*/.ssh/authorized_keys" -delete
+
+
+```
+
+### Virtual machine instances
+
+Each cloud-specific child module of `agent-pool-terraform` declares resources to
+deploy a virtual machine instance on your cloud provider:
+
+<Tabs>
+  <Tab title="AWS">
+    `ec2-instance.tf` declares a data source for an Amazon Linux 2023 machine image
+    and uses it to launch EC2 instances that run Teleport agents with the
+    `teleport_provision_token` resource:
+
+    ```hcl
+    data "aws_ami" "amazon_linux_2023" {
+      most_recent = true
+
+      filter {
+        name   = "description"
+        values = ["Amazon Linux 2023 AMI*"]
+      }
+
+      filter {
+        name   = "architecture"
+        values = ["x86_64"]
+      }
+
+      filter {
+        name   = "virtualization-type"
+        values = ["hvm"]
+      }
+
+      filter {
+        name   = "owner-alias"
+        values = ["amazon"]
+      }
+    }
+
+    resource "aws_instance" "teleport_agent" {
+      count                       = length(var.userdata_scripts)
+      ami                         = data.aws_ami.amazon_linux_2023.id
+      instance_type               = "t3.small"
+      subnet_id                   = var.subnet_id
+      user_data                   = var.userdata_scripts[count.index]
+      associate_public_ip_address = var.insecure_direct_access
+
+      // Adheres to security best practices
+      monitoring = true
+
+      metadata_options {
+        http_endpoint = "enabled"
+        http_tokens   = "required"
+      }
+
+      root_block_device {
+        encrypted = true
+      }
+    }
+
+    ```
+  </Tab>
+
+  <Tab title="Google Cloud">
+    `gcp-instance.tf` declares Google Compute Engine instances that use the
+    `teleport_provision_token` to run Teleport agents:
+
+    ```hcl
+    locals {
+      // Google Cloud provides public IP addresses to instances when the
+      // network_interface block includes an empty access_config, so use a dynamic
+      // block to enable a public IP based on the insecure_direct_access input.
+      access_configs = var.insecure_direct_access ? [{}] : []
+    }
+
+    resource "google_compute_instance" "teleport_agent" {
+      count = length(var.userdata_scripts)
+      name  = "teleport-agent-${count.index}"
+      zone  = var.gcp_zone
+
+      boot_disk {
+        initialize_params {
+          image = "family/ubuntu-2204-lts"
+        }
+      }
+
+      network_interface {
+        subnetwork = var.subnet_id
+
+        // If the user enables insecure direct access, allocate a public IP to the
+        // instance.
+        dynamic "access_config" {
+          for_each = local.access_configs
+          content {}
+        }
+      }
+
+      machine_type = "e2-standard-2"
+
+      metadata_startup_script = var.userdata_scripts[count.index]
+    }
+
+    ```
+  </Tab>
+
+  <Tab title="Azure">
+    `azure-instance.tf` declares an Azure virtual machine resource to run Teleport
+    agents using the `teleport_provision_token` resource, plus the required network
+    interface for each instance.
+
+    Note that while Azure VM instances require a user account, this module declares
+    a temporary one to pass validation, but uses Teleport to enable access to the
+    instances:
+
+    ```hcl
+    locals {
+      username = "admin_temp"
+    }
+
+    resource "azurerm_network_interface" "teleport_agent" {
+      count               = length(var.userdata_scripts)
+      name                = "teleport-agent-ni-${count.index}"
+      location            = var.region
+      resource_group_name = var.azure_resource_group
+      ip_configuration {
+        name                          = "teleport_agent_ip_config"
+        subnet_id                     = var.subnet_id
+        private_ip_address_allocation = "Dynamic"
+        public_ip_address_id          = var.insecure_direct_access ? azurerm_public_ip.agent[count.index].id : ""
+      }
+    }
+
+    resource "azurerm_public_ip" "agent" {
+      count               = var.insecure_direct_access ? length(var.userdata_scripts) : 0
+      name                = "agentIP-${count.index}"
+      resource_group_name = var.azure_resource_group
+      location            = var.region
+      allocation_method   = "Static"
+    }
+
+    resource "azurerm_virtual_machine" "teleport_agent" {
+      count = length(var.userdata_scripts)
+      name  = "teleport-agent-${count.index}"
+
+      location            = var.region
+      resource_group_name = var.azure_resource_group
+
+      network_interface_ids = [azurerm_network_interface.teleport_agent[count.index].id]
+      os_profile_linux_config {
+        disable_password_authentication = true
+        ssh_keys {
+          key_data = file(var.public_key_path)
+          // The only allowed path. See:
+          // https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine
+          path = "/home/${local.username}/.ssh/authorized_keys"
+        }
+      }
+
+      os_profile {
+        computer_name  = "teleport-agent-${count.index}"
+        admin_username = local.username
+        custom_data    = var.userdata_scripts[count.index]
+      }
+
+      vm_size = "Standard_B2s"
+
+      storage_os_disk {
+        name              = "teleport-agent-disk-${count.index}"
+        create_option     = "FromImage"
+        managed_disk_type = "Standard_LRS"
+      }
+
+      storage_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-jammy"
+        sku       = "22_04-lts"
+        version   = "latest"
+      }
+    }
+
+    ```
+  </Tab>
+</Tabs>

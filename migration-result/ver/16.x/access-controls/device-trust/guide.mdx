@@ -1,0 +1,319 @@
+---
+title: Getting Started with Device Trust
+description: Get started with Teleport Device Trust
+videoBanner: gBQyj_X1LVw
+version: '16.x'
+---
+
+<Note>
+  Device Trust supports the following components:
+
+  - User devices: macOS, Windows and Linux.
+  - Teleport client: `tsh` and Teleport connect.
+  - Resources: Apps (role-based enforcement only), SSH nodes, databases, and
+    Kubernetes clusters
+
+  Support for the Web UI and desktop access are planned for upcoming Teleport
+  versions.
+</Note>
+
+Device Trust requires two of the following steps to have been configured:
+
+- Device enforcement mode configured via either a role or a cluster-wide config.
+- Trusted device registered and enrolled with Teleport.
+
+In this guide, you will update an existing user profile to assign the preset `require-trusted-device`
+role and then enroll a trusted device into Teleport to access a resource (a test linux server)
+protected with Teleport.
+
+### Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.3.3 go1.21
+
+      $ tsh version
+      # Teleport v14.3.3 go1.21
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v15.0.0-dev go1.21
+
+      $ tsh version
+      # Teleport v15.0.0-dev go1.21
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin your free trial.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+      To download these tools, visit the [Downloads](/ver/16.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.3.3 go1.21
+
+      $ tsh version
+      # Teleport v14.3.3 go1.21
+      ```
+  </Tab>
+</Tabs>
+
+- To enroll a macOS device, you need:
+  - A signed and notarized `tsh` binary, v12.0.0 or newer.
+    [Download the macOS tsh installer](/ver/16.x/installation#macos).
+- To enroll a Windows device, you need:
+  - A device with TPM 2.0.
+  - A user with administrator privileges. This is only required during enrollment.
+  - `tsh` v13.1.2 or newer. [Download the Windows tsh installer](/ver/16.x/installation#windows-tsh-client-only).
+- To enroll a Linux device, you need:
+  - A device with TPM 2.0.
+  - A user with permissions to use the /dev/tpmrm0 device (typically done by
+    assigning the `tss` group to the user).
+  - `tsh` v15.0.0 or newer. [Install tsh for Linux](/ver/16.x/installation#linux).
+
+- User with `editor` role.
+  ```code
+  $ tsh status
+  > Profile URL:      teleport.example.com:443
+  Logged in as:       myuser
+  Cluster:            teleport.example.com
+  Roles:              access, auditor, editor
+  Logins:             root, ubuntu, ec2-user
+  Kubernetes:         disabled
+  Valid until:        2023-08-22 03:30:24 -0400 EDT [valid for 11h52m0s]
+  Extensions:         login-ip, permit-agent-forwarding, permit-port-forwarding, permit-pty, private-key-policy
+  ```
+- Access to a linux server (any Linux server you can access via `tsh ssh` will do).
+  ```code
+  $ tsh ls
+  Node Name        Address        Labels
+  ---------------- -------------- --------------------------------------
+  ip-172-31-35-170 ⟵ Tunnel
+
+  # test connection to ip-172-31-35-170
+  $ tsh ssh root@ip-172-31-35-170
+  root@ip-172-31-35-170:~#
+  ```
+
+Once the above prerequisites are met, begin with the following step.
+
+## Step 1/2. Update user profile to enforce Device Trust
+
+To enforce Device Trust, a user must be assigned with a role with Device Trust mode "required".
+
+For this guide, we will use the preset `require-trusted-device` role to update current user profile.
+
+<Warning>
+  The preset `require-trusted-device` role, as referenced in this guide, is only available
+  from Teleport version 13.3.6 and above. For older Teleport cluster, you will need to update
+  a role with `device_trust_mode: required`.
+
+  <Accordion title="Update a role to enforce Device Trust">
+    For simplicity, the example below updates the preset `access` role but you can update
+    any existing access granting role which the user is assigned with to enforce Device Trust.
+
+    First, fetch a role so you can update it locally:
+
+    ```code
+    $ tctl edit role/access
+    ```
+
+    Edit the role with device trust mode:
+
+    ```diff
+    kind: role
+    metadata:
+      labels:
+        teleport.internal/resource-type: preset
+      name: access
+    spec:
+      allow:
+        logins:
+        - '{{internal.logins}}'
+        ...
+      options:
+        # require authenticated device check for this role
+    +   device_trust_mode: "required" # add this line
+        ...
+      deny:
+        ...
+
+    ```
+
+    Save your edits.
+
+    Now that the `access` role is configured with device mode "required", users with
+    this role will be enforced with Device Trust.
+  </Accordion>
+</Warning>
+
+First, let's fetch the user profile locally so we can update it with the preset `require-trusted-device` role.
+
+```code
+$ tctl get users/myuser > myuser.yaml
+```
+
+Edit the profile:
+
+```diff
+kind: user
+metadata:
+  id: 1692716146877042322
+  name: myuser
+spec:
+  created_by:
+    time: "2023-08-14T13:42:22.291972449Z"
+  expires: "0001-01-01T00:00:00Z"
+  roles:
+  - access
+  - auditor
+  - editor
++ - require-trusted-device # add this line
+  status:
+    is_locked: false
+  ...
+```
+
+Save and update user:
+
+```code
+$ tctl create -f myuser.yaml
+```
+
+Now that the user profile is updated to enforce Device Trust, try to access the test server
+again.
+
+```code
+$ tsh logout; tsh login --proxy=teleport.example.com --user=myuser
+$ tsh ssh root@ip-172-31-35-170
+ERROR: access denied to root connecting to ip-172-31-35-170:0
+```
+
+As you can verify from the above step, access to `ip-172-31-35-170` ssh server,
+which was previously accessible, is now forbidden.
+
+## Step 2/2. Enroll device
+
+To access `ip-172-31-35-170` server again, you will have to enroll your device.
+
+Enrolling your device is easy, and can be done using `tsh` client:
+
+```code
+$ tsh device enroll --current-device
+Device "C00AA0AAAA0A"/macOS registered and enrolled
+```
+
+<Tip>
+  The `--current-device` flag tells `tsh` to enroll current device. User must have the preset `editor`
+  or `device-admin` role to be able to self-enroll their device. For users without the `editor` or
+  `device-admin` roles, an enrollment token must be generated by a device admin, which can then be
+  used to enroll the device. Learn more about manual device enrollment in the
+  [device management guide](/ver/16.x/access-controls/device-trust/device-management#register-a-trusted-device)
+</Tip>
+
+Relogin to fetch updated certificate with device extension:
+
+```code
+$ tsh logout; tsh login --proxy=teleport.example.com --user=myuser
+
+$ tsh status
+> Profile URL:        teleport.example.com:443
+  Logged in as:       myuser
+  Cluster:            teleport.example.com:443
+  Roles:              access, auditor, editor
+  Logins:             root
+  Kubernetes:         enabled
+  Valid until:        2023-08-22 04:06:53 -0400 EDT [valid for 12h0m0s]
+  Extensions:         login-ip, ... teleport-device-asset-tag, teleport-device-credential-id, teleport-device-id
+```
+
+The presence of the `teleport-device-*` extensions shows that the device was successfully authenticated.
+
+Now, let's try to access server (`ip-172-31-35-170`) again:
+
+```bash
+$ tsh ssh root@ip-172-31-35-170
+root@ip-172-31-35-170:~#
+```
+
+Congratulations! You have successfully configured a Trusted Device and accessed a resource protected with
+Device Trust enforcement.
+
+## Troubleshooting
+
+### "binary missing signature or entitlements" on `tsh device enroll`
+
+A signed and notarized `tsh` binary is necessary to enroll and use a a trusted
+device. [Download the macOS tsh installer](/ver/16.x/installation#macos) to fix
+the problem.
+
+### "unauthorized device" errors using a trusted device
+
+A trusted device needs to be registered and enrolled before it is recognized by
+Teleport as such. Follow the [registration](/ver/16.x/access-controls/device-trust/device-management#register-a-trusted-device) and
+[enrollment](/ver/16.x/access-controls/device-trust/device-management#enroll-a-trusted-device) steps
+and make sure to `tsh logout` and `tsh login` after enrollment is done.
+
+### "Failed to open the TPM device" on Linux
+
+Linux users need permissions to read and write from the TPM device, `/dev/tpmrm0`.
+Without such permissions `tsh` would need `sudo` prompts for most operations.
+
+The simplest way to solve this is to check if your distro ships with the `tss`
+group and assign it to your OS user. If that is not possible, or you are looking
+for a different solution, we recommend creating udev rules similar to the ones
+shipped by the [TPM2 Software Stack](https://github.com/tpm2-software/tpm2-tss/blob/ede63dd1ac1f0a46029d457304edcac2162bfab8/dist/tpm-udev.rules#L4).
+
+### App access and "access to this app requires a trusted device"
+
+A Teleport admin configured the particular app you are trying to access to
+require a trusted device.
+
+There are a few situations that might cause the error:
+
+1. You are trying to access the app using the Web UI.
+
+2. You are trying to access the app using an untrusted device.
+
+The Web UI is currently not capable of device authentication. To access apps
+protected by device trust you need to use one of the tsh commands described by
+[App Access support](/ver/16.x/access-controls/device-trust/enforcing-device-trust#app-access-support).
+For example, for an app called `myapp`, run `tsh proxy app myapp -p 8888`, then
+open [http://localhost:8888](http://localhost:8888) in your browser.
+
+If you are already running `tsh proxy app`, or using the certificates acquired
+from `tsh app login`, then it's likely your device isn't registered or enrolled.
+In this case, follow the advice from the [unauthorized device section](#unauthorized-device-errors-using-a-trusted-device) above.
+
+## Next steps
+
+- [Device Management](/ver/16.x/access-controls/device-trust/device-management)
+- [Enforcing Device Trust](/ver/16.x/access-controls/device-trust/enforcing-device-trust)
+- [Jamf Pro Integration](/ver/16.x/access-controls/device-trust/jamf-integration)
+- The role we illustrated in this guide uses the `internal.logins` trait,
+  which Teleport replaces with values from the Teleport local user
+  database. For full details on how traits work in Teleport roles,
+  see the [Teleport Access Controls
+  Reference](/ver/16.x/access-controls/reference).
