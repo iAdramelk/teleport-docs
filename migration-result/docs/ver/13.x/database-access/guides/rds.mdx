@@ -1,0 +1,779 @@
+---
+title: Database Access with AWS RDS and Aurora
+h1: Database Access with AWS RDS and Aurora for PostgreSQL, MySQL and MariaDB
+description: How to configure Teleport database access with AWS RDS and Aurora for PostgreSQL, MySQL and MariaDB.
+version: '13.x'
+---
+
+This guide will help you to:
+
+- Install Teleport `13.2.0`.
+- Set up Teleport to access your RDS instances and Aurora clusters.
+- Connect to your databases through Teleport.
+
+![Teleport Database Access RDS Self-Hosted](../../../../../../assets/rds_selfhosted-a3715c3e68.png)
+
+![Teleport Database Access RDS Cloud](../../../../../../assets/rds_cloud-cc5375603c.png)
+
+<Note>
+  The following products are not compatible with database access as they don't support IAM authentication:
+
+  - Aurora Serverless v1.
+  - RDS MariaDB versions lower than 10.6.
+
+  It is recommended to upgrade Aurora Serverless v1 to
+  [Aurora Serverless v2](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.html)
+  which does support IAM authentication.
+</Note>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- AWS account with RDS and Aurora databases and permissions to create and attach
+  IAM policies.
+- A host, e.g., an EC2 instance, where you will run the Teleport Database
+  Service.
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/6. Create a Teleport user
+
+<Tip>
+  To modify an existing user to provide access to the Database Service, see [Database Access Access Controls](/docs/ver/13.x/database-access/rbac)
+</Tip>
+
+Create a local Teleport user with the built-in `access` role:
+
+```code
+$ tctl users add \
+  --roles=access \
+  --db-users=\* \
+  --db-names=\* \
+  alice
+```
+
+Create a local Teleport user with the built-in `access` and `requester` roles:
+
+```code
+$ tctl users add \
+  --roles=access,requester \
+  --db-users=\* \
+  --db-names=\* \
+  alice
+```
+
+| Flag                      | Description                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`--roles`</nobr>    | List of roles to assign to the user. The builtin `access` role allows them to connect to any database server registered with Teleport.   |
+| <nobr>`--db-users`</nobr> | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| <nobr>`--db-names`</nobr> | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+
+<Warning>
+  Database names are only enforced for PostgreSQL and MongoDB databases.
+</Warning>
+
+For more detailed information about database access controls and how to restrict
+access see [RBAC](/docs/ver/13.x/database-access/rbac) documentation.
+
+## Step 2/6. Create a Database Service configuration
+
+The Database Service requires a valid auth token to connect to the cluster. Generate
+one by running the following command against your Teleport Auth Service and save
+it in `/tmp/token` on the node that will run the Database Service:
+
+```code
+$ tctl tokens add --type=db
+```
+
+<Accordion title="Alternative methods">
+  For users with a lot of infrastructure in AWS, or who might create or recreate
+  many instances, consider alternative methods for joining new EC2 instances running
+  Teleport:
+
+  - [Configure Teleport to Automatically Enroll EC2 instances (Preview)](/docs/ver/13.x/server-access/guides/ec2-discovery)
+  - [Joining Teleport Services via AWS IAM
+    Role](/docs/ver/13.x/agents/join-services-to-your-cluster/aws-iam)
+  - [Joining Teleport Services via AWS EC2 Identity Document](/docs/ver/13.x/agents/join-services-to-your-cluster/aws-ec2)
+</Accordion>
+
+Install Teleport on the host where you will run the Teleport Database Service:
+
+Use the appropriate commands for your environment to install your package:
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Open Source">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    ```
+  </Tab>
+
+  <Tab title="Enterprise">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+
+  <Tab title="Cloud">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport apt repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+Create the Database Service configuration:
+
+```code
+$ teleport db configure create \
+   -o file \
+   --proxy=teleport.example.com:3080 \
+   --token=/tmp/token \
+   --rds-discovery=us-west-1
+```
+
+```code
+$ teleport db configure create \
+   -o file \
+   --proxy=mytenant.teleport.sh:443 \
+   --token=/tmp/token \
+   --rds-discovery=us-west-1
+```
+
+The command will generate a Database Service configuration with RDS/Aurora
+database auto-discovery enabled on the `us-west-1` region and place it at the
+`/etc/teleport.yaml` location.
+
+## Step 3/6. Create an IAM policy for Teleport
+
+Teleport needs AWS IAM permissions to be able to:
+
+- Discover and register RDS instances and Aurora clusters.
+- Configure IAM authentication for them.
+
+Before you can generate IAM permissions, you must provide the Teleport Database
+Service access to AWS credentials.
+
+Grant the Database Service access to credentials that it can use to authenticate to
+AWS. If you are running the Database Service on an EC2 instance, you should use the EC2
+Instance Metadata Service method. Otherwise, you must use environment variables:
+
+<Tabs>
+  <Tab title="Instance Metadata Service">
+    Teleport will detect when it is running on an EC2 instance and use the Instance
+    Metadata Service to fetch credentials.
+
+    The EC2 instance should be configured to use an EC2 instance profile. For more
+    information, see: [Using Instance Profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html).
+  </Tab>
+
+  <Tab title="Environment Variables">
+    Teleport's built-in AWS client reads credentials from the following environment
+    variables:
+
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+    - `AWS_DEFAULT_REGION`
+
+    When you start the Database Service, the service reads environment variables from a
+    file at the path `/etc/default/teleport`. Obtain these credentials from your
+    organization. Ensure that `/etc/default/teleport` has the following content,
+    replacing the values of each variable:
+
+    ```text
+    AWS_ACCESS_KEY_ID=00000000000000000000
+    AWS_SECRET_ACCESS_KEY=0000000000000000000000000000000000000000
+    AWS_DEFAULT_REGION=<YOUR_REGION>
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Have multiple sources of AWS credentials?">
+  Teleport's AWS client loads credentials from different sources in the following
+  order:
+
+  - Environment Variables
+  - Shared credentials file
+  - Shared configuration file (Teleport always enables shared configuration)
+  - EC2 Instance Metadata (credentials only)
+
+  While you can provide AWS credentials via a shared credentials file or shared
+  configuration file, you will need to run the Database Service with the `AWS_PROFILE`
+  environment variable assigned to the name of your profile of choice.
+
+  If you have a specific use case that the instructions above do not account for,
+  consult the documentation for the [AWS SDK for
+  Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/) for a detailed
+  description of credential loading behavior.
+</Accordion>
+
+Teleport can bootstrap IAM permissions for the Database Service based on its
+configuration using the `teleport db configure bootstrap` command. You can use
+this command in automatic or manual mode:
+
+- In automatic mode, Teleport will attempt to create appropriate IAM policies
+  and attach them to the specified IAM identity (user or role). This requires
+  IAM permissions to create and attach IAM policies.
+- In manual mode, Teleport will print required IAM policies. You can then create
+  and attach them manually using the AWS management console.
+
+<Tabs>
+  <Tab title="Automatic / IAM User">
+    Use this command to bootstrap the permissions automatically when
+    your Teleport Database Service runs as an IAM user (for example, uses an AWS
+    credentials file).
+
+    ```code
+    $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user TeleportUser
+    ```
+  </Tab>
+
+  <Tab title="Automatic / IAM Role">
+    Use this command to bootstrap the permissions automatically when
+    your Teleport Database Service runs as an IAM role (for example, on an EC2
+    instance with an attached IAM role).
+
+    ```code
+    $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role TeleportRole
+    ```
+  </Tab>
+
+  <Tab title="Manual / IAM User">
+    Use this command to display required IAM policies which you will then create in your AWS console:
+
+    ```code
+    $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-user arn:aws:iam::123456789012:user/TeleportUser
+    ```
+  </Tab>
+
+  <Tab title="Manual / IAM Role">
+    Use this command to display required IAM policies which you will then create in your AWS console:
+
+    ```code
+    $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-role arn:aws:iam::123456789012:role/TeleportRole
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Bootstrapping with assume_role_arn in config">
+  When `assume_role_arn` is configured for databases or AWS matchers,
+  `teleport db configure bootstrap` will determine permissions required for the
+  bootstrap target AWS IAM identity using the following logic:
+
+  - When the target does not match `assume_role_arn` in any database resource or
+    AWS matcher in the configuration file, the target is assumed to be the
+    Teleport Database Service's AWS IAM identity and permissions are bootstrapped
+    for all the configured static databases and AWS matchers.
+  - When an `--attach-to-role` target matches an `assume_role_arn` setting for
+    static databases or AWS matchers in the configuration file, permissions will
+    be bootstrapped only for those static databases or AWS matchers.
+
+  You will need to run the bootstrap command once with the Teleport Database
+  Service's IAM identity as the policy attachment target, and once for each AWS
+  IAM role that is used for `assume_role_arn`.
+</Accordion>
+
+See the full `bootstrap` command
+[reference](/docs/ver/13.x/database-access/reference/cli#teleport-db-configure-bootstrap).
+
+## Step 4/6. Start the Database Service
+
+Configure the Database Service to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+the Database Service.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run the Database Service, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run the Database Service, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of the Database Service with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+The Database Service will discover all RDS instances and Aurora clusters according to the
+configuration and register them in the cluster. In addition to the primary
+endpoints of the discovered Aurora clusters, their reader and custom endpoints
+will also be registered.
+
+The Database Service will also attempt to enable IAM auth and configure IAM access
+policies for the discovered databases. Keep in mind that AWS IAM changes may
+not propagate immediately and can take a few minutes to come into effect.
+
+## Step 5/6. Create a database IAM user
+
+Database users must allow IAM authentication in order to be used with Database
+Access for RDS. See below how to enable it for your database engine.
+
+<Tabs>
+  <Tab title="PostgreSQL">
+    PostgreSQL users must have a `rds_iam` role:
+
+    ```sql
+    CREATE USER alice;
+    GRANT rds_iam TO alice;
+    ```
+  </Tab>
+
+  <Tab title="MySQL/MariaDB">
+    MySQL and MariaDB users must have the RDS authentication plugin enabled:
+
+    ```sql
+    CREATE USER alice IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';
+    ```
+
+    Created user may not have access to anything by default so let's grant it
+    some permissions:
+
+    ```sql
+    GRANT ALL ON `%`.* TO 'alice'@'%';
+    ```
+  </Tab>
+</Tabs>
+
+See [Creating a database account using IAM authentication](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.IAMDBAuth.DBAccounts.html)
+for more information.
+
+## Step 6/6. Connect
+
+Once the Database Service has started and joined the cluster, log in to see the
+registered databases:
+
+```code
+$ tsh login --proxy=teleport.example.com --user=alice
+$ tsh db ls
+# Name                           Description                                   Labels
+# ------------------------------ --------------------------------------------- --------
+# postgres-rds                   RDS instance in us-west-1                     ...
+# aurora-mysql                   Aurora cluster in us-west-1                   ...
+# aurora-mysql-custom-myendpoint Aurora cluster in us-west-1 (custom endpoint) ...
+# aurora-mysql-reader            Aurora cluster in us-west-1 (reader endpoint) ...
+```
+
+```code
+$ tsh login --proxy=mytenant.teleport.sh --user=alice
+$ tsh db ls
+# Name                           Description                                   Labels
+# ------------------------------ --------------------------------------------- --------
+# postgres-rds                   RDS instance in us-west-1                     ...
+# aurora-mysql                   Aurora cluster in us-west-1                   ...
+# aurora-mysql-custom-myendpoint Aurora cluster in us-west-1 (custom endpoint) ...
+# aurora-mysql-reader            Aurora cluster in us-west-1 (reader endpoint) ...
+```
+
+<Note>
+  Primary, reader, and custom endpoints of Aurora clusters have names of
+  `<cluster-id>`, `<cluster-id>-reader`, and
+  `<cluster-id>-custom-<endpoint-name>` respectively.
+
+  You can override the `<cluster-id>` part of the name with `teleport.dev/database_name` AWS tag.
+</Note>
+
+To retrieve credentials for a database and connect to it:
+
+```code
+$ tsh db connect postgres-rds
+```
+
+You can optionally specify the database name and the user to use by default
+when connecting to the database instance:
+
+```code
+$ tsh db connect --db-user=postgres --db-name=postgres postgres-rds
+```
+
+<Note>
+  The appropriate database command-line client (`psql`, `mysql`, `mariadb`) should be
+  available in `PATH` in order to be able to connect.
+</Note>
+
+To log out of the database and remove credentials:
+
+```code
+$ tsh db logout postgres-rds
+```
+
+## Troubleshooting
+
+### Certificate error
+
+If your `tsh db connect` error includes the following text, you likely have an RDS database created before July 28, 2020, which presents an X.509 certificate that is incompatible with Teleport:
+
+```code
+x509: certificate relies on legacy Common Name field, use SANs instead
+```
+
+AWS provides instructions to rotate your [SSL/TLS certificate](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL-certificate-rotation.html).
+
+### No credential providers error
+
+If you see the error `NoCredentialProviders: no valid providers in chain` in Database Service logs then Teleport
+is not detecting the required credentials to connect via AWS IAM permissions. Check whether
+the credentials or security role has been applied in the machine running the Teleport Database Service.
+
+### Timeout errors
+
+The Teleport Database Service needs connectivity to your database endpoints. That may require
+enabling inbound traffic on the database from the Database Service on the same VPC or routing rules from another VPC. Using the `nc`
+program you can verify connections to databases:
+
+```code
+nc -zv postgres-instance-1.sadas.us-east-1.rds.amazonaws.com 5432
+# Connection to postgres-instance-1.sadas.us-east-1.rds.amazonaws.com (172.31.24.172) 5432 port [tcp/postgresql] succeeded!
+```
+
+### Maximum policy size exceeded errors
+
+Due to [IAM and STS character
+limits](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html#reference_iam-quotas-entity-length),
+you may encounter one of the following errors in the Database Service logs when
+large numbers of databases are registered:
+
+- `LimitExceeded: Maximum policy size of 2048 bytes exceeded for user <iam-user>`
+- `LimitExceeded: Maximum policy size of 10240 bytes exceeded for role <iam-role>`
+
+For reference, a user policy can maintain permissions for approximately 6
+Redshift databases, or 20 RDS databases due to the IAM policy character limits.
+A role policy can maintain permissions for approximately 30 Redshift databases,
+or 100 RDS databases.
+
+One way to work around this is to manually manage the IAM policy used for database
+connections, and use a wildcard `"*"` for `"Resource"` to reduce the policy size:
+
+<Accordion title="use a wildcard policy">
+  Attach a policy with the following permissions to the IAM user or role:
+
+  <Tabs>
+    <Tab title="RDS or RDS Proxy">
+      ```json
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Action": "rds-db:connect",
+                  "Resource": "*"
+              }
+          ]
+      }
+      ```
+    </Tab>
+
+    <Tab title="Redshift">
+      ```json
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Action": "redshift:GetClusterCredentials",
+                  "Resource": "*"
+              }
+          ]
+      }
+      ```
+    </Tab>
+  </Tabs>
+
+  You can safely remove the inline policy created by the Database Service and the
+  IAM permissions for the Database Service to `Get/Put/Delete` the user or role
+  policy.
+</Accordion>
+
+Another option is to deploy [the Database Service in a highly available (HA)
+configuration](/docs/ver/13.x/database-access/guides/ha) where databases can be
+sharded to separate Database Services with different IAM roles.
+
+If the limit is exceeded for a user policy, it is also recommended to use an
+IAM role for the Database Service instead.
+
+## Next steps
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn how to [restrict access](/docs/ver/13.x/database-access/rbac) to certain users and databases.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- View the [High Availability (HA)](/docs/ver/13.x/database-access/guides/ha) guide.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Take a look at the YAML configuration [reference](/docs/ver/13.x/database-access/reference/configuration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- See the full CLI [reference](/docs/ver/13.x/database-access/reference/cli).
+
+- Set up [automatic database user provisioning](/docs/ver/13.x/database-access/rbac/configuring-auto-user-provisioning).

@@ -1,0 +1,340 @@
+---
+title: AWS Database Auto-Discovery
+description: How to configure Teleport to discover AWS-hosted databases.
+version: '16.x'
+---
+
+Database discovery involves two components.
+
+The first, the Discovery Service, is responsible for watching your cloud
+provider and checking if there are any new databases or if there have been any
+modifications to previously discovered databases.
+
+The second, the Database Service, monitors the databases created by the
+Discovery Service and proxies communications between users and the database
+servers hosted by the cloud provider.
+
+In this guide, you will configure a Teleport Discovery Service instance to
+discover AWS-hosted databases automatically.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/ver/16.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/docs/ver/16.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.3 go1.21
+    Proxy version: 14.3.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- An AWS account with permissions to create and attach IAM policies.
+- One or more database servers hosted by AWS database services.
+- A host to run the Teleport Discovery Service.
+
+## Step 1/4. Generate a join token
+
+The Discovery Service requires a valid join token to connect to the cluster.
+
+Generate a join token by running the following command against your Teleport
+Auth Service and save it in `/tmp/token` on the host that will run the
+Discovery Service.
+
+```code
+$ tctl tokens add --type=discovery
+```
+
+<Accordion title="Alternative methods">
+  For users with a lot of infrastructure in AWS, or who might create or recreate
+  many instances, consider alternative methods for joining new EC2 instances running
+  Teleport:
+
+  - [Configure Teleport to Automatically Enroll EC2 instances](/docs/ver/16.x/server-access/guides/ec2-discovery)
+  - [Joining Teleport Services via AWS IAM
+    Role](/docs/ver/16.x/agents/join-services-to-your-cluster/aws-iam)
+  - [Joining Teleport Services via AWS EC2 Identity Document](/docs/ver/16.x/agents/join-services-to-your-cluster/aws-ec2)
+</Accordion>
+
+## Step 2/4. Configure the Discovery service
+
+Enabling AWS database discovery requires that the `discovery_service.aws`
+section includes at least one entry and that `discovery_service.aws.types`
+includes one of database types listed in the sample YAML below.
+
+Create a `teleport.yaml` file similar to the following on the host that will
+run the Discovery Service:
+
+```yaml
+version: v3
+teleport:
+  join_params:
+    token_name: "/tmp/token"
+    method: token
+  proxy_server: "teleport.example.com:443"
+auth_service:
+  enabled: off
+proxy_service:
+  enabled: off
+ssh_service:
+  enabled: off
+discovery_service:
+  enabled: "yes"
+  discovery_group: "aws-prod"
+  aws:
+    # Database types. Valid options are:
+    # 'rds' - discovers AWS RDS and Aurora databases.
+    # 'rdsproxy' - discovers AWS RDS Proxy databases.
+    # 'redshift' - discovers AWS Redshift databases.
+    # 'redshift-serverless' - discovers AWS Redshift Serverless databases.
+    # 'elasticache' - discovers AWS ElastiCache Redis databases.
+    # 'memorydb' - discovers AWS MemoryDB Redis databases.
+    # 'opensearch' - discovers AWS OpenSearch Redis databases.
+  - types: ["rds"]
+    regions: ["us-east-1"]
+    tags:
+      "env": "prod" # Match database resource tags where tag:env=prod
+
+  - types: ["redshift", "redshift-serverless"]
+    regions: ["us-west-1"]
+    tags:
+      "env": "prod"
+    # Optional AWS role that the Discovery Service will assume to discover
+    # AWS-hosted databases. The IAM identity assigned to the host must be able
+    # to assume this role.
+    assume_role_arn: "arn:aws:iam::123456789012:role/example-role-name"
+    # Optional AWS external ID that the Database Service will use to assume
+    # a role in an external AWS account.
+    external_id: "example-external-id"
+```
+
+Adjust the keys under `discovery_service.aws` to match your AWS databases.
+
+<Warning>
+  Discovery Service exposes a configuration parameter - `discovery_service.discovery_group` -
+  that allows you to group discovered resources into different sets. This parameter
+  is used to prevent Discovery Agents watching different sets of cloud resources
+  from colliding against each other and deleting resources created by another services.
+
+  When running multiple Discovery Services, you must ensure that each service is configured
+  with the same `discovery_group` value if they are watching the same cloud resources
+  or a different value if they are watching different cloud resources.
+
+  It is possible to run a mix of configurations in the same Teleport cluster meaning
+  that some Discovery Services can be configured to watch the same cloud resources
+  while others watch different resources. As an example, a 4-agent high availability
+  configuration analyzing data from two different cloud accounts would run with
+  the following configuration.
+
+  - 2 Discovery Services configured with `discovery_group: "prod"` polling data
+    from Production account.
+  - 2 Discovery Services configured with `discovery_group: "staging"` polling data
+    from Staging account.
+</Warning>
+
+## Step 3/4. Bootstrap IAM permissions
+
+Create an IAM role and attach it to the host that will run the Discovery
+Service.
+
+Teleport can bootstrap IAM permissions for the Discovery Service using the
+`teleport discovery bootstrap` command. You can use this command in automatic
+or manual mode:
+
+- In automatic mode, Teleport attempts to create the appropriate IAM policies
+  and attach them to the specified IAM roles. This requires IAM permissions to
+  create and attach IAM policies.
+- In manual mode, Teleport prints the required IAM policies. You can then create
+  and attach them manually using the AWS management console.
+
+<Tabs>
+  <Tab title="Automatic">
+    Either temporarily give IAM admin permissions to the host of the Discovery
+    Service or copy the service YAML configuration file to your desktop where you
+    have the IAM admin permissions.
+
+    Use this command to bootstrap the permissions automatically with YAML
+    configuration file of the Discovery Service:
+
+    ```code
+    $ teleport discovery bootstrap \
+      --attach-to-role arn:aws:iam::aws-account-id:role/iam-role-name \
+      --policy-name TeleportDatabaseDiscovery \
+      -c /etc/teleport.yaml
+    ```
+  </Tab>
+
+  <Tab title="Manual">
+    Use the following command to display the required IAM policies that you need
+    to create in your AWS console:
+
+    ```code
+    $ teleport discovery bootstrap --manual \
+      --attach-to-role arn:aws:iam::aws-account-id:role/iam-role-name \
+      --policy-name TeleportDatabaseDiscovery \
+      -c /etc/teleport.yaml
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Bootstrapping with assume_role_arn in config">
+  When `assume_role_arn` is configured for AWS matchers, `teleport discovery
+  bootstrap` command determines the permissions required for the bootstrap target
+  AWS IAM identity using the following logic:
+
+  - When the target does not match `assume_role_arn` in any AWS matcher in the
+    configuration file, the target is assumed to be the Teleport Discovery
+    Service's AWS IAM identity and permissions are bootstrapped for all the AWS
+    matchers without `assume_role_arn`.
+  - When an `--attach-to-role` target matches an `assume_role_arn` setting for
+    AWS matchers in the configuration file, permissions are bootstrapped only for
+    those AWS matchers.
+
+  You will need to run the bootstrap command once with the Teleport Discovery
+  Service's IAM identity as the policy attachment target, and once for each AWS
+  IAM role that is used for `assume_role_arn`.
+</Accordion>
+
+## Step 4/4. Use the Discovery Service
+
+### Start the Discovery Service
+
+Configure the Discovery Service to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+the Discovery Service.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run the Discovery Service, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run the Discovery Service, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of the Discovery Service with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+After the Discovery Service starts, database servers matching the tags and
+regions specified in the AWS section are added to the Teleport cluster
+automatically.
+
+### List registered databases
+
+You can list them with the `tctl get db` command or check a specific database
+with `tctl get db/<database-name>`.
+
+The default name of the discovered database includes the AWS resource ID,
+endpoint and matcher types, AWS region and account ID to ensure uniqueness, for
+example `my-postgres-rds-aurora-us-east-1-123456789012`.
+
+A discovered database with the default name also has a shorter display name
+that consists only the AWS resource ID and the endpoint type, for example
+`my-postgres`, `my-postgres-reader`. Either the full name or the display name
+can be used for `tctl` and `tsh` commands.
+
+You can override the default name by applying the `TeleportDatabaseName` AWS
+tag to the AWS database resource.
+
+## Next
+
+- Learn about [Dynamic Registration](/docs/ver/16.x/database-access/guides/dynamic-registration) by the
+  Teleport Database Service.
+- Get started by [connecting](/docs/ver/16.x/database-access/guides) your database.
+- Connect AWS databases in [external AWS accounts](/docs/ver/16.x/database-access/guides/aws-cross-account).

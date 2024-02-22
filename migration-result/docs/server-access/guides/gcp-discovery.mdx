@@ -1,0 +1,858 @@
+---
+title: Automatically Discover GCP Compute Instances
+description: How to configure Teleport to automatically enroll GCP compute instances.
+version: '15.x'
+---
+
+The Teleport Discovery Service can connect to GCP and automatically
+discover and enroll GCP Compute Engine instances matching configured labels. It will then
+execute a script on these discovered instances that will install Teleport,
+start it and join the cluster.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/docs/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- A GCP compute instance to run the Discovery Service on.
+- GCP compute instances to join the Teleport cluster, running
+  Ubuntu/Debian/RHEL if making use of the default Teleport install script. (For
+  other Linux distributions, you can install Teleport manually.)
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/6. Create a GCP invite token
+
+When discovering GCP compute instances, Teleport makes use of GCP invite tokens for
+authenticating joining SSH Service instances.
+
+Create a file called `token.yaml`:
+
+```yaml
+# token.yaml
+kind: token
+version: v2
+metadata:
+  # the token name is not a secret because instances must prove that they are
+  # running in your GCP project to use this token
+  name: gcp-discovery-token
+spec:
+  # use the minimal set of roles required (e.g. Node, Proxy, App, Kube, DB, WindowsDesktop)
+  roles: [Node]
+
+  # set the join method allowed for this token
+  join_method: gcp
+
+  gcp:
+    allow:
+      # The GCP project ID(s) that VMs can join from.
+      - project_ids: []
+        # (Optional) The locations that VMs can join from. Note: both regions and
+        # zones are accepted.
+        locations: []
+        # (Optional) The email addresses of service accounts that VMs can join
+        # with.
+        service_accounts: []
+```
+
+Add your instance's project ID(s) to the `project_ids` field.
+Add the token to the Teleport cluster with:
+
+```code
+$ tctl create -f token.yaml
+```
+
+## Step 2/6. Configure IAM permissions for Teleport
+
+Create a service account that will give Teleport IAM permissions needed to
+discover instances.
+
+<Tabs>
+  <Tab title="Console">
+    Go to [IAM > Roles](https://console.cloud.google.com/iam-admin/roles)
+    in the GCP console and click *+ Create Role*.
+    Pick a name for the role (e.g. `teleport-discovery`) and give it the following permissions:
+
+    - `compute.instances.get`
+    - `compute.instances.getGuestAttributes`
+    - `compute.instances.list`
+    - `compute.instances.setMetadata`
+
+    ![Custom role](../../../../assets/custom-role@2x-09a004f72e.png)
+
+    Click *Create*.
+
+    Go to [IAM > Service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+    and click *+ Create Service Account*. Pick a name for the service account
+    (e.g. `teleport-discovery`) and copy its email address to your clipboard.
+    Click *Create and Continue*.
+
+    ![Service account](../../../../assets/create-service-account@2x-92b9dbcc35.png)
+
+    Go to [IAM](https://console.cloud.google.com/iam-admin/iam) and click *Grant Access*.
+    Paste the service account's email into the *New principals* field and select
+    your custom role. Click *Save*.
+
+    ![Role assignment](../../../../assets/assign-role-to-service-account@2x-a04dd2bae3.png)
+  </Tab>
+
+  <Tab title="gcloud">
+    Copy the following and paste it into a file called `teleport-discovery-role.yaml`:
+
+    ```yaml
+    # teleport-discovery-role.yaml
+    title: "teleport-discovery"
+    description: "A role to enable Teleport to discover GCP compute instances"
+    stage: "ALPHA"
+    includedPermissions:
+    - compute.instances.get
+    - compute.instances.getGuestAttributes
+    - compute.instances.list
+    - compute.instances.setMetadata
+    ```
+
+    Then run the following command to create the role:
+
+    ```code
+    $ gcloud iam roles create teleport_discovery \
+    --project=project_id \
+    --file=teleport-discovery-role.yaml
+    ```
+
+    Run the following command to create the service account:
+
+    ```code
+    $ gcloud iam service-accounts create teleport-discovery \
+    --description="A service account to enable Teleport to discover GCP compute instances" \
+    --display-name="teleport-discovery"
+    ```
+
+    Run the following command to add the new role to the new service account:
+
+    ```code
+    $ gcloud projects add-iam-policy-binding project_id \
+    --member="serviceAccount:teleport-discovery@project_id.iam.gserviceaccount.com" \
+    --role="projects/project_id/role/teleport_discovery"
+    ```
+  </Tab>
+</Tabs>
+
+## Step 3/6. Configure instances to be discovered
+
+Ensure that each instance to be discovered has a service account assigned to
+it. No permissions are required on the service account. To check if an instance
+has a service account, run the following command and confirm that there is
+at least one entry under `serviceAccounts`:
+
+```code
+$ gcloud compute instances describe --format="yaml(name,serviceAccounts)" instance_name
+```
+
+### Enable guest attributes on instances
+
+Guest attributes (a subset of custom metadata used for infrequently updated data)
+must be enabled on instances to be discovered so Teleport can access their SSH
+host keys. Enable guest attributes by setting `enable-guest-attributes` to
+`TRUE` in the instance's metadata.
+
+```code
+$ gcloud compute instances add-metadata instance_name \
+--metadata=enable-guest-attributes=True
+```
+
+If guest attributes are enabled during instance creation, the guest attributes
+will automatically be populated with the instance's host keys. If guest
+attributes were enabled after the instance was created, you can manually add
+the host keys to the guest attributes below:
+
+<Tabs>
+  <Tab title="Startup script">
+    Create a file named `add-host-keys.sh` and copy the following into it:
+
+    ```sh
+    #!/usr/bin/env bash
+    for file in /etc/ssh/ssh_host_*_key.pub; do
+      read -r KEY_TYPE KEY _ <"$file"
+      curl -X PUT --data "$KEY" "http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/$KEY_TYPE" -H "Metadata-Flavor: Google"
+    done
+    ```
+
+    Run the following command to add the host keys as part of a startup script:
+
+    ```code
+    $ gcloud compute instances add-metadata instance_name \
+    --metadata-from-file=startup-script="add-host-keys.sh"
+    ```
+  </Tab>
+
+  <Tab title="SSH">
+    Run the following command to add the host keys over SSH:
+
+    ```code
+    $ gcloud compute ssh instance_name \
+    --command='for file in /etc/ssh/ssh_host_*_key.pub; do KEY_TYPE=$(awk '\''{print $1}'\'' $file); KEY=$(awk '\''{print $2}'\''  $file); curl -X PUT --data "$KEY" "http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/$KEY_TYPE" -H "Metadata-Flavor: Google"; done'
+    ```
+  </Tab>
+</Tabs>
+
+## Step 4/6. Install the Teleport Discovery Service
+
+<Tip>
+  If you plan on running the Discovery Service on a host that is already running
+  another Teleport service (Auth or Proxy, for example), you can skip this step.
+</Tip>
+
+Install Teleport on the virtual machine that will run the Discovery Service.
+
+Select an edition, then follow the instructions for that edition to install Teleport.
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+      Before installing a `teleport` binary with a version besides
+      v13, read our compatibility rules to ensure that the
+      binary is compatible with Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo zypper install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Enterprise Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+## Step 5/6. Configure Teleport to discover GCP compute instances
+
+If you are running the Discovery Service on its own host, the service requires a
+valid invite token to connect to the cluster. Generate one by running the
+following command against your Teleport Auth Service:
+
+```code
+$ tctl tokens add --type=discovery
+```
+
+Save the generated token in `/tmp/token` on the virtual machine that will run
+the Discovery Service.
+
+In order to enable GCP instance discovery the `discovery_service.gcp` section
+of `teleport.yaml` must include at least one entry:
+
+```yaml
+version: v2
+teleport:
+  join_params:
+    token_name: "/tmp/token"
+    method: token
+  proxy_server: "teleport.example.com:443"
+auth_service:
+  enabled: off
+proxy_service:
+  enabled: off
+ssh_service:
+  enabled: off
+discovery_service:
+  enabled: "yes"
+  gcp:
+    - types: ["gce"]
+      # The IDs of GCP projects that VMs can join from.
+      project_ids: []
+      # (Optional) The locations that VMs can join from. Note: both regions and
+      # zones are accepted.
+      locations: []
+      # (Optional) The email addresses of service accounts that VMs can join
+      # with.
+      service_accounts: []
+      # (Optional) Labels that joining VMs must have.
+      labels:
+        "env": "prod" # Match virtual machines where label:env=prod
+```
+
+- Edit the `teleport.auth_server` or `teleport.proxy_server` key to match your Auth Service or Proxy Service's domain name
+  and port, respectively.
+- Adjust the keys under `discovery_service.gcp` to match your GCP environment,
+  specifically the projects, locations, service accounts, and tags you want to associate with the Discovery
+  Service.
+
+### GCP credentials
+
+The Teleport Discovery Service must have the credentials of the
+`teleport-discovery` GCP service account we created above in order to be able
+to log in.
+
+The easiest way to ensure that is to run the Discovery Service on a GCP
+instance and assign the service account to that instance. Refer to
+[Set Up Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc)
+for details on alternate methods.
+
+## Step 6/6. \[Optional] Customize the default installer script
+
+To customize the default installer script, execute the following command on
+your workstation:
+
+```code
+$ tctl get installer/default-installer > teleport-default-installer.yaml
+```
+
+The resulting `teleport-default-installer.yaml` can be edited to
+change what gets executed when enrolling discovered instances.
+
+After making the desired changes to the default installer, the
+resource can be updated by executing:
+
+```code
+$ tctl create -f teleport-default-installer.yaml
+```
+
+Multiple `installer` resources can exist and be specified in the
+`gcp.install.script_name` section of a `discovery_service.gcp` list item in
+`teleport.yaml`:
+
+```yaml
+discovery_service:
+  gcp:
+    - types: ["gce"]
+      tags:
+       - "env": "prod"
+      install: # optional section when default-installer is used.
+        script_name: "default-installer"
+    - types: ["gce"]
+      tags:
+       - "env": "devel"
+      install:
+        script_name: "devel-installer"
+```
+
+***
+
+The `installer` resource has the following templating options:
+
+- `{{ .MajorVersion }}`: the major version of Teleport to use when
+  installing from the repository.
+- `{{ .PublicProxyAddr }}`: the public address of the Teleport Proxy Service to
+  connect to.
+- `{{ .RepoChannel }}`: Optional package repository (apt/yum) channel name.
+  Has format `<channel>/<version>` e.g. stable/v15. See [installation](/docs/installation#linux) for more details.
+- `{{ .AutomaticUpgrades }}`: indicates whether Automatic Upgrades are enabled or disabled.
+  Its value is either `true` or `false`. See
+  [self-hosted automatic agent updates](/docs/management/operations/self-hosted-automatic-agent-updates)
+  for more information.
+- `{{ .TeleportPackage }}`: the Teleport package to use.
+  Its value is either `teleport-ent` or `teleport` depending on whether the
+  cluster is enterprise or not.
+
+These can be used as follows:
+
+```yaml
+kind: installer
+metadata:
+  name: default-installer
+spec:
+  script: |
+    echo {{ .PublicProxyAddr }}
+    echo Teleport-{{ .MajorVersion }}
+    echo Repository Channel: {{ .RepoChannel }}
+version: v1
+```
+
+Which, when retrieved for installation, will evaluate to a script
+with the following contents:
+
+```sh
+echo teleport.example.com
+echo Teleport-15.0.0-dev
+echo Repository Channel: stable/v15.0.0-dev
+```
+
+The default installer will take the following actions:
+
+- Add an official Teleport repository to supported Linux distributions.
+- Install Teleport via `apt` or `yum`.
+- Generate the Teleport config file and write it to `/etc/teleport.yaml`.
+- Enable and start the Teleport service.
+
+## Next steps
+
+- Read [Joining Services via GCP](/docs/agents/join-services-to-your-cluster/gcp)
+  for more information on GCP tokens.
+- Full documentation on GCP discovery configuration can be found through the [
+  config file reference documentation](/docs/reference/config).
+- The complete default installer can be found [with the Teleport source
+  ](https://github.com/gravitational/teleport/blob/branch/v15/api/types/installers/installer.sh.tmpl).

@@ -1,0 +1,569 @@
+---
+title: Teleport Authentication with Google Workspace (G Suite)
+description: How to configure Teleport access with Google Workspace (formerly known as G Suite)
+videoBanner: WTLWc6nnPfk
+version: '13.x'
+---
+
+This guide will explain how to configure [Google Workspace](https://workspace.google.com/)
+to be a single sign-on (SSO) provider to issue Teleport credentials to specific
+groups of users. When used in combination with role-based access control (RBAC)
+it allows Teleport administrators to define policies like:
+
+- Only members of the "DBA" Google group can connect to PostgreSQL databases.
+- Developers must never SSH into production servers.
+
+## Prerequisites
+
+Before you get started you’ll need:
+
+- A Google Workspace super administrator account. We recommend setting up a
+  separate super admin account with 2FA as opposed to granting your daily user
+  super admin privileges.
+- Ability to create a Google Cloud project, which requires signing up for Google
+  Cloud. Note that this guide will not require using any paid Google Cloud services.
+- Ability to set up Google Workspace groups.
+- Teleport role with access to maintaining `oidc` resources.  This is available
+  in the default `editor` role.
+
+<Tabs>
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
+      details on how to set this up, see our Enterprise [Getting
+      Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/4. Configure Google Workspace
+
+The setup will consist of:
+
+- Determining whether your Google Workspace plan is correct for your Teleport
+  usage
+- Creating a new project on Google Cloud Platform
+- Configuring OAuth consent for the new project
+- Creating an OAuth client ID to allow Google Workspace users to log in to your
+  Teleport cluster
+- Creating a service account for Teleport to fetch the additional Google Groups
+  data.
+
+### Ensure your Google Workspace plan is correct
+
+Teleport's Google Workspace integration works differently depending on your
+Google Workspace plan. In this section, we will explain how to determine if
+Teleport supports your current Google Workspace setup.
+
+#### How Google Workspace APIs differ by service level
+
+In Google Workspace, **transitive group membership** takes place when a user is
+a member of one group by virtue of being in another group. This happens when a child
+group is nested within a parent group, so that a member of a child group is also
+a member of the parent group.
+
+Google Workspace service accounts can determine whether a user has a transitive
+membership to a specific group by calling methods within the Google Workspace
+**Cloud Identity API**. These API methods are only usable for users belonging to
+specific Google Workspace plans:
+
+- Enterprise Standard
+- Enterprise Plus
+- Enterprise for Education
+- Cloud Identity Premium
+
+The Google Workspace **Directory API** allows administrators to list users and
+groups in their Google Workspace domain, but does not enable them to query
+transitive group memberships. The Directory API is available for all Google
+Workspace plans.
+
+#### How Teleport uses Google Workspace APIs
+
+Teleport's OIDC connector uses Google Workspace's APIs differently depending
+on the resource version.
+
+We will show you how to configure the connector later in the
+guide, but for now, you should ensure that your Google Workspace plan allows you
+to use Teleport as you intend.
+
+We currently support version `v3` of the OIDC connector. The OIDC connector maps a
+user's roles to the Google Workspace groups they belong to.
+
+In order to list a user's Google Workspace groups, Teleport will first attempt to
+fetch credentials for calling Cloud Identity API methods, then use these
+credentials to query a user's transitive group memberships.
+
+If these credentials do not exist, Teleport will fetch credentials for the
+Directory API instead, and will use this API to list the user's groups in your
+entire Google Workspace account. Groups that the user belongs to that are
+external to the workspace will not be listed.
+
+#### How to check your current plan
+
+To troubleshoot whether your Google Workspace plan supports querying transitive
+group memberships, you can visit the
+[Groups Inspection](https://admin.google.com/ac/groupsinspection) page in the
+Google Admin Console, which relies on the Cloud Identity API. Select "List all
+groups for a member" and "Include external groups" to test.
+
+If your Google Workspace plan does not support the Cloud Identity API, you must
+ensure that your RBAC does not depend on transitive group memberships.
+
+When querying transitive group memberships, we recommend blocking access to
+external groups at the workspace level (following [these
+instructions](https://support.google.com/a/answer/9468710)), as membership in
+any group that the service account doesn't have full visibility on (including
+all groups external to the workspace) will prevent users from logging in.
+
+### Create a new project
+
+In the GCP console, choose the project dropdown menu, and [create a new project](https://console.cloud.google.com/projectselector2/apis/dashboard).
+
+![creation of a Google Cloud Platform project](../../../../../../assets/new-project-d8ca8dea8e.png)
+
+### Configure OAuth consent
+
+On the
+[OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
+page of the GCP console, select"Internal" as your User Type.
+
+![configuration of the OAuth consent screen](../../../../../../assets/consent-screen-1-7baee1e702.png)
+
+On the next page, configure the appearance of your connector by picking a
+visible name, user support email, etc.
+
+### Select scopes
+
+On the next page, click on **ADD OR REMOVE SCOPES**.
+Select the `.../auth/userinfo.email` and `openid` scopes.
+
+![select email and openid scopes](../../../../../../assets/consent-screen-2-52c6c1ba0d.png)
+
+Enable the
+[Cloud Identity API](https://console.cloud.google.com/apis/library/cloudidentity.googleapis.com)
+or the
+[Admin SDK API](https://console.cloud.google.com/apis/library/admin.googleapis.com)
+for transitive and direct group membership, respectively. Enabling both is fine.
+
+<Warning>
+  Your Google Workspace account must enable support for the API you choose to use.
+
+  Please consult the documentation for your chosen API to ensure that you have the
+  correct Google Workspace plan.
+</Warning>
+
+### Create an OAuth client ID
+
+Under **Credentials**, select **CREATE CREDENTIALS**, then **OAuth client ID**:
+
+![Create an OAuth Client ID](../../../../../../assets/create-oauth-client-id-ed71ad10de.png)
+
+Select "Web application" as the Application type, pick a name, then set the
+redirect URI based on the address of your Teleport Proxy Service or cloud tenant:
+<nobr>HTTPS://EXAMPLE.TELEPORT.SH`/v1/webapi/oidc/callback`</nobr>
+
+![OAuth client ID creation](../../../../../../assets/clientid-creation-8f929cf713.png)
+
+Copy the Client ID and Client Secret from the next screen or click **DOWNLOAD JSON**:
+
+![OAuth client data](../../../../../../assets/clientid-data-fc1baa5ec5.png)
+
+### Create a service account
+
+From the GCP **IAM & Admin** menu select **Service Accounts**. From the kebab
+menu click **CREATE SERVICE ACCOUNT**:
+
+![Create a service account](../../../../../../assets/create-service-account-392158a4f4.png)
+
+On the [Create a
+service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create)
+page, pick a name for your service account. Leave project access grants and user
+access grants empty.
+
+![service account creation](../../../../../../assets/serviceacct-creation-b84d30b68a.png)
+
+Click the newly-created account to view its details, and copy the Unique ID for later.
+
+![service account unique ID](../../../../../../assets/serviceacct-uniqueid-885db194c2.png)
+
+Create a new key for the service account, select JSON as the key type, and save
+the resulting JSON file.
+
+![service account key creation](../../../../../../assets/serviceacct-key-797654f7d6.png)
+
+Later, we will make this JSON available to the Teleport Auth Service via the
+OIDC Connector configuration, either by referencing a local file or pasting the
+JSON into the `tctl` command creating the connector. If you plan to take the
+first approach, you will need to upload the JSON to the Auth Service.
+
+<Note>
+  Teleport requires the service account JSON to be available to all Teleport Auth
+  Service hosts when deploying Teleport in a High Availability configuration.
+  For high availability or cloud deployments, we suggest providing the JSON when
+  creating the connector resource.
+</Note>
+
+### Configure domain-wide delegation
+
+Configure [domain-wide
+delegation](https://admin.google.com/ac/owl/domainwidedelegation) for your
+newly-created service account:
+
+Click "Add new" and add the numeric Unique ID that you've copied earlier from
+the service account:
+
+![domain-wide delegation](../../../../../../assets/domainwidedelegation-bd7aca40c8.png)
+
+Add **one** of the following scopes depending on your Google Workspace:
+
+- Direct and Indirect Groups (*Transitive Group Membership Support*)
+  - `https://www.googleapis.com/auth/cloud-identity.groups.readonly`
+- Direct Groups Only
+  - `https://www.googleapis.com/auth/admin.directory.group.readonly`
+
+## Step 2/4. Create an OIDC connector
+
+Create the OIDC connector resource using `tctl`. We will explain how to choose
+values for fields within the resource spec below:
+
+<Tabs>
+  <Tab title="Embedded JSON">
+    Use this method to define the service account JSON in the connector resource.
+    This method doesn't require providing the JSON file to the host(s) running the
+    Auth Service.
+
+    ```code
+    $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
+    --secret <CLIENT-SECRET> \
+    --claims-to-roles groups,auditor@example.com,auditor \
+    --claims-to-roles groups,teleport-developers@example.com,access \
+    --google-admin=<GOOGLE-WORKSPACE-ADMIN-EMAIL> \
+    --google-acc '
+    {
+      "type": "service_account",
+      ...
+      "universe_domain": "googleapis.com"
+    }'
+    ```
+
+    The file created will resemble:
+
+    ```yaml
+    kind: oidc
+    metadata:
+      name: google
+    spec:
+      claims_to_roles:
+      - claim: groups
+        roles:
+        - auditor
+        value: auditor@example.com
+      - claim: groups
+        roles:
+        - access
+        value: teleport-developers@example.com
+      client_id: <CLIENT-ID>
+      client_secret: <CLIENT-SECRET>
+      display: Google
+      google_admin_email: <GOOGLE-WORKSPACE-ADMIN-EMAIL>
+      google_service_account: |2-
+
+        {
+          "type": "service_account",
+          ...
+          "universe_domain": "googleapis.com"
+        }
+      issuer_url: https://accounts.google.com
+      redirect_url: https://example.teleport.sh:443/v1/webapi/oidc/callback
+    version: v3
+    ```
+  </Tab>
+
+  <Tab title="Uploaded JSON file">
+    Use this method for single self-hosted Teleport Auth instances, or when you can
+    easily and reliably make the JSON file available to all hosts running the Auth
+    service.
+
+    ```code
+    $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
+    --secret <CLIENT-SECRET> \
+    --google-acc-uri <PATH/TO/SERVICE-ACCOUNT-KEY>.json \
+    --claims-to-roles groups,auditor@example.com,auditor \
+    --claims-to-roles groups,teleport-developers@example.com,access \
+    --google-admin=<GOOGLE-WORKSPACE-ADMIN-EMAIL> > gworkspace-connector.yaml
+    ```
+
+    The file created will resemble:
+
+    ```yaml
+    kind: oidc
+    metadata:
+      name: google
+    spec:
+      claims_to_roles:
+      - claim: groups
+        roles:
+        - auditor
+        value: auditor@example.com
+      - claim: groups
+        roles:
+        - access
+        value: teleport-developers@example.com
+      client_id: <CLIENT-ID>
+      client_secret: <CLIENT-SECRET>
+      display: Google
+      google_admin_email: <GOOGLE-WORKSPACE-ADMIN-EMAIL>
+      google_service_account_uri: /PATH/TO/SERVICE-ACCOUNT-KEY.json
+      issuer_url: https://accounts.google.com
+      redirect_url: https://teleport.example.com/v1/webapi/oidc/callback
+    version: v3
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  Be sure to remove \< > brackets around tokens in the sample configuration above.
+  For example, replace `<GOOGLE-WORKSPACE-ADMIN-EMAIL>` with `admin@yourdomain.com`.
+</Tip>
+
+The email that you set for `google_admin_email` **must** be the email address of
+a user that has permission to list all groups, users, and group membership in
+your Google Workspace account. This user will generally need super admin or group
+admin privileges.
+
+Do not use the email of the service account for `google_admin_email`. The
+configuration display will look the same, but the service account will not have
+the required domain-wide delegation.
+
+The `client_id` field must be the unique ID number captured from the Google Cloud
+Platform UI. An indicator that this is misconfigured is if you see "invalid Google
+Workspace credentials for scopes \[...]" in your audit log, accessible from the
+Auth service host or the **Management** section of the web UI.
+
+Test the connector:
+
+```code
+$ cat gworkspace-connector.yaml | tctl sso test
+```
+
+This will open your browser and attempt to sign you in to your Teleport cluster
+using Google. If it fails, the CLI output will provide useful troubleshooting
+information.
+
+Create the connector using the `tctl` tool:
+
+```code
+$ tctl create -f gworkspace-connector.yaml
+```
+
+<Accordion title="Upgrading from Teleport < 8.1.2?">
+  If you have a configured connector from a version of Teleport older than 8.1.2,
+  you can upgrade your connector from `v2` to `v3`:
+
+  First, fetch the connector data:
+
+  ```code
+  $ umask 077
+  $ tctl get --with-secrets oidc/connectorname > connector.yaml
+  ```
+
+  Next, edit `connector.yaml` to change the version number from `v2` to `v3`, and
+  then update the connector:
+
+  ```code
+  $ tctl create -f connector.yaml
+  $ rm connector.yaml
+  ```
+
+  Then, to start fetching transitive groups instead of just direct groups, edit
+  the [domain-wide
+  delegation](https://admin.google.com/ac/owl/domainwidedelegation) for your
+  service account and swap out the OAuth scopes for
+  `https://www.googleapis.com/auth/cloud-identity.groups.readonly`. To undo the
+  change, remove that scope and add
+  `https://www.googleapis.com/auth/admin.directory.group.readonly` again.
+
+  While a `v3` connector is configured, you can no longer downgrade Teleport to a
+  version before 8.1.2. Before such a downgrade, follow the above instructions and
+  change the version number back to `v2`.
+</Accordion>
+
+## Step 3/4. Test your Google Workspace OIDC connector
+
+The Web UI will now contain a new button: "Login with Google". To log in with
+the CLI:
+
+```code
+$ tsh --proxy=proxy.example.com login --auth=google
+```
+
+This command will print the SSO login URL (and will try to open it
+automatically in a browser).
+
+## Step 4/4. Enable default OIDC authentication
+
+Configure Teleport to use OIDC authentication as the default instead of the local
+user database.
+
+You can either edit your Teleport configuration file or create a dynamic
+resource.
+
+<Tabs>
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: oidc
+
+    ```
+  </Tab>
+
+  <Tab title="Dynamic Resources (All Editions)">
+    Create a file called `cap.yaml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:    
+      type: oidc
+    version: v2
+    ```
+
+    Create a resource:
+
+    ```code
+    $ tctl create -f cap.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Ensure that HTTP/TLS certificates are configured properly for both Teleport
+  proxy and the SSO provider.
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/docs/ver/13.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+## Further reading
+
+- [Google Workspace Cloud Identity API](https://cloud.google.com/identity)
+- [Google Workspace Directory API](https://developers.google.com/admin-sdk/directory)
+- [How nested Google Workspace groups work](https://support.google.com/a/answer/167100?hl=en)

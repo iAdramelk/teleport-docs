@@ -1,0 +1,88 @@
+---
+title: Database Access
+description: Teleport database access introduction, demo and resources.
+version: '14.x'
+---
+
+Teleport can provide secure connections to your databases while improving both
+access control and visibility.
+
+Some of the things you can do with database access:
+
+- Enable users to retrieve short-lived database certificates using a Single Sign-On
+  flow, thus maintaining their organization-wide identity.
+- Configure role-based access controls for databases and implement custom
+  [Access Request](/docs/ver/14.x/access-controls/access-requests) workflows.
+- Capture database activity in the Teleport audit log.
+
+## Demo
+
+Let's connect to a PostgreSQL server with `psql` and pgAdmin 4 after authenticating
+with GitHub, execute a few SQL queries and observe them in the audit log:
+
+<video autoPlay loop muted playsInline controls>
+  <source src="../../../../../assets/dbaccessdemo-d2b07ea2a0.mp4" type="video/mp4" />
+
+  <source src="../../../../../assets/dbaccessdemo-71558a025e.webm" type="video/webm" />
+
+  Your browser does not support the video tag.
+</video>
+
+## Getting started
+
+- [Getting started](/docs/ver/14.x/database-access/getting-started): Connect Aurora PostgreSQL in a 10
+  minute guide.
+
+## How to connect your database to Teleport
+
+- [Active Directory SQL Server](/docs/ver/14.x/database-access/guides/sql-server-ad): Connect Microsoft SQL Server with Active Directory authentication.
+- [Active Directory SQL Server with PKINIT](/docs/ver/14.x/database-access/guides/sql-server-ad-pkinit): Connect Microsoft SQL Server with Active Directory PKINIT authentication.
+- [AWS DynamoDB](/docs/ver/14.x/database-access/guides/aws-dynamodb): Connect AWS DynamoDB.
+- [AWS OpenSearch](/docs/ver/14.x/database-access/guides/aws-opensearch): Connect AWS OpenSearch.
+- [AWS ElastiCache & MemoryDB](/docs/ver/14.x/database-access/guides/redis-aws): Connect AWS ElastiCache or AWS MemoryDB for Redis database.
+- [AWS RDS & Aurora](/docs/ver/14.x/database-access/guides/rds): Connect AWS RDS or Aurora PostgreSQL, MariaDB or MySQL database.
+- [AWS RDS Proxy](/docs/ver/14.x/database-access/guides/rds-proxy): Connect AWS RDS Proxy instances to Teleport.
+- [AWS Redshift](/docs/ver/14.x/database-access/guides/postgres-redshift): Connect AWS Redshift database.
+- [AWS Redshift Serverless](/docs/ver/14.x/database-access/guides/redshift-serverless): Connect to AWS Redshift serverless.
+- [AWS Keyspaces (Apache Cassandra)](/docs/ver/14.x/database-access/guides/aws-cassandra-keyspaces): Connect to an AWS Keyspaces database.
+- [Azure PostgreSQL & MySQL](/docs/ver/14.x/database-access/guides/azure-postgres-mysql): Connect Azure PostgreSQL or MySQL.
+- [Azure Cache for Redis](/docs/ver/14.x/database-access/guides/azure-redis): Connect Azure Cache for Redis.
+- [Azure SQL Server](/docs/ver/14.x/database-access/guides/azure-sql-server-ad): Connect Azure SQL Server with Azure Active Directory authentication.
+- [GCP Cloud SQL MySQL](/docs/ver/14.x/database-access/guides/mysql-cloudsql): Connect GCP Cloud SQL MySQL database.
+- [GCP Cloud SQL PostgreSQL](/docs/ver/14.x/database-access/guides/postgres-cloudsql): Connect GCP Cloud SQL PostgreSQL database.
+- [MongoDB Atlas](/docs/ver/14.x/database-access/guides/mongodb-atlas): Connect MongoDB Atlas cluster.
+- [Self-hosted CockroachDB](/docs/ver/14.x/database-access/guides/cockroachdb-self-hosted): Connect self-hosted CockroachDB database.
+- [Self-hosted Elasticsearch](/docs/ver/14.x/database-access/guides/elastic)
+- [Self-hosted MongoDB](/docs/ver/14.x/database-access/guides/mongodb-self-hosted): Connect self-hosted MongoDB database.
+- [Self-hosted MySQL & MariaDB](/docs/ver/14.x/database-access/guides/mysql-self-hosted): Connect self-hosted MySQL or MariaDB database.
+- [Self-hosted PostgreSQL](/docs/ver/14.x/database-access/guides/postgres-self-hosted): Connect self-hosted PostgreSQL database.
+- [Self-hosted Redis Cluster](/docs/ver/14.x/database-access/guides/redis-cluster): Connect a self-hosted Redis Cluster.
+- [Self-hosted Redis](/docs/ver/14.x/database-access/guides/redis): Connect self-hosted Redis.
+- [Self-Hosted Cassandra & ScyllaDB](/docs/ver/14.x/database-access/guides/cassandra-self-hosted): Connect self-hosted Cassandra or ScyllaDB.
+- [Self-Hosted Oracle](/docs/ver/14.x/database-access/guides/oracle-self-hosted): Connect self-hosted Oracle database.
+- [Snowflake](/docs/ver/14.x/database-access/guides/snowflake): Connect Snowflake.
+
+## Other guides
+
+- [GUI clients](/docs/ver/14.x/connect-your-client/gui-clients): Configure database graphical clients.
+- [Dynamic Registration](/docs/ver/14.x/database-access/guides/dynamic-registration): Register/unregister databases without restarting Teleport.
+- [High Availability](/docs/ver/14.x/database-access/guides/ha): Deploy database access in HA configuration.
+- [AWS Cross-Account Access](/docs/ver/14.x/database-access/guides/aws-cross-account): Connect AWS databases in external AWS accounts.
+
+## Resources
+
+To learn more about configuring role-based access control for database access,
+check out the [RBAC](/docs/ver/14.x/database-access/rbac) section.
+
+The [Architecture](/docs/ver/14.x/database-access/architecture) section provides a more in-depth look at
+Teleport Database Service internals such as networking and security.
+
+See [Reference](/docs/ver/14.x/database-access/reference) for an overview of
+database access-related configuration and CLI commands.
+
+If you hit any issues, check out the [Troubleshooting
+documentation](/docs/ver/14.x/database-access/troubleshooting) for common problems and solutions.
+
+## FAQ
+
+Finally, check out [Frequently Asked Questions](/docs/ver/14.x/database-access/faq).

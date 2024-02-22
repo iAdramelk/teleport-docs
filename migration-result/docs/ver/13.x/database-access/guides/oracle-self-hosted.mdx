@@ -1,0 +1,625 @@
+---
+title: Database Access with Oracle
+description: How to configure Teleport database access with Oracle.
+version: '13.x'
+---
+
+<Warning>
+  Query audit logging is currently not supported in Oracle access and will be
+  implemented in a future release.
+</Warning>
+
+This guide will help you to:
+
+- Install and configure Teleport.
+- Set up Teleport to access your self-hosted Oracle server 18c or later.
+- Connect to your database through Teleport.
+
+![Teleport Database Access Self-hosted Oracle](../../../../../../assets/oracle_selfhosted-71899f3b32.png)
+
+![Teleport Database Access Oracle Cloud](../../../../../../assets/oracle_selfhosted_cloud-78a4dbf716.png)
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
+      details on how to set this up, see our Enterprise [Getting
+      Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Self-hosted Oracle server instance 18c or later.
+- The `sqlcl` [Oracle client](https://www.oracle.com/pl/database/sqldeveloper/technologies/sqlcl/) installed and added to your system's `PATH` environment variable or any GUI client that supports JDBC
+  Oracle thin client.
+
+## Step 1/5. Create a Teleport token and user
+
+The Database Service requires a valid auth token to connect to the cluster. Generate
+one by running the following command against your Teleport Auth Service and save
+it in `/tmp/token` on the node that will run the Database Service:
+
+```code
+$ tctl tokens add --type=db
+```
+
+<Tip>
+  To modify an existing user to provide access to the Database Service, see [Database Access Access Controls](/docs/ver/13.x/database-access/rbac)
+</Tip>
+
+Create a local Teleport user with the built-in `access` role:
+
+```code
+$ tctl users add \
+  --roles=access \
+  --db-users=\* \
+  --db-names=\* \
+  alice
+```
+
+Create a local Teleport user with the built-in `access` and `requester` roles:
+
+```code
+$ tctl users add \
+  --roles=access,requester \
+  --db-users=\* \
+  --db-names=\* \
+  alice
+```
+
+| Flag                      | Description                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`--roles`</nobr>    | List of roles to assign to the user. The builtin `access` role allows them to connect to any database server registered with Teleport.   |
+| <nobr>`--db-users`</nobr> | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| <nobr>`--db-names`</nobr> | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+
+<Warning>
+  Database names are only enforced for PostgreSQL and MongoDB databases.
+</Warning>
+
+For more detailed information about database access controls and how to restrict
+access see [RBAC](/docs/ver/13.x/database-access/rbac) documentation.
+
+## Step 2/5. Create a certificate/key pair and Teleport Oracle Wallet
+
+Teleport uses mutual TLS authentication with self-hosted databases. These
+databases must be configured with Teleport's certificate authority to be
+able to verify client certificates. They also need a certificate/key pair that
+Teleport can verify.
+
+Your Teleport Cloud user
+must be allowed to impersonate the system role `Db` in order to be able to
+generate the database certificate.
+
+Include the following `allow` rule in in your Teleport Cloud user's role:
+
+```yaml
+allow:
+  impersonate:
+    users: ["Db"]
+    roles: ["Db"]
+```
+
+Follow the instructions below to generate TLS credentials for your database.
+
+```code
+# Export Teleport's certificate authority and a generated certificate/key pair
+# for host db.example.com with a 1-year validity period.
+$ tctl auth sign --format=oracle --host=db.example.com --out=server --ttl=2190h
+```
+
+<Note>
+  We recommend using a shorter TTL, but keep mind that you'll need to update the
+  database server certificate before it expires to not lose the ability to
+  connect. Pick the TTL value that best fits your use-case.
+</Note>
+
+If `tctl` finds the Orapki tool in your local environment, the `tctl auth sign --format=oracle --host=db.example.com --out=server --ttl=2190h` command will produce an Oracle Wallet and
+instructions how to configure the Oracle TCPS listener with Teleport Oracle Wallet. Otherwise the `tctl auth sign --format=oracle` command  will produce a `p12` certificate and instructions on how to create an Oracle Wallet on your Oracle Database instance.
+
+## Step 3/5. Configure Oracle Database
+
+In order to enable the Teleport Oracle integration you will need to configure the TCPS Oracle listener and use the Teleport Oracle Wallet created in the previous step.
+
+Align your `listener.ora` Oracle configuration file and add the following entries:
+
+```
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCPS)(HOST = 0.0.0.0)(PORT = 2484))
+    )
+  )
+
+WALLET_LOCATION = (SOURCE = (METHOD = FILE)(METHOD_DATA = (DIRECTORY = /path/to/oracleWalletDir)))
+SSL_CLIENT_AUTHENTICATION = TRUE
+```
+
+Additionally, you will need to extend your `sqlnet.ora` Oracle configuration:
+
+```
+WALLET_LOCATION = (SOURCE = (METHOD = FILE)(METHOD_DATA = (DIRECTORY = /path/to/oracleWalletDir)))
+SSL_CLIENT_AUTHENTICATION = TRUE
+SQLNET.AUTHENTICATION_SERVICES = (TCPS)
+```
+
+<Tip>
+  You will need to reload Oracle Listener `lsnrctl reload` after updating the `listener.ora` configuration file.
+</Tip>
+
+Additionally, your Oracle Database user accounts must be configured to require a valid client certificate. If you're creating a new user:
+
+```sql
+CREATE USER alice IDENTIFIED EXTERNALLY AS 'CN=alice';
+GRANT CREATE SESSION TO alice;
+```
+
+## Step 4/5. Configure and Start the Database Service
+
+Install and configure Teleport where you will run the Teleport Database Service:
+
+<Tabs>
+  <Tab title="Linux Server">
+    Use the appropriate commands for your environment to install your package:
+
+    <Tabs dropdownView dropdownCaption="Teleport Edition">
+      <Tab title="Open Source">
+        ```code
+        $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+        ```
+      </Tab>
+
+      <Tab title="Enterprise">
+        <Tabs>
+          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for v13. You'll need to update this
+            # file for each major release of Teleport.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo apt-get install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v13. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v13. You'll need to update this
+            # file for each major release of Teleport.
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo dnf install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Tarball">
+            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+            will update after one is filled out.
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+
+            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+            will be slightly different:
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+          </Tab>
+        </Tabs>
+      </Tab>
+
+      <Tab title="Cloud">
+        <Tabs>
+          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport apt repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport yum repository for cloud.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport yum repository for cloud.
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Tarball">
+            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+            will update after one is filled out.
+
+            ```code
+            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+          </Tab>
+        </Tabs>
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
+          Before installing a `teleport` binary with a version besides v13,
+          read our compatibility rules to ensure that the binary is compatible with
+          Teleport Cloud.
+
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are 1 major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Services and resource services do not support Auth Services that are on
+            an older major version, and will fail to connect to older Auth Services by
+            default. This behavior can be overridden by passing `--skip-version-check`
+            when starting Proxy Services and resource services.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    <Tabs>
+      <Tab title="Using a config file">
+        On the host where you will run the Teleport Database Service, start Teleport
+        with the appropriate configuration.
+
+        Note that a single Teleport process can run multiple different services, for
+        example multiple Database Service agents as well as the SSH Service or Application
+        Service. The step below will overwrite an existing configuration file, so if
+        you're running multiple services add `--output=stdout` to print the config in
+        your terminal, and manually adjust `/etc/teleport.yaml`.
+
+        Generate a configuration file at `/etc/teleport.yaml` for the Database Service:
+
+        ```code
+        $ teleport db configure create \
+           -o file \
+           --token=/tmp/token \
+           --proxy=teleport.example.com:443 \
+           --name=oracle \
+           --protocol=oracle \
+           --uri=oracle.example.com:2484 \
+           --labels=env=dev 
+        ```
+
+        ```code
+        $ teleport db configure create \
+           -o file \
+           --token=/tmp/token \
+           --proxy=mytenant.teleport.sh:443 \
+           --name=oracle \
+           --protocol=oracle \
+           --uri=oracle.example.com:2484 \
+           --labels=env=dev
+        ```
+
+        Configure the Database Service to start automatically when the host boots up by
+        creating a systemd service for it. The instructions depend on how you installed
+        the Database Service.
+
+        <Tabs>
+          <Tab title="Package Manager">
+            On the host where you will run {{ service }}, start Teleport:
+
+            ```code
+            $ sudo systemctl enable teleport
+            $ sudo systemctl start teleport
+            ```
+          </Tab>
+
+          <Tab title="TAR Archive">
+            On the host where you will run {{ service }}, create a systemd service
+            configuration for Teleport, enable the Teleport service, and start Teleport:
+
+            ```code
+            $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+            $ sudo systemctl enable teleport
+            $ sudo systemctl start teleport
+            ```
+          </Tab>
+        </Tabs>
+      </Tab>
+
+      <Tab title="With CLI flags">
+        You can start the Teleport Database Service without configuration file using a
+        CLI command:
+
+        ```code
+        $ teleport db start \
+           --token=/tmp/token \
+           --auth-server=teleport.example.com:443 \
+           --name=oracle  \
+           --protocol=oracle \
+           --uri=oracle.example.com:2484 \
+           --labels=env=dev
+        ```
+
+        Note that the `--auth-server` flag must point to the Teleport cluster's Proxy
+        Service endpoint because the Database Service always connects back to the
+        cluster over a reverse tunnel.
+
+        ```code
+        $ teleport db start \
+           --token=/tmp/token \
+           --auth-server=mytenant.teleport.sh:443 \
+           --name=oracle \
+           --protocol=oracle \
+           --uri=oracle.example.com:2484 \
+           --labels=env=dev
+        ```
+
+        Note that the `--auth-server` flag must point to your Teleport Cloud tenant
+        address.
+      </Tab>
+    </Tabs>
+
+    <Note>
+      The `--auth-server` flag must point to the Teleport cluster's Proxy Service
+      endpoint because the Database Service always connects back to the cluster over a
+      reverse tunnel.
+    </Note>
+  </Tab>
+
+  <Tab title="Kubernetes Cluster">
+    Teleport provides Helm charts for installing the Teleport Database Service in Kubernetes Clusters.
+
+    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+
+    ```code
+    $ helm repo add teleport https://charts.releases.teleport.dev
+    ```
+
+    To update the cache of charts from the remote repository, run `helm repo update`:
+
+    ```code
+    $ helm repo update
+    ```
+
+    Install the Teleport Kube Agent into your Kubernetes Cluster
+    with the Teleport Database Service configuration.
+
+    ```code
+    $ JOIN_TOKEN=$(cat /tmp/token)
+    $ helm install teleport-kube-agent teleport/teleport-kube-agent \
+      --create-namespace \
+      --namespace teleport-agent \
+      --set roles=db \
+      --set proxyAddr=teleport.example.com:443 \
+      --set authToken=${JOIN_TOKEN?} \
+      --set "databases[0].name=oracle" \
+      --set "databases[0].uri=oracle.example.com:2484" \
+      --set "databases[0].protocol=oracle" \
+      --set "labels.env=dev" \
+      --version 13.2.0
+    ```
+
+    Install the Teleport Kube Agent into your Kubernetes Cluster
+    with the Teleport Database Service configuration.
+
+    ```code
+    $ JOIN_TOKEN=$(cat /tmp/token)
+    $ helm install teleport-kube-agent teleport/teleport-kube-agent \
+      --create-namespace \
+      --namespace teleport-agent \
+      --set roles=db \
+      --set proxyAddr=mytenant.teleport.sh:443 \
+      --set authToken=${JOIN_TOKEN?} \
+      --set "databases[0].name=oracle" \
+      --set "databases[0].uri=oracle.example.com:2484" \
+      --set "databases[0].protocol=oracle" \
+      --set "labels.env=dev" \
+      --version 13.2.0
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  A single Teleport process can run multiple services, for example
+  multiple Database Service instances as well as other services such the
+  SSH Service or Application Service.
+</Tip>
+
+## Step 5/5. Connect
+
+Once the Database Service has joined the cluster, log in to see the available
+databases:
+
+```code
+$ tsh login --proxy=teleport.example.com --user=alice
+$ tsh db ls
+# Name   Description    Allowed Users Labels  Connect
+# ------ -------------- ------------- ------- -------
+# oracle Oracle Example [*]                   env=dev
+```
+
+```code
+$ tsh login --proxy=mytenant.teleport.sh --user=alice
+$ tsh db ls
+# Name   Description    Allowed Users Labels  Connect
+# ------ -------------- ------------- ------- -------
+# oracle Oracle Example [*]                   env=dev
+```
+
+```code
+$ tsh db connect --db-user=alice --db-name=XE oracle
+#
+#
+# SQLcl: Release 22.4 Production on Fri Mar 31 20:48:02 2023
+#
+# Copyright (c) 1982, 2023, Oracle.  All rights reserved.
+#
+# Connected to:
+# Oracle Database 21c Express Edition Release 21.0.0.0.0 - Production
+# Version 21.3.0.0.0
+#
+# SQL>
+```
+
+To log out of the database and remove credentials:
+
+```code
+# Remove credentials for a particular database instance.
+$ tsh db logout oracle
+# Remove credentials for all database instances.
+$ tsh db logout
+```
+
+## Next steps
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn how to [restrict access](/docs/ver/13.x/database-access/rbac) to certain users and databases.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- View the [High Availability (HA)](/docs/ver/13.x/database-access/guides/ha) guide.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Take a look at the YAML configuration [reference](/docs/ver/13.x/database-access/reference/configuration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- See the full CLI [reference](/docs/ver/13.x/database-access/reference/cli).
+
+- Learn more about  `sqlnet.ora` and `listener.ora` configuration from the [Parameters for the sqlnet.ora File](https://docs.oracle.com/en/database/oracle/oracle-database/18/netrf/parameters-for-the-sqlnet-ora-file.html#GUID-28040885-6832-4FFC-9258-0EF19FE9A3AC) and [Oracle Net Listener Parameters in the listener.ora File](https://docs.oracle.com/en/database/oracle/oracle-database/18/netrf/Oracle-Net-Listener-parameters-in-listener-ora-file.html#GUID-F9FA0DF5-2FAF-45CA-B6A1-F0166C7BFE54) Oracle documentation.

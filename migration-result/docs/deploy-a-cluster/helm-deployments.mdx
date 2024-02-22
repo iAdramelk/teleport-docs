@@ -1,0 +1,26 @@
+---
+title: Guides for running Teleport using Helm
+description: How to install and configure Teleport in Kubernetes using Helm
+layout: tocless-doc
+version: '15.x'
+---
+
+## Helm deployment guides
+
+These guides show you how to set up a full self-hosted Teleport deployment using
+our `teleport-cluster` Helm chart.
+
+- [Deploy Teleport on Kubernetes](/docs/deploy-a-cluster/helm-deployments/kubernetes-cluster): Run a Teleport cluster in a Kubernetes cluster using
+  the default configuration. This deployment is a great starting point to try a self-hosted
+  Teleport with minimal resources.
+- [HA AWS Teleport Cluster](/docs/deploy-a-cluster/helm-deployments/aws): Running an HA Teleport cluster in Kubernetes using an AWS EKS Cluster
+- [HA Azure Teleport Cluster](/docs/deploy-a-cluster/helm-deployments/azure): Running an HA Teleport cluster in Kubernetes using an Azure AKS Cluster
+- [HA GCP Teleport Cluster](/docs/deploy-a-cluster/helm-deployments/gcp): Running an HA Teleport cluster in Kubernetes using a Google Cloud GKE Cluster
+- [DigitalOcean Kubernetes Cluster](/docs/deploy-a-cluster/helm-deployments/digitalocean):
+  Running Teleport on DigitalOcean Kubernetes.
+- [Custom Teleport config](/docs/deploy-a-cluster/helm-deployments/custom): Running a Teleport cluster in Kubernetes with a custom Teleport config
+
+## Migration Guides
+
+- [Migrating from v11 to v12](/docs/deploy-a-cluster/helm-deployments/migration-v12)
+- [Kubernetes 1.25 and PSP removal](/docs/deploy-a-cluster/helm-deployments/migration-kubernetes-1-25-psp)

@@ -1,0 +1,229 @@
+---
+title: Configure SSH with the Linux Auditing System
+description: How to configure Teleport SSH with auditd (Linux Auditing System).
+h1: Linux Auditing System (auditd)
+version: '15.x'
+---
+
+You can configure Teleport's SSH Service to integrate with the Linux Auditing System (auditd).
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/docs/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- A running Teleport Node. See the [Server Access Getting Started Guide](/docs/server-access/getting-started) for  how to add a Node to your Teleport cluster. On the Node, `teleport` must be running as a systemd service with root permissions.
+- Linux kernel 2.6.6+ compiled with `CONFIG_AUDIT`. Most Linux distributions have this option enabled by default.
+- `auditctl` to check auditd status (optional).
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/4. Check system configuration
+
+Teleport automatically sends auditd events when it discovers that auditd is enabled in the system.
+You can verify that by calling `auditctl -s` as root.
+
+Here is an example output from that command:
+
+```bash
+$ sudo auditctl -s
+enabled 1
+failure 1
+pid 879
+rate_limit 0
+backlog_limit 8192
+lost 0
+backlog 0
+backlog_wait_time 60000
+backlog_wait_time_actual 0
+loginuid_immutable 0 unlocked
+```
+
+The first line `enabled 1` indicates that auditd is enabled, and Teleport will send events.
+
+All events are generated on a Teleport Node.
+`invalid user` events are also generated on the Proxy Service when a Teleport user fails to authenticate.
+
+## Step 2/4. Start Teleport
+
+It's important to run Teleport as a system service (systemd service, for example) with root permissions.
+Otherwise, Teleport won't send any events to auditd due to lack of permissions.
+
+<Warning>
+  Make sure that the Teleport process has its login UID unset. Otherwise, a session ID won't be set correctly in the emitted events.
+  You can verify that by calling `cat /proc/$(pidof teleport)/loginuid`. The value should be set to 4294967295.
+</Warning>
+
+## Step 3/4. Enable the PAM integration (optional)
+
+Auditd can generate additional events when PAM (Pluggable Authentication Modules) is enabled. To enable the PAM integration
+in Teleport, add the following `pam` section to the configuration file on your Teleport Node (`/etc/teleport.yaml` by default):
+
+```yaml
+ssh_service:
+  # Enabled SSH Service
+  enabled: true
+  # Enable PAM integration
+  pam:
+    # "no" by default
+    enabled: true
+    # use /etc/pam.d/sshd configuration (the default)
+    service_name: "sshd"
+```
+
+PAM-generated events depend on your `sshd` configuration when the integration is enabled. Most system generates events
+like `USER_ACCT` or `USER_START`. Additionally, TTY input can be logged by enabling the `pam_tty_audit.so` module.
+
+For more details please refer to [PAM](/docs/server-access/guides/ssh-pam#set-up-pam-on-a-linux-machine-running-teleport) or your operating system
+documentation.
+
+When PAM integration is enabled, auditd events should closely match events generated by OpenSSH.
+
+## Step 4/4. Trace SSH sessions with auditd
+
+There are a few ways to trace SSH sessions in Teleport. To interact with auditd events, we will use `ausearch`.
+If your system is missing that tool, consult your distribution documentation to check how to install it.
+
+### Search by a system user
+
+You can search events when logging in as a system user by using the `-ua` switch.
+You can check the UID of a user by using the `id` command:
+
+```
+$ id bob
+uid=1000(bob) gid=1000(bob) groups=1000(bob)
+```
+
+Then you can use `uid` to search auditd logs:
+
+```
+ausearch -ua 1000 -m USER_LOGIN
+```
+
+### Search by Teleport user
+
+Events sent to auditd by Teleport are augmented by the `teleportUser` field, which contains the name of the Teleport user.
+`ausearch` doesn't let you search by custom fields, but you can use `grep` for that:
+
+```
+ausearch -m USER_LOGIN | grep teleportUser=bob
+```
+
+### Search by session ID
+
+If you want to find all events generated by a specific session, first, you need to find the session ID. You can do that
+by using:
+
+```
+ausearch  -m USER_LOGIN -x teleport --just-one
+```
+
+Then search events only related to that one session:
+
+```
+ausearch --session 42
+```

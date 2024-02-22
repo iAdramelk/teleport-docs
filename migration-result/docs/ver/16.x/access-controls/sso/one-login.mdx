@@ -1,0 +1,348 @@
+---
+title: Teleport Authentication with OneLogin as an SSO Provider
+description: How to configure Teleport access using OneLogin as an SSO provider
+h1: Teleport Authentication with OneLogin
+version: '16.x'
+---
+
+This guide will explain how to configure [OneLogin](https://www.onelogin.com/)
+to issue Teleport credentials to specific groups of users. When used in
+combination with role based access control (RBAC) it allows SSH administrators
+to define policies like:
+
+- Only members of "DBA" group can connect to PostgreSQL databases.
+- Developers must never SSH into production servers.
+- ... and many others.
+
+## Prerequisites
+
+- A OneLogin account with admin access, and users assigned to at least two groups.
+- Teleport role with access to maintaining `saml` resources.  This is available
+  in the default `editor` role.
+
+- Access to an Enterprise edition of Teleport running in your environment.
+
+  For information about the differences between Teleport editions, see [Comparing
+  editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
+
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+  You can verify the tools you have installed by running the following commands:
+
+  ```code
+  $ tctl version
+  # Teleport Enterprise v15.0.0-dev go1.21
+
+  $ tsh version
+  # Teleport v15.0.0-dev go1.21
+  ```
+
+  You can download these tools by following the appropriate [Installation
+  instructions](/docs/ver/16.x/installation#installation-instructions) for your environment and Teleport edition.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/3. Create Teleport application in OneLogin
+
+In the OneLogin control panel's main menu navigate to **Applications** ->
+**Add App**. Using the search box, select "SAML Custom Connector (SP Shibboleth)":
+
+![SAML Custom Connector (SP Shibboleth)](../../../../../../assets/onelogin-saml-1-c0f2ab3368.png)
+
+Define the new application:
+
+![SAML Config](../../../../../../assets/onelogin-saml-1a-e90b4ba85a.png)
+
+You can find Teleport icons to upload from the following links:
+
+- [Square Icon](../../../../../../assets/teleport-2a619eda9f.png)
+- [Rectangular Icon](../../../../../../assets/teleportlogo@2x-c5105d24ff.png)
+
+From the application's **Configuration** page, set the following values:
+
+<Tip>
+  Set TELEPORT.EXAMPLE.COM:443
+  here with your Teleport Proxy Service address and port, or Teleport Enterprise
+  Cloud tenant (e.g. `company.teleport.sh:443`) to fill out the values below.
+</Tip>
+
+- **Login URL**:
+  - `https://`TELEPORT.EXAMPLE.COM:443`/web/login`
+- **ACS (Consumer) URL**, **SAML Recipient**, **ACS (Consumer) URL Validator**, & **Audience**:
+  - `https://`TELEPORT.EXAMPLE.COM:443`/v1/webapi/saml/acs/onelogin`
+
+![Configure SAML](../../../../../../assets/onelogin-saml-2-f9a74e560c.png)
+
+Teleport needs to assign groups to users. From the **Parameters** page, configure
+the application with some parameters exposed as SAML attribute statements:
+
+![New Field](../../../../../../assets/onelogin-saml-3-b7a636a67b.png)
+
+![New Field Group](../../../../../../assets/onelogin-saml-4-8162e03027.png)
+
+<Warning>
+  Make sure to check `Include in SAML assertion` checkbox.
+</Warning>
+
+Add users to the application:
+
+![Add User](../../../../../../assets/onelogin-saml-5-3145beda65.png)
+
+### Download SAML XML metadata
+
+Once the application is set up, download `SAML Metadata` from the
+**More Actions** menu:
+
+![Download XML](../../../../../../assets/saml-download-4f92d17a96.png)
+
+## Step 2/3. Create a SAML connector
+
+Create a SAML connector using `tctl`. Update
+./ONELOGIN\_METADATA\_1234567.XML with the path to the XML metadata
+file downloaded in the previous step:
+
+```code
+$ tctl sso configure saml --preset onelogin \
+--entity-descriptor ./onelogin_metadata_1234567.xml \
+--attributes-to-roles groups,admin,editor \
+--attributes-to-roles groups,dev,access > onelogin.yaml
+```
+
+This will create `onelogin.yaml`, describing the connector resource:
+
+```yaml
+kind: saml
+version: v2
+metadata:
+  name: OneLogin
+spec:
+  acs: https://teleport.example.com/v1/webapi/saml/acs/onelogin
+  attributes_to_roles:
+  - name: groups
+    roles:
+    - editor
+    value: admin
+  - name: groups
+    roles:
+    - access
+    value: dev
+  audience: https://teleport.example.com:443/v1/webapi/saml/acs/onelogin
+  cert: ""
+  display: OneLogin
+  entity_descriptor: |
+    <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://www.example.com/00000000000000000000">
+      <md:IDPSSODescriptor WantAuthnRequestsSigned="false"
+  entity_descriptor_url: ""
+  issuer: ""
+  service_provider_issuer: https://teleport.example.com:443/v1/webapi/saml/acs/onelogin
+  sso: ""
+version: v2
+```
+
+Test the newly created configuration:
+
+```code
+$ cat onelogin.yaml | tctl sso test
+```
+
+`tctl sso test` will open the browser and attempt to authenticate with OneLogin.
+If it succeeds the output will print what SAML attributes are received and mapped
+to Teleport roles. If the test fails, the output will help you troubleshoot your
+configuration.
+
+Create the connector using `tctl` tool:
+
+```code
+$ tctl create -f onelogin.yaml
+```
+
+### Enable default SAML authentication
+
+Configure Teleport to use SAML authentication as the default instead of the local
+user database.
+
+Follow the instructions for your Teleport edition:
+
+<Tabs>
+  <Tab title="Dynamic Resources (All Editions)">
+    Use `tctl` to edit the `cluster_auth_preference` value:
+
+    ```code
+    $ tctl edit cluster_auth_preference
+    ```
+
+    Set the value of `spec.type` to `saml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      ...
+      name: cluster-auth-preference
+    spec:
+      ...
+      type: saml
+      ...
+    version: v2
+    ```
+
+    After you save and exit the editor, `tctl` will update the resource:
+
+    ```text
+    cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: saml
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  If you need to log in again before configuring your SAML provider, use the flag <nobr>`--auth=local`</nobr>.
+</Tip>
+
+## Step 3/3. Create a new Teleport role
+
+We are going to create a new that'll use external username data from OneLogin
+to map to a host linux login.
+
+In the role described below, Devs are only allowed to login to nodes labelled with
+`access: relaxed` Teleport label. Developers can log in as either `ubuntu` to a
+username that arrives in their assertions. Developers also do not have any
+rules needed to obtain admin access to Teleport.
+
+```yaml
+# dev.yaml
+kind: role
+version: v5
+metadata:
+  name: dev
+spec:
+  options:
+    max_session_ttl: "24h"
+  allow:
+    logins: [ "{{external.username}}", ubuntu ]
+    node_labels:
+      access: relaxed
+```
+
+**Notice:** Replace `ubuntu` with linux login available on your servers!
+
+```code
+$ tctl create -f dev.yaml
+```
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/docs/ver/16.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.
+
+## Next steps
+
+In the Teleport role we illustrated in this guide, `external` traits
+are replaced with values from the single sign-on provider that the user
+used to authenticate to Teleport. For full details on how traits
+work in Teleport roles, see the [Teleport Access Controls
+Reference](/docs/ver/16.x/access-controls/reference).

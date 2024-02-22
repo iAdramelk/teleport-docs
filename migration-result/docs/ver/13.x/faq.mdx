@@ -1,0 +1,269 @@
+---
+title: Teleport FAQ
+description: Frequently Asked Questions About Using Teleport
+h1: Teleport FAQ
+version: '13.x'
+---
+
+## Can I use Teleport in production today?
+
+Teleport has been deployed on server clusters with thousands of hosts at
+Fortune 500 companies. It has been through several security audits from
+nationally recognized technology security companies, so we are comfortable with
+the stability of Teleport from a security perspective.
+
+## Can Teleport be deployed in agentless mode?
+
+Yes. All Teleport services support agentless mode, where the service proxies
+traffic to an upstream infrastructure resource not available on `localhost`.
+
+With Teleport in agentless mode, you can easily control access to SSH servers,
+Kubernetes clusters, desktops, databases, and internal applications without
+running any additional software on your servers. Agentless mode supports session
+recordings and audit logs for deep understanding into user behavior.
+
+For capabilities such as kernel-level logging and user provisioning, we
+recommend Teleport as a drop in replacement for OpenSSH. Since Teleport replaces
+the OpenSSH agent while preserving OpenSSH's functionality, you get more
+functionality without a net addition of an agent on your system.
+
+## Can I use OpenSSH with a Teleport cluster?
+
+Yes, this question comes up often and is related to the previous one. Take a
+look at [Using OpenSSH Guide](/docs/ver/13.x/server-access/guides/openssh).
+
+## Can I connect to Nodes behind a firewall?
+
+Yes, Teleport supports reverse SSH tunnels out of the box. To configure
+behind-firewall clusters refer to our
+[Trusted Clusters](/docs/ver/13.x/management/admin/trustedclusters) guide.
+
+## Can individual agents create reverse tunnels to the Proxy Service without creating a new cluster?
+
+Yes. When running a Teleport agent, use the `--auth-server` flag to point to the
+Proxy Service address (this would be `public_addr` and `web_listen_addr` in your
+file configuration). For more information, see
+[Adding Nodes to the
+Cluster](/docs/ver/13.x/agents/join-services-to-your-cluster/join-token).
+
+## Can Nodes use a single port for reverse tunnels?
+
+Yes, Teleport supports tunnel multiplexing on a single port. Set the
+`tunnel_listen_addr` to use the same port as the `web_listen_addr` address
+setting in the `proxy_service` configuration. Teleport will automatically use
+multiplexing with that configuration.
+
+## Can I copy files from one Teleport node to another?
+
+Yes, Teleport supports [Headless WebAuthn authentication](/docs/ver/13.x/access-controls/guides/headless),
+which allows you to perform operations like `tsh ssh` or `tsh scp` from remote systems where you
+are not logged in to Teleport or may not have access to a browser.
+
+## I'm getting `ssh: subsystem request failed` while I try to copy files, what to do?
+
+Make sure that all Teleport components are at least at version 10.3.0. Older versions
+don't support the SFTP protocol, and it's enabled by default in `tsh` v11.0.0 and OpenSSH v9.0.
+
+## How is Open Source different from Enterprise?
+
+Teleport provides four editions:
+
+- Teleport Team
+- Teleport Enterprise
+- Teleport Enterprise Cloud
+- Teleport Community Edition
+
+Here is a detailed breakdown of the differences between Teleport's editions.
+
+### Access controls
+
+|                                                                                    | Open Source | Enterprise                                     | Cloud                                          | Team             |
+| ---------------------------------------------------------------------------------- | ----------- | ---------------------------------------------- | ---------------------------------------------- | ---------------- |
+| [Access Requests](/docs/ver/13.x/access-controls/guides/dual-authz)                | Limited     | ✔                                              | ✔                                              | ✖                |
+| [Single Sign-On](/docs/ver/13.x/access-controls/sso)                               | GitHub      | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Teleport |
+| [Role-Based Access Control](/docs/ver/13.x/access-controls/guides/role-templates)  | ✔           | ✔                                              | ✔                                              | ✔                |
+| [Moderated Sessions](/docs/ver/13.x/access-controls/guides/moderated-sessions)     | ✖           | ✔                                              | ✔                                              | ✖                |
+| [Device Trust](/docs/ver/13.x/access-controls/device-trust/guide)                  | ✖           | ✔                                              | ✔                                              | ✖                |
+| [Dual Authorization](/docs/ver/13.x/access-controls/guides/dual-authz)             | ✖           | ✔                                              | ✔                                              | ✖                |
+| [Hardware Key Support](/docs/ver/13.x/access-controls/guides/hardware-key-support) | ✖           | ✔                                              | ✔                                              | ✖                |
+
+### Infrastructure access
+
+|                                                                                           | Open Source | Enterprise | Cloud | Team |
+| ----------------------------------------------------------------------------------------- | ----------- | ---------- | ----- | ---- |
+| [Application Access](/docs/ver/13.x/application-access/getting-started)                   | ✔           | ✔          | ✔     | ✔    |
+| [Server Access](/docs/ver/13.x/server-access/getting-started)                             | ✔           | ✔          | ✔     | ✔    |
+| [Database Access](/docs/ver/13.x/database-access/getting-started)                         | ✔           | ✔          | ✔     | ✔    |
+| [Desktop Access](/docs/ver/13.x/desktop-access/getting-started)                           | ✔           | ✔          | ✔     | ✔    |
+| [Kubernetes Access](/docs/ver/13.x/kubernetes-access/getting-started)                     | ✔           | ✔          | ✔     | ✔    |
+| [Machine ID](/docs/ver/13.x/machine-id/getting-started)                                   | ✔           | ✔          | ✔     | ✔    |
+| Agentless Integration with [OpenSSH Servers](/docs/ver/13.x/server-access/guides/openssh) | ✔           | ✔          | ✔     | ✔    |
+
+### Audit logging and session recording
+
+|                                                                                         | Open Source | Enterprise | Cloud | Team |
+| --------------------------------------------------------------------------------------- | ----------- | ---------- | ----- | ---- |
+| [Structured Audit Logs](/docs/ver/13.x/reference/audit)                                 | ✔           | ✔          | ✔     | ✔    |
+| [Session Recording with Playback](/docs/ver/13.x/architecture/session-recording)        | ✔           | ✔          | ✔     | ✔    |
+| [Recording Proxy Mode](/docs/ver/13.x/server-access/guides/recording-proxy-mode)        | ✔           | ✔          | ✖     | ✔    |
+| [Enhanced Session Recording](/docs/ver/13.x/server-access/guides/bpf-session-recording) | ✔           | ✔          | ✔     | ✔    |
+
+### Compliance
+
+|                                                                                 | Open Source | Enterprise | Cloud | Team    |
+| ------------------------------------------------------------------------------- | ----------- | ---------- | ----- | ------- |
+| [FedRAMP Control](/docs/ver/13.x/access-controls/compliance-frameworks/fedramp) | ✖           | ✔          | ✖     | ✖       |
+| PCI DSS Features                                                                | Limited     | ✔          | ✔     | Limited |
+| SOC 2 Features                                                                  | Limited     | ✔          | ✔     | Limited |
+| FIPS-compliant binaries available for FedRAMP High                              | ✖           | ✔          | ✖     | ✖       |
+| IP-Based Restrictions                                                           | ✖           | ✔          | ✔     | ✖       |
+
+### Operations
+
+|                                                                                                                     | Open Source                                                                                        | Enterprise                                                                                        | Cloud                                                                                                         | Team                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Auth and Proxy Service Management                                                                                   | Self-hosted                                                                                        | Self-hosted                                                                                       | Fully managed                                                                                                 | Fully managed                                                                                                 |
+| Proxy Service domain name                                                                                           | Custom                                                                                             | Custom                                                                                            | A subdomain of `teleport.sh`                                                                                  | A subdomain of `teleport.sh`                                                                                  |
+| Version support                                                                                                     | All supported releases available to install and download.                                          | All supported releases available to install and download.                                         | Deploys last stable release with 2-3 week lag for stability.                                                  | Deploys last stable release with 2-3 week lag for stability.                                                  |
+| [Backend support](/docs/ver/13.x/reference/backends)                                                                | Any S3-compatible storage for session records, many managed backends for custom audit log storage. | Any S3-compatible storage for session records, many managed backends for custom audit log storage | All data is stored in DynamoDB and S3 with server-side encryption.                                            | All data is stored in DynamoDB and S3 with server-side encryption.                                            |
+| Data storage location                                                                                               | Can store data anywhere in the world, on most managed cloud backends                               | Can store data anywhere in the world, on most managed cloud backends                              | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. |
+| [Hardware Security Module support](/docs/ver/13.x/choose-an-edition/teleport-enterprise/hsm) for encryption at rest | ✖                                                                                                  | ✔                                                                                                 | ✖                                                                                                             | ✖                                                                                                             |
+
+### Support
+
+|         | Open Source | Enterprise                                          | Cloud                                               | Team      |
+| ------- | ----------- | --------------------------------------------------- | --------------------------------------------------- | --------- |
+| Support | Community   | 24x7 support with premium SLAs and account managers | 24x7 support with premium SLAs and account managers | Community |
+
+### Licensing and usage management
+
+|                                                  | Open Source | Enterprise | Cloud      | Team       |
+| ------------------------------------------------ | ----------- | ---------- | ---------- | ---------- |
+| Annual or multi-year contracts, volume discounts | ✖           | ✔          | ✔          | ✖          |
+| License                                          | Apache 2    | Commercial | Commercial | Commercial |
+| Anonymized Usage Tracking                        | Opt-in      | ✔          | ✔          | ✔          |
+
+## Which version of Teleport is supported?
+
+Teleport provides security-critical support for the current and two previous
+releases. With our typical release cadence, this means a release is usually
+supported for 9 months.
+
+### Supported versions
+
+Here are the major versions of Teleport and their support windows:
+
+| Release | Release Date     | EOL           | Minimum `tsh` version |
+| ------- | ---------------- | ------------- | --------------------- |
+| v13.0   | May 8, 2023      | February 2024 | v12.x.x               |
+| v12.0   | Feb 6, 2023      | November 2023 | v11.x.x               |
+| v11.0   | October 24, 2022 | July 2023     | v10.x.x               |
+
+See our [Upgrading](/docs/ver/13.x/management/operations/upgrading) guide for more
+information.
+
+### Version compatibility
+
+When running multiple `teleport` binaries within a cluster, the following rules
+apply:
+
+- **Patch and minor** versions are always compatible, for example, any 8.0.1
+  component will work with any 8.0.3 component and any 8.1.0 component will work
+  with any 8.3.0 component.
+- Servers support clients that are 1 major version behind, but do not support
+  clients that are on a newer major version. For example, an 8.x.x Proxy Service
+  is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+  guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+  This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+  You must upgrade to 7.x.x first.
+- Proxy Services and resource services do not support Auth Services that are on
+  an older major version, and will fail to connect to older Auth Services by
+  default. This behavior can be overridden by passing `--skip-version-check`
+  when starting Proxy Services and resource services.
+
+## Does the Web UI support copy and paste?
+
+Yes. You can copy and paste using a mouse.
+
+## What TCP ports does Teleport use?
+
+Please refer to our [Networking](/docs/ver/13.x/reference/networking) guide.
+
+## Does Teleport support authentication via OAuth, SAML, or Active Directory?
+
+Teleport offers this feature for the [Enterprise versions of Teleport](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction).
+
+## Why do I see an alert that some agents are out of date?
+
+Teleport monitors the inventory of all cluster components and compares their
+Teleport versions with the latest release on our GitHub page. If a component is
+not on the latest release, Teleport will create a cluster alert encouraging
+users to upgrade.
+
+This check is performed against all cluster components, including the Proxy
+Service and Auth Service, as well as agents running other Teleport Services.
+
+## Can I suppress warnings about available upgrades?
+
+Yes. The `tctl alerts ack` command can be used to acknowledge an alert and
+temporarily prevent it from being displayed to users. To acknowledge an alert,
+you need its ID. You can get a listing of all alerts and their IDs with the
+`tctl alerts list` command.
+
+For detailed information on this family of commands, see the
+[CLI Reference](/docs/ver/13.x/reference/cli#tctl-alerts-list).
+
+## Does Teleport send any data back to the cloud?
+
+The open source edition of Teleport does not send any information to our
+company, and can be used on servers without internet access.
+
+The commercial editions of Teleport can optionally be configured to send
+anonymized information, depending on the license purchased. This information
+contains the following:
+
+- Teleport license identifier;
+- anonymized cluster name and Teleport auth server host ID;
+- for each Teleport user, the anonymized user name and a per-protocol count of
+  interactions - Teleport logins, SSH and Kubernetes exec sessions, Application
+  access web sessions and TCP connections, SSH port forwards, Kubernetes API
+  requests, SFTP actions.
+
+The anonymization is done by passing names and IDs through HMAC-SHA-256, with a
+HMAC key that's randomly generated when the Teleport cluster is initialized for
+the first time and is never shared with us; this makes it infeasible for anyone
+without access to the cluster to deanonymize the data we store.
+
+The code that aggregates and anonymizes this data can be found [in our
+repository on
+GitHub](https://github.com/gravitational/teleport/tree/master/lib/usagereporter/teleport/aggregating).
+
+Reach out to `sales@goteleport.com` if you have questions about the commercial
+editions of Teleport.
+
+### Teleport Connect
+
+When you first start the app, Teleport Connect asks for permission to collect and send telemetry data.
+This includes tracking events such as:
+
+- Logging in to a cluster
+- Starting an SSH, database, or Kubernetes session
+- File transfer during an SSH session
+- Creating an Access Request
+- Reviewing an Access Request
+- Assuming an Access Request
+
+On login, we also collect some device-related data:
+
+- Operating system and its version
+- App version
+- Processor architecture
+
+Additionally, we ask for a job role (answer is optional).
+
+The full list of events and collected data is defined as [protocol buffer messages in the Teleport source](https://github.com/gravitational/teleport/tree/branch/v13/proto/prehog/v1alpha/connect.proto).
+We do not track the details of those events but merely that the given event took place. Each event includes the cluster
+name and user name anonymized with HMAC using the cluster's internal random UUID as the key. It is infeasible to
+associate this back to a specific cluster or user without access to the cluster's internal datastore.
+
+If you no longer want to send usage data, see [disabling telemetry](/docs/ver/13.x/connect-your-client/teleport-connect#disabling-telemetry).

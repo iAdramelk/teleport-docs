@@ -1,0 +1,937 @@
+---
+title: Database Access with Azure PostgreSQL and MySQL
+description: How to configure Teleport database access with Azure Database for PostgreSQL and MySQL.
+version: '13.x'
+---
+
+<Accordion title="Version warning">
+  Azure database auto-discovery is available starting from Teleport `10.2`. Database
+  access for Azure PostgreSQL/MySQL flexible servers is available starting from
+  Teleport `12.0`.
+</Accordion>
+
+This guide will help you to set up secure access and connect through Teleport
+to Azure PostgreSQL and MySQL servers.
+
+![Teleport Database Access Azure PostgreSQL/MySQL Self-Hosted](../../../../../../assets/azure_selfhosted-5d9a230019.png)
+
+![Teleport Database Access Azure PostgreSQL/MySQL Cloud](../../../../../../assets/azure_cloud-e8c21c6fe1.png)
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Deployed Azure Database for PostgreSQL or MySQL server.
+- Azure Active Directory administrative privileges.
+- A host, e.g., an Azure VM instance, where you will run the Teleport Database
+  Service.
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/5. Install the Teleport Database Service
+
+The Database Service requires a valid auth token to connect to the cluster. Generate
+one by running the following command against your Teleport Auth Service and save
+it in `/tmp/token` on the node that will run the Database Service:
+
+```code
+$ tctl tokens add --type=db
+```
+
+Install Teleport on the host where you will run the Teleport Database Service:
+
+Use the appropriate commands for your environment to install your package:
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Open Source">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    ```
+  </Tab>
+
+  <Tab title="Enterprise">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v13. You'll need to update this
+        # file for each major release of Teleport.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+
+  <Tab title="Cloud">
+    <Tabs>
+      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport apt repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport yum repository for cloud.
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+Create the Database Service configuration.
+
+<Tabs>
+  <Tab title="PostgreSQL">
+    - Specify the region for your database(s) in `--azure-postgres-discovery`.
+
+    - Replace the `--proxy` value with your Teleport proxy address or Teleport cloud
+      URI (e.g. `mytenant.teleport.sh:443`):
+
+      ```code
+      $ teleport db configure create \
+        -o file \
+        --proxy=teleport.example.com:443 \
+        --token=/tmp/token \
+        --azure-postgres-discovery=eastus
+      ```
+  </Tab>
+
+  <Tab title="MySQL">
+    - Specify the region for your database(s) in `--azure-mysql-discovery`.
+    - Replace the `--proxy` value with your Teleport proxy address or Teleport cloud
+      URI (e.g. `mytenant.teleport.sh:443`):
+
+      ```code
+      $ teleport db configure create \
+        -o file \
+        --proxy=teleport.example.com:443 \
+        --token=/tmp/token \
+        --azure-mysql-discovery=eastus
+      ```
+  </Tab>
+
+  <Tab title="PostgreSQL and MySQL">
+    Run the following command on your Database Service host:
+
+    ```code
+    $ teleport db configure create \
+      -o file \
+      --proxy=teleport.example.com:443 \
+      --token=/tmp/token \
+      --azure-mysql-discovery=eastus \
+      --azure-postgres-discovery=eastus
+    ```
+
+    <Tip>
+      This will create two `types` entities in `teleport.yaml`, one for each database
+      type. This is useful if you want different regions, tags, or labels for each
+      database type.
+
+      Alternatively, you can edit `teleport.yaml` to include both database types in a
+      single entry:
+
+      ```yaml
+      db_service:
+        azure:
+        - types: ["mysql", "postgres"]
+        ...
+      ```
+    </Tip>
+  </Tab>
+</Tabs>
+
+This command will generate a Database Service configuration with Azure MySQL/Postgres
+database auto-discovery enabled in the `eastus` region and place it at the
+`/etc/teleport.yaml` location.
+
+### Create a Teleport role
+
+On your workstation logged in to your Teleport cluster with `tsh`, define a new
+role to provide access to your Azure database. Create a file called `azure-database-role.yaml` with the following content:
+
+```yaml
+version: v6
+kind: role
+metadata:
+  name: azure-database-access
+spec:
+  allow:
+    db_labels:
+      'engine':
+        - "Microsoft.DBforMySQL/servers"
+        - "Microsoft.DBforMySQL/flexibleServers"
+        - "Microsoft.DBforPostgreSQL/servers"
+        - "Microsoft.DBforPostgreSQL/flexibleServers"
+    db_names:
+    - '*'
+    db_users:
+    - teleport
+```
+
+| Flag                       | Description                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`--db-users`</nobr>  | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| <nobr>`--db-names`</nobr>  | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+| <nobr>`--db-labels`</nobr> | List of labels assigned to the database the user will be able to access. A wildcard entry allows any database.                           |
+
+Save this file and apply it to your Teleport cluster:
+
+```code
+$ tctl create -f azure-database-role.yaml
+role 'azure-database-role.yaml' has been created
+```
+
+Assign the `azure-database-access` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `azure-database-access` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - azure-database-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `azure-database-access` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - azure-database-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `azure-database-access` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - azure-database-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `azure-database-access` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - azure-database-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+## Step 3/6. Configure Azure service principal
+
+To authenticate with PostgreSQL or MySQL databases, Teleport Database Service
+needs to obtain access tokens from Azure AD.
+
+There are a couple of ways for the Teleport Database Service to access Azure
+resources:
+
+- The Database Service can run on an Azure VM with attached managed identity. This
+  is the recommended way of deploying the Database Service in production since
+  it eliminates the need to manage Azure credentials.
+- The Database Service can be registered as an Azure AD application (via AD's "App
+  registrations") and configured with its credentials. This is only recommended
+  for development and testing purposes since it requires Azure credentials to
+  be present in the Database Service's environment.
+
+<Tabs>
+  <Tab title="Using managed identity">
+    Go to the [Managed Identities](https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.ManagedIdentity%2FuserAssignedIdentities)
+    page in your Azure portal and click *Create* to create a new user-assigned
+    managed identity:
+
+    ![Managed identities](../../../../../../assets/managed-identities@2x-4fbf040404.png)
+
+    Pick a name and resource group for the new identity and create it:
+
+    ![New identity](../../../../../../assets/new-identity-adfb8293a4.png)
+
+    Take note of the created identity's *Client ID*:
+
+    ![Created identity](../../../../../../assets/created-identity-19fb160637.png)
+
+    Next, navigate to the Azure VM that will run your Database Service instance and
+    add the identity you've just created to it:
+
+    ![VM identity](../../../../../../assets/vm-identity-6f3947a340.png)
+
+    Attach this identity to all Azure VMs that will be running the Database
+    Service.
+  </Tab>
+
+  <Tab title="Using app registrations">
+    <Note>
+      Registering the Database Service as Azure AD application is suitable for
+      test and development scenarios, or if your Database Service does not run on
+      an Azure VM. For production scenarios prefer to use the managed identity
+      approach.
+    </Note>
+
+    Go the the [App registrations](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps)
+    page of your Azure Active Directory and click on *New registration*:
+
+    ![App registrations](../../../../../../assets/app-registrations@2x-c12b7bec51.png)
+
+    Pick a name (e.g. *DatabaseService*) and register a new application. Once the
+    app has been created, take note of its *Application (client) ID* and click on
+    *Add a certificate or secret*:
+
+    ![Registered app](../../../../../../assets/registered-app@2x-8bf24c2fca.png)
+
+    Create a new client secret that the Database Service agent will use to
+    authenticate with the Azure API:
+
+    ![Registered app secrets](../../../../../../assets/registered-app-secrets@2x-edb2a1366b.png)
+
+    The Teleport Database Service uses Azure SDK's default credential provider chain to
+    look for credentials. Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
+    to pick a method suitable for your use-case. For example, to use
+    environment-based authentication with a client secret, the Database Service should
+    have the following environment variables set:
+
+    ```code
+    export AZURE_TENANT_ID=
+    export AZURE_CLIENT_ID=
+    export AZURE_CLIENT_SECRET=
+    ```
+  </Tab>
+</Tabs>
+
+## Step 4/6. Configure IAM permissions for Teleport
+
+### Create a custom role
+
+Teleport needs Azure IAM permissions to discover and register MySQL and PostgreSQL databases.
+Create a role with assignable scope(s) that include all databases that Teleport should discover. For example:
+
+```json
+{
+    "properties": {
+        "roleName": "TeleportDiscovery",
+        "description": "Allows Teleport to discover MySQL and PostgreSQL databases",
+        "assignableScopes": [
+            "/subscriptions/11111111-2222-3333-4444-555555555555"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.DBforMySQL/servers/read",
+                    "Microsoft.DBforPostgreSQL/servers/read",
+                    "Microsoft.DBforMySQL/flexibleServers/read",
+                    "Microsoft.DBforPostgreSQL/flexibleServers/read"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}
+```
+
+This role definition allows Teleport to discover MySQL and PostgreSQL databases, but Teleport only needs
+permissions for the database types you have. The assignable scopes include a subscription, so
+the role can be assigned at any resource scope within that subscription, or assigned using the
+subscription scope itself.
+
+<Note>
+  Custom roles, unlike
+  [Azure built-in roles](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles),
+  can not have a root assignable scope. The highest assignable scope that
+  can be used in a custom role is subscription scope. Using a management group scope is currently an Azure
+  preview feature, and only allows for a single management group in the "assignableScopes" of a role
+  definition.
+  See [Azure RBAC custom roles](https://docs.microsoft.com/en-us/azure/role-based-access-control/custom-roles) for
+  more information.
+</Note>
+
+Go to the [Subscriptions](https://portal.azure.com/#view/Microsoft_Azure_Billing/SubscriptionsBlade) page and select a subscription.
+
+Click on *Access control (IAM)* in the subscription and select *Add > Add custom role*:
+
+![IAM custom role](../../../../../../assets/add-custom-role@2x-110ec3acb9.png)
+
+In the custom role creation page, click the *JSON* tab and click *Edit*, then paste the JSON example
+and replace the subscription in "assignableScopes" with your own subscription id:
+
+![Create JSON role](../../../../../../assets/create-role-from-json@2x-f3d5507b97.png)
+
+### Create a role assignment for the Teleport Database Service principal
+
+To grant Teleport permissions, the custom role you created must be assigned to the Teleport service principal -
+either the managed identity or the app registration you created earlier.
+
+Navigate to the resource scope where you want to make the role assignment. Click *Access control (IAM)* and
+select *Add > Add role assignment*. Choose the custom role you created as the role and the Teleport
+service principal as a member.
+
+![Assign role](../../../../../../assets/create-role-assignment@2x-a32c0e4a63.png)
+
+<Note>
+  The role assignment should be at a high enough scope to allow the Teleport Database Service to discover
+  all matching databases. See
+  [Identify the needed scope](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps#step-3-identify-the-needed-scope)
+  for more information about Azure scopes and creating role assignments.
+</Note>
+
+## Step 5/6. Create Azure database users
+
+To let Teleport connect to your Azure database authenticating as a service
+principal, you need to create Azure AD users authenticated by that principal in the database.
+
+### Assign Azure AD administrator
+
+Only the Azure AD administrator for the database can connect to it and create
+Azure AD users.
+
+<Tabs>
+  <Tab title="MySQL Flexible">
+    Go to your database's **Authentication** page and set the AD
+    admin using the edit button:
+
+    ![Set AD admin](../../../../../../assets/set-ad-admin-889a3ceaf5.png)
+  </Tab>
+
+  <Tab title="PostgreSQL Flexible">
+    Go to your database's **Authentication** page and set the AD
+    admin by selecting **+ Add Azure AD Admins**:
+
+    ![Set AD admin](../../../../../../assets/set-ad-admin-postgres-601de78bb4.png)
+  </Tab>
+
+  <Tab title="Single server">
+    Go to your database's *Active Directory admin* page
+    and set the AD admin using the *Set admin* button:
+
+    ![Set AD admin](../../../../../../assets/set-ad-admin@2x-9fc54b97cf.png)
+  </Tab>
+</Tabs>
+
+<Note>
+  Only one Azure user (or group) can be set as an Azure AD admin for the database.
+  If the Azure AD admin is removed from the server, all Azure AD logins will be disabled for the server.
+  Adding a new Azure AD admin from the same tenant will re-enable Azure AD logins.
+  Refer to [Use Azure Active Directory for authenticating with PostgreSQL](https://docs.microsoft.com/en-us/azure/postgresql/single-server/concepts-azure-ad-authentication)
+  for more information.
+</Note>
+
+### Connect to the database as an AD admin
+
+Next, you need to connect to your database as the AD admin user.
+
+Use the Azure `az` CLI utility to log in as the user that you set as the AD admin,
+fetch the access token and use it as a password when connecting to the database:
+
+<Tabs>
+  <Tab title="PostgreSQL Flexible">
+    ```code
+    $ az login -u ad@example.com
+    $ TOKEN=`az account get-access-token --resource-type oss-rdbms --output tsv --query accessToken`
+    $ PGPASSWORD=$TOKEN psql "host=example.postgres.database.azure.com user=ad@example.com sslmode=require dbname=postgres"
+    ```
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    ```code
+    $ az login -u ad@example.com
+    $ TOKEN=`az account get-access-token --resource-type oss-rdbms --output tsv --query accessToken`
+    $ PGPASSWORD=$TOKEN psql "host=example.postgres.database.azure.com user=ad@example.com@instance-name sslmode=require dbname=postgres"
+    ```
+  </Tab>
+
+  <Tab title="MySQL Flexible">
+    ```code
+    $ az login -u ad-admin@example.com
+    $ TOKEN=`az account get-access-token --resource-type oss-rdbms --output tsv --query accessToken`
+    $ mysql -h example.mysql.database.azure.com -P 3306 -u ad@example.com --enable-cleartext-plugin --password=$TOKEN
+    ```
+  </Tab>
+
+  <Tab title="MySQL">
+    ```code
+    $ az login -u ad-admin@example.com
+    $ TOKEN=`az account get-access-token --resource-type oss-rdbms --output tsv --query accessToken`
+    $ mysql -h example.mysql.database.azure.com -P 3306 -u ad@example.com@instance-name --enable-cleartext-plugin --password=$TOKEN
+    ```
+  </Tab>
+</Tabs>
+
+Note that the database username must include `@instance-name` suffix with the
+name of the Azure database instance you're connecting to.
+
+### Create AD users
+
+Once connected to the database as AD admin, create database users for the
+service principal that Teleport Database Service will be using. Use `Client ID`
+when using managed identities and `Application (client) ID` when using app
+registrations:
+
+<Tabs>
+  <Tab title="PostgreSQL">
+    ```sql
+    postgres=> SET aad_validate_oids_in_tenant = off;
+    SET
+    postgres=> CREATE ROLE teleport WITH LOGIN PASSWORD '11111111-2222-3333-4444-555555555555' IN ROLE azure_ad_user;
+    CREATE ROLE
+    ```
+  </Tab>
+
+  <Tab title="PostgreSQL Flexible">
+    ```sql
+    postgres=> SELECT * FROM pgaadauth_create_principal_with_oid('teleport', '11111111-2222-3333-4444-555555555555', 'service', false, false);
+    -------------------------------------
+     Created role for teleport
+    (1 row)
+    ```
+  </Tab>
+
+  <Tab title="MySQL">
+    ```sql
+    mysql> SET aad_auth_validate_oids_in_tenant = OFF;
+    mysql> CREATE AADUSER 'teleport' IDENTIFIED BY '11111111-2222-3333-4444-555555555555';
+    Query OK, 0 rows affected (0.92 sec)
+    ```
+
+    The created user may not have access to anything by default so let's grant it
+    some permissions:
+
+    ```sql
+    GRANT ALL ON `%`.* TO 'teleport'@'%';
+    ```
+  </Tab>
+</Tabs>
+
+You can create multiple database users identified by the same service principal.
+
+## Step 6/6. Connect
+
+Log in to your Teleport cluster. Your Azure database should appear in the list of
+available databases:
+
+```code
+$ tsh login --proxy=teleport.example.com --user=alice
+$ tsh db ls
+# Name     Description         Labels
+# -------- ------------------- -------
+# azure-db                     env=dev
+```
+
+```code
+$ tsh login --proxy=mytenant.teleport.sh --user=alice
+$ tsh db ls
+# Name     Description         Labels
+# -------- ------------------- -------
+# azure-db                     env=dev
+```
+
+To retrieve credentials for a database and connect to it:
+
+<Tabs>
+  <Tab title="MySQL">
+    ```code
+    $ tsh db connect --db-user=teleport azure-db
+    ```
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    ```code
+    $ tsh db connect --db-user=teleport --db-name=postgres azure-db
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  The appropriate database command-line client (`psql`, `mysql`) should be
+  available in the `PATH` of the machine you're running `tsh db connect` from.
+</Note>
+
+To log out of the database and remove credentials:
+
+```code
+$ tsh db logout azure-db
+```
+
+## Troubleshooting
+
+### No credential providers error
+
+If you see the error `DefaultAzureCredential: failed to acquire a token.` in Database Service logs then Teleport
+is not detecting the required credentials to connect to the Azure SDK. Check whether
+the credentials have been applied in the machine running the Teleport Database Service and restart
+the Teleport Database Service.
+Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
+for more information.
+
+### Timeout errors
+
+The Teleport Database Service needs connectivity to your database endpoints. That may require
+enabling inbound traffic on the database from the Database Service on the same VPC or routing rules from another VPC. Using the `nc`
+program you can verify connections to databases:
+
+```code
+$ nc -zv server-name.postgres.database.azure.com 5432
+# Connection to server-name.postgres.database.azure.com 5432 port [tcp/postgresql] succeeded!
+```
+
+## Next steps
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn how to [restrict access](/docs/ver/13.x/database-access/rbac) to certain users and databases.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- View the [High Availability (HA)](/docs/ver/13.x/database-access/guides/ha) guide.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Take a look at the YAML configuration [reference](/docs/ver/13.x/database-access/reference/configuration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- See the full CLI [reference](/docs/ver/13.x/database-access/reference/cli).

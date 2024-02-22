@@ -1,0 +1,204 @@
+---
+title: Access Requests with Opsgenie
+description: How to set up Teleport's Opsgenie plugin for privilege elevation approvals.
+version: '16.x'
+---
+
+With Teleport's Opsgenie integration, engineers can access the infrastructure
+they need to resolve alerts quickly, without longstanding admin permissions
+that can become a vector for attacks.
+
+Teleport's Opsgenie integration allows you to treat Teleport Role Access
+Requests as Opsgenie alerts, notify the appropriate on-call team, and
+approve or deny the requests via Teleport. You can also configure the plugin to
+approve Role Access Requests automatically if the user making the request is on
+the on-call team for a service affected by an alert.
+
+This guide will explain how to set up Teleport's Access Request plugin for
+Opsgenie.
+
+## Prerequisites
+
+- A Teleport Enterprise Cloud account.
+
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+  You can verify the tools you have installed by running the following commands:
+
+  ```code
+  $ tctl version
+  # Teleport Enterprise v15.0.0-dev go1.21
+
+  $ tsh version
+  # Teleport v15.0.0-dev go1.21
+  ```
+
+  You can download these tools by following the appropriate [Installation
+  instructions](/docs/ver/16.x/installation#installation-instructions) for your environment and Teleport edition.
+
+- An Opsgenie account with the ability to create API keys with the 'read' and
+  'create and update' access rights.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/5. Create services
+
+Create an Opsgenie team named `teleport-access-request-notifications`.
+
+We will configure the Opsgenie plugin to create an alert for the
+`teleport-access-request-notifications` team when certain users
+create an Access Request.
+
+## Step 2/5. Define RBAC resources
+
+The Teleport Opsgenie plugin works by receiving Access Request events from the
+Teleport Auth Service and, based on these events, interacting with the Opsgenie
+API.
+
+### Create a requester role
+
+To create a user first navigate to Management -> Access -> Roles
+
+Then select 'Create New Role' and create the requester role.
+
+![Add user one](../../../../../../assets/add-requester-role-8d15f5e725.png)
+
+```
+kind: role
+version: v5
+metadata:
+  name: requester
+spec:
+  allow:
+    request:
+      roles: ['editor']
+      thresholds:
+        - approve: 1
+          deny: 1
+      annotations:
+        teleport.dev/schedules: ['teleport-access-request-notifications']
+```
+
+The `teleport.dev/schedules` annotation specifies the schedule the alert will be be created for.
+
+### Create a user who will request access
+
+Create a user called `myuser` who has the `requester` role. Later in this
+guide, you will create an Access Request as this user to test the Opsgenie
+plugin:
+
+To create a user first navigate to Management -> Access -> Users
+
+![Add user one](../../../../../../assets/add-user-one-beddcc13f8.png)
+
+Then select 'Create New User' and create a user with the requester role.
+
+![Add user two](../../../../../../assets/add-user-two-125869c7e6.png)
+
+## Step 3/5. Set up an Opsgenie API key
+
+Generate an API key that the Opsgenie plugin will use to create and modify
+alerts as well as list users, services, and on-call policies.
+
+In your Opsgenie dashboard, go to **SETTINGS → INTEGRATIONS**
+
+See [https://support.atlassian.com/opsgenie/docs/create-a-default-api-integration/](https://support.atlassian.com/opsgenie/docs/create-a-default-api-integration/) for more details.
+
+## Step 4/5. Configure the Opsgenie plugin
+
+At this point, you have generated credentials that the Opsgenie plugin will use
+to connect to the Opsgenie API. To configure the plugin to use this API key navigate
+to Management -> Integrations -> Enroll New Integration.
+
+![Integrations page](../../../../../../assets/opsgenie-integration-page-66bc69502e.png)
+
+## Step 5/5. Test the Opsgenie plugin
+
+### Create an Access Request
+
+As the Teleport user `myuser`, create an Access Request for the `editor` role:
+
+<Tabs>
+  <Tab title="As an Admin">
+    A Teleport admin can create an Access Request for another user with `tctl`:
+
+    ```code
+    $ tctl request create myuser --roles=editor
+    ```
+  </Tab>
+
+  <Tab title="As a User">
+    Users can use `tsh` to create an Access Request and log in with approved roles:
+
+    ```code
+    $ tsh request create --roles=editor
+    Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
+    ```
+  </Tab>
+
+  <Tab title="From the Web UI">
+    Users can request access using the Web UI by visiting the "Access Requests"
+    tab and clicking "New Request":
+
+    ![Creating an Access Request using the Web UI](../../../../../../assets/request-access-989f648dce.png)
+  </Tab>
+</Tabs>
+
+In Opsgenie, you will see a new alert containing information about the
+Access Request in either the default schedule specified when enrolling the plugin,
+or in the schedules specified by `teleport.dev/schedules` annotation in the requester's role.
+
+### Resolve the request
+
+Once you receive an Access Request message, click the link to visit Teleport and
+approve or deny the request:
+
+![Reviewing a request](../../../../../../assets/review-request-a35de046df.png)
+
+<Accordion title="Reviewing from the command line">
+  You can also review an Access Request from the command line:
+
+  <Tabs>
+    <Tab title="As an Admin">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tctl request approve REQUEST_ID
+      $ tctl request deny REQUEST_ID
+      ```
+    </Tab>
+
+    <Tab title="As a User">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tsh request review --approve REQUEST_ID
+      $ tsh request review --deny REQUEST_ID
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Note>
+  When the Opsgenie plugin sends a notification, anyone who receives the
+  notification can follow the enclosed link to an Access Request URL. While users
+  must be authorized via their Teleport roles to review Access Request, you
+  should still check the Teleport audit log to ensure that the right users are
+  reviewing the right requests.
+
+  When auditing Access Request reviews, check for events with the type `Access
+  Request Reviewed` in the Teleport Web UI.
+</Note>

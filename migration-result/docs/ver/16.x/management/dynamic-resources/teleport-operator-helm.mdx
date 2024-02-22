@@ -1,0 +1,271 @@
+---
+title: Kubernetes Operator in teleport-cluster Helm chart
+description: Deploy the operator alongside your Helm-deployed Teleport Cluster.
+version: '16.x'
+---
+
+This guide explains how to run the Teleport Kubernetes Operator alongside a Teleport cluster
+deployed via the `teleport-cluster` Helm chart.
+
+<Warning>
+  If your Teleport cluster is not deployed using the `teleport-cluster` Helm chart
+  (Teleport Cloud, manually deployed, deployed via Terraform, ...), you need to follow
+  [the standalone operator guide](/docs/ver/16.x/management/dynamic-resources/teleport-operator-standalone) instead.
+</Warning>
+
+## Prerequisites
+
+- Kubernetes cluster (with or without `teleport-cluster` Helm chart already deployed);
+- [Helm](https://helm.sh/docs/intro/quickstart/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+
+Validate Kubernetes connectivity by running the following command:
+
+```code
+$ kubectl cluster-info
+# Kubernetes control plane is running at https://127.0.0.1:6443
+# CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+# Metrics-server is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy
+```
+
+<Tip>
+  Users wanting to experiment locally with the operator can use [minikube](https://minikube.sigs.k8s.io/docs/start/)
+  to start a local Kubernetes cluster:
+
+  ```code
+  $ minikube start
+  ```
+</Tip>
+
+## Step 1/3. Install teleport-cluster Helm chart with the operator
+
+Set up the Teleport Helm repository.
+
+Allow Helm to install charts that are hosted in the Teleport Helm repository:
+
+```code
+$ helm repo add teleport https://charts.releases.teleport.dev
+```
+
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
+
+```code
+$ helm repo update
+```
+
+Install the Helm chart for the Teleport Cluster with `operator.enabled=true`
+in the TELEPORT-CLUSTER namespace:
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ helm install teleport-cluster teleport/teleport-cluster \
+            --create-namespace --namespace teleport-cluster \
+            --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
+            --set operator.enabled=true \
+            --version 15.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    Create a namespace for your Teleport cluster resources:
+
+    ```code
+    $ kubectl create namespace teleport-cluster
+    ```
+
+    The Teleport Auth Service reads a license file to authenticate your Teleport
+    Enterprise account.
+
+    To obtain your license file, navigate to your [Teleport
+    account](https://teleport.sh) and enter your
+    account name (e.g., `my-license`). After logging in, click
+    the "DOWNLOAD LICENSE KEY" button to download your
+    license file.
+
+    ![License File Download](../../../../../../assets/license-23cee352ae.png)
+
+    Create a secret called "license" in the namespace you created:
+
+    ```code
+    $ kubectl -n teleport-cluster create secret generic license --from-file=license.pem
+    ```
+
+    Deploy your Teleport cluster and the Teleport Kubernetes Operator:
+
+    ```code
+    $ helm install teleport-cluster teleport/teleport-cluster \
+            --namespace teleport-cluster \
+            --set enterprise=true \
+            --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
+            --set operator.enabled=true \
+            --version 15.0.0-dev
+    ```
+  </Tab>
+</Tabs>
+
+This command installs the required Kubernetes CRDs and deploys the Teleport Kubernetes Operator next to the Teleport
+cluster. All resources (except CRDs, which are cluster-scoped) are created in the `teleport-cluster` namespace.
+
+## Step 2/3. Manage Teleport users and roles using `kubectl`
+
+Create a manifest called `teleport-resources.yaml` that describes two custom resources: a `TeleportUser` and a `TeleportRole`:
+
+```yaml
+apiVersion: resources.teleport.dev/v5
+kind: TeleportRole
+metadata:
+  name: myrole
+spec:
+  allow:
+    rules:
+      - resources: ['user', 'role']
+        verbs: ['list','create','read','update','delete']
+---
+apiVersion: resources.teleport.dev/v2
+kind: TeleportUser
+metadata:
+  name: myuser
+spec:
+  roles: ['myrole']
+```
+
+<Note>
+  Kubernetes validates all custom resource names to follow RFC 1123, which includes specifications for hostnames.
+  This requires the `metadata.name` field of Teleport resources controlled by the operator to consist of lowercase alphanumeric
+  characters, `-` or `.`, and to start and end with an alphanumeric character.
+</Note>
+
+Apply the manifests to the Kubernetes cluster:
+
+```code
+$ kubectl apply -n teleport-cluster -f teleport-resources.yaml
+```
+
+List the created Kubernetes resources:
+
+```code
+$ kubectl get teleportroles -n teleport-cluster
+# NAME     AGE
+# myrole   10m
+
+$ kubectl get teleportusers -n teleport-cluster
+# NAME     AGE
+# myuser   10m
+```
+
+Check the user `myuser` has been created in Teleport and has been granted the role `myrole`:
+
+```code
+$ AUTH_POD=$(kubectl get pods -n teleport-cluster -l app=teleport-cluster -o jsonpath='{.items[0].metadata.name}')
+$ kubectl exec -it "$AUTH_POD" -c teleport -- tctl users ls
+# User                          Roles
+# ----------------------------- -----------------------------
+# bot-teleport-operator-sidecar bot-teleport-operator-sidecar
+# myuser                        myrole
+```
+
+At this point the Teleport Kubernetes Operator is functional and Teleport users and roles can be managed from
+Kubernetes.
+
+## Step 3/3. Explore the Teleport CRDs
+
+Available fields can be browsed with `kubectl explain` in a cluster with Teleport CRDs installed.
+For example the command:
+
+```code
+$ kubectl explain teleportroles.spec
+```
+
+Returns the following fields:
+
+```shell
+KIND:     TeleportRole
+VERSION:  resources.teleport.dev/v5
+
+RESOURCE: spec <Object>
+
+DESCRIPTION:
+    Role resource definition v5 from Teleport
+
+FIELDS:
+   allow	<Object>
+     Allow is the set of conditions evaluated to grant access.
+
+   deny	<Object>
+     Deny is the set of conditions evaluated to deny access. Deny takes priority
+     over allow.
+
+   options	<Object>
+     Options is for OpenSSH options like agent forwarding.
+```
+
+## Troubleshooting
+
+The Teleport Operator watches for new resources or changes in Kubernetes.
+When a change happens, it triggers the reconciliation loop. This loop is in
+charge of validating the resource, checking if it already exists in Teleport
+and making calls to the Teleport API to create/update/delete the resource.
+The reconciliation loop also adds a `status` field on the Kubernetes resource.
+
+If an error happens and the reconciliation loop is not successful, an item in
+`status.conditions` will describe what went wrong. This allows users to diagnose
+errors by inspecting Kubernetes resources with `kubectl`:
+
+```code
+$ kubectl describe teleportusers myuser
+```
+
+For example, if a user has been granted a nonexistent role the status will look like:
+
+```yaml
+apiVersion: resources.teleport.dev/v2
+kind: TeleportUser
+# [...]
+status:
+  conditions:
+  - lastTransitionTime: "2022-07-25T16:15:52Z"
+    message: Teleport resource has the Kubernetes origin label.
+    reason: OriginLabelMatching
+    status: "True"
+    type: TeleportResourceOwned
+  - lastTransitionTime: "2022-07-25T17:08:58Z"
+    message: 'Teleport returned the error: role my-non-existing-role is not found'
+    reason: TeleportError
+    status: "False"
+    type: SuccessfullyReconciled
+```
+
+Here `SuccessfullyReconciled` is `False` and the error is `role my-non-existing-role is not found`.
+
+If the status is not present or does not give sufficient information to solve
+the issue, check the operator logs:
+
+```shell
+$ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME>
+```
+
+<Note>
+  In case of multi-replica deployments, only one operator instance is running
+  the reconciliation loop. This operator is called the leader and is the only
+  one producing reconciliation logs. The other operator instances are waiting
+  with the following log:
+
+  ```
+  leaderelection.go:248] attempting to acquire leader lease teleport/431e83f4.teleport.dev...
+  ```
+
+  To diagnose reconciliation issues, you will have to inspect all pods to find
+  the one reconciling the resources.
+</Note>
+
+If the Kubernetes resource has no status update and the operator does not produce
+any logs regarding the resource, please check if the resource lives in the same
+namespace as the operator.  The operator only watches for resource in its own namespace.
+
+## Next steps
+
+Helm Chart parameters are documented in the [`teleport-cluster` Helm chart reference](/docs/ver/16.x/reference/helm-reference/teleport-cluster).
+
+See the [Helm Deployment guides](/docs/ver/16.x/deploy-a-cluster/helm-deployments) detailing specific setups like running Teleport on AWS or GCP.

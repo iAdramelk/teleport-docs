@@ -1,0 +1,501 @@
+---
+title: Connect a Kubernetes Cluster to Teleport
+description: Connecting a Kubernetes cluster to Teleport
+videoBanner: 3AUGrOZ5me0
+version: '13.x'
+---
+
+In this guide, we will show you how to register a Kubernetes cluster with
+Teleport by deploying the Teleport Kubernetes Service on the Kubernetes cluster
+you want to register.
+
+In this setup, the Teleport Kubernetes Service pod detects that it is running on
+Kubernetes and registers the cluster automatically.
+
+<Tip>
+  You can also run the Teleport Kubernetes Service on a Linux host in a separate
+  network from your Kubernetes cluster. Learn how in [Kubernetes Access from a
+  Standalone Teleport Cluster](/docs/ver/13.x/kubernetes-access/register-clusters/static-kubeconfig).
+</Tip>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- [Kubernetes](https://kubernetes.io) >= v1.17.0
+- [Helm](https://helm.sh) >= 3.4.2
+
+  Verify that Helm and Kubernetes are installed and up to date.
+
+  ```code
+  $ helm version
+  # version.BuildInfo{Version:"v3.4.2"}
+
+  $ kubectl version
+  # Client Version: version.Info{Major:"1", Minor:"17+"}
+  # Server Version: version.Info{Major:"1", Minor:"17+"}
+  ```
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Deployment overview
+
+In this guide, we deploy the Teleport Kubernetes Service, which connects a
+Kubernetes cluster to a Teleport cluster:
+
+<Tip>
+  In your Teleport Cloud account, the name of your cluster will be your tenant
+  domain name, e.g., `mytenant.teleport.sh`, rather than `teleport.example.com`.
+</Tip>
+
+```mermaid
+flowchart TB
+subgraph priv[Private Network]
+  ks[Teleport Kubernetes Service]<--> kube[Kubernetes API Server]
+end
+
+subgraph pub[ ]
+  Users-- "kubectl get pods (mTLS)" -->proxy[Teleport Proxy Service\nteleport.example.com]
+end
+
+style pub fill:#0000,stroke:#0000;
+
+ks<-- Encrypted Tunnel -->proxy
+```
+
+## Step 1/3. Get a join token
+
+In order to start the Teleport Kubernetes Service, we will need to request a
+join token from the Teleport Auth Service:
+
+```code
+# Create a join token for the Teleport Kubernetes Service to authenticate
+$ TOKEN=$(tctl tokens add --type=kube --ttl=1h --format=text)
+$ echo $TOKEN
+```
+
+## Step 2/3. Deploy teleport-kube-agent
+
+<Tip>
+  The Teleport Kubernetes Service version should be the same as the Teleport Cluster version
+  or up to one major version back. You can set the version override with the override variable, ex: `--set teleportVersionOverride=13.2.0`.
+</Tip>
+
+To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+
+```code
+$ helm repo add teleport https://charts.releases.teleport.dev
+```
+
+To update the cache of charts from the remote repository, run `helm repo update`:
+
+```code
+$ helm repo update
+```
+
+<Tabs>
+  <Tab title="Open Source">
+    Switch `kubectl` to the Kubernetes cluster `cookie` and run the following
+    commands, assigning `PROXY_ADDR` to the address of your Auth Service or Proxy
+    Service.
+
+    ```code
+    $ PROXY_ADDR=teleport.example.com:443
+    $ CLUSTER=cookie
+    # Create the values.yaml file
+    $ cat > values.yaml << EOF
+    authToken: "${TOKEN}"
+    proxyAddr: "${PROXY_ADDR}"
+    roles: "kube"
+    joinParams:
+      method: "token"
+      tokenName: "${TOKEN}"
+    kubeClusterName: "${CLUSTER}"
+    EOF
+    # Install the helm chart with the values.yaml setting
+    $ helm install teleport-agent teleport/teleport-kube-agent \
+      -f values.yaml \
+      --create-namespace \
+      --namespace=teleport-agent \
+      --version 13.2.0
+    ```
+  </Tab>
+
+  <Tab title="Enterprise">
+    Switch `kubectl` to the Kubernetes cluster `cookie` and run the following
+    commands, assigning `PROXY_ADDR` to the address of your Auth Service or Proxy
+    Service.
+
+    ```code
+    $ PROXY_ADDR=teleport.example.com:443
+    $ CLUSTER=cookie
+    # Create the values.yaml file
+    $ cat > values.yaml << EOF
+    authToken: "${TOKEN}"
+    proxyAddr: "${PROXY_ADDR}"
+    roles: "kube"
+    joinParams:
+      method: "token"
+      tokenName: "${TOKEN}"
+    kubeClusterName: "${CLUSTER}"
+    enterprise: true
+    EOF
+    # Install the helm chart with the values.yaml setting
+    $ helm install teleport-agent teleport/teleport-kube-agent \
+      -f values.yaml \
+      --create-namespace \
+      --namespace=teleport-agent \
+      --version 13.2.0
+    ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    Switch `kubectl` to the Kubernetes cluster `cookie` and run the following
+    commands, assigning `PROXY_ADDR` to the address of your Teleport Cloud tenant.
+
+    ```code
+    $ PROXY_ADDR=mytenant.teleport.sh:443
+
+    # Install Kubernetes agent. It dials back to the Teleport cluster at $PROXY_ADDR
+    $ CLUSTER=cookie
+    # Create the values.yaml file
+    $ cat > values.yaml << EOF
+    authToken: "${TOKEN}"
+    proxyAddr: "${PROXY_ADDR}"
+    roles: "kube"
+    joinParams:
+      method: "token"
+      tokenName: "${TOKEN}"
+    kubeClusterName: "${CLUSTER}"
+    enterprise: true
+    EOF
+    # Run the helm install specifying to match to the Teleport Cloud version of Teleport
+    $ helm install teleport-agent teleport/teleport-kube-agent \
+      -f values.yaml \
+      --create-namespace \
+      --namespace=teleport-agent \
+      --version 13.2.0
+    ```
+  </Tab>
+</Tabs>
+
+## Step 3/3 Access your Kubernetes cluster
+
+### Kubernetes authentication
+
+To authenticate to a Kubernetes cluster via Teleport, your Teleport roles must
+allow access as at least one Kubernetes user or group. Ensure that you have a
+Teleport role that grants access to the cluster you plan to interact with.
+
+Run the following command to get the Kubernetes user for your current context:
+
+```code
+$ kubectl config view \
+-o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
+```
+
+Create a file called `kube-access.yaml` with the following content, replacing
+`USER` with the output of the command above.
+
+```yaml
+kind: role
+metadata:
+  name: kube-access
+version: v6
+spec:
+  allow:
+    kubernetes_labels:
+      '*': '*'
+    kubernetes_resources:
+      - kind: pod
+        namespace: "*"
+        name: "*"
+    kubernetes_groups:
+    - viewers
+    kubernetes_users:
+    # Replace USER with the Kubernetes user for your current context.
+    - USER
+  deny: {}
+```
+
+Apply your changes:
+
+```code
+$ tctl create -f kube-access.yaml
+```
+
+Assign the `kube-access` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `kube-access` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `kube-access` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `kube-access` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `kube-access` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - kube-access
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+Now that Teleport RBAC is configured, you can authenticate to your Kubernetes
+cluster via Teleport. To interact with your Kubernetes cluster, you will need to
+configure authorization within Kubernetes.
+
+### Kubernetes authorization
+
+To configure authorization within your Kubernetes cluster, you need to create Kubernetes `RoleBinding`s or
+`ClusterRoleBindings` that grant permissions to the subjects listed in `kubernetes_users` and
+`kubernetes_groups`.
+
+For example, you can grant some limited read-only permissions to the `viewers` group used in the `kube-access`
+role defined above:
+
+Create a file called `viewers-bind.yaml` with the following contents:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: viewers-crb
+subjects:
+- kind: Group
+  # Bind the group "viewers", corresponding to the kubernetes_groups we assigned our "kube-access" role above
+  name: viewers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  # "view" is a default ClusterRole that grants read-only access to resources
+  # See: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Apply the `ClusterRoleBinding` with `kubectl`:
+
+```code
+$ kubectl apply -f viewers-bind.yaml
+```
+
+Log out of Teleport and log in again.
+
+### View pods in your cluster
+
+List connected clusters using `tsh kube ls` and switch between
+them using `tsh kube login`:
+
+```code
+$ tsh kube ls
+
+# Kube Cluster Name Selected
+# ----------------- --------
+# cookie
+
+# kubeconfig now points to the cookie cluster
+$ tsh kube login cookie
+# Logged into kubernetes cluster "cookie". Try 'kubectl version' to test the connection.
+
+# kubectl command executed on `cookie` but is routed through the Teleport cluster.
+$ kubectl get pods
+```
+
+## Next Steps
+
+- Take a look at a [kube-agent helm chart reference](/docs/ver/13.x/reference/helm-reference/teleport-kube-agent) for a full list of parameters.

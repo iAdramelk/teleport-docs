@@ -1,0 +1,917 @@
+---
+title: Teleport Access Requests with Email
+description: How to set up the Teleport email plugin to notify users when another user requests elevated privileges.
+version: '14.x'
+---
+
+This guide will explain how to set up Teleport to send Just-in-Time Access
+Request notifications to users via email. Since all organizations use email for
+at least some of their communications, Teleport's email plugin makes it
+straightforward to integrate Access Requests into your existing workflows,
+letting you implement security best practices without compromising productivity.
+
+```mermaid
+flowchart LR
+subgraph teleport["Teleport cluster"]
+  direction LR
+  auth["Auth Service"]
+  proxy["Proxy Service"]
+end
+api[SMTP service API]
+
+subgraph private["Private network"]
+  subgraph plugin[SMTP service plugin]
+    id["Teleport identity file"]
+  end 
+  plugin<-- "Listen for Access Requests\n(via reverse tunnel)"-->proxy
+end 
+proxy<-- Forward gRPC traffic -->auth
+plugin-- "Email messages" -->api
+```
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
+      details on how to set this up, see our Enterprise [Getting
+      Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Access to an SMTP service. The Teleport email plugin supports either Mailgun
+  or a generic SMTP service that authenticates via username and password.
+
+<Warning>
+  The Teleport plugin needs to use a username and password to authenticate to your
+  SMTP service. To mitigate the risk of these credentials being leaked, you should
+  set up a dedicated email account for the Teleport plugin and rotate the password
+  regularly.
+</Warning>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/7. Define RBAC resources
+
+Before you set up the email plugin, you will need to enable Role Access Requests
+in your Teleport cluster.
+
+For the purpose of this guide, we will define an `editor-requester` role, which
+can request the built-in `editor` role, and an `editor-reviewer` role that can
+review requests for the `editor` role.
+
+Create a file called `editor-request-rbac.yaml` with the following content:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: editor-reviewer
+spec:
+  allow:
+    review_requests:
+      roles: ['editor']
+---
+kind: role
+version: v5
+metadata:
+  name: editor-requester
+spec:
+  allow:
+    request:
+      roles: ['editor']
+      thresholds:
+        - approve: 1
+          deny: 1
+```
+
+Create the roles you defined:
+
+```code
+$ tctl create -f editor-request-rbac.yaml
+role 'editor-reviewer' has been created
+role 'editor-requester' has been created
+```
+
+Allow yourself to review requests by users with the `editor-requester` role by
+assigning yourself the `editor-reviewer` role.
+
+Assign the `editor-reviewer` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - editor-reviewer
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `editor-reviewer` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - editor-reviewer
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `editor-reviewer` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - editor-reviewer
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `editor-reviewer` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - editor-reviewer
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+Create a user called `myuser` who has the `editor-requester` role. This user
+cannot edit your cluster configuration unless they request the `editor` role:
+
+```code
+$ tctl users add myuser --roles=editor-requester 
+```
+
+`tctl` will print an invitation URL to your terminal. Visit the URL and log in
+as `myuser` for the first time, registering credentials as configured for your
+Teleport cluster.
+
+Later in this guide, you will have `myuser` request the `editor` role so you can
+review the request using the Teleport plugin.
+
+## Step 2/7. Install the Teleport email plugin
+
+In this step, you will install the Teleport email plugin.
+
+<Tabs>
+  <Tab title="Teleport Enterprise">
+    We recommend installing Teleport plugins on the same host as the Teleport Proxy
+    Service. This is an ideal location as plugins have a low memory footprint, and
+    will require both public internet access and Teleport Auth Service access.
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    Install the Teleport email plugin on a host that can access both your
+    Teleport Cloud tenant and your SMTP service.
+  </Tab>
+</Tabs>
+
+<Accordion title="Using a local SMTP server?">
+  If you are using a local SMTP server to test the plugin, you should install the
+  plugin on your local machine. This is because the plugin needs to dial out to
+  your SMTP server and perform any necessary DNS lookups in order to send email.
+
+  Your Teleport cluster does *not* need to perform DNS lookups for your plugin, as
+  the plugin dials out to the Proxy Service or Auth Service.
+</Accordion>
+
+We currently only provide Linux amd64 binaries. You can also compile the plugin
+from source.
+
+<Tabs>
+  <Tab title="Download">
+    ```code
+    $ curl -L https://get.gravitational.com/teleport-access-email-v14.0.0-dev-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-email-v14.0.0-dev-linux-amd64-bin.tar.gz
+    $ cd teleport-access-email
+    $ ./install
+    ```
+  </Tab>
+
+  <Tab title="From Source">
+    To install from source you need `git` and `go` installed. If you do not have
+    Go installed, visit the Go [downloads page](https://go.dev/dl/).
+
+    ```code
+    # Checkout teleport-plugins
+    $ git clone https://github.com/gravitational/teleport-plugins.git
+    $ cd teleport-plugins/access/email
+    $ make
+    ```
+
+    Move the `teleport-email` binary from `teleport-plugins/access/email/build`
+    into a directory in your `PATH`.
+  </Tab>
+</Tabs>
+
+Ensure that the plugin is installed correctly:
+
+```code
+$ teleport-email version
+```
+
+## Step 3/7. Create a user and role for the plugin
+
+Teleport's Access Request plugins authenticate to your Teleport cluster as a
+user with permissions to list and read Access Requests. This way, plugins can
+retrieve Access Requests from the Teleport Auth Service and present them to
+reviewers.
+
+Define a user and role called `access-plugin` by adding the following content to
+a file called `access-plugin.yaml`:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: access-plugin
+spec:
+  allow:
+    rules:
+      - resources: ['access_request']
+        verbs: ['list', 'read']
+      - resources: ['access_plugin_data']
+        verbs: ['update']
+---
+kind: user
+metadata:
+  name: access-plugin
+spec:
+  roles: ['access-plugin']
+version: v2
+```
+
+Create the user and role:
+
+```code
+$ tctl create -f access-plugin.yaml
+```
+
+As with all Teleport users, the Teleport Auth Service authenticates the
+`access-plugin` user by issuing short-lived TLS credentials. In this case, we
+will need to request the credentials manually by *impersonating* the
+`access-plugin` role and user.
+
+If you are using `tctl` from the Auth
+Service host, you will already have impersonation privileges.
+
+To grant your user impersonation privileges for `access-plugin`, define a role
+called `access-plugin-impersonator` by pasting the following YAML document into
+a file called `access-plugin-impersonator.yaml`:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: access-plugin-impersonator
+spec:
+  allow:
+    impersonate:
+      roles:
+      - access-plugin
+      users:
+      - access-plugin
+```
+
+Create the `access-plugin-impersonator` role:
+
+```code
+$ tctl create -f access-plugin-impersonator.yaml
+```
+
+Assign the `access-plugin-impersonator` role to your Teleport user by running the following
+commands, depending on whether you authenticate as a local Teleport user or via
+the `github`, `saml`, or `oidc` authentication connectors:
+
+<Tabs>
+  <Tab title="Local User">
+    Retrieve your local user's configuration resource:
+
+    ```code
+    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+    ```
+
+    Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
+
+    ```diff
+      roles:
+       - access
+       - auditor
+       - editor
+    +  - access-plugin-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f out.yaml
+    ```
+  </Tab>
+
+  <Tab title="GitHub">
+    Retrieve your `github`  configuration resource:
+
+    ```code
+    $ tctl get github/github --with-secrets > github.yaml
+    ```
+
+    Edit `github.yaml`, adding `access-plugin-impersonator` to the
+    `teams_to_roles` section. The team you will map to this role will depend on how
+    you have designed your organization's RBAC, but it should be the smallest team
+    possible within your organization. This team must also include your user.
+
+    Here is an example:
+
+    ```diff
+      teams_to_roles:
+        - organization: octocats
+          team: admins
+          roles:
+            - access
+    +       - access-plugin-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f github.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="SAML">
+    Retrieve your `saml`  configuration resource:
+
+    ```code
+    $ tctl get --with-secrets saml/mysaml > saml.yaml
+    ```
+
+    Edit `saml.yaml`, adding `access-plugin-impersonator` to the
+    `attributes_to_roles` section. The attribute you will map to this role will
+    depend on how you have designed your organization's RBAC, but it should be the
+    smallest group possible within your organization. This group must also include
+    your user.
+
+    Here is an example:
+
+    ```diff
+      attributes_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - access-plugin-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f saml.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+
+  <Tab title="OIDC">
+    Retrieve your `oidc`  configuration resource:
+
+    ```code
+    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+    ```
+
+    Edit `oidc.yaml`, adding `access-plugin-impersonator` to the
+    `claims_to_roles` section. The claim you will map to this role will depend on
+    how you have designed your organization's RBAC, but it should be the smallest
+    group possible within your organization. This group must also include your
+    user.
+
+    Here is an example:
+
+    ```diff
+      claims_to_roles:
+        - name: "groups"
+          value: "my-group"
+          roles:
+            - access
+    +       - access-plugin-impersonator
+    ```
+
+    Apply your changes:
+
+    ```code
+    $ tctl create -f oidc.yaml
+    ```
+
+    <Warning>
+      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+      so take precautions when creating this file and remove it after updating the resource.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Log out of your Teleport cluster and log in again to assume the new role.
+
+You will now be able to generate signed certificates for the `access-plugin`
+role and user.
+
+## Step 4/7. Export the access plugin identity
+
+Like all Teleport users, `access-plugin` needs signed credentials in
+order to connect to your Teleport cluster. You will use the `tctl auth sign`
+command to request these credentials for your plugin.
+
+The following `tctl auth sign` command impersonates the `access-plugin` user,
+generates signed credentials, and writes an identity file to the local
+directory:
+
+```code
+$ tctl auth sign --user=access-plugin --out=auth.pem
+```
+
+The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+
+The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
+uses the SSH credentials to connect to the Proxy Service, which establishes a
+reverse tunnel connection to the Auth Service. The plugin uses this reverse
+tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
+endpoint.
+
+You will refer to this file later when configuring the plugin.
+
+<Note>
+  By default, `tctl auth sign` produces certificates with a relatively short
+  lifetime. For production deployments, we suggest using [Machine
+  ID](/docs/ver/14.x/machine-id/introduction) to programmatically issue and renew
+  certificates for your plugin. See our Machine ID [getting started
+  guide](/docs/ver/14.x/machine-id/getting-started) to learn more.
+
+  Note that you cannot issue certificates that are valid longer than your existing credentials.
+  For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+  valid for at least 1000 hours. This means your user must have a role allowing
+  a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
+  when logging in:
+
+  ```code
+  $ tsh login --proxy=teleport.example.com --ttl=1001h
+  ```
+</Note>
+
+## Step 5/7. Configure the plugin
+
+At this point, you have generated credentials that the email plugin will use to
+connect to Teleport. You will now configure the plugin to use these credentials
+to receive Access Request notifications from Teleport and email them to your
+chosen recipients.
+
+The Teleport email plugin uses a config file in TOML format. Generate a
+boilerplate config by running the following command:
+
+```code
+$ teleport-email configure | sudo tee /etc/teleport-email.toml
+```
+
+Edit the configuration file for your environment. We will show you how to set
+each value below.
+
+### `[teleport]`
+
+<Tabs>
+  <Tab title="Executable">
+    **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identity`**: Fill this in with the path to the identity file you exported
+    earlier.
+
+    **`client_key`**, **`client_crt`**, **`root_cas`**: Comment these out, since we
+    are not using them in this configuration.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    **`address`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identitySecretName`**: Fill in the `identitySecretName` field with the name
+    of the Kubernetes secret you created earlier.
+  </Tab>
+</Tabs>
+
+### `[mailgun]` or `[smtp]`
+
+Provide the credentials for your SMTP service depending on whether you are using
+Mailgun or SMTP service.
+
+<Tabs>
+  <Tab title="Mailgun">
+    In the `mailgun` section, assign `domain` to the domain name and subdomain of
+    your Mailgun account. Assign `private_key` to your Mailgun private key.
+  </Tab>
+
+  <Tab title="Generic SMTP Service">
+    Assign `host` to the fully qualified domain name of your SMTP service, omitting
+    the URL scheme and port. (If you're using a local SMTP server for testing, use
+    `"localhost"` for `host`.) Assign `port` to the port of your SMTP service, then
+    fill in `username` and `password`.
+
+    <Tip>
+      You can also save your password to a separate file and assign `password_file` to
+      the file's path. The plugin reads the file and uses the file's content as the
+      password.
+    </Tip>
+
+    <Accordion title="Disabling TLS for testing">
+      If you are testing the email plugin against a trusted internal SMTP server where
+      you would rather not use TLS—e.g., a local SMTP server on your development
+      machine—you can assign the `starttls_policy` setting to `disabled` (always
+      disable TLS) or `opportunistic` (disable TLS if the server does not advertise
+      the `STARTTLS` extension). The default is to always enforce TLS, and you should
+      leave this setting unassigned unless you know what you are doing and understand
+      the risks.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### `[delivery]`
+
+Assign `sender` to the email address from which you would like the Teleport
+plugin to send messages.
+
+### `[role_to_recipients]`
+
+The `role_to_recipients` map configure the recipients that the email plugin
+will notify when a user requests access to a specific role. When the plugin
+receives an Access Request from the Auth Service, it will look up the role being
+requested and identify the recipients to notify.
+
+Here is an example of a `role_to_recipients` map:
+
+```toml
+[role_to_recipients]
+"*" = ["security@example.com", "executive-team@example.com"]
+"dev" = "eng@example.com"
+"dba" = "mallory@example.com"
+```
+
+In the `role_to_recipients` map, each key is the name of a Teleport role. Each
+value configures the recipients the plugin will email when it receives an Access
+Request for that role. The value can be a single string or an array of strings.
+Each string must be an email address.
+
+The `role_to_recipients` map must also include an entry for `"*"`, which the
+plugin looks up if no other entry matches a given role name. In the example
+above, requests for roles aside from `dev` and `dba` will notify
+`security@example.com` and `executive-team@example.com`.
+
+<Accordion title="Suggested reviewers">
+  Users can suggest reviewers when they create an Access Request, e.g.,:
+
+  ```code
+  $ tsh request create --roles=dbadmin --reviewers=alice@example.com,ivan@example.com
+  ```
+
+  If an Access Request includes suggested reviewers, the email plugin will add
+  these to the list of recipients to notify. If a suggested reviewer is an email
+  address, the plugin will send a message to that recipient in addition to those
+  configured in `role_to_recipients`.
+</Accordion>
+
+Configure the email plugin to notify you when a user requests the `editor` role
+by adding the following to your `role_to_recipients` config, replacing
+`YOUR_EMAIL_ADDRESS` with the appropriate address:
+
+```toml
+[role_to_recipients]
+"*" = "YOUR_EMAIL_ADDRESS"
+"editor" = "YOUR_EMAIL_ADDRESS"
+```
+
+<Accordion title="Configuring recipients without role mapping">
+  If you do not plan to use role-to-recipient mapping, you can configure the
+  Teleport email plugin to notify a static list of recipients for every Access
+  Request event by using the `delivery.recipients` field:
+
+  ```toml
+  [delivery]
+  recipients = ["eng@exmaple.com", "dev@example.com"]
+  ```
+
+  If you use `delivery.recipients`, you must remove the `role_to_recipients`
+  configuration section. Behind the scenes, `delivery.recipients` assigns the
+  recipient list to a `role_to_recipients` mapping under the wildcard value `"*"`.
+</Accordion>
+
+You configuration should resemble the following:
+
+```toml
+# /etc/teleport-email.toml
+[teleport]
+addr = "example.com:443"
+identity = "/var/lib/teleport/plugins/email/auth_id"
+
+[mailgun]
+domain = "sandboxbd81caddef744a69be0e5b544ab0c3bd.mailgun.org" 
+private_key = "xoxb-fakekey62b0eac53565a38c8cc0316f6"                                     
+
+# As an alternative, you can use SMTP server credentials:
+#
+# [smtp]
+# host = "smtp.gmail.com"
+# port = 587
+# username = "username@gmail.com"
+# password = ""
+# password_file = "/var/lib/teleport/plugins/email/smtp_password"
+
+[delivery]
+sender = "noreply@example.com" 
+
+[role_to_recipients]
+"*" = "eng@example.com"
+"editor" = ["admin@example.com", "execs@example.com"]
+
+[log]
+output = "stderr" # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/email.log"
+severity = "INFO" # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
+```
+
+## Step 6/7. Test the email plugin
+
+After finishing your configuration, you can now run the plugin and test your
+email-based Access Request flow:
+
+```code
+$ teleport-email start
+```
+
+If everything works as expected, the log output should look like this:
+
+```code
+$ teleport-email start
+INFO   Starting Teleport Access Email Plugin (): email/app.go:80
+INFO   Plugin is ready email/app.go:101
+```
+
+### Create an Access Request
+
+<Tabs>
+  <Tab title="As an Admin">
+    A Teleport admin can create an Access Request for another user with `tctl`:
+
+    ```code
+    $ tctl request create myuser --roles=editor
+    ```
+  </Tab>
+
+  <Tab title="As a User">
+    Users can use `tsh` to create an Access Request and log in with approved roles:
+
+    ```code
+    $ tsh request create --roles=editor
+    Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
+    ```
+  </Tab>
+
+  <Tab title="From the Web UI">
+    Users can request access using the Web UI by visiting the "Access Requests"
+    tab and clicking "New Request":
+
+    ![Creating an Access Request using the Web UI](../../../../../../assets/request-access-989f648dce.png)
+  </Tab>
+</Tabs>
+
+The recipients you configured earlier should receive notifications of the
+request by email.
+
+### Resolve the request
+
+Once you receive an Access Request message, click the link to visit Teleport and
+approve or deny the request:
+
+![Reviewing a request](../../../../../../assets/review-request-a35de046df.png)
+
+<Accordion title="Reviewing from the command line">
+  You can also review an Access Request from the command line:
+
+  <Tabs>
+    <Tab title="As an Admin">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tctl request approve REQUEST_ID
+      $ tctl request deny REQUEST_ID
+      ```
+    </Tab>
+
+    <Tab title="As a User">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tsh request review --approve REQUEST_ID
+      $ tsh request review --deny REQUEST_ID
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>
+
+## Step 7/7. Set up systemd
+
+In production, we recommend starting the Teleport plugin daemon via an init
+system like systemd. Here's the recommended Teleport plugin service unit file
+for systemd:
+
+```ini
+[Unit]
+Description=Teleport Email Plugin
+After=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+ExecStart=/usr/local/bin/teleport-email start --config=/etc/teleport-email.toml
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/run/teleport-email.pid
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Save this as `teleport-email.service` in either `/usr/lib/systemd/system/` or
+another [unit file load
+path](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Unit%20File%20Load%20Path)
+supported by systemd.
+
+Enable and start the plugin:
+
+```code
+$ sudo systemctl enable teleport-email
+$ sudo systemctl start teleport-email
+```
+
+## Feedback
+
+If you have any issues with this plugin please create an [issue
+on GitHub](https://github.com/gravitational/teleport-plugins/issues/new).

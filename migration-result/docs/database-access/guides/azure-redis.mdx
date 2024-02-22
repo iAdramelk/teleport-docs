@@ -1,0 +1,907 @@
+---
+title: Database Access with Azure Cache for Redis
+description: How to configure Teleport database access with Azure Cache for Redis
+version: '15.x'
+---
+
+Teleport can provide secure access to Azure Cache for Redis via the  [Teleport Database
+Service](/docs/database-access/introduction). This allows for
+fine-grained access control through [Teleport's RBAC](/docs/database-access/rbac).
+
+In this guide, you will:
+
+1. Configure an Azure Cache for Redis with IAM authentication.
+2. Join the Azure Cache for Redis database to your Teleport cluster.
+3. Connect to the Azure Cache for Redis database via the Teleport Database Service.
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ![Teleport Database Access Azure Cache for Redis Self-Hosted](../../../../assets/redis-self-hosted-f7cb6cfbf7.png)
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ![Teleport Database Access Azure Cache for Redis Cloud](../../../../assets/redis-cloud-4a9b6cfb1b.png)
+  </Tab>
+</Tabs>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+      See [Installation](/docs/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.0-dev.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.0-dev go1.21
+    Proxy version: 15.0.0-dev
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v13.4.3 go1.21
+    Proxy version: 13.4.3
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- Deployed Azure Redis server or Azure Redis Enterprise cluster.
+- Azure administrative privileges to manage service principals and access
+  controls.
+- A host, e.g., an Azure VM instance, where you will run the Teleport Database
+  Service.
+- `redis-cli` version `6.2` or newer installed and added to your system's
+  `PATH` environment variable.
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/5. Create a Teleport user
+
+<Tip>
+  To modify an existing user to provide access to the Database Service, see [Database Access Access Controls](/docs/database-access/rbac)
+</Tip>
+
+<Tabs>
+  <Tab title="Teleport Team/Community Edition">
+    Create a local Teleport user with the built-in `access` role:
+
+    ```code
+    $ tctl users add \
+      --roles=access \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise/Enterprise Cloud">
+    Create a local Teleport user with the built-in `access` and `requester` roles:
+
+    ```code
+    $ tctl users add \
+      --roles=access,requester \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+</Tabs>
+
+| Flag         | Description                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--roles`    | List of roles to assign to the user. The builtin `access` role allows them to connect to any database server registered with Teleport.   |
+| `--db-users` | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| `--db-names` | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+
+<Warning>
+  Database names are only enforced for PostgreSQL and MongoDB databases.
+</Warning>
+
+For more detailed information about database access controls and how to restrict
+access see [RBAC](/docs/database-access/rbac) documentation.
+
+## Step 2/5. Create a Database Service configuration
+
+Install Teleport on the host where you will run the Teleport Database Service:
+
+Select an edition, then follow the instructions for that edition to install Teleport.
+
+<Tabs dropdownView dropdownCaption="Teleport Edition">
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+      Before installing a `teleport` binary with a version besides
+      v13, read our compatibility rules to ensure that the
+      binary is compatible with Teleport Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo apt-get install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for v15. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo dnf install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo zypper install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Tarball">
+        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+        will update after one is filled out.
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+
+        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+        will be slightly different:
+
+        ```code
+        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        # <checksum> <filename>
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        # Verify that the checksums match
+        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ cd teleport-ent
+        $ sudo ./install
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        $ sudo apt-get update
+        $ sudo apt-get install teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+        $ sudo yum install teleport-ent-updater
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Install teleport
+        $ sudo dnf install teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v15` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+    <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+      Before installing a `teleport` binary with a version besides v13,
+      read our compatibility rules to ensure that the binary is compatible with
+      Teleport Enterprise Cloud.
+
+      When running multiple `teleport` binaries within a cluster, the following rules
+      apply:
+
+      - **Patch and minor** versions are always compatible, for example, any 8.0.1
+        component will work with any 8.0.3 component and any 8.1.0 component will work
+        with any 8.3.0 component.
+      - Servers support clients that are 1 major version behind, but do not support
+        clients that are on a newer major version. For example, an 8.x.x Proxy Service
+        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+        You must upgrade to 7.x.x first.
+      - Proxy Services and resource services do not support Auth Services that are on
+        an older major version, and will fail to connect to older Auth Services by
+        default. This behavior can be overridden by passing `--skip-version-check`
+        when starting Proxy Services and resource services.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+Create the Database Service configuration, specifying a region like this:
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ sudo teleport db configure create \
+      -o file \
+      --proxy=tele.example.com:443 \
+      --token=/tmp/token \
+      --azure-redis-discovery=eastus
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ sudo teleport db configure create \
+      -o file \
+      --proxy=teleport.example.com:3080 \
+      --token=/tmp/token \
+      --azure-redis-discovery=eastus
+    ```
+  </Tab>
+</Tabs>
+
+The command will generate a Database Service configuration with Azure Cache for
+Redis auto-discovery enabled in the `eastus` region and place it at the
+`/etc/teleport.yaml` location.
+
+<Tip>
+  Use `--azure-redis-discovery=*` to discover databases in all regions. In
+  addition to the region, you can optionally specify
+  `--azure-resource-group=<resource-group-name>`,
+  `--azure-subscription=<subscription-id>`, or `--labels=<key>=<value>` to
+  further customize the scopes of the auto-discovery.
+</Tip>
+
+## Step 3/5. Configure IAM permissions for Teleport
+
+The Teleport Database Service needs Azure IAM permissions to:
+
+- Discover and register Azure Cache for Redis databases.
+- Retrieve Redis access keys to authenticate with the databases.
+
+### Configure an Azure service principal
+
+There are a couple of ways for the Teleport Database Service to access Azure
+resources:
+
+- The Database Service can run on an Azure VM with attached managed identity. This
+  is the recommended way of deploying the Database Service in production since
+  it eliminates the need to manage Azure credentials.
+- The Database Service can be registered as an Azure AD application (via AD's "App
+  registrations") and configured with its credentials. This is only recommended
+  for development and testing purposes since it requires Azure credentials to
+  be present in the Database Service's environment.
+
+<Tabs>
+  <Tab title="Using managed identity">
+    Go to the [Managed Identities](https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.ManagedIdentity%2FuserAssignedIdentities)
+    page in your Azure portal and click *Create* to create a new user-assigned
+    managed identity:
+
+    ![Managed identities](../../../../assets/managed-identities@2x-4fbf040404.png)
+
+    Pick a name and resource group for the new identity and create it:
+
+    ![New identity](../../../../assets/new-identity-adfb8293a4.png)
+
+    Take note of the created identity's *Client ID*:
+
+    ![Created identity](../../../../assets/created-identity-19fb160637.png)
+
+    Next, navigate to the Azure VM that will run your Database Service instance and
+    add the identity you've just created to it:
+
+    ![VM identity](../../../../assets/vm-identity-6f3947a340.png)
+
+    Attach this identity to all Azure VMs that will be running the Database
+    Service.
+  </Tab>
+
+  <Tab title="Using app registrations">
+    <Note>
+      Registering the Database Service as Azure AD application is suitable for
+      test and development scenarios, or if your Database Service does not run on
+      an Azure VM. For production scenarios prefer to use the managed identity
+      approach.
+    </Note>
+
+    Go the the [App registrations](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps)
+    page of your Azure Active Directory and click on *New registration*:
+
+    ![App registrations](../../../../assets/app-registrations@2x-c12b7bec51.png)
+
+    Pick a name (e.g. *DatabaseService*) and register a new application. Once the
+    app has been created, take note of its *Application (client) ID* and click on
+    *Add a certificate or secret*:
+
+    ![Registered app](../../../../assets/registered-app@2x-8bf24c2fca.png)
+
+    Create a new client secret that the Database Service agent will use to
+    authenticate with the Azure API:
+
+    ![Registered app secrets](../../../../assets/registered-app-secrets@2x-edb2a1366b.png)
+
+    The Teleport Database Service uses Azure SDK's default credential provider chain to
+    look for credentials. Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
+    to pick a method suitable for your use-case. For example, to use
+    environment-based authentication with a client secret, the Database Service should
+    have the following environment variables set:
+
+    ```code
+    export AZURE_TENANT_ID=
+    export AZURE_CLIENT_ID=
+    export AZURE_CLIENT_SECRET=
+    ```
+  </Tab>
+</Tabs>
+
+### Create a custom role
+
+Teleport requires `<resource-type>/read` permissions for discovery and
+`<resource-type>/listKeys/action` permissions for authentication with the
+Redis servers, but Teleport only needs permissions for the resource types
+you have.
+
+Here is a sample role definition allowing Teleport to read and list keys
+for both Azure Redis and Azure Redis Enterprise:
+
+```json
+{
+    "properties": {
+        "roleName": "TeleportDiscovery",
+        "description": "Allows Teleport to discover Azure Cache For Redis databases and list keys",
+        "assignableScopes": [
+            "/subscriptions/11111111-2222-3333-4444-555555555555"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Cache/redis/read",
+                    "Microsoft.Cache/redis/listKeys/action",
+                    "Microsoft.Cache/redisEnterprise/read",
+                    "Microsoft.Cache/redisEnterprise/databases/read",
+                    "Microsoft.Cache/redisEnterprise/databases/listKeys/action"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}
+```
+
+The `assignableScopes` field above includes a subscription
+`/subscriptions/<subscription>`, allowing the role to be assigned at any
+resource scope within that subscription or the subscription scope itself. If
+you want to further limit the `assignableScopes`, you can use a resource group
+`/subscriptions/<subscription>/resourceGroups/<group>` or a management group
+`/providers/Microsoft.Management/managementGroups/<group>` instead.
+
+Now go to the [Subscriptions](https://portal.azure.com/#view/Microsoft_Azure_Billing/SubscriptionsBlade) page and select a subscription.
+
+Click on *Access control (IAM)* in the subscription and select *Add > Add custom role*:
+
+![IAM custom role](../../../../assets/add-custom-role@2x-110ec3acb9.png)
+
+In the custom role creation page, click the *JSON* tab and click *Edit*, then paste the JSON example
+and replace the subscription in `assignableScopes` with your own subscription id:
+
+![Create JSON role](../../../../assets/redis-create-role-from-json-8b15b26ba3.png)
+
+### Create a role assignment for the Teleport Database Service principal
+
+To grant Teleport permissions, the custom role you created must be assigned to the Teleport service principal -
+either the managed identity or the app registration you created earlier.
+
+Navigate to the resource scope where you want to make the role assignment. Click *Access control (IAM)* and
+select *Add > Add role assignment*. Choose the custom role you created as the role and the Teleport
+service principal as a member.
+
+![Assign role](../../../../assets/create-role-assignment@2x-a32c0e4a63.png)
+
+<Note>
+  The role assignment should be at a high enough scope to allow the Teleport Database Service to discover
+  all matching databases. See
+  [Identify the needed scope](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps#step-3-identify-the-needed-scope)
+  for more information about Azure scopes and creating role assignments.
+</Note>
+
+## Step 4/5. Start the Database Service
+
+Configure the Teleport Database Service to start automatically when the host boots up by
+creating a systemd service for it. The instructions depend on how you installed
+the Teleport Database Service.
+
+<Tabs>
+  <Tab title="Package Manager">
+    On the host where you will run the Teleport Database Service, enable and start Teleport:
+
+    ```code
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+
+  <Tab title="TAR Archive">
+    On the host where you will run the Teleport Database Service, create a systemd service
+    configuration for Teleport, enable the Teleport service, and start Teleport:
+
+    ```code
+    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+    $ sudo systemctl enable teleport
+    $ sudo systemctl start teleport
+    ```
+  </Tab>
+</Tabs>
+
+You can check the status of the Teleport Database Service with `systemctl status teleport`
+and view its logs with `journalctl -fu teleport`.
+
+## Step 5/5. Connect
+
+Log in to your Teleport cluster. Your Azure Cache for Redis databases should
+appear in the list of available databases:
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh login --proxy=teleport.example.com --user=alice
+    $ tsh db ls
+    Name                      Description                              Allowed Users Labels  Connect 
+    ------------------------- ---------------------------------------- ------------- ------- ------- 
+    my-azure-redis            Azure Redis server in East US            [*]           ...
+    my-azure-redis-enterprise Azure Redis Enterprise server in East US [*]           ...
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ tsh login --proxy=mytenant.teleport.sh --user=alice
+    $ tsh db ls
+    Name                      Description                              Allowed Users Labels  Connect 
+    ------------------------- ---------------------------------------- ------------- ------- ------- 
+    my-azure-redis            Azure Redis server in East US            [*]           ...
+    my-azure-redis-enterprise Azure Redis Enterprise server in East US [*]           ...
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  By default, Teleport uses the name of the Azure Cache for Redis resource as the
+  database name. You can override the database name by applying the
+  `TeleportDatabaseName` Azure tag to the resource. The value of the tag will be
+  used as the database name.
+</Note>
+
+To retrieve credentials for a database and connect to it:
+
+```code
+$ tsh db connect my-azure-redis
+```
+
+Note that the Teleport Database Service will retrieve the access key and
+authenticate with the Redis server on the backend automatically. Therefore,
+the `AUTH <access-key>` command is **not required** here once connected.
+
+To log out of the database and remove credentials:
+
+```code
+$ tsh db logout my-azure-redis
+```
+
+## Troubleshooting
+
+### No credential providers error
+
+If you see the error `DefaultAzureCredential: failed to acquire a token.` in Database Service logs then Teleport
+is not detecting the required credentials to connect to the Azure SDK. Check whether
+the credentials have been applied in the machine running the Teleport Database Service and restart
+the Teleport Database Service.
+Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
+for more information.
+
+### Timeout errors
+
+The Teleport Database Service needs connectivity to your database endpoints. That may require
+enabling inbound traffic on the database from the Database Service on the same VPC or routing rules from another VPC. Using the `nc`
+program you can verify connections to databases:
+
+```code
+$ nc -zv server-name.postgres.database.azure.com 5432
+# Connection to server-name.postgres.database.azure.com 5432 port [tcp/postgresql] succeeded!
+```
+
+## Next steps
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn how to [restrict access](/docs/database-access/rbac) to certain users and databases.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Learn more about [dynamic database registration](/docs/database-access/guides/dynamic-registration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- View the [High Availability (HA)](/docs/database-access/guides/ha) guide.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- See the YAML configuration [reference](/docs/database-access/reference/configuration) for updating dynamic resource matchers or static database definitions.
+
+{/* lint ignore list-item-spacing remark-lint */}
+
+- Take a look at the full CLI [reference](/docs/database-access/reference/cli).
+
+## Further reading
+
+- [Understand Azure Role Definitions - AssignableScopes](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions#assignablescopes)
+- [Azure RBAC custom roles](https://docs.microsoft.com/en-us/azure/role-based-access-control/custom-roles)

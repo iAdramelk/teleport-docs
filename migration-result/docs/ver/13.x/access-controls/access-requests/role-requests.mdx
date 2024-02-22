@@ -1,0 +1,298 @@
+---
+title: Role Access Requests
+description: Use Just-in-time Access Requests to request new roles with elevated privileges.
+h1: Teleport Role Access Requests
+version: '13.x'
+---
+
+Teleport's Just-in-time Access Requests allow users to request access to
+additional roles in order to elevate their privileges. Requests can be escalated
+via ChatOps or anywhere else via our flexible Authorization Workflow API.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## RBAC Setup
+
+In this example, we will define three roles:
+
+1. `contractor`: users with this role can request elevated access to the `dba` role
+2. `dba`: this role grants access to databases
+3. `approver`: users with this role can approve requests for access to the `dba` role
+
+**Contractor Role**
+
+Users with this role can request access to the `dba` role.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: contractor
+spec:
+  allow:
+    request:
+      roles: ['dba']
+```
+
+**DBA Role**
+
+This role grants access to databases.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: dba
+spec:
+  allow:
+    db_labels:
+      '*': '*'
+  options:
+    # Only allows the contractor to use this role for 1 hour from time of request.
+    max_session_ttl: 1h
+```
+
+**Approver Role**
+
+This role allows users to approve requests for the `dba` role.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: approver
+spec:
+  allow:
+    # `review_requests` permits the listed roles to be approved
+    review_requests:
+      roles:
+      - 'dba'
+```
+
+<Warning>
+  Roles containing a `review_requests` rule can only be used in Teleport
+  Enterprise. In OSS Teleport, Access Requests must be approved by an admin
+  running `tctl` on the Auth Server.
+</Warning>
+
+## Requesting Access
+
+While Teleport Enterprise supports the same CLI-based workflows for requesting
+access to roles, most users will prefer to request access via the web UI.
+
+To request access to one or more roles, navigate to the access requests page.
+You can find this page by selecting **Resources** on the side bar, expanding the
+*Access Requests* menu, and selecting **New Request**.
+
+From here, the dropdown will allow you to request access to roles or to specific
+resources. Select roles in this dropdown and you will be presented with a list
+of roles you are permitted to request access to.
+
+Click **ADD TO REQUEST** to include a role in the pending request.
+
+Note: Access Requests must either contain roles or a set of specific resources.
+You can not mix the two. For more information on how to request access to
+specific resources, see the
+[Resource Access Requests Guide](/docs/ver/13.x/access-controls/access-requests/resource-requests).
+
+![New Request](../../../../../../assets/new-role-request-b697d8b8bf.png)
+
+When all desired roles have been added, click **PROCEED TO REQUEST**, where you
+can review and submit the request.
+
+![Submit Request](../../../../../../assets/submit-request-99f942d6ba.png)
+
+## Reviewing Access Requests via the Web UI
+
+Reviewers can see a list of open requests by navigating to
+**Management** > **Access Requests** > **Review Requests** in the web UI.
+
+<Warning>
+  Granting access to a role with the ability to edit other roles could allow a
+  user to **permanently** upgrade their privileges. When reviewing requests, it's
+  important to carefully consider the role(s) being requested and what permissions
+  will be applied to the user if the request is approved.
+</Warning>
+
+## Reviewing Access Requests via `tsh`
+
+Teleport Enterprise users with appropriate permissions can also approve requests
+with the `tsh` command line:
+
+```code
+$ tsh request review --approve <request-id>
+```
+
+## Using an approved access request
+
+Once a request has been approved, the requestor can elevate their access for
+both command-line workflows and web UI workflows.
+
+For command-line use, the requestor should log in using the approved request ID:
+
+```code
+# log in with an approved access request
+$ tsh login --request-id=bc8ca931-fec9-4b15-9a6f-20c13c5641a9
+```
+
+In the web UI, the requestor can open their request on the **Review Requests**
+page and click **ASSUME ROLES** to gain access to additional roles. Note:
+role-based access requests are additive. The user will have access to their
+standard role set in addition to the roles granted by the request.
+
+![Approved Request](../../../../../../assets/approved-request-c3f42e51fb.png)
+
+A banner will appear at the top of the page while the approved access request is
+active. When elevated access is no longer necessary, click **Switch Back** to revert
+to the original set of roles.
+
+![Assumed Roles](../../../../../../assets/role-assumed-b7bf473d64.png)
+
+## Next Steps
+
+### Integrating with an external tool
+
+With Teleport's Access Request plugins, users can manage Access Requests from
+within your organization's existing messaging and project management solutions.
+
+| Integration     | Type          | Setup Instructions                                                                                   |
+| --------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
+| Slack           | Messaging     | [Set up Slack](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-slack)             |
+| Mattermost      | Messaging     | [Set up Mattermost](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
+| Microsoft Teams | Messaging     | [Set up Microsoft Teams](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-msteams) |
+| Jira            | Project Board | [Set up Jira](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-jira)               |
+| PagerDuty       | Schedule      | [Set up PagerDuty](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
+| Email           | Messaging     | [Set up email](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-email)             |
+| Discord         | Messaging     | [Set up Discord](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+
+### Advanced RBAC
+
+Teleport roles support a number of advanced features for further configuring
+access requests. They are highlighted in the example role below.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: employee
+spec:
+  allow:
+    request:
+      # The `roles` list can be a mixture of literal roles and
+      # wildcard matchers and/or regular expressions.
+      roles:
+        - 'common'   # the literal role named "common"
+        - 'dev-*'    # a glob - any role beginning with 'dev-'
+        - '^dev-.*$' # a regular expression (identical to the glob example above)
+
+        # provides access to dev-alpha-prod, but not dev-beta-prod
+        - 'dev-{{regexp.not_match("beta")}}-prod'
+
+      # The `claims_to_roles` mapping works the same as it does in
+      # the OIDC connector, with the added benefit that the roles being mapped to
+      # can also be matchers. the below mapping says that users with
+      # in the SSO provider's `admins` groups can request any role in the system.
+      claims_to_roles:
+        - claim: groups
+          value: admins
+          roles: ['*']
+
+      # Teleport can attach annotations to pending Access Requests. these
+      # annotations may be literals, or be variable interpolation expressions,
+      # effectively creating a means for propagating selected claims from an
+      # external identity provider to the plugin system.
+      annotations:
+        foo: ['bar']
+        groups: ['{{external.groups}}']
+  options:
+    # The `request_access` field can be set to 'always' or 'reason' to tell
+    # tsh or the web UI to always create an Access Request on login. If it is
+    # set to 'reason', the user will be required to indicate *why* they are
+    # generating the Access Request.
+    request_access: reason
+
+    # The `request_prompt` field can be used to customize the text that the
+    # user sees when they are be prompted to enter a reason for the request.
+    request_prompt: Please provide your ticket ID
+```
+
+### Using TTLs with Access Requests
+
+Users can also create Access Requests with the `tsh request create` command.
+`tsh request create` supports flags to control TTLs for the request and
+elevated access. See the [CLI
+Reference](/docs/ver/13.x/reference/cli#tsh-request-create) for more
+details.

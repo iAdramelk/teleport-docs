@@ -1,0 +1,181 @@
+---
+title: Database Access FAQ
+description: Frequently asked questions about Teleport database access.
+version: '15.x'
+---
+
+## Which database protocols does Teleport the Database Service support?
+
+The Teleport Database Service currently supports the following protocols:
+
+- Cassandra
+- ClickHouse
+- CockroachDB
+- DynamoDB
+- MariaDB
+- Microsoft SQL Server
+- MongoDB
+- MySQL
+- Oracle
+- PostgreSQL
+- Redis
+- Snowflake
+
+For PostgreSQL and MySQL, the following Cloud-hosted versions are supported in addition to self-hosted deployments:
+
+- Amazon RDS
+- Amazon Aurora (except for Amazon Aurora Serverless, which doesn't support IAM authentication)
+- Amazon Redshift
+- Google Cloud SQL
+- Azure Database
+
+See the available [guides](/docs/database-access/guides) for all supported configurations.
+
+## Which PostgreSQL protocol features are not supported?
+
+The following PostgreSQL protocol features aren't currently supported:
+
+- Any [authentication methods](https://www.postgresql.org/docs/current/auth-methods.html)
+  except for client certificate authentication and IAM authentication for cloud
+  databases.
+
+## Are database sessions listed under recorded sessions?
+
+You can view database session activity in the audit log.
+After a session is uploaded, you can play back the audit data
+with the `tsh play` command.
+
+Database session ID will be in a UUID format (ex: `307b49d6-56c7-4d20-8cf0-5bc5348a7101`)
+See the audit log to get a database session ID with a key of `sid`.
+
+Example:
+
+```code
+$ tsh play --format json database.session
+```
+
+```json
+    {
+        "cluster_name": "teleport.example.com",
+        "code": "TDB02I",
+        "db_name": "example",
+        "db_origin": "dynamic",
+        "db_protocol": "postgres",
+        "db_query": "select * from sample;",
+        "db_roles": [
+            "access"
+        ],
+        "db_service": "example",
+        "db_type": "rds",
+        "db_uri": "databases-1.us-east-1.rds.amazonaws.com:5432",
+        "db_user": "alice",
+        "ei": 2,
+        "event": "db.session.query",
+        "sid": "307b49d6-56c7-4d20-8cf0-5bc5348a7101",
+        "success": true,
+        "time": "2023-10-06T10:58:32.88Z",
+        "uid": "a649d925-9dac-44cc-bd04-4387c295580f",
+        "user": "alice"
+    }
+```
+
+The audit log is viewable in **Activity** under **Management** in the Web UI for users
+with permission to the `event` resources. Database sessions do not appear
+in the session recordings page.
+
+## Can database clients use a public address different from the web public address?
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    When configuring the Teleport Proxy Service, administrators can set the
+    `postgres_public_addr` and `mysql_public_addr` configuration fields to public
+    addresses over which respective database clients should connect. See
+    [Proxy Configuration](/docs/database-access/reference/configuration#proxy-configuration) for
+    more details.
+
+    This is useful when the Teleport Web UI is running behind an L7 load balancer
+    (e.g. ALB in AWS), in which case the PostgreSQL/MySQL proxy needs to be exposed
+    on a plain TCP load balancer (e.g. NLB in AWS).
+  </Tab>
+
+  <Tab title="Cloud-Hosted">
+    In Teleport Team and Teleport Enterprise Cloud, the Proxy Service uses the
+    following ports for Database Service client traffic:
+
+    | Configuration setting  | Port   |
+    | ---------------------- | ------ |
+    | `mysql_public_addr`    | `3036` |
+    | `postgres_public_addr` | `443`  |
+    | `mongo_public_addr`    | `443`  |
+  </Tab>
+</Tabs>
+
+## Do you support X database client?
+
+Teleport relies on client certificates for authentication, so any database
+client that supports this method of authentication and uses modern TLS (1.2+)
+should work.
+
+Standard command-line clients such as `psql`, `mysql`, `mongo` or `mongosh` are
+supported. There are also instructions for configuring select
+[graphical clients](/docs/connect-your-client/gui-clients).
+
+## When will you support X database?
+
+We plan to support more databases in the future based on customer demand.
+
+See if the database you're interested in has already been requested among
+[GitHub issues](https://github.com/gravitational/teleport/labels/database-access)
+or open a [new issue](https://github.com/gravitational/teleport/issues/new/choose)
+to register your interest.
+
+## Can I provide a custom CA certificate?
+
+Yes, you can pass custom CA certificate by using a
+[configuration file](/docs/database-access/reference/configuration#database-service-configuration)
+(look at `ca_cert_file`).
+
+## Can I provide a custom DNS name for Teleport generated CA?
+
+Yes, use `server_name` under the `tls` section in your Teleport configuration
+file. Please look on our reference
+[configuration file](/docs/database-access/reference/configuration#database-service-configuration)
+for more details.
+
+## Can I disable CA verification when connecting to a database?
+
+Yes, although it is not recommended. Certificate verification prevents
+person-in-the-middle attacks and makes sure that you
+are connected to the database that you intended to.
+
+Teleport also allows you to edit your
+[configuration file](/docs/database-access/reference/configuration#database-service-configuration)
+to provide a custom CA certificate (`ca_cert_file`) or custom DNS name
+(`server_name`), which is more secure.
+
+If none of the above options work for you and you still want to disable the CA
+check, you can use `mode` under the `tls` option in the Teleport configuration file.
+
+For more details please refer to the reference
+[configuration file](/docs/database-access/reference/configuration#database-service-configuration).
+
+## Can I disable read-only and custom endpoints from auto-discovered databases?
+
+Yes, you can use the Teleport generated label `endpoint-type` on your `aws`
+matcher to filter the endpoints. For example, to disable read-only and custom
+endpoints for RDS auto-discovery, you can specify other endpoint types to
+match:
+
+```
+  aws:
+  - types: ["rds"]
+    regions: ["us-west-1"]
+    tags:
+      "env": "dev"
+      "endpoint-type":
+        - "primary"
+        - "instance"
+```
+
+See [labels reference](/docs/database-access/reference/labels) for a full list of Teleport
+generated labels and values.

@@ -1,0 +1,281 @@
+---
+title: MariaDB Automatic User Provisioning 
+description: Configure automatic user provisioning for MariaDB.
+version: '16.x'
+---
+
+Teleport can automatically create users in your database, removing the need for
+creating individual user accounts in advance or using the same set of shared
+database accounts for all users.
+
+## Prerequisites
+
+- Teleport cluster v14.1.3 or higher with a configured [self-hosted
+  MariaDB](/docs/ver/16.x/database-access/guides/mysql-self-hosted) or [RDS MariaDB](/docs/ver/16.x/database-access/guides/rds)
+  database.
+- Ability to connect to and create user accounts in the target database.
+
+<Note>
+  Automatic user provisioning is not compatible with MariaDB versions lower than
+  10.3.3 or 10.2.11.
+</Note>
+
+## Step 1/3. Configure database admin
+
+Teleport should be able to connect to the database as a user that can create
+other users and assign them roles. We recommend creating a separate user
+designated specifically for Teleport automatic user provisioning. Let's call it
+`teleport-admin`.
+
+Teleport uses the same authentication mechanism when connecting as an admin
+user as for regular user connections: X.509 for self-hosted databases and AWS
+IAM for RDS.
+
+The admin user must have privileges within the database to create users and
+grant them privileges. The admin user must also have privileges to monitor user
+processes and role assignments.
+
+In addition, a schema is required for the admin user to log into by default.
+This schema is also used to store custom user attributes and stored procedures.
+
+<Tabs>
+  <Tab title="RDS MariaDB">
+    The RDS MariaDB admin user must use `AWSAuthenticationPlugin` to allow IAM
+    authentication:
+
+    ```sql
+    CREATE USER 'teleport-admin' IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';
+    GRANT PROCESS, CREATE USER ON *.* TO 'teleport-admin';
+    GRANT SELECT ON mysql.roles_mapping TO 'teleport-admin';
+    GRANT UPDATE ON mysql.* TO 'teleport-admin'; -- For SET DEFAULT ROLE FOR
+    GRANT SELECT ON *.* TO 'teleport-admin'; -- Required when using best_effort_drop mode for checking if users own resources before dropping them.
+
+    CREATE DATABASE IF NOT EXISTS `teleport`;
+    GRANT ALL ON `teleport`.* TO 'teleport-admin' WITH GRANT OPTION;
+    ```
+
+    Note that Teleport uses `teleport` as the name of the default schema but the
+    name is configurable in the Teleport database definition. Replace the database
+    name in the last two lines if you wish to use another database name.
+
+    <Warning>
+      In order for the admin user to grant a role to a database user, they must be
+      the "Admin" of the role.
+
+      One way to achieve this is to create roles as the admin user, which
+      automatically designates the admin user as "Admin" of those roles.
+
+      Alternatively, you can assign the admin user as the "Admin" of existing roles:
+
+      ```sql
+      UPDATE mysql.roles_mapping SET User ='teleport-admin' WHERE Admin_option='Y' AND Role='role1';
+      ```
+
+      Replace `role1` with the name of the role that will be granted to
+      auto-provisioned users.
+    </Warning>
+  </Tab>
+
+  <Tab title="Self-hosted MariaDB">
+    The self-hosted MariaDB admin user must have X.509 authentication configured:
+
+    ```sql
+    CREATE USER 'teleport-admin' REQUIRE SUBJECT '/CN=teleport-admin';
+    GRANT PROCESS, CREATE USER ON *.* TO 'teleport-admin';
+    GRANT SELECT ON mysql.roles_mapping TO 'teleport-admin';
+    GRANT UPDATE ON mysql.* TO 'teleport-admin'; -- For SET DEFAULT ROLE FOR
+    GRANT SELECT ON *.* TO 'teleport-admin'; -- Required when using best_effort_drop mode for checking if users own resources before dropping them.
+
+    CREATE DATABASE IF NOT EXISTS `teleport`;
+    GRANT ALL ON `teleport`.* TO 'teleport-admin' WITH GRANT OPTION;
+    ```
+
+    Note that Teleport uses `teleport` as the name of the default schema but the
+    name is configurable in the Teleport database definition. Replace the database
+    name in the last two lines if you wish to use another database name.
+
+    <Warning>
+      In order for the admin user to grant a role to a database user, they must be
+      the "Admin" of the role.
+
+      One way to achieve this is to use the `WITH ADMIN` option when creating roles:
+
+      ```sql
+      CREATE ROLE role1 WITH ADMIN 'teleport-admin';
+      ```
+
+      Alternatively, you can assign the admin user as the "Admin" of existing roles:
+
+      ```sql
+      UPDATE mysql.roles_mapping SET User ='teleport-admin' WHERE Admin_option='Y' AND Role='role1';
+      ```
+
+      Replace `role1` with the name of the role that will be granted to
+      auto-provisioned users.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Users created by Teleport will be assigned the `teleport-auto-user` role in the
+database, which will be created automatically if it doesn't exist.
+
+During a MariaDB session, only one role is allowed to be active at a time.
+Teleport creates an all-in-one role `tp-role-<user>` and assigns it to the
+created user. The true roles are then assigned to this all-in-one role and the
+all-in-one role is set as the default role.
+
+Next, configure the database admin user in the Teleport database configuration:
+
+<Tabs>
+  <Tab title="Static config">
+    ```yaml
+    db_service:
+      enabled: "yes"
+      databases:
+      - name: "example"
+        protocol: "mysql"
+        uri: "localhost:3306"
+        admin_user:
+          name: "teleport-admin"
+          # Optional default database the admin user logs into. Default is
+          # 'teleport', if not specified.
+          # default_database: teleport
+    ```
+  </Tab>
+
+  <Tab title="Dynamic resource">
+    ```yaml
+    kind: db
+    version: v3
+    metadata:
+      name: example
+    spec:
+      protocol: "mysql"
+      uri: "localhost:3306"
+      admin_user:
+        name: "teleport-admin"
+        # Optional default database the admin user logs into. Default is
+        # 'teleport', if not specified.
+        # default_database: teleport
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  For auto-discovered cloud databases, the name of the admin user is taken from
+  the `teleport.dev/db-admin` label, and the default database is taken from the
+  `teleport.dev/db-admin-default-database` label.
+</Tip>
+
+## Step 2/3. Configure a Teleport role
+
+To specify the database roles a user should be assigned within the database,
+use the `db_roles` role option:
+
+```yaml
+kind: role
+version: v7
+metadata:
+  name: auto-db-users
+spec:
+  options:
+    # create_db_user_mode enables automatic user provisioning for matching databases
+    create_db_user_mode: keep
+  allow:
+    db_labels:
+      "*": "*"
+    db_names:
+    - "*"
+    # db_roles is a list of roles the database user will be assigned
+    db_roles:
+    - reader
+    - "{{internal.db_roles}}"
+    - "{{external.db_roles}}"
+```
+
+With automatic user provisioning, users always connect to the database with
+their Teleport username so the `db_users` role field is ignored for roles
+that have database user provisioning enabled.
+
+The available provisioning modes are:
+
+- `off`: Disables user provisioning.
+
+- `keep`: Enables user provisioning and disables users at session end. The user
+  will be stripped of all roles and the user account will be locked.
+
+- `best_effort_drop`: Enables user provisioning and, when the session ends,
+  drops the user if no resources depend on it. In cases where any resource
+  depends on the user, it falls back to disabling the user, mirroring the
+  behavior of `keep` mode.
+
+Users created within the database will:
+
+- Be assigned the `teleport-auto-user` role.
+- Be assigned all roles from the Teleport user's role set that match the database.
+  The role names must be valid and exist in the database. The admin user must
+  be the "Admin" of these roles. See "Role Admin" section above for more
+  details.
+
+MariaDB limits usernames to 80 characters. When the Teleport
+username is within this limit, the user created within the database will have
+the same name as the Teleport username. When the Teleport username is over the
+80 character limit, the user created within the database will have the
+name in the format of `tp-<base64-sha1-teleport-username>`.
+
+<Accordion title="Tracking the name mapping">
+  The original Teleport username will be saved as user attributes in the
+  `user_attributes` table in the default database.
+
+  Database admins can search a particular Teleport username by:
+
+  ```sql
+  SELECT * FROM teleport.user_attributes WHERE JSON_VALUE(Attributes,"$.user") = "teleport-user-name";
+  ```
+
+  In addition, the "hashed" in-database name will be set as `db_user` for
+  database queries in the Teleport Audit Logs, when the Teleport username is over
+  80 characters.
+</Accordion>
+
+Note that in case of a name conflict where a user with the same name already
+exists in the database and is not managed by Teleport (i.e. not assigned the
+`teleport-auto-user` role), the connection will be aborted.
+
+## Step 3/3. Connect to the database
+
+Now, log into your Teleport cluster and connect to the database:
+
+```code
+$ tsh login --proxy=teleport.example.com
+$ tsh db connect --db-name <database> example
+```
+
+<Note>
+  When connecting to a database with user provisioning enabled, the Database
+  Service expects your Teleport username will be used as the database username .
+
+  If using a GUI database client like MySQL Workbench, make sure to use your Teleport
+  username as the database username. `tsh db connect` will default to your
+  Teleport username automatically when connecting to a database with user
+  provisioning enabled.
+
+  When connecting to a leaf cluster database with user provisioning enabled, the
+  Database Service expects the database username to be
+  `remote-<your-teleport-username>-<root-cluster-name>`.
+</Note>
+
+To view the list of database roles that are allowed for each database, you can
+use the command `tsh db ls -v`. By default, all database roles will be assigned
+to your auto-provisioned database user. You can optionally select a subset of
+the database roles with `--db-roles`:
+
+```code
+$ tsh db connect --db-name <database> --db-roles reader example
+```
+
+## Next steps
+
+- Connect using your [GUI database client](/docs/ver/16.x/connect-your-client/gui-clients).
+- Learn about [role templating](/docs/ver/16.x/access-controls/guides/role-templates#interpolation-rules).
+- Read automatic user provisioning [RFD](https://github.com/gravitational/teleport/blob/master/rfd/0113-automatic-database-users.md).

@@ -1,0 +1,493 @@
+---
+title: Session and Identity Locking
+description: How to lock compromised users or agents
+version: '13.x'
+---
+
+<Accordion title="Version warning">
+  Locking support was introduced in Teleport v7.1. To fully enforce the locks
+  at all components, you should update **all** `teleport` binaries in your
+  deployment.
+</Accordion>
+
+System administrators can disable a compromised user or Teleport agent—or
+prevent access during cluster maintenance—by placing a lock
+on a session, user or host identity.
+
+Teleport will reject new API requests and terminate active
+connections to SSH, database, desktop, and Kubernetes sessions
+matching the lock's target.
+
+A lock can target the following objects or attributes:
+
+- a Teleport user by the user's name
+- a Teleport [RBAC](/docs/ver/13.x/access-controls/reference) role by the role's name
+- a Teleport [trusted device](/docs/ver/13.x/access-controls/device-trust/guide#optional-locking-a-device) by the device ID
+- an MFA device by the device's UUID
+- an OS/UNIX login
+- a Teleport agent by the agent's server UUID (effectively unregistering it from the
+  cluster)
+- a Windows desktop by the desktop's name
+- an [Access Request](/docs/ver/13.x/access-controls/access-requests) by UUID
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Open Source">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+
+      ```code
+      $ tctl version
+      # Teleport v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+  </Tab>
+
+  <Tab title="Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+
+  <Tab title="Teleport Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.2.0 go1.20
+
+      $ tsh version
+      # Teleport v13.2.0 go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  13.2.0
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/2. Create a lock
+
+You can create a new lock with the `tctl lock` command. Specify the lock target
+with one of the following options:
+
+<Tabs>
+  <Tab title="Username">
+    ```code
+    $ tctl lock --user=foo@example.com --message="Suspicious activity." --ttl=10h
+    # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
+    ```
+  </Tab>
+
+  <Tab title="Role">
+    All users with assigned roles matching the target role will be locked.
+
+    ```code
+    $ tctl lock --role=contractor --message="All contractor access is disabled for 10h." --ttl=10h
+    # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
+    ```
+  </Tab>
+
+  <Tab title="Trusted device">
+    All connections initiated from a device matching the device ID will be locked.
+
+    ```code
+    $ tctl lock --device 9cdfc0ad-64b7-4d9c-9342-50e97f418ba0 --message="Compromised device" --ttl=48h
+    Created a lock with name "5444970a-39a0-4814-968d-e58b4a8fa686".
+    ```
+  </Tab>
+
+  <Tab title="Multi-factor device">
+    All connections initiated with per-session MFA matching the device ID will be locked.
+
+    ```code
+    $ tctl lock --mfa-device=d6c06a18-e147-4232-9dfe-6f83a28d5850 --message="All contractor access is disabled for 10h." --ttl=10h
+    # Created a lock with name "d6c06a18-e147-4232-9dfe-6f83a28d5850".
+    ```
+  </Tab>
+
+  <Tab title="Agent">
+    All connections to the specified agent will be locked and the agent will be excluded from the Teleport cluster.
+
+    ```code
+    $ tctl lock --server-id=363256df-f78a-4d99-803c-bae19da9ede4 --message="The server running the Kubernetes Service and Database Service is under investigation." --ttl=10h
+    # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
+    ```
+  </Tab>
+
+  <Tab title="Windows Desktop">
+    All connections to the specified Windows Desktop will be locked.
+
+    ```code
+    $ tctl lock --windows-desktop=WIN-FMPFM5UF1SS-teleport-example-com --ttl=10h
+    # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
+    ```
+  </Tab>
+
+  <Tab title="Access request">
+    All connections using elevated privileges from the matching Access Request will be locked.
+
+    ```code
+    $ tctl lock --access-request=261e80c5-357b-4c43-9b67-40a6bc4c6e4d --ttl=24h
+    # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Troubleshooting: failed to create a lock?">
+  If your user is missing a lock permission, you will get an error when creating
+  a lock:
+
+  ```txt
+  ERROR: access denied to perform action "create" on "lock"
+  ```
+
+  Create a role `locksmith`:
+
+  ```yaml
+  kind: role
+  version: v5
+  metadata:
+    name: locksmith
+  spec:
+    allow:
+      rules:
+        - resources: [lock]
+          verbs: [list, create, read, update, delete]
+  ```
+
+  ```code
+  $ tctl create -f locksmith.yaml
+  # role 'locksmith' has been created
+  ```
+
+  Assign the `locksmith` role to your Teleport user by running the following
+  commands, depending on whether you authenticate as a local Teleport user or via
+  the `github`, `saml`, or `oidc` authentication connectors:
+
+  <Tabs>
+    <Tab title="Local User">
+      Retrieve your local user's configuration resource:
+
+      ```code
+      $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+      ```
+
+      Edit `out.yaml`, adding `locksmith` to the list of existing roles:
+
+      ```diff
+        roles:
+         - access
+         - auditor
+         - editor
+      +  - locksmith
+      ```
+
+      Apply your changes:
+
+      ```code
+      $ tctl create -f out.yaml
+      ```
+    </Tab>
+
+    <Tab title="GitHub">
+      Retrieve your `github`  configuration resource:
+
+      ```code
+      $ tctl get github/github --with-secrets > github.yaml
+      ```
+
+      Edit `github.yaml`, adding `locksmith` to the
+      `teams_to_roles` section. The team you will map to this role will depend on how
+      you have designed your organization's RBAC, but it should be the smallest team
+      possible within your organization. This team must also include your user.
+
+      Here is an example:
+
+      ```diff
+        teams_to_roles:
+          - organization: octocats
+            team: admins
+            roles:
+              - access
+      +       - locksmith
+      ```
+
+      Apply your changes:
+
+      ```code
+      $ tctl create -f github.yaml
+      ```
+
+      <Warning>
+        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+        `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
+        so take precautions when creating this file and remove it after updating the resource.
+      </Warning>
+    </Tab>
+
+    <Tab title="SAML">
+      Retrieve your `saml`  configuration resource:
+
+      ```code
+      $ tctl get --with-secrets saml/mysaml > saml.yaml
+      ```
+
+      Edit `saml.yaml`, adding `locksmith` to the
+      `attributes_to_roles` section. The attribute you will map to this role will
+      depend on how you have designed your organization's RBAC, but it should be the
+      smallest group possible within your organization. This group must also include
+      your user.
+
+      Here is an example:
+
+      ```diff
+        attributes_to_roles:
+          - name: "groups"
+            value: "my-group"
+            roles:
+              - access
+      +       - locksmith
+      ```
+
+      Apply your changes:
+
+      ```code
+      $ tctl create -f saml.yaml
+      ```
+
+      <Warning>
+        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+        `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
+        so take precautions when creating this file and remove it after updating the resource.
+      </Warning>
+    </Tab>
+
+    <Tab title="OIDC">
+      Retrieve your `oidc`  configuration resource:
+
+      ```code
+      $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+      ```
+
+      Edit `oidc.yaml`, adding `locksmith` to the
+      `claims_to_roles` section. The claim you will map to this role will depend on
+      how you have designed your organization's RBAC, but it should be the smallest
+      group possible within your organization. This group must also include your
+      user.
+
+      Here is an example:
+
+      ```diff
+        claims_to_roles:
+          - name: "groups"
+            value: "my-group"
+            roles:
+              - access
+      +       - locksmith
+      ```
+
+      Apply your changes:
+
+      ```code
+      $ tctl create -f oidc.yaml
+      ```
+
+      <Warning>
+        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
+        `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
+        so take precautions when creating this file and remove it after updating the resource.
+      </Warning>
+    </Tab>
+  </Tabs>
+
+  Log out of your Teleport cluster and log in again to assume the new role.
+</Accordion>
+
+With a lock in force, all established connections involving the lock's target
+get terminated while any new requests are rejected.
+
+Errors returned and warnings logged in this situation feature a message of the
+form:
+
+```
+lock targeting User:"foo@example.com" is in force: Suspicious activity.
+```
+
+<Note>
+  You can tweak the message returned to a user with `--message` parameter:
+
+  ```code
+  $ tctl lock --user=foo@example.com --message="Please come back tomorrow." --ttl=24h
+  ```
+</Note>
+
+<Accordion title="Under the hood: Lock resource and expiration">
+  Note that without specifying `--ttl` or `--expires`, the created lock remains in
+  force until explicitly removed with `tctl rm`.  Refer to `tctl lock --help` for
+  the list of all supported parameters.
+
+  Under the hood, `tctl lock` creates a resource:
+
+  ```yaml
+  kind: lock
+  version: v2
+  metadata:
+    name: dc7cee9d-fe5e-4534-a90d-db770f0234a1
+  spec:
+    target:
+      user: foo@example.com
+    message: "Suspicious activity."
+    expires: "2021-08-14T22:27:00Z"  # RFC3339 format
+  ```
+
+  The `kind: lock` resources can also be created and updated using `tctl create`
+  as per usual. See the [Admin Guide](/docs/ver/13.x/reference/resources) for more
+  details.
+</Accordion>
+
+## Step 2/2. List and delete active locks
+
+Use `tctl get` command to list all active locks:
+
+```code
+$ tctl get locks
+```
+
+Delete a lock resource:
+
+```code
+$ tctl rm locks/24679348-baff-4987-a2cd-e820ab7f9d2b
+lock "24679348-baff-4987-a2cd-e820ab7f9d2b" has been deleted
+```
+
+Deleting a lock will allow new sessions or host connections.
+
+## Next steps: Locking modes
+
+If a Teleport Node or Proxy Service cannot properly synchronize its local lock
+view with the backend, there is a decision to be made about whether to rely on
+the last known locks. This decision strategy is encoded as one of the two modes:
+
+- `strict` mode causes all interactions to be terminated when the locks are not
+  guaranteed to be up to date
+- `best_effort` mode keeps relying on the most recent locks
+
+The cluster-wide mode defaults to `best_effort`. You can set up the default
+locking mode via API or CLI using a `cluster_auth_preference` resource or static
+configuration file:
+
+<Tabs>
+  <Tab title="API or CLI">
+    Create a YAML file called `cap.yaml` or get the existing file using
+    `tctl get cap`.
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:
+      locking_mode: best_effort
+    version: v2
+    ```
+
+    Create a resource:
+
+    ```code
+    $ tctl create -f cap.yaml
+    # cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config">
+    Edit `/etc/teleport.yaml` on the Auth Server:
+
+    ```yaml
+    auth_service:
+        authentication:
+            locking_mode: best_effort
+    ```
+
+    Restart the Auth Server for the change to take effect.
+  </Tab>
+</Tabs>
+
+The cluster-wide mode defaults to `best_effort`. You can set up the default
+locking mode via API or CLI using a `cluster_auth_preference` resource:
+
+Create a YAML file called `cap.yaml` or get the existing file using
+`tctl get cap`.
+
+```yaml
+kind: cluster_auth_preference
+metadata:
+  name: cluster-auth-preference
+spec:
+  locking_mode: best_effort
+version: v2
+```
+
+Create a resource:
+
+```code
+$ tctl create -f cap.yaml
+# cluster auth preference has been updated
+```
+
+It is also possible to configure the locking mode for a particular role:
+
+```yaml
+kind: role
+version: v5
+metadata:
+    name: example-role-with-strict-locking
+spec:
+    options:
+       lock: strict
+```
+
+When none of the roles involved in an interaction specify the mode or when
+there is no user involved, the mode is taken from the cluster-wide setting.
+
+With multiple potentially conflicting locking modes (the cluster-wide default
+and the individual per-role settings) a single occurrence of `strict` suffices
+for the local lock view to become evaluated strictly.

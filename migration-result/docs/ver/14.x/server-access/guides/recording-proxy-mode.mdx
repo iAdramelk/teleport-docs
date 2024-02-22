@@ -1,0 +1,285 @@
+---
+title: Teleport Recording Proxy Mode
+description: Use Recording Proxy Mode to capture OpenSSH server activity
+version: '14.x'
+---
+
+Teleport Recording Proxy Mode was added to allow Teleport users
+to enable session recording for servers running `sshd`, which is helpful
+when gradually transitioning large server fleets to Teleport.
+
+![Teleport OpenSSH Recording Proxy](../../../../../../assets/openssh-proxy-384f8ddf6d.svg)
+
+<Warning>
+  Teleport Cloud only supports session recording at the Node level. If you are
+  interested in setting up session recording, read our
+  [Server Access Getting Started Guide](/docs/ver/14.x/server-access/getting-started) so you can start
+  replacing your OpenSSH servers with Teleport Nodes.
+</Warning>
+
+We consider Recording Proxy Mode to be less secure than recording at the Node
+level for two reasons:
+
+- It grants additional privileges to the Teleport Proxy Service. In the default Node Recording mode, the Proxy Service stores no secrets and cannot "see" the decrypted data. This makes a Proxy Server less critical to the security of the overall cluster. But if an attacker gains physical access to a Proxy Server running in Proxy Recording mode, they will be able to see the decrypted traffic and client keys stored in the Proxy Server's process memory.
+- Recording Proxy Mode requires the use of SSH agent forwarding. Agent forwarding is required because without it, a Proxy Server will not be able to establish a second connection to the destination node.
+
+The Teleport Proxy Service should be available to clients and set up with TLS.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+
+      ```code
+      $ tctl version
+      # Teleport v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+
+      See [Installation](/docs/ver/14.x/installation) for details.
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+      which you can download by visiting your [Teleport account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.0.0-dev go1.20
+
+      $ tsh version
+      # Teleport v14.0.0-dev go1.20
+      ```
+  </Tab>
+</Tabs>
+
+- A host where you will run an OpenSSH server.
+- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
+  remotely:
+  {/* Ignoring scope linting since we use this partial throughout the docs and
+  cannot guarantee that it will line up with a page's configured scopes*/}
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  You can run subsequent `tctl` commands in this guide on your local machine.
+
+  For full privileges, you can also run `tctl` commands on your Auth Service host.
+  {/*lint ignore scopes*/}
+  ```code
+  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+  $ tctl status
+  # Cluster  myinstance.teleport.sh
+  # Version  13.2.0
+  # CA pin   sha256:sha-hash-here
+  ```
+  You must run subsequent `tctl` commands in this guide on your local machine.
+
+## Step 1/3. Configure Teleport
+
+<Accordion title="Before you begin: read security tips">
+  When running Teleport in production, we recommend that you follow the
+  practices below to avoid security incidents. These practices may differ from
+  the examples used in this guide, which are intended for demo environments:
+
+  - Avoid using `sudo` in production environments unless it's necessary.
+  - Create new, non-root, users and use test instances for experimenting with Teleport.
+  - Run Teleport's services as a non-root user unless required. Only the SSH
+    Service requires root access. Note that you will need root permissions (or
+    the `CAP_NET_BIND_SERVICE` capability) to make Teleport listen on a port
+    numbered \< `1024` (e.g. `443`).
+  - Follow the "Principle of Least Privilege" (PoLP). Don't give users
+    permissive roles when giving them more restrictive roles will do instead.
+    For example, don't assign users the built-in `access,editor` roles, which give
+    them permissions to access and edit all cluster resources. Instead, define
+    RBAC roles with the minimum required permissions for each user and configure
+    Access Requests for elevated permissions.
+  - When joining a Teleport resource service (e.g., the Database Service or
+    Application Service) to a cluster, save the invitation token to a file.
+    Otherwise, the token will be visible when examining the `teleport` command
+    that started the agent, e.g., via the `history` command on a compromised
+    system.
+</Accordion>
+
+<Warning>
+  Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
+</Warning>
+
+### Enable Proxy Recording Mode
+
+To enable session recording for `sshd` nodes, the cluster must be switched to
+Recording Proxy Mode. In this mode, the recording will be done on the Proxy level.
+
+Edit the Auth Service configuration file as follows:
+
+```yaml
+# snippet from /etc/teleport.yaml
+auth_service:
+   # Session Recording must be set to Proxy to work with OpenSSH
+   session_recording: "proxy"  # can also be "off" and "node" (default)
+```
+
+### Optional insecure step: Disable strict host checking
+
+When in recording mode, Teleport will check that the host certificate of any
+Node a user connects to is signed by a Teleport CA. By default, this is a strict
+check. If the Node presents just a key or a certificate signed by a different
+CA, Teleport will reject this connection with the error message:
+
+```text
+ssh: handshake failed: remote host presented a public key, expected a host
+certificate
+```
+
+You can disable strict host checks as shown below. However, this opens the
+possibility for Person-in-the-Middle attacks and is not recommended.
+
+```yaml
+# snippet from /etc/teleport.yaml
+auth_service:
+  proxy_checks_host_keys: no
+```
+
+## Step 2/3. Configure `sshd`
+
+`sshd` must be told to allow users to log in with certificates generated
+by the Teleport User CA. Start by exporting the Teleport CA public key.
+
+On your Teleport Node, export the Teleport Certificate Authority certificate
+into a file and update your SSH configuration to trust Teleport's CA. Assign PROXY to the address of your Teleport Proxy Service:
+
+```code
+$ curl 'https://proxy/webapi/auth/export?type=user' | sed s/cert-authority\ // > teleport_user_ca.pub
+$ sudo mv ./teleport_user_ca.pub /etc/ssh/teleport_user_ca.pub
+$ echo "TrustedUserCAKeys /etc/ssh/teleport_user_ca.pub" | sudo tee -a /etc/ssh/sshd_config
+```
+
+Restart `sshd`.
+
+Now, `sshd` will trust users who present a Teleport-issued certificate.
+The next step is to configure host authentication.
+
+The recommended solution is to ask Teleport to issue valid host certificates for
+all OpenSSH nodes. To generate a host certificate, run this on your Teleport Auth Server:
+
+```code
+# Creating host certs, with an array of every host to be accessed.
+# Wildcard certs aren't supported by OpenSSH. The domain must be fully 
+# qualified.
+# Management of the host certificates can become complex. This is another
+# reason we recommend using Teleport SSH on nodes.
+$ sudo tctl auth sign \
+      --host=api.example.com,ssh.example.com,64.225.88.175,64.225.88.178 \
+      --format=openssh \
+      --out=api.example.com
+
+The credentials have been written to api.example.com, api.example.com-cert.pub
+
+# You can use ssh-keygen to verify the contents.
+$ ssh-keygen -L -f api.example.com-cert.pub
+#api.example.com-cert.pub:
+#        Type: ssh-rsa-cert-v01@openssh.com host certificate
+#        Public key: RSA-CERT SHA256:ireEc5HWFjhYPUhmztaFud7EgsopO8l+GpxNMd3wMSk
+#        Signing CA: RSA SHA256:/6HSHsoU5u+r85M26Ut+M9gl+HventwSwrbTvP/cmvo
+#        Key ID: ""
+#        Serial: 0
+#        Valid: after 2020-07-29T20:26:24
+#        Principals:
+#               api.example.com
+#               ssh.example.com
+#               64.225.88.175
+#               64.225.88.178
+#        Critical Options: (none)
+#        Extensions:
+#                x-teleport-authority UNKNOWN OPTION (len 47)
+#                x-teleport-role UNKNOWN OPTION (len 8)
+```
+
+Then add the following lines to `/etc/ssh/sshd_config` on all OpenSSH nodes, and
+restart `sshd`.
+
+```yaml
+HostKey /etc/ssh/api.example.com
+HostCertificate /etc/ssh/api.example.com-cert.pub
+```
+
+## Step 3/3. Use Proxy Recording Mode
+
+Now you can use the `tsh ssh` command to log in to any `sshd` node in the
+cluster, and the session will be recorded.
+
+```code
+# tsh ssh to use default ssh port:22
+$ tsh ssh --port=22 user@host.example.com
+# Example for a Amazon EC2 Host
+# tsh ssh --port=22 ec2-user@ec2-54-EXAMPLE.us-west-2.compute.amazonaws.com
+```
+
+If you want to use the OpenSSH `ssh` client for logging into `sshd` servers behind a proxy
+in "recording mode", you have to tell the `ssh` client to use a jump host and
+enable SSH agent forwarding, otherwise, a recording proxy will not be able to
+terminate the SSH connection to record it:
+
+```code
+# Note that agent forwarding is enabled twice: one from a client to a proxy
+# (mandatory if using a recording proxy), and then optionally from a proxy
+# to the end server if you want your agent running on the end server
+$ ssh -o "ForwardAgent yes" \
+    -o "ProxyCommand ssh -o 'ForwardAgent yes' -p 3023 %r@p.example.com -s proxy:%h:%p" \
+    user@host.example.com
+```
+
+<Tip>
+  To avoid typing all this and use the usual `ssh user@host.example.com`, users can update their `~/.ssh/config` file.
+</Tip>
+
+Verify that a Teleport certificate is loaded into the agent after
+logging in:
+
+```code
+# Login as Joe
+$ tsh login --proxy=proxy.example.com --user=joe
+# see if the certificate is present (look for "teleport:joe") at the end of the cert
+$ ssh-add -L
+```
+
+<Warning>
+  It is well known that the Gnome Keyring SSH agent, used by many popular Linux desktops like Ubuntu, and `gpg-agent` from GnuPG do not support SSH
+  certificates. We recommend using the `ssh-agent` from OpenSSH.
+
+  Alternatively, you can disable the SSH agent integration entirely using the
+  `--no-use-local-ssh-agent` flag or `TELEPORT_USE_LOCAL_SSH_AGENT=false`
+  environment variable with `tsh`.
+</Warning>
+
+## OpenSSH rate limiting
+
+When using a Teleport proxy in "recording mode", be aware of OpenSSH's built-in
+rate-limiting. On large numbers of Proxy Service connections, you may encounter errors
+like:
+
+```txt
+channel 0: open failed: connect failed: ssh: handshake failed: EOF
+```
+
+See the `MaxStartups` setting in `man sshd_config`. This setting means that by
+default, OpenSSH only allows 10 unauthenticated connections at a time and starts
+dropping connections 30% of the time when the number of connections goes over 10.
+When it hits 100 authentication connections, all new connections are
+dropped.
+
+To increase the concurrency level, increase the value to something like
+`MaxStartups 50:30:100`. This allows 50 concurrent connections and a max of 100.

@@ -1,0 +1,373 @@
+---
+title: SSO with Active Directory Federation Services
+description: How to configure Teleport access with Active Directory Federation Services
+h1: Single Sign-On with Active Directory Federation Services
+version: '16.x'
+---
+
+This guide will explain how to configure Active Directory Federation Services
+([ADFS](https://en.wikipedia.org/wiki/Active_Directory_Federation_Services)) to be
+a single sign-on (SSO) provider to issue login credentials to specific groups
+of users. When used in combination with role based access control (RBAC), it
+allows Teleport administrators to define policies like:
+
+- Only members of "DBA" group can SSH into machines running PostgreSQL.
+- Developers must never SSH into production servers.
+
+## Prerequisites
+
+- ADFS installation with Admin access and users assigned to at least two groups.
+- Teleport role with access to maintaining `saml` resources.  This is available in the default `editor` role.
+
+- Access to an Enterprise edition of Teleport running in your environment.
+
+  For information about the differences between Teleport editions, see [Comparing
+  editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
+
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+  You can verify the tools you have installed by running the following commands:
+
+  ```code
+  $ tctl version
+  # Teleport Enterprise v15.0.0-dev go1.21
+
+  $ tsh version
+  # Teleport v15.0.0-dev go1.21
+  ```
+
+  You can download these tools by following the appropriate [Installation
+  instructions](/docs/ver/16.x/installation#installation-instructions) for your environment and Teleport edition.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/3. Configure ADFS
+
+You'll need to configure ADFS to export claims about a user (Claims Provider
+Trust in ADFS terminology) and you'll need to configure ADFS to trust
+Teleport (a Relying Party Trust in ADFS terminology).
+
+For Claims Provider Trust configuration, open the **AD FS** management window.
+Under **Claims Provider Trusts**, right-click on **Active Directory** and
+select **Edit Claim Rules**. You'll need to specify at least the following two
+incoming claims: `Name ID` and `Group`.
+
+- `Name ID` should be a mapping of the LDAP Attribute `E-Mail-Addresses` to
+  `Name ID`.
+
+  ![Name ID Configuration](../../../../../../assets/adfs-1-7c6d9499db.png)
+
+- A group membership claim should be used to map users to roles (for example to
+  separate normal users and admins).
+
+  ![Group Configuration](../../../../../../assets/adfs-2-f7329334c4.png)
+
+- If you are using dynamic roles (see below), it may be useful to map the LDAP
+  Attribute `SAM-Account-Name` to `Windows account name`:
+
+  ![WAN Configuration](../../../../../../assets/adfs-3-f5a2ad14ff.png)
+
+- And create another mapping of `E-Mail-Addresses` to `UPN`:
+
+  ![UPN Configuration](../../../../../../assets/adfs-4-6582626b20.png)
+
+You'll also need to create a Relying Party Trust. Use the below information to
+help guide you through the Wizard.
+
+- Create a Relaying Party Trust:
+  ![Add a Claims Provider Trust](../../../../../../assets/adfs-add-provider-trust-c148a6faa2.png)
+- Enter data about the relying party manually.
+- Set the display name to something along the lines of `Teleport`.
+- Skip the token encryption certificate.
+- Select *"Enable support for SAML 2.0 Web SSO protocol"* and set the URL to
+  `https://teleport.example.com/v1/webapi/saml/acs`, replacing the domain name
+  with your Teleport proxy URL.
+- Set the relying party trust identifier to
+  `https://teleport.example.com/v1/webapi/saml/acs` as well.
+- For access control policy select *"Permit everyone"*.
+
+Once the Relying Party Trust has been created, update the Claim Issuance Policy
+for it. Like before, make sure you send at least `Name ID` and `Group` claims to the
+relying party (Teleport). If you are using dynamic roles, it may be useful to
+map the LDAP Attribute `SAM-Account-Name` to *"Windows account name"* and create
+another mapping of `E-Mail-Addresses` to *"UPN"*.
+
+Lastly, ensure the user you create in Active Directory has an email address
+associated with it. To check this open Server Manager then
+*"Tools -> Active Directory Users and Computers"* and select the user and right
+click and open properties. Make sure the email address field is filled out.
+
+## Step 2/3. Create Teleport roles
+
+Let's create two Teleport roles: one for administrators and the other for
+normal users. You can create them using the `tctl create {file name}` CLI command
+or via the Web UI.
+
+```yaml
+# admin-role.yaml
+kind: "role"
+version: "v3"
+metadata:
+  name: "admin"
+spec:
+  options:
+    max_session_ttl: "8h0m0s"
+  allow:
+    logins: [ root ]
+    node_labels:
+      "*": "*"
+    rules:
+      - resources: ["*"]
+        verbs: ["*"]
+```
+
+```yaml
+# user-role.yaml
+kind: "role"
+version: "v3"
+metadata:
+  name: "dev"
+spec:
+  options:
+    # regular users can only be guests and their certificates will have a TTL of 1 hour:
+    max_session_ttl: "1h"
+  allow:
+    # only allow login as either ubuntu or the 'windowsaccountname' claim
+    logins: [ '{{external["http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname"]}}', ubuntu ]
+    node_labels:
+      "access": "relaxed"
+```
+
+This role declares:
+
+- Devs are only allowed to log in to nodes labeled `access: relaxed`.
+- Developers can log in as the `ubuntu` user.
+- Developers will not be able to see or replay past sessions or
+  re-configure the Teleport cluster.
+
+The login
+<nobr>`{{external["http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname"]}}`</nobr>
+configures Teleport to look at the
+`http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname`
+ADFS claim and use that field as an allowed login for each user. Note the
+double quotes (`"`) and square brackets (`[]`) around the claim name—these are
+important.
+
+## Step 3/3. Create a SAML connector
+
+Create a SAML connector resource using `tctl`:
+
+```code
+$ tctl sso configure saml --acs https://teleport.example.com/v1/webapi/saml/acs \
+  --preset adfs \
+  --entity-descriptor https://adfs.example.com/FederationMetadata/2007-06/FederationMetadata.xml \
+  --attributes-to-roles http://schemas.xmlsoap.org/claims/Group,teleadmins,editor \
+  --attributes-to-roles http://schemas.xmlsoap.org/claims/Group,Users,access \
+  > adfs.yaml
+```
+
+The `acs` field should match the value you set in ADFS earlier and you can
+obtain the `entity_descriptor_url` from ADFS under *"ADFS -> Service -> Endpoints -> Metadata"*.
+
+The `attributes_to_roles` is used to map attributes to the Teleport roles you
+just created. In our situation, we are mapping the *"Group"* attribute whose full
+name is `http://schemas.xmlsoap.org/claims/Group` with a value of *"teleadmins"*
+to the *"editor"* role. Groups with the value *"users"* is being mapped to the
+*"users"* role.
+
+You can test this connector before applying it (`cat adfs.yaml | tctl sso test`),
+but until we complete the next step the authentication process will not complete.
+
+Apply the connector:
+
+```code
+$ tctl create -f adfs.yaml
+```
+
+### Export the signing key
+
+For the last step, you'll need to export the signing key:
+
+```code
+$ tctl saml export adfs > saml.cer
+```
+
+Copy `saml.cer`, to ADFS server, open the "Relying Party Trust" and add this
+file as one of the signature verification certificates:
+
+![adfs-add-teleport-cert.png](../../../../../../assets/adfs-add-teleport-cert-d15eb9ac13.png)
+
+The Web UI will now contain a new button: "Login with MS Active Directory". The CLI is
+the same as before:
+
+```code
+$ tsh --proxy=proxy.example.com login
+```
+
+This command will print the SSO login URL and try to open it
+automatically in a browser.
+
+<Tip>
+  Teleport can use multiple SAML connectors. In this case a connector name
+  can be passed via `tsh login --auth=connector_name`
+</Tip>
+
+### Enable default SAML authentication
+
+Configure Teleport to use SAML authentication as the default instead of the local
+user database.
+
+Follow the instructions for your Teleport edition:
+
+<Tabs>
+  <Tab title="Dynamic Resources (All Editions)">
+    Use `tctl` to edit the `cluster_auth_preference` value:
+
+    ```code
+    $ tctl edit cluster_auth_preference
+    ```
+
+    Set the value of `spec.type` to `saml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      ...
+      name: cluster-auth-preference
+    spec:
+      ...
+      type: saml
+      ...
+    version: v2
+    ```
+
+    After you save and exit the editor, `tctl` will update the resource:
+
+    ```text
+    cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: saml
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  If you need to log in again before configuring your SAML provider, use the flag <nobr>`--auth=local`</nobr>.
+</Tip>
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/docs/ver/16.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.
+
+## Next steps
+
+In the Teleport role we illustrated in this guide, `external` traits
+are replaced with values from the single sign-on provider that the user
+used to authenticate to Teleport. For full details on how traits
+work in Teleport roles, see the [Teleport Access Controls
+Reference](/docs/ver/16.x/access-controls/reference).

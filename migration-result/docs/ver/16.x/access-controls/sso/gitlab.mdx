@@ -1,0 +1,370 @@
+---
+title: Authentication With GitLab as an SSO provider
+description: How to configure Teleport access using GitLab for SSO
+h1: Teleport SSO Authentication with GitLab
+version: '16.x'
+---
+
+This guide will cover how to configure [GitLab](https://www.gitlab.com/) to issue
+credentials to specific groups of users. When used in combination with role
+based access control (RBAC), it allows administrators to define policies
+like:
+
+- Only members of the "DBA" group can access PostgreSQL databases.
+- Only members of "ProductionKubernetes" can access production Kubernetes clusters
+- Developers must never SSH into production servers.
+
+## Prerequisites
+
+- At least two groups in GitLab with users assigned. In our examples below,
+  we'll assume a group named `company` with two subgroups, `admin` and `dev`.
+- Teleport role with access to maintaining `oidc` resources.  This is available
+  in the default `editor` role.
+
+- Access to an Enterprise edition of Teleport running in your environment.
+
+  For information about the differences between Teleport editions, see [Comparing
+  editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
+
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+
+  You can verify the tools you have installed by running the following commands:
+
+  ```code
+  $ tctl version
+  # Teleport Enterprise v15.0.0-dev go1.21
+
+  $ tsh version
+  # Teleport v15.0.0-dev go1.21
+  ```
+
+  You can download these tools by following the appropriate [Installation
+  instructions](/docs/ver/16.x/installation#installation-instructions) for your environment and Teleport edition.
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.0-dev
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Configure GitLab
+
+You should have at least one group configured in GitLab to map to Teleport roles.
+In this example we use the names `gitlab-dev` and `gitlab-admin`.  Assign users
+to each of these groups.
+
+1. Create an application in one of your groups (**Group overview** ->
+   **Settings** -> **Applications**) that will allow using GitLab as an OAuth
+   provider to Teleport.
+
+   Settings:
+
+   - Redirect URL: `https://<proxy url>/v1/webapi/oidc/callback`.
+   - Check `Confidential`, `openid`, `profile`, and `email`.
+
+   ![Create App](../../../../../../assets/gitlab-oidc-0-bab5a886ec.png)
+
+2. Collect the `Application ID` and `Secret` in the Application. These will be
+   used in the Teleport OIDC auth connector:
+
+   ![Collection Information](../../../../../../assets/gitlab-oidc-1-ab9abbae38.png)
+
+3. Confirm the GitLab issuer address.
+
+   For GitLab.com, the issuer address is `https://gitlab.com`. This allows
+   Teleport to access the Open-ID configuration at
+   `https://gitlab.com/.well-known/openid-configuration`. If you are self
+   hosting the issuer address is the path to your GitLab instance.
+
+## Configure Teleport
+
+### Create a OIDC Connector
+
+Create an OIDC connector resource using `tctl`.
+
+On your workstation, create a file called `client-secret.txt` consisting only of
+your client secret.
+
+<Tabs>
+  <Tab title="GitLab.com">
+    Replace the application ID and secret with the values from GitLab:
+
+    ```code
+    $ tctl sso configure oidc --preset gitlab \
+    --id <APPLICATION-ID> \
+    --secret $( cat client-secret.txt) \
+    --claims-to-roles groups,company/admin,admin \
+    --claims-to-roles groups,company/dev,dev > oidc.yaml
+    ```
+  </Tab>
+
+  <Tab title="Self-hosted">
+    Replace the application ID and secret with the values from GitLab, and replace
+    `https://gitlab.company.com` with the path to your self-hosted GitLab instance:
+
+    ```code
+    $ tctl sso configure oidc --preset gitlab \
+    --id <APPLICATION-ID> \
+    --issuer-url https://gitlab.company.com \
+    --secret $( cat client-secret.txt) \
+    --claims-to-roles groups,company/admin,admin \
+    --claims-to-roles groups,company/dev,dev > oidc.yaml
+    ```
+  </Tab>
+</Tabs>
+
+This example maps the two subgroups `admin` and `dev` of the parent group
+`company` to the `admin` and `dev` roles in Teleport, and creates the `oidc.yaml` file:
+
+```yaml
+kind: oidc
+metadata:
+  name: gitlab
+spec:
+  claims_to_roles:
+  - claim: groups
+    roles:
+    - admin
+    value: company/admin
+  - claim: groups
+    roles:
+    - dev
+    value: company/gitlab-dev
+  client_id: <APPLICATION-ID>
+  client_secret: <APPLICATION-SECRET>
+  display: GitLab
+  issuer_url: https://gitlab.com
+  prompt: none
+  redirect_url: https://teleport.example.com:443/v1/webapi/oidc/callback
+version: v3
+
+```
+
+Test the connector resource by piping the file to `tctl sso test`:
+
+```code
+$ cat oidc.yaml | tctl sso test
+```
+
+After authorizing the application in GitLab you should get a
+**Login Successful** message in your web browser. Otherwise, consult the output
+of the command to diagnose.
+
+Create the connector using `tctl` tool:
+
+```code
+$ tctl create -f oidc.yaml
+```
+
+## Create Teleport Roles
+
+We are going to create 2 roles, privileged role admin who is able to login as
+root and is capable of administrating the cluster and non-privileged dev.
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: admin
+spec:
+  options:
+    max_session_ttl: 24h
+  allow:
+    logins: [root]
+    node_labels:
+      "*": "*"
+    rules:
+      - resources: ["*"]
+        verbs: ["*"]
+```
+
+The developer role:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: dev
+spec:
+  options:
+    max_session_ttl: 24h
+  allow:
+    logins: [ "{{email.local(external.email)}}", ubuntu ]
+    node_labels:
+      access: relaxed
+```
+
+- Devs are only allowed to login to nodes labelled with `access: relaxed` label.
+- Developers can log in as `ubuntu` user
+- Notice the `{{external.email}}` login. It configures Teleport to look at the
+  *"email"* GitLab claim and use that field as an allowed login for each user.
+  The `email.local(external.trait)` function removes the `@domain` and preserves
+  the username prefix. For full details on how variable expansion works in
+  Teleport roles, see the [Teleport Access Controls
+  Reference](/docs/ver/16.x/access-controls/reference).
+- Developers also do not have any "allow rules" i.e. they will not be able to
+  see/replay past sessions or re-configure the Teleport cluster.
+
+Create both roles on the auth server:
+
+```code
+$ tctl create -f admin.yaml
+$ tctl create -f dev.yaml
+```
+
+## Enable default OIDC authentication
+
+Configure Teleport to use OIDC authentication as the default instead of the local
+user database.
+
+Follow the instructions for your Teleport edition:
+
+<Tabs>
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: oidc
+
+    ```
+  </Tab>
+
+  <Tab title="Dynamic Resources (All Editions)">
+    Create a file called `cap.yaml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:    
+      type: oidc
+    version: v2
+    ```
+
+    Create a resource:
+
+    ```code
+    $ tctl create -f cap.yaml
+    ```
+  </Tab>
+</Tabs>
+
+The Web UI will now contain a new button: "Login with GitLab". The CLI is
+the same as before:
+
+```code
+$ tsh --proxy=teleport.example.com login
+```
+
+This command will print the SSO login URL (and will try to open it
+automatically in a browser).
+
+<Tip>
+  Teleport can use multiple OIDC/SAML connectors. In this case a connector name
+  can be passed via `tsh login --auth=connector_name`
+</Tip>
+
+<Note>
+  Teleport only supports sending party initiated flows for OIDC Connect. This
+  means you can not initiate login from your identity provider, you have to
+  initiate login from either the Teleport Web UI or CLI.
+</Note>
+
+## Troubleshooting
+
+Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
+must be able to:
+
+- Be able to see what SAML/OIDC claims and values are getting exported and passed
+  by the SSO provider to Teleport.
+- Be able to see how Teleport maps the received claims to role mappings as defined
+  in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
+
+If something is not working, we recommend to:
+
+- Double-check the host names, tokens and TCP ports in a connector definition.
+
+### Using the Web UI
+
+If you get "access denied" or other login errors, the number one place to check is the Audit
+Log. Under the **Management** area you can access it within the **Activity** tab in the
+Teleport Web UI.
+
+![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+
+Example of a user being denied because the role `clusteradmin` wasn't set up:
+
+```json
+{
+  "code": "T1001W",
+  "error": "role clusteradmin is not found",
+  "event": "user.login",
+  "method": "oidc",
+  "success": false,
+  "time": "2019-06-15T19:38:07Z",
+  "uid": "cd9e45d0-b68c-43c3-87cf-73c4e0ec37e9"
+}
+```
+
+### Teleport does not show the expected Nodes
+
+When Teleport's Auth Service receives a request to list Teleport Nodes (e.g., to
+display Nodes in the Web UI or via `tsh ls`), it only returns the Nodes that the
+current user is authorized to view.
+
+For each Node in the user's Teleport cluster, the Auth Service applies the
+following checks in order and, if one check fails, hides the Node from the user:
+
+- None of the user's roles contain a `deny` rule that matches the Node's labels.
+- At least one of the user's roles contains an `allow` rule that matches the
+  Node's labels.
+
+If you are not seeing Nodes when expected, make sure that your user's roles
+include the appropriate `allow` and `deny` rules as documented in the
+[Teleport Access Controls Reference](/docs/ver/16.x/access-controls/reference).
+
+When configuring SSO, ensure that the identity provider is populating each user's
+traits correctly. For a user to see a Node in Teleport, the result of populating a
+template variable in a role's `allow.logins` must match at least one of a user's
+`traits.logins`.
+
+In this example a user will have usernames `ubuntu`, `debian` and usernames from the SSO trait `logins` for Nodes that have a `env: dev` label.  If the SSO trait username is `bob` then the usernames would include `ubuntu`, `debian`, and `bob`.
+
+```yaml
+kind: role
+metadata:
+  name: example-role
+spec:
+  allow:
+    logins: ['{{external.logins}}', ubuntu, debian]
+    node_labels:
+      'env': 'dev'
+version: v5
+```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.

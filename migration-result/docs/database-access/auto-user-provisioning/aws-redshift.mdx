@@ -1,0 +1,153 @@
+---
+title: AWS Redshift Automatic User Provisioning 
+description: Configure automatic user provisioning for AWS Redshift.
+version: '15.x'
+---
+
+<Accordion title="Version warning">
+  Automatic user provisioning for AWS Redshift is available starting from
+  Teleport 14.2.
+</Accordion>
+
+Teleport can automatically create users in your database, removing the need for
+creating individual user accounts in advance or using the same set of shared
+database accounts for all users.
+
+## Prerequisites
+
+- Teleport cluster with a configured [AWS Redshift](/docs/database-access/guides/postgres-redshift) database.
+- Ability to connect to and create user accounts in the target database.
+
+<Note>
+  Automatic user provisioning is not compatible with Redshift Serverless.
+</Note>
+
+## Step 1/3. Configure database admin
+
+Teleport uses the same authentication mechanism (IAM authentication) when
+connecting as an admin user as for regular user connections.
+
+The admin user must have privileges within the database to create users and
+grant them privileges. The admin user must also have privileges to monitor user
+processes and role assignments:
+
+```
+CREATE USER "teleport-admin" WITH PASSWORD DISABLE;
+GRANT ROLE "sys:superuser" TO "teleport-admin";
+```
+
+Users created by Teleport will be assigned the `teleport-auto-user` role in the
+database, which will be created automatically if it doesn't exist.
+
+Next, enable the database admin on the Teleport database configuration:
+
+<Tabs>
+  <Tab title="Static config">
+    ```yaml
+    db_service:
+      enabled: "yes"
+      databases:
+      - name: "example"
+        protocol: "postgres"
+        uri: "redshift-cluster-1.abcdefghijklm.us-east-1.redshift.amazonaws.com:5439"
+        admin_user:
+          name: "teleport-admin"
+    ```
+  </Tab>
+
+  <Tab title="Dynamic resource">
+    ```yaml
+    kind: db
+    version: v3
+    metadata:
+      name: example
+    spec:
+      protocol: "postgres"
+      uri: "redshift-cluster-1.abcdefghijklm.us-east-1.redshift.amazonaws.com:5439"
+      admin_user:
+        name: "teleport-admin"
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  For auto-discovered cloud databases, the name of the admin user is taken from
+  the `teleport.dev/db-admin` label.
+</Tip>
+
+## Step 2/3. Configure Teleport role
+
+To specify the database roles a user should be assigned within the database,
+use the `db_roles` role option:
+
+```yaml
+kind: role
+version: v7
+metadata:
+  name: auto-db-users
+spec:
+  options:
+    # create_db_user_mode enables automatic user provisioning for matching databases
+    create_db_user_mode: keep
+  allow:
+    db_labels:
+      "*": "*"
+    db_names:
+    - "*"
+    # db_roles is a list of roles the database user will be assigned
+    db_roles:
+    - reader
+    - "{{internal.db_roles}}"
+    - "{{external.db_roles}}"
+```
+
+With automatic user provisioning, users always connect to the database with
+their Teleport username so the `db_users` role field is ignored for roles
+that have database user provisioning enabled.
+
+The available provisioning modes are:
+
+- `off`: Disables user provisioning.
+
+- `keep`: Enables user provisioning and disables users at session end. The user
+  will be stripped of all roles and the user account will be locked.
+
+- `best_effort_drop`: Enables user provisioning and tries to drop user
+  at session end. If the drop fails, fallback to disabling them (same as `keep`
+  mode).
+
+Users created within the database will:
+
+- Have the same name as Teleport username.
+- Be assigned the `teleport-auto-user` role.
+- Be assigned all roles from the Teleport user's role set that match the database.
+  The role names must be valid and exist in the database.
+
+Note that in case of a name conflict where a user with the same name already
+exists in the database and is not managed by Teleport (i.e. not assigned the
+`teleport-auto-user` role), the connection will be aborted.
+
+## Step 3/3. Connect to the database
+
+Now, log into your Teleport cluster and connect to the database:
+
+```code
+$ tsh login --proxy=teleport.example.com
+$ tsh db connect --db-name <database> example
+```
+
+<Note>
+  When connecting to a database with user provisioning enabled, the Database
+  Service expects your Teleport username will be used as the database username .
+
+  If using a GUI database client like pgAdmin, make sure to use your Teleport
+  username as the database username. `tsh db connect` will default to your
+  Teleport username automatically when connecting to a database with user
+  provisioning enabled.
+</Note>
+
+## Next steps
+
+- Connect using your [GUI database client](/docs/connect-your-client/gui-clients).
+- Learn about [role templating](/docs/access-controls/guides/role-templates#interpolation-rules).
+- Read automatic user provisioning [RFD](https://github.com/gravitational/teleport/blob/master/rfd/0113-automatic-database-users.md).

@@ -1,0 +1,22 @@
+---
+title: Join Services to your Teleport Cluster
+description: How to register the Proxy Service, Database Service, and other Teleport services with your cluster.
+version: '13.x'
+---
+
+A **Teleport service** manages access to resources in your infrastructure, such
+as Kubernetes clusters, Windows desktops, internal web applications, and
+databases. A single **Teleport process** can run multiple Teleport services.
+
+There are multiple methods you can use to join a Teleport process to your
+cluster in order to run Teleport services, including an instance of the Proxy
+Service. Choose the method that best suits your infrastructure:
+
+| Method                                                                                      | Description                                                                                                                                                       | When to use                                                                                |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [EC2 Identity Document](/docs/ver/13.x/agents/join-services-to-your-cluster/aws-ec2)        | A Teleport process running on an EC2 instance authenticates to your cluster via a signed EC2 instance identity document.                                          | Your Teleport process will run on EC2.                                                     |
+| [AWS IAM](/docs/ver/13.x/agents/join-services-to-your-cluster/aws-iam)                      | A Teleport process uses AWS credentials to join the cluster, whether running on EC2 or not.                                                                       | At least some of your infrastructure runs on AWS and your Teleport cluster is self hosted. |
+| [Azure Managed Identity](/docs/ver/13.x/agents/join-services-to-your-cluster/azure)         | A Teleport process demonstrates that it runs in your Azure subscription by sending a signed attested data document and access token to the Teleport Auth Service. | Your Teleport process will run on Azure.                                                   |
+| [Kubernetes ServiceAccount](/docs/ver/13.x/agents/join-services-to-your-cluster/kubernetes) | A Teleport process uses a Kubernetes-signed proof to establish a trust relationship with your Teleport cluster.                                                   | Your Teleport process will run on Kubernetes.                                              |
+| [GCP IAM](/docs/ver/13.x/agents/join-services-to-your-cluster/gcp)                          | A Teleport process uses a GCP-signed token to establish a trust relationship with your Teleport cluster.                                                          | Your Teleport process will run on a GCP VM.                                                |
+| [Join Token](/docs/ver/13.x/agents/join-services-to-your-cluster/join-token)                | A Teleport process presents a join token provided when starting the service.                                                                                      | There is no other supported method for your cloud provider.                                |

@@ -1,0 +1,69 @@
+---
+title: Protect Applications with Teleport
+description: How to set up Teleport to protect internal apps and cloud provider APIs
+version: '13.x'
+---
+
+Teleport is designed to provide secure access to cloud provider APIs and
+internal applications. Examples include:
+
+- The AWS management console.
+- The `aws`, `gcloud`, `gsutil`, and `az` CLIs.
+- Internal control panels.
+- Tools, such as wikis, that are available only when connected to a VPN.
+- Infrastructure dashboards, such as Kubernetes or Grafana.
+- Developer tools, such as Jenkins, GitLab, or Opsgenie.
+
+## Demo
+
+<video autoPlay loop muted playsInline controls>
+  <source src="../../../../../assets/app-access-8dfde6c060.mp4" type="video/mp4" />
+
+  <source src="../../../../../assets/app-access-783de4d3ef.webm" type="video/webm" />
+
+  Your browser does not support the video tag.
+</video>
+
+## Getting started
+
+Learn how to register an application with Teleport in our [getting started
+guide](/docs/ver/13.x/application-access/getting-started).
+
+## Protect cloud provider APIs
+
+You can use Teleport to provide secure access to your cloud provider's APIs.
+This means that you can prevent unauthorized usage of management consoles and
+CLI tools with the same RBAC system you use to protect your infrastructure.
+
+- [AWS Console and CLI Applications](/docs/ver/13.x/application-access/cloud-apis/aws-console): How to access
+  AWS Management Console, AWS CLI, and AWS SDKs with Teleport.
+- [Google Cloud CLI Applications](/docs/ver/13.x/application-access/cloud-apis/google-cloud): How to access
+  Google Cloud CLI applications and SDKs with Teleport.
+- [Azure CLI Applications](/docs/ver/13.x/application-access/cloud-apis/azure): How to access Azure CLI
+  applications and SDKs with Teleport.
+
+## Protect internal applications
+
+You can use Teleport to enable secure access to internal applications. For
+example, a load balancer might display network telemetry through a control panel
+but might lack the ability to authenticate with and be accessed by resources
+outside your private network.
+
+Teleport lets team members access these resources securely, even outside a
+private network, with no shared secrets.
+
+These guides explain how to protect internal applications  with Teleport:
+
+- [Web App Access](/docs/ver/13.x/application-access/guides/connecting-apps): How to access web apps with Teleport.
+- [TCP App Access](/docs/ver/13.x/application-access/guides/tcp): How to access plain TCP apps with Teleport.
+- [API Access](/docs/ver/13.x/application-access/guides/api-access): How to access REST APIs with Teleport.
+- [Dynamic Registration](/docs/ver/13.x/application-access/guides/dynamic-registration): Register/unregister apps without restarting Teleport.
+- [Interactive Lab](https://play.instruqt.com/teleport/invite/rgvuva4gzkon): Try Teleport using our guided Teleport application access lab.
+
+## Use Teleport-signed JSON Web Tokens
+
+These guides explain how web apps registered with Teleport can use
+Teleport-signed JSON web tokens to implement authentication and authorization.
+
+- [Introduction](/docs/ver/13.x/application-access/jwt/introduction): Introduction to JWT tokens with application access.
+- [Elasticsearch](/docs/ver/13.x/application-access/jwt/elasticsearch): How to use JWT authentication with Elasticsearch.
