@@ -166,7 +166,7 @@ all groups external to the workspace) will prevent users from logging in.
 
 In the GCP console, choose the project dropdown menu, and [create a new project](https://console.cloud.google.com/projectselector2/apis/dashboard).
 
-![creation of a Google Cloud Platform project](../../../../../../assets/new-project-d8ca8dea8e.png)
+![creation of a Google Cloud Platform project](/assets/new-project-d8ca8dea8e.png)
 
 ### Configure OAuth consent
 
@@ -174,7 +174,7 @@ On the
 [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
 page of the GCP console, select"Internal" as your User Type.
 
-![configuration of the OAuth consent screen](../../../../../../assets/consent-screen-1-7baee1e702.png)
+![configuration of the OAuth consent screen](/assets/consent-screen-1-7baee1e702.png)
 
 On the next page, configure the appearance of your connector by picking a
 visible name, user support email, etc.
@@ -184,7 +184,7 @@ visible name, user support email, etc.
 On the next page, click on **ADD OR REMOVE SCOPES**.
 Select the `.../auth/userinfo.email` and `openid` scopes.
 
-![select email and openid scopes](../../../../../../assets/consent-screen-2-52c6c1ba0d.png)
+![select email and openid scopes](/assets/consent-screen-2-52c6c1ba0d.png)
 
 Enable the
 [Cloud Identity API](https://console.cloud.google.com/apis/library/cloudidentity.googleapis.com)
@@ -203,40 +203,40 @@ for transitive and direct group membership, respectively. Enabling both is fine.
 
 Under **Credentials**, select **CREATE CREDENTIALS**, then **OAuth client ID**:
 
-![Create an OAuth Client ID](../../../../../../assets/create-oauth-client-id-ed71ad10de.png)
+![Create an OAuth Client ID](/assets/create-oauth-client-id-ed71ad10de.png)
 
 Select "Web application" as the Application type, pick a name, then set the
 redirect URI based on the address of your Teleport Proxy Service or cloud tenant:
 <nobr>HTTPS://EXAMPLE.TELEPORT.SH`/v1/webapi/oidc/callback`</nobr>
 
-![OAuth client ID creation](../../../../../../assets/clientid-creation-8f929cf713.png)
+![OAuth client ID creation](/assets/clientid-creation-8f929cf713.png)
 
 Copy the Client ID and Client Secret from the next screen or click **DOWNLOAD JSON**:
 
-![OAuth client data](../../../../../../assets/clientid-data-fc1baa5ec5.png)
+![OAuth client data](/assets/clientid-data-fc1baa5ec5.png)
 
 ### Create a service account
 
 From the GCP **IAM & Admin** menu select **Service Accounts**. From the kebab
 menu click **CREATE SERVICE ACCOUNT**:
 
-![Create a service account](../../../../../../assets/create-service-account-392158a4f4.png)
+![Create a service account](/assets/create-service-account-392158a4f4.png)
 
 On the [Create a
 service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create)
 page, pick a name for your service account. Leave project access grants and user
 access grants empty.
 
-![service account creation](../../../../../../assets/serviceacct-creation-b84d30b68a.png)
+![service account creation](/assets/serviceacct-creation-b84d30b68a.png)
 
 Click the newly-created account to view its details, and copy the Unique ID for later.
 
-![service account unique ID](../../../../../../assets/serviceacct-uniqueid-885db194c2.png)
+![service account unique ID](/assets/serviceacct-uniqueid-885db194c2.png)
 
 Create a new key for the service account, select JSON as the key type, and save
 the resulting JSON file.
 
-![service account key creation](../../../../../../assets/serviceacct-key-797654f7d6.png)
+![service account key creation](/assets/serviceacct-key-797654f7d6.png)
 
 Later, we will make this JSON available to the Teleport Auth Service via the
 OIDC Connector configuration, either by referencing a local file or pasting the
@@ -259,7 +259,7 @@ newly-created service account:
 Click "Add new" and add the numeric Unique ID that you've copied earlier from
 the service account:
 
-![domain-wide delegation](../../../../../../assets/domainwidedelegation-bd7aca40c8.png)
+![domain-wide delegation](/assets/domainwidedelegation-bd7aca40c8.png)
 
 Add **one** of the following scopes depending on your Google Workspace:
 
@@ -510,7 +510,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

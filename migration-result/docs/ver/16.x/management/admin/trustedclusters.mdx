@@ -49,7 +49,7 @@ provide access to clients in different regions:
 
 The following diagram provides a simplified view of the architecture:
 
-![Trusted cluster](../../../../../../assets/simplified-trusted-cluster-d29e680b9e.png)
+![Trusted cluster](/assets/simplified-trusted-cluster-d29e680b9e.png)
 
 As this diagram suggests, users can sign in to the root cluster to receive certificates signed by the root
 cluster certificate authority. They can then connect to leaf clusters either directly
@@ -79,7 +79,7 @@ Based on the information in the certificate, the Teleport Auth Service performs 
 The following diagram provides a simplified view of the interaction between the services running
 on the leaf cluster and service running on the root cluster:
 
-![Service interaction in a trusted cluster](../../../../../../assets/trusted-cluster-service-interaction-64108e5493.png)
+![Service interaction in a trusted cluster](/assets/trusted-cluster-service-interaction-64108e5493.png)
 
 Note that trusted clusters only work in one direction.
 Users from the leaf cluster can't see or connect to resources in the root cluster.
@@ -92,7 +92,7 @@ local cluster roles.
 The following diagram provides a simplified view of how role mapping works using the same trusted
 cluster with `msp-root.example.com` as the root cluster and `leaf-east.example.com` as the leaf cluster:
 
-![Role mapping in a trusted cluster](../../../../../../assets/simplified-trusted-cluster-role-mapping-2478ae52be.png)
+![Role mapping in a trusted cluster](/assets/simplified-trusted-cluster-role-mapping-2478ae52be.png)
 
 In this example, the user Alice signs in to the `msp-root.example.com` root cluster. The root cluster is
 configured with a single sign-on identity provider that authenticates her identity and her group membership.

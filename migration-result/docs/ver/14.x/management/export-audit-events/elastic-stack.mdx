@@ -590,7 +590,7 @@ under "Cluster privileges", enter `manage_index_templates`, `manage_ilm`, and
 Under "Index privileges", define an entry with `audit-events-*` in the "Indices"
 field and `write` and `manage` in the "Privileges" field. Click "Create role".
 
-![Creating an Elasticsearch role](../../../../../../assets/create-role-353ad56218.png)
+![Creating an Elasticsearch role](/assets/create-role-353ad56218.png)
 
 ### Create an Elasticsearch user for the Event Handler
 
@@ -974,7 +974,7 @@ For the "Name" field, use "Teleport Audit Events". In "Index pattern", use
 `audit-events-*` to select all indices created by our Logstash pipeline. In
 "Timestamp field", choose `time`, which Teleport adds to its audit events.
 
-![Creating a data view](../../../../../../assets/data-view-create-1c682d34cf.png)
+![Creating a data view](/assets/data-view-create-1c682d34cf.png)
 
 To use your data view, find the search box at the top of the Elastic Stack UI
 and enter "Discover". On the upper left of the screen, click the dropdown menu
@@ -982,12 +982,12 @@ and select "Teleport Audit Events". You can now search and filter your Teleport
 audit events in order to get a better understanding how users are interacting
 with your Teleport cluster.
 
-![Creating a data view](../../../../../../assets/data-view-explore-d907bc7904.png)
+![Creating a data view](/assets/data-view-explore-d907bc7904.png)
 
 For example, we can click the `event` field on the left sidebar and visualize
 the event types for your Teleport audit events over time:
 
-![Creating a visualization](../../../../../../assets/lens-b4c4597cd3.png)
+![Creating a visualization](/assets/lens-b4c4597cd3.png)
 
 ## Troubleshooting connection issues
 

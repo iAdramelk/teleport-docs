@@ -15,11 +15,11 @@ This guide will help you to:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![DynamoDB Self-Hosted](../../../../../../assets/dynamodb_selfhosted-f4e2af319c.png)
+    ![DynamoDB Self-Hosted](/assets/dynamodb_selfhosted-f4e2af319c.png)
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![DynamoDB Cloud](../../../../../../assets/dynamodb_cloud-3eb2e79578.png)
+    ![DynamoDB Cloud](/assets/dynamodb_cloud-3eb2e79578.png)
   </Tab>
 </Tabs>
 
@@ -203,15 +203,15 @@ There are several methods to create an IAM role:
     Select the "AWS account" option, which creates a default trust policy to allow
     other entities in this account to assume this role:
 
-    ![Create Role Step 1](../../../../../../assets/dynamodb-create-role-1-6823d0ab8e.png)
+    ![Create Role Step 1](/assets/dynamodb-create-role-1-6823d0ab8e.png)
 
     Press "Next". Find the AWS-managed policy `AmazonDynamoDBFullAccess` and then select the policy:
 
-    ![Create Role Step 2](../../../../../../assets/aws-create-iam-role-2-461eb140c1.png)
+    ![Create Role Step 2](/assets/aws-create-iam-role-2-461eb140c1.png)
 
     Press "Next". Enter role name `ExampleTeleportDynamoDBRole` and press "Create role":
 
-    ![Create Role Step 3](../../../../../../assets/aws-create-iam-role-3-16e815ffa5.png)
+    ![Create Role Step 3](/assets/aws-create-iam-role-3-16e815ffa5.png)
   </Tab>
 
   <Tab title="Using AWS CLI">
@@ -1118,7 +1118,7 @@ Navigate to the Applications tab in your Teleport cluster's control panel and
 click on the Launch button for the AWS application. This will bring up an IAM
 role selector:
 
-![IAM role selector](../../../../../../assets/aws-database-select-iam-role-9a931437f7.png)
+![IAM role selector](/assets/aws-database-select-iam-role-9a931437f7.png)
 
 Click on the role `ExampleTeleportDynamoDBRole` and you will get redirected to the AWS
 Management Console, signed in with the selected role.

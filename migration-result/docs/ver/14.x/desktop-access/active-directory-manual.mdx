@@ -261,7 +261,7 @@ Computer Configuration > Policies > Windows Settings > Security Settings > Local
 5. Repeat steps 3 and 4 for `Deny log on through Remote Desktop Services` (in
    lieu of `Deny log on locally`).
 
-![Deny Interactive Login](../../../../../assets/deny-interactive-login-a3c84c9ae7.png)
+![Deny Interactive Login](/assets/deny-interactive-login-a3c84c9ae7.png)
 
 <Tip>
   For added security, consider disabling username/password authentication completely via the GPO,
@@ -312,7 +312,7 @@ $ curl -o user-ca.cer https://proxy/webapi/auth/export?type=windows
   Instead, you should apply this GPO to the automatically-created OU with the NetBIOS domain name containing `Computers`
   and `Users` which is nested one level beneath the domain root.
 
-  ![AWS Managed AD OU Location](../../../../../assets/aws-managed-ad-3a5a0f8fb4.png)
+  ![AWS Managed AD OU Location](/assets/aws-managed-ad-3a5a0f8fb4.png)
 </Warning>
 
 1. Create another new GPO, this time giving it a name like `Teleport Access Policy`:
@@ -337,7 +337,7 @@ $ curl -o user-ca.cer https://proxy/webapi/auth/export?type=windows
 
 6. Click through the wizard, selecting your CA file.
 
-   ![Import Teleport CA](../../../../../assets/ca-2472a9f383.png)
+   ![Import Teleport CA](/assets/ca-2472a9f383.png)
 
 ### Publish the Teleport CA to the Active Directory domain
 
@@ -394,7 +394,7 @@ Teleport performs certificate based authentication by emulating a smart card.
 2. Double click on `Smart Card`, select `Define this policy setting` and switch
    to `Automatic` then click `OK`.
 
-   ![Enable Smartcard](../../../../../assets/smartcard-335c7ff556.png)
+   ![Enable Smartcard](/assets/smartcard-335c7ff556.png)
 
 ### Allow remote RDP connections
 
@@ -414,7 +414,7 @@ Teleport performs certificate based authentication by emulating a smart card.
 
 4. Right click `Require user authentication for remote connections by using Network Level Authentication`, edit, select `Disable` and `OK`.
 
-   ![Disable Require](../../../../../assets/disable-614eb85f76.png)
+   ![Disable Require](/assets/disable-614eb85f76.png)
 
 5. Right click `Always prompt for password upon connection`, edit, select **`Disabled`** and .
    Teleport's smart card based authentication generates a random smart card PIN for each
@@ -448,7 +448,7 @@ Set to `Disabled` and click `OK`.
 
 5. On the next screen, select `Allow the connection` and finish.
 
-   ![Open the Firewall](../../../../../assets/firewall-956a974a16.png)
+   ![Open the Firewall](/assets/firewall-956a974a16.png)
 
 ### Ensure your GPO is updated
 
@@ -525,7 +525,7 @@ Computer Configuration > Policies > Administrative Templates > Windows Component
 Right-click on `Server authentication certificate template`, `Edit`, then select
 `Enabled` and fill `Certificate Template Name` with `RemoteDesktopAccess`.
 
-![RDP Certificate Template](../../../../../assets/rdp-certificate-template-23bc1271e3.png)
+![RDP Certificate Template](/assets/rdp-certificate-template-23bc1271e3.png)
 
 ### Configure server certificate auto-enrollment
 
@@ -1135,7 +1135,7 @@ On the left pane, select `Desktops (preview)`. You should see the list of all
 computers and Domain Controllers connected to your domain. Select one and click
 `CONNECT` on the right, selecting one of the available logins:
 
-![Select Desktop](../../../../../assets/select-desktop-304646480a.png)
+![Select Desktop](/assets/select-desktop-304646480a.png)
 
 A new tab will open and, after a few seconds, you should be logged in to your
 target Windows host.

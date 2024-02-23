@@ -16,11 +16,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![Teleport Database Access RDS Self-Hosted](../../../../../../assets/redis_elasticache_selfhosted-9e5e02a7fb.png)
+    ![Teleport Database Access RDS Self-Hosted](/assets/redis_elasticache_selfhosted-9e5e02a7fb.png)
   </Tab>
 
   <Tab title="Teleport Cloud">
-    ![Teleport Database Access RDS Cloud](../../../../../../assets/redis_elasticache_cloud-ad5248af50.png)
+    ![Teleport Database Access RDS Cloud](/assets/redis_elasticache_cloud-ad5248af50.png)
   </Tab>
 </Tabs>
 
@@ -1482,7 +1482,7 @@ the Redis server.
     Once the ElastiCache user has been created, verify that the user is configured
     to satisfy the requirements for IAM authentication:
 
-    ![ElastiCache IAM-enabled User](../../../../../../assets/redis-aws-iam-user@2x-3e6a860a1f.png)
+    ![ElastiCache IAM-enabled User](/assets/redis-aws-iam-user@2x-3e6a860a1f.png)
   </Tab>
 
   <Tab title="MemoryDB IAM user">
@@ -1537,7 +1537,7 @@ the Redis server.
     Once an ElastiCache or MemoryDB user is created with the desired access, add an
     AWS resource tag `teleport.dev/managed` with the value `true` to this user:
 
-    ![Managed User Tag](../../../../../../assets/redis-aws-managed-user-tag-1bb86b7c3c.png)
+    ![Managed User Tag](/assets/redis-aws-managed-user-tag-1bb86b7c3c.png)
 
     The Database Service will automatically discover this user if it is associated
     with a registered database. Keep in mind that it may take the Database Service

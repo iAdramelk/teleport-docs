@@ -232,21 +232,21 @@ graphical client.
 
 On the "New Connection" panel, click on "Fill in connection fields individually".
 
-![MongoDB Compass new connection](../../../assets/compass-new-connection@2x-0764764af6.png)
+![MongoDB Compass new connection](/assets/compass-new-connection@2x-0764764af6.png)
 
 On the "Hostname" tab, enter the hostname and port of the proxy you will use to
 access the database (see
 [Get connection information](/docs/connect-your-client/gui-clients#get-connection-information)).
 Leave "Authentication" as None.
 
-![MongoDB Compass hostname](../../../assets/compass-hostname@2x-1562151b3b.png)
+![MongoDB Compass hostname](/assets/compass-hostname@2x-1562151b3b.png)
 
 On the "More Options" tab, set SSL to "Client and Server Validation" and set the
 CA as well as the client key and certificate. Note that a CA path must be
 provided and be able to validate the certificate presented by your Teleport
 Proxy Service's web endpoint.
 
-![MongoDB Compass more options](../../../assets/compass-more-options@2x-97c67a3614.png)
+![MongoDB Compass more options](/assets/compass-more-options@2x-97c67a3614.png)
 
 Click on the "Connect" button.
 
@@ -254,26 +254,26 @@ Click on the "Connect" button.
 
 Right-click in the "Database Navigator" menu in the main view and select Create > Connection:
 
-![DBeaver Add Server](../../../assets/dbeaver-add-server-acee87e430.png)
+![DBeaver Add Server](/assets/dbeaver-add-server-acee87e430.png)
 
 In the search bar of the "Connect to a database" window that opens up, type "mysql", select the MySQL driver, and click "Next":
 
-![DBeaver Select Driver](../../../assets/dbeaver-select-driver-931a5cefc9.png)
+![DBeaver Select Driver](/assets/dbeaver-select-driver-931a5cefc9.png)
 
 In the newly-opened "Connection Settings" tab, use the Host as `localhost` and
 Port as the one returned by the proxy command (`62652` in the example above):
 
-![DBeaver Select Configure Server](../../../assets/dbeaver-configure-server-bfbb08c2d9.png)
+![DBeaver Select Configure Server](/assets/dbeaver-configure-server-bfbb08c2d9.png)
 
 In that same tab, set the username to match the one that you are connecting to
 using Teleport and uncheck the "Save password locally" box:
 
-![DBeaver Select Configure User](../../../assets/dbeaver-configure-user-12c2f2be0d.png)
+![DBeaver Select Configure User](/assets/dbeaver-configure-user-12c2f2be0d.png)
 
 Click the "Edit Driver Settings" button on the "Main" tab, check the "No
 Authentication" box, and click "Ok" to save:
 
-![DBeaver Driver Settings](../../../assets/dbeaver-driver-settings-b8a654964b.png)
+![DBeaver Driver Settings](/assets/dbeaver-driver-settings-b8a654964b.png)
 
 Once you are back in the "Connection Settings" window, click "Ok" to finish and
 DBeaver should connect to the remote MySQL server automatically.
@@ -288,17 +288,17 @@ In the MySQL Workbench "Setup New Connection" dialog, fill out "Connection
 Name", "Hostname", "Port", and "Username":
 
 ![MySQL Workbench
-Parameters](../../../assets/workbench-parameters@2x-c52843415e.png)
+Parameters](/assets/workbench-parameters@2x-c52843415e.png)
 
 In the "SSL" tab, set "Use SSL" to `Require and Verify Identity` and enter the
 paths to your CA, certificate, and private key files (see
 [Get connection information](/docs/connect-your-client/gui-clients#get-connection-information)):
 
-![MySQL Workbench SSL](../../../assets/workbench-ssl@2x-2152a1b580.png)
+![MySQL Workbench SSL](/assets/workbench-ssl@2x-2152a1b580.png)
 
 Optionally, click "Test Connection" to verify connectivity:
 
-![MySQL Workbench Test](../../../assets/workbench-test@2x-3f9901c544.png)
+![MySQL Workbench Test](/assets/workbench-test@2x-3f9901c544.png)
 
 Save the connection and connect to the database.
 
@@ -311,7 +311,7 @@ Choose the **DynamoDB local** tab, and point to your proxy's endpoint. This is
 [Get connection information](/docs/connect-your-client/gui-clients#get-connection-information) for
 more information.)
 
-![DynamoDB local connection in NoSQL Workbench](../../../assets/nosql-workbench-connection-cb86fe4196.png)
+![DynamoDB local connection in NoSQL Workbench](/assets/nosql-workbench-connection-cb86fe4196.png)
 
 ## SQL Server with Azure Data Studio
 
@@ -331,7 +331,7 @@ Create a connection with Microsoft SQL Server with these settings:
 | Encrypt             | `False`                         |
 
 Example:
-![Azure Data Studio connection options](../../../assets/azure-data-studio-connection-455205d44b.png)
+![Azure Data Studio connection options](/assets/azure-data-studio-connection-455205d44b.png)
 
 Click **Connect** to connect.
 
@@ -345,7 +345,7 @@ for more information).
 Use the "Database native" authentication with an empty password:
 
 ![DBeaver Postgres Configure
-Server](../../../assets/dbeaver-pg-configure-server-34806df4e1.png)
+Server](/assets/dbeaver-pg-configure-server-34806df4e1.png)
 
 Clicking on "Test connection" should return a connection success message. Then,
 click on "Finish" to save the configuration.
@@ -358,21 +358,21 @@ PostgreSQL servers.
 To configure a new connection, right-click on "Servers" in the main browser view
 and create a new server:
 
-![pgAdmin Add Server](../../../assets/pgadmin-add-server@2x-20fe8bed71.png)
+![pgAdmin Add Server](/assets/pgadmin-add-server@2x-20fe8bed71.png)
 
 In the "General" tab of the new server dialog, enter the server connection name:
 
-![pgAdmin General](../../../assets/pgadmin-general@2x-412bdd625d.png)
+![pgAdmin General](/assets/pgadmin-general@2x-412bdd625d.png)
 
 In the "Connection" tab, fill in the hostname, port, user and database name from
 the configuration above:
 
-![pgAdmin Connection](../../../assets/pgadmin-connection@2x-4ed28dd69f.png)
+![pgAdmin Connection](/assets/pgadmin-connection@2x-4ed28dd69f.png)
 
 In the "SSL" tab, set "SSL Mode" to `Verify-Full` and fill in paths for client
 certificate, key and root certificate from the configuration above:
 
-![pgAdmin SSL](../../../assets/pgadmin-ssl@2x-ed89915c11.png)
+![pgAdmin SSL](/assets/pgadmin-ssl@2x-ed89915c11.png)
 
 Click "Save", and pgAdmin should immediately connect. If pgAdmin prompts you
 for password, leave the password field empty and click OK.
@@ -396,7 +396,7 @@ Create a connection with Microsoft SQL Server with these settings:
 | Encryption        | do not enable                   |
 
 Example:
-![Microsoft SQL Server Management Studio connection options](../../../assets/msft-sql-server-management-studio-connection-f853b4ace5.png)
+![Microsoft SQL Server Management Studio connection options](/assets/msft-sql-server-management-studio-connection-f853b4ace5.png)
 
 Click Connect to connect.
 
@@ -408,7 +408,7 @@ Click Connect to connect.
 
 After opening Redis Insight click `ADD REDIS DATABASE`.
 
-![Redis Insight Startup Screen](../../../assets/redisinsight-startup-7d93692fe7.png)
+![Redis Insight Startup Screen](/assets/redisinsight-startup-7d93692fe7.png)
 
 Now start a local proxy to your Redis instance:
 
@@ -419,18 +419,18 @@ the `tsh` command you ran in [Get connection information](#get-connection-inform
 
 Provide your Redis username as `Username` and password as `Password`.
 
-![Redis Insight Configuration](../../../assets/redisinsight-add-config-f64975d00d.png)
+![Redis Insight Configuration](/assets/redisinsight-add-config-f64975d00d.png)
 
 Next, check the `Use TLS` and `Verify TLS Certificates` boxes and copy the CA certificate returned by `tsh proxy db`.
 Copy the private key and certificate to corresponding fields.
 
 Click `Add Redis Database`.
 
-![Redis Insight TLS Configuration](../../../assets/redisinsight-tls-config-23481d5bb3.png)
+![Redis Insight TLS Configuration](/assets/redisinsight-tls-config-23481d5bb3.png)
 
 Congratulations! You have just connected to your Redis instance.
 
-![Redis Insight Connected](../../../assets/redisinsight-connected-cf5cb6696f.png)
+![Redis Insight Connected](/assets/redisinsight-connected-cf5cb6696f.png)
 
 ## Snowflake: DBeaver
 
@@ -442,30 +442,30 @@ tsh proxy db --tunnel --port 2000 snowflake
 
 Add a new database by clicking the "add" icon in the top-left corner:
 
-![DBeaver Main Screen](../../../assets/dbeaver-main-screen-62284bb6ab.png)
+![DBeaver Main Screen](/assets/dbeaver-main-screen-62284bb6ab.png)
 
 In the search bar of the "Connect to a database" window that opens up, type "snowflake", select the Snowflake driver, and click "Next":
 
-![DBeaver Select Database](../../../assets/dbeaver-select-database-5d8c9c7142.png)
+![DBeaver Select Database](/assets/dbeaver-select-database-5d8c9c7142.png)
 
 Set "Host" to `localhost` and "Port" to the port returned by the `tsh proxy db` command you ran earlier (`2000` in the example above).
 In the "Authentication" section set the "Username" to match the database username passed to Teleport with `--db-user`
 and enter any value (e.g., "teleport") in the "Password" field (the value of
 "Password" will be ignored when establishing a connection but is required by DBeaver to register your database):
 
-![DBeaver Main](../../../assets/dbeaver-main-92c1f53ea4.png)
+![DBeaver Main](/assets/dbeaver-main-92c1f53ea4.png)
 
 Next, click the "Driver properties" tab and set "account" to any value (e.g., "teleport"; as with "Password", the value of
 "account" will be ignored when establishing a connection but is required by DBeaver to register your database). In "User properties", set "ssl" to `off`:
 
-![DBeaver Driver](../../../assets/dbeaver-driver-603868aeab.png)
+![DBeaver Driver](/assets/dbeaver-driver-603868aeab.png)
 
 Teleport ignores the provided password and the account name as internally it uses values from the Database Agent configuration.
 SSL set to `off` disables only encryption on local machine. Connection to Snowflake is encrypted by Teleport.
 
 Now you can click on "Test Connection..." in the bottom-left corner:
 
-![DBeaver Success](../../../assets/dbeaver-success-1f86e0aa6a.png)
+![DBeaver Success](/assets/dbeaver-success-1f86e0aa6a.png)
 
 Congratulations! You have just connected to your Snowflake instance.
 
@@ -479,25 +479,25 @@ tsh proxy db --tunnel --port 2000 snowflake
 
 In "Database Explorer" click the "add" button, pick "Data Source", and then pick "Snowflake":
 
-![JetBrains Add Database](../../../assets/jetbrains-add-database-9b230be23f.png)
+![JetBrains Add Database](/assets/jetbrains-add-database-9b230be23f.png)
 
 Next, set "Host" to `localhost` and "Port" to the port returned by the `tsh proxy db` command you ran earlier (`2000` in the example above).
 Set the "Username" to match the one that you are assuming when you connect to Snowflake
 via Teleport and enter any value (e.g., "teleport") in the "Password" field (the value of
 "Password" will be ignored but is required to create a data source in your IDE):
 
-![JetBrains General](../../../assets/jetbrains-general-7606c4abb2.png)
+![JetBrains General](/assets/jetbrains-general-7606c4abb2.png)
 
 Switch to the "Advanced" tab, set any value (e.g., "teleport") for "account", and add a new record named `ssl` with value `off` (as with "Password", "account" is ignored while establishing the connection but required by your IDE):
 
-![JetBrains Advanced](../../../assets/jetbrains-advanced-4fe78954bc.png)
+![JetBrains Advanced](/assets/jetbrains-advanced-4fe78954bc.png)
 
 Teleport ignores the provided password and the account name as internally it uses values from the Database Agent configuration.
 Setting "SSL" to `off` only disables encryption on your local machine. The connection to Snowflake is encrypted by Teleport.
 
 Now you can click "Test Connection" to check your configuration.
 
-![JetBrains Success](../../../assets/jetbrains-success-2c1aae6d96.png)
+![JetBrains Success](/assets/jetbrains-success-2c1aae6d96.png)
 
 Congratulations! You have just connected to your Snowflake instance.
 
@@ -511,7 +511,7 @@ more information.)
 Select the "User & Password" authentication option and keep the "Password" field
 empty:
 
-![DataGrip connection options](../../../assets/datagrip-connection@2x-fc174acca9.png)
+![DataGrip connection options](/assets/datagrip-connection@2x-fc174acca9.png)
 
 Click "OK" to connect.
 
@@ -524,6 +524,6 @@ more information.)
 
 Use the SQL Server Authentication option and keep the Password field empty:
 
-![DBeaver connection options](../../../assets/dbeaver-connection@2x-c6ece99463.png)
+![DBeaver connection options](/assets/dbeaver-connection@2x-c6ece99463.png)
 
 Click OK to connect.

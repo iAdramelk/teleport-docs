@@ -718,13 +718,13 @@ SAML and OIDC types:
 Use the `display` field in an authentication connector to control the appearance
 of SSO buttons in the Teleport Web UI.
 
-| Provider  | YAML                 | Example                                                   |
-| --------- | -------------------- | --------------------------------------------------------- |
-| GitHub    | `display: GitHub`    | ![github](../../../assets/github@2x-724ac54c76.png)       |
-| Microsoft | `display: Microsoft` | ![microsoft](../../../assets/microsoft@2x-6158acb10a.png) |
-| Google    | `display: Google`    | ![google](../../../assets/google@2x-ef9a318526.png)       |
-| BitBucket | `display: Bitbucket` | ![bitbucket](../../../assets/bitbucket@2x-18a1eedbbf.png) |
-| OpenID    | `display: Okta`      | ![Okta](../../../assets/openId@2x-dafbbc8b0b.png)         |
+| Provider  | YAML                 | Example                                           |
+| --------- | -------------------- | ------------------------------------------------- |
+| GitHub    | `display: GitHub`    | ![github](/assets/github@2x-724ac54c76.png)       |
+| Microsoft | `display: Microsoft` | ![microsoft](/assets/microsoft@2x-6158acb10a.png) |
+| Google    | `display: Google`    | ![google](/assets/google@2x-ef9a318526.png)       |
+| BitBucket | `display: Bitbucket` | ![bitbucket](/assets/bitbucket@2x-18a1eedbbf.png) |
+| OpenID    | `display: Okta`      | ![Okta](/assets/openId@2x-dafbbc8b0b.png)         |
 
 ## Troubleshooting
 
@@ -752,7 +752,7 @@ If something is not working, we recommend to:
 If you get "access denied" or other login errors, the number one place to check is the Audit
 Log. You can access it in the **Activity** tab of the Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

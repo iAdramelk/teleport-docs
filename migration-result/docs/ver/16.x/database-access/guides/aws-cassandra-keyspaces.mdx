@@ -16,11 +16,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![Teleport Database Access Redis Self-Hosted](../../../../../../assets/cassandra_keyspaces_selfhosted-b15fe8a1e2.png)
+    ![Teleport Database Access Redis Self-Hosted](/assets/cassandra_keyspaces_selfhosted-b15fe8a1e2.png)
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![Teleport Database Access Redis Cloud](../../../../../../assets/cassandra_keyspaces_cloud-23169f8ad2.png)
+    ![Teleport Database Access Redis Cloud](/assets/cassandra_keyspaces_cloud-23169f8ad2.png)
   </Tab>
 </Tabs>
 
@@ -743,7 +743,7 @@ Create an AWS IAM Role that will be used as your Keyspaces user.
 Go to the IAM -> Access Management -> [Roles](https://console.aws.amazon.com/iamv2/home#/roles).
 Press Create Role.
 
-![Create Role Step 1](../../../../../../assets/create-role-step1-4df9940db0.png)
+![Create Role Step 1](/assets/create-role-step1-4df9940db0.png)
 AWS provides the `AmazonKeyspacesReadOnlyAccess` and `AmazonKeyspacesFullAccess` IAM policies that you can incorporate into your Keyspaces user's role.
 You can choose `AmazonKeyspacesReadOnlyAccess` for read-only access to AWS Keyspaces or `AmazonKeyspacesFullAccess` for full access.
 
@@ -754,9 +754,9 @@ You can choose `AmazonKeyspacesReadOnlyAccess` for read-only access to AWS Keysp
   You can also create your own custom AWS Keyspaces Permissions Policies: [Amazon Keyspaces identity-based policy examples](https://docs.aws.amazon.com/keyspaces/latest/devguide/security_iam_id-based-policy-examples.html).
 </Tip>
 
-![Create Role Step 1](../../../../../../assets/create-role-step2-4f7051896e.png)
+![Create Role Step 1](/assets/create-role-step2-4f7051896e.png)
 Enter a role name and press "Create role".
-![Create Role Step 1](../../../../../../assets/create-role-step3-909583560a.png)
+![Create Role Step 1](/assets/create-role-step3-909583560a.png)
 
 ## Step 4/5. Give Teleport permissions to assume roles
 

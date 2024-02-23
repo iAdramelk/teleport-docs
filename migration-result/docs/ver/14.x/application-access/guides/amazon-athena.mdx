@@ -150,15 +150,15 @@ There are several methods to create an IAM role:
     Select the "AWS account" option, which creates a default trust policy to allow
     other entities in this account to assume this role:
 
-    ![Create Role Step 1](../../../../../../assets/dynamodb-create-role-1-6823d0ab8e.png)
+    ![Create Role Step 1](/assets/dynamodb-create-role-1-6823d0ab8e.png)
 
     Press "Next". Find the AWS-managed policy `AmazonAthenaFullAccess` and then select the policy:
 
-    ![Create Role Step 2](../../../../../../assets/aws-create-iam-role-2-461eb140c1.png)
+    ![Create Role Step 2](/assets/aws-create-iam-role-2-461eb140c1.png)
 
     Press "Next". Enter role name `ExampleTeleportAthenaRole` and press "Create role":
 
-    ![Create Role Step 3](../../../../../../assets/aws-create-iam-role-3-16e815ffa5.png)
+    ![Create Role Step 3](/assets/aws-create-iam-role-3-16e815ffa5.png)
   </Tab>
 
   <Tab title="Using AWS CLI">
@@ -896,7 +896,7 @@ Navigate to the Applications tab in your Teleport cluster's control panel and
 click on the Launch button for the AWS application. This will bring up an IAM
 role selector:
 
-![IAM role selector](../../../../../../assets/aws-database-select-iam-role-9a931437f7.png)
+![IAM role selector](/assets/aws-database-select-iam-role-9a931437f7.png)
 
 Click on the role `ExampleTeleportAthenaRole` and you will get redirected to the AWS
 Management Console, signed in with the selected role.
@@ -1039,10 +1039,10 @@ Connect to Athena with the ODBC or JDBC driver:
 
     Start DBeaver and add an "Athena" connection. Enter the username (AWS access
     key) and password (AWS secret key) from the `tsh proxy aws` output:
-    ![DBeaver main](../../../../../../assets/athena-dbeaver-main-3587b65932.png)
+    ![DBeaver main](/assets/athena-dbeaver-main-3587b65932.png)
 
     Then fill in the `ProxyHost` and `ProxyPort` settings in "Driver properties":
-    ![DBeaver main](../../../../../../assets/athena-dbeaver-properties-93fb011859.png)
+    ![DBeaver main](/assets/athena-dbeaver-properties-93fb011859.png)
 
     Click "Finish". Now you can connect to your Athena database.
   </Tab>

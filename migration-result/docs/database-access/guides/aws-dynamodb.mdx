@@ -16,11 +16,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![DynamoDB Self-Hosted](../../../../assets/aws-dynamodb_selfhosted-9824097a9d.png)
+    ![DynamoDB Self-Hosted](/assets/aws-dynamodb_selfhosted-9824097a9d.png)
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![DynamoDB Cloud](../../../../assets/aws-dynamodb_cloud-e472d58592.png)
+    ![DynamoDB Cloud](/assets/aws-dynamodb_cloud-e472d58592.png)
   </Tab>
 </Tabs>
 
@@ -165,7 +165,7 @@ Visit the [IAM > Roles page](https://console.aws.amazon.com/iamv2/home#/roles) o
 the AWS Console, then press "Create Role". Under **Trusted entity type** select
 "AWS service". Under **Use case** select "EC2", then click **Next**.
 
-![Create Role to Identify EC2 Instance](../../../../assets/dynamodb-create-ec2-role-f29eb95c6c.png)
+![Create Role to Identify EC2 Instance](/assets/dynamodb-create-ec2-role-f29eb95c6c.png)
 
 On the "Add Permissions" page, you can simply click **Next** since this role does not require any permissions. In this guide, we will use the example name `TeleportDatabaseService` for this role. Once you have chosen a name, click **Create Role** to complete the process.
 
@@ -175,11 +175,11 @@ Navigate back to the Roles page and create a new role. Select the "AWS account"
 option, which creates a default trust policy to allow other entities in this
 account to assume this role:
 
-![Create Role Step 1](../../../../assets/dynamodb-create-role-1-6823d0ab8e.png)
+![Create Role Step 1](/assets/dynamodb-create-role-1-6823d0ab8e.png)
 
 Click **Next**. Find the AWS-managed policy `AmazonDynamoDBFullAccess` and then select the policy:
 
-![Create Role Step 2](../../../../assets/dynamodb-create-role-2-adacae39dc.png)
+![Create Role Step 2](/assets/dynamodb-create-role-2-adacae39dc.png)
 
 <Note>
   The `AmazonDynamoDBFullAccess` policy may grant more permissions than desired.

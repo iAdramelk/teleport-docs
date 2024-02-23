@@ -186,20 +186,20 @@ resources:
     page in your Azure portal and click *Create* to create a new user-assigned
     managed identity:
 
-    ![Managed identities](../../../../assets/managed-identities@2x-4fbf040404.png)
+    ![Managed identities](/assets/managed-identities@2x-4fbf040404.png)
 
     Pick a name and resource group for the new identity and create it:
 
-    ![New identity](../../../../assets/new-identity@2x-ace0299e65.png)
+    ![New identity](/assets/new-identity@2x-ace0299e65.png)
 
     Take note of the created identity's *Client ID*:
 
-    ![Created identity](../../../../assets/created-identity@2x-48b3675e27.png)
+    ![Created identity](/assets/created-identity@2x-48b3675e27.png)
 
     Next, navigate to the Azure VM that will run your Discovery Service instance and
     add the identity you've just created to it:
 
-    ![VM identity](../../../../assets/vm-identity@2x-d2902689db.png)
+    ![VM identity](/assets/vm-identity@2x-d2902689db.png)
 
     Attach this identity to all Azure VMs that will be running the Discovery
     Service.
@@ -216,18 +216,18 @@ resources:
     Go the the [App registrations](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps)
     page of your Azure Active Directory and click on *New registration*:
 
-    ![App registrations](../../../../assets/app-registrations@2x-c12b7bec51.png)
+    ![App registrations](/assets/app-registrations@2x-c12b7bec51.png)
 
     Pick a name (e.g. *DiscoveryService*) and register a new application. Once the
     app has been created, take note of its *Application (client) ID* and click on
     *Add a certificate or secret*:
 
-    ![Registered app](../../../../assets/registered-app@2x-e4d7b5d880.png)
+    ![Registered app](/assets/registered-app@2x-e4d7b5d880.png)
 
     Create a new client secret that the Discovery Service agent will use to
     authenticate with the Azure API:
 
-    ![Registered app secrets](../../../../assets/registered-app-secrets@2x-edb2a1366b.png)
+    ![Registered app secrets](/assets/registered-app-secrets@2x-edb2a1366b.png)
 
     The Teleport Discovery Service uses Azure SDK's default credential provider chain to
     look for credentials. Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
@@ -293,12 +293,12 @@ Now go to the [Subscriptions](https://portal.azure.com/#view/Microsoft_Azure_Bil
 
 Click on *Access control (IAM)* in the subscription and select *Add > Add custom role*:
 
-![IAM custom role](../../../../assets/add-custom-role@2x-110ec3acb9.png)
+![IAM custom role](/assets/add-custom-role@2x-110ec3acb9.png)
 
 In the custom role creation page, click the *JSON* tab and click *Edit*, then paste the JSON example
 and replace the subscription in `assignableScopes` with your own subscription id:
 
-![Create JSON role](../../../../assets/vm-create-role-from-json@2x-03a7779657.png)
+![Create JSON role](/assets/vm-create-role-from-json@2x-03a7779657.png)
 
 ### Create a role assignment for the Teleport Discovery Service principal
 
@@ -309,7 +309,7 @@ Navigate to the resource scope where you want to make the role assignment. Click
 select *Add > Add role assignment*. Choose the custom role you created as the role and the Teleport
 service principal as a member.
 
-![Assign role](../../../../assets/create-role-assignment@2x-bb02e91bb2.png)
+![Assign role](/assets/create-role-assignment@2x-bb02e91bb2.png)
 
 <Note>
   The role assignment should be at a high enough scope to allow the Teleport Discovery Service to discover
@@ -335,7 +335,7 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     In the **Custom role name** field, enter `teleport-read-vm`.
 
     ![Create custom
-    role](../../../../assets/create-custom-role-80673cb59e.png)
+    role](/assets/create-custom-role-80673cb59e.png)
 
     Click the **Permissions** tab, then within the **Permissions** view, click
     **+Add permissions**.
@@ -345,7 +345,7 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     **Add**.
 
     ![Add virtual machine read
-    permission](../../../../assets/read-permission-8b77bd11e1.png)
+    permission](/assets/read-permission-8b77bd11e1.png)
 
     Click **Review + create**, then **Create**.
 
@@ -363,7 +363,7 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     In the **Name** field, enter `teleport-azure`.
 
     ![Creating an Azure managed
-    identity](../../../../assets/create-identity-167fb0ea67.png)
+    identity](/assets/create-identity-167fb0ea67.png)
 
     Click **Review + create**, then **Create**.
 
@@ -381,7 +381,7 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     Within the **Add role assignment** screen, click **teleport-read-vm**.
 
     ![Add a role
-    assignment](../../../../assets/add-role-assignment-16bce33185.png)
+    assignment](/assets/add-role-assignment-16bce33185.png)
 
     Scroll to the bottom of the screen and click **Next**.
 
@@ -393,7 +393,7 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     created earlier.
 
     ![Select managed
-    identities](../../../../assets/select-managed-identities-9c59b79a30.png)
+    identities](/assets/select-managed-identities-9c59b79a30.png)
 
     Click **Select**, then **Review + assign**.
 
@@ -415,13 +415,13 @@ with at least the `Microsoft.Compute/virtualMachines/read` permission.
     the `teleport-azure` identity. Click **Add**.
 
     ![Add an identity to a
-    VM](../../../../assets/vm-identity-10249ef9e9.png)
+    VM](/assets/vm-identity-10249ef9e9.png)
 
     Navigate back to **Identity** tab in the page for your Azure VM. You should see
     the new identity listed in the **User assigned** sub-tab:
 
     ![Verifying that you added the
-    identity](../../../../assets/verify-id-c4c401ff9b.png)
+    identity](/assets/verify-id-c4c401ff9b.png)
 
     <Warning>
       As part of authentication, Teleport will be able to do anything allowed by the

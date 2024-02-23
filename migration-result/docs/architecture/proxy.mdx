@@ -18,7 +18,7 @@ provides the following key features:
 - Enables system administrators to use TLS routing feature to compress all ports for all protocols
   to one TLS port using TLS routing feature.
 
-![Proxy service](../../../assets/proxy-83f3ab379d.png)
+![Proxy service](/assets/proxy-83f3ab379d.png)
 
 <Tip>
   To create a minimal Teleport cluster, you have run two services:
@@ -31,7 +31,7 @@ provides the following key features:
 In Web UI, Teleport Proxy implements WSS - secure web sockets - to proxy a
 target resource, for example SSH server or Desktop:
 
-![Teleport Proxy Web](../../../assets/proxy-web-to-resource@1.2x-3724502d29.svg)
+![Teleport Proxy Web](/assets/proxy-web-to-resource@1.2x-3724502d29.svg)
 
 <Note>
   When using the web UI, the Teleport Proxy terminates traffic and re-encodes data for the client connection.
@@ -41,7 +41,7 @@ target resource, for example SSH server or Desktop:
 
 In IAP mode, users initiate the SSO or login flow to sign public keys on their client machines:
 
-![Teleport Proxy IAP](../../../assets/proxy-iap-to-resource@1.2x-367c211167.svg)
+![Teleport Proxy IAP](/assets/proxy-iap-to-resource@1.2x-367c211167.svg)
 
 <Note>
   We consider IAP mode more secure than Web UI access, because private keys never leave user's client.
@@ -56,7 +56,7 @@ Proxies will forward client's connections to target resources via those tunnels.
 
 In the example below, Alice connects to kubernetes cluster behind firewall via two tunnels:
 
-![Teleport Proxy Tunnel](../../../assets/proxy-tunnel@1.2x-29c34529f6.svg)
+![Teleport Proxy Tunnel](/assets/proxy-tunnel@1.2x-29c34529f6.svg)
 
 <Tip>
   All modes above are turned on by default in Proxies. No special configuration is necessary, unless you

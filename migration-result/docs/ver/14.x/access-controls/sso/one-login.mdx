@@ -86,16 +86,16 @@ to define policies like:
 In the OneLogin control panel's main menu navigate to **Applications** ->
 **Add App**. Using the search box, select "SAML Custom Connector (SP Shibboleth)":
 
-![SAML Custom Connector (SP Shibboleth)](../../../../../../assets/onelogin-saml-1-c0f2ab3368.png)
+![SAML Custom Connector (SP Shibboleth)](/assets/onelogin-saml-1-c0f2ab3368.png)
 
 Define the new application:
 
-![SAML Config](../../../../../../assets/onelogin-saml-1a-e90b4ba85a.png)
+![SAML Config](/assets/onelogin-saml-1a-e90b4ba85a.png)
 
 You can find Teleport icons to upload from the following links:
 
-- [Square Icon](../../../../../../assets/teleport-2a619eda9f.png)
-- [Rectangular Icon](../../../../../../assets/teleportlogo@2x-c5105d24ff.png)
+- [Square Icon](/assets/teleport-2a619eda9f.png)
+- [Rectangular Icon](/assets/teleportlogo@2x-c5105d24ff.png)
 
 From the application's **Configuration** page, set the following values:
 
@@ -110,14 +110,14 @@ From the application's **Configuration** page, set the following values:
 - **ACS (Consumer) URL**, **SAML Recipient**, **ACS (Consumer) URL Validator**, & **Audience**:
   - `https://`TELEPORT.EXAMPLE.COM:443`/v1/webapi/saml/acs/onelogin`
 
-![Configure SAML](../../../../../../assets/onelogin-saml-2-f9a74e560c.png)
+![Configure SAML](/assets/onelogin-saml-2-f9a74e560c.png)
 
 Teleport needs to assign groups to users. From the **Parameters** page, configure
 the application with some parameters exposed as SAML attribute statements:
 
-![New Field](../../../../../../assets/onelogin-saml-3-b7a636a67b.png)
+![New Field](/assets/onelogin-saml-3-b7a636a67b.png)
 
-![New Field Group](../../../../../../assets/onelogin-saml-4-8162e03027.png)
+![New Field Group](/assets/onelogin-saml-4-8162e03027.png)
 
 <Warning>
   Make sure to check `Include in SAML assertion` checkbox.
@@ -125,14 +125,14 @@ the application with some parameters exposed as SAML attribute statements:
 
 Add users to the application:
 
-![Add User](../../../../../../assets/onelogin-saml-5-3145beda65.png)
+![Add User](/assets/onelogin-saml-5-3145beda65.png)
 
 ### Download SAML XML metadata
 
 Once the application is set up, download `SAML Metadata` from the
 **More Actions** menu:
 
-![Download XML](../../../../../../assets/saml-download-4f92d17a96.png)
+![Download XML](/assets/saml-download-4f92d17a96.png)
 
 ## Step 2/3. Create a SAML connector
 
@@ -301,7 +301,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

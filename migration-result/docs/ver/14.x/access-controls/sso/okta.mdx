@@ -99,11 +99,11 @@ Teleport, you can skip to the [next step](#step-24-configure-okta).
 Create two groups: "okta-dev" and "okta-admin". In the Okta dashboard go to the
 navigation bar and click **Directory** -> **Groups**, then **Add group**:
 
-![Create Group Devs](../../../../../../assets/okta-saml-2.1@2x-597fa51ce9.png)
+![Create Group Devs](/assets/okta-saml-2.1@2x-597fa51ce9.png)
 
 Repeat for the admin group:
 
-![Create Group Devs](../../../../../../assets/okta-saml-2.2-73f81682ee.png)
+![Create Group Devs](/assets/okta-saml-2.2-73f81682ee.png)
 
 ## Step 2/4. Configure Okta
 
@@ -115,7 +115,7 @@ First, create a SAML 2.0 Web App in Okta:
 From the main navigation menu, select **Applications** -> **Applications**, and click
 **Create App Integration**. Select SAML 2.0, then click **Next**.
 
-![Create APP](../../../../../../assets/okta-saml-1-b363e8566c.png)
+![Create APP](/assets/okta-saml-1-b363e8566c.png)
 
 On the next screen (**General Settings**), provide a name and optional logo for
 your new app, then click **Next**. This will bring you to the **Configure SAML** section.
@@ -150,7 +150,7 @@ membership and assign matching roles.
 
 The configuration page should now look like this:
 
-![Configure APP](../../../../../../assets/setup-redirection-f337618bde.png)
+![Configure APP](/assets/setup-redirection-f337618bde.png)
 
 <Warning>
   The "Matches regex" filter requires the literal string `.*` in order to match all
@@ -170,7 +170,7 @@ Once you've filled the required fields, click **Next**, then finish the app crea
 From the **Assignments** tab of the new application page, click **Assign**.
 Assign the newly created groups access to the app.
 
-![Configure APP](../../../../../../assets/okta-saml-3.1-cb316199a9.png)
+![Configure APP](/assets/okta-saml-3.1-cb316199a9.png)
 
 ### Save IdP metadata path
 
@@ -183,7 +183,7 @@ path instead of a local copy, which can go stale.
 From the app's **Sign On** tab, scroll down to **SAML Signing Certificates**.
 Click **Actions** for the SHA-2 entry, then "View IdP metadata":
 
-![View Okta IdP Metadata](../../../../../../assets/okta-copy-metadata-09972a2dac.png)
+![View Okta IdP Metadata](/assets/okta-copy-metadata-09972a2dac.png)
 
 Copy the URL to the metadata file for use in our Teleport configuration.
 
@@ -435,7 +435,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

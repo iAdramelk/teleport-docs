@@ -10,9 +10,9 @@ This guide will help you to:
 - Set up Teleport to access your ElastiCache and MemoryDB for Redis clusters.
 - Connect to your clusters through Teleport.
 
-![Teleport Database Access RDS Self-Hosted](../../../../../../assets/redis_elasticache_selfhosted-9e5e02a7fb.png)
+![Teleport Database Access RDS Self-Hosted](/assets/redis_elasticache_selfhosted-9e5e02a7fb.png)
 
-![Teleport Database Access RDS Cloud](../../../../../../assets/redis_elasticache_cloud-ad5248af50.png)
+![Teleport Database Access RDS Cloud](/assets/redis_elasticache_cloud-ad5248af50.png)
 
 ## Prerequisites
 
@@ -643,7 +643,7 @@ $ aws elasticache modify-replication-group \
 Once the ElastiCache user has been created, verify that the user is configured
 to satisfy the requirements for IAM authentication:
 
-![ElastiCache IAM-enabled User](../../../../../../assets/redis-aws-iam-user@2x-3e6a860a1f.png)
+![ElastiCache IAM-enabled User](/assets/redis-aws-iam-user@2x-3e6a860a1f.png)
 
 ## Step 6/7. Create a Teleport-managed ElastiCache or MemoryDB user (optional)
 
@@ -663,7 +663,7 @@ MemoryDB](https://docs.aws.amazon.com/memorydb/latest/devguide/clusters.acls.htm
 Once an ElastiCache or MemoryDB user is created with the desired access, add an
 AWS resource tag `teleport.dev/managed` with the value `true` to this user:
 
-![Managed User Tag](../../../../../../assets/redis-aws-managed-user-tag-1bb86b7c3c.png)
+![Managed User Tag](/assets/redis-aws-managed-user-tag-1bb86b7c3c.png)
 
 The Database Service will automatically discover this user if it is associated
 with a registered database. Keep in mind that it may take the Database Service

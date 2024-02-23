@@ -16,11 +16,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![OpenSearch Self-Hosted](../../../../../../assets/opensearch_selfhosted-f64f73df35.png)
+    ![OpenSearch Self-Hosted](/assets/opensearch_selfhosted-f64f73df35.png)
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![OpenSearch Cloud](../../../../../../assets/opensearch_cloud-b2f3fb90b4.png)
+    ![OpenSearch Cloud](/assets/opensearch_cloud-b2f3fb90b4.png)
   </Tab>
 </Tabs>
 
@@ -170,7 +170,7 @@ Visit the [IAM > Roles page](https://console.aws.amazon.com/iamv2/home#/roles) o
 the AWS Console, then press "Create Role". Under **Trusted entity type** select
 "AWS service". Under **Use case** select "EC2", then click **Next**.
 
-![Create Role to Identify EC2 Instance](../../../../../../assets/create-ec2-role-f29eb95c6c.png)
+![Create Role to Identify EC2 Instance](/assets/create-ec2-role-f29eb95c6c.png)
 
 On the "Add Permissions" page, you can simply click **Next** since this role
 does not require any permissions. In this guide, we will use the example name
@@ -183,7 +183,7 @@ Navigate back to the Roles page and create a new role. Select the "AWS account"
 option, which creates a default trust policy to allow other entities in this
 account to assume this role:
 
-![Create Role Step 1](../../../../../../assets/create-role-1-6823d0ab8e.png)
+![Create Role Step 1](/assets/create-role-1-6823d0ab8e.png)
 
 Click **Next**. On the next page, enter a role name. In this guide we'll use
 the example name `ExampleTeleportOpenSearchRole` for this role.
@@ -220,18 +220,18 @@ where the IAM role or user is mapped to the OpenSearch role.
 In order to configure Role Mapping log into OpenSearch Domain Dashboard using
 the master user and go to the `Security` settings:
 
-![Select Get Started](../../../../../../assets/01-opensearch_get_started-cc6436ee42.png)
+![Select Get Started](/assets/01-opensearch_get_started-cc6436ee42.png)
 
 Create a new role with least privilege permissions, or select an existing one.
 For the purpose of this example the `readall` OpenSearch role will be used.
 Select the OpenSearch role and go to the `Mapped users` tab:
 
-![Mapped User](../../../../../../assets/02-opensearch_mapped_users-88d7d370a5.png)
+![Mapped User](/assets/02-opensearch_mapped_users-88d7d370a5.png)
 
 Add mapping between the OpenSearch role and AWS IAM `ExampleTeleportOpenSearchRole`
 role created in the previous step.
 
-![IAM Role mapping](../../../../../../assets/03-opensearch_iam_role_mapping-bb7d4a160e.png)
+![IAM Role mapping](/assets/03-opensearch_iam_role_mapping-bb7d4a160e.png)
 
 Finally, click the **Map** button to apply the settings.
 

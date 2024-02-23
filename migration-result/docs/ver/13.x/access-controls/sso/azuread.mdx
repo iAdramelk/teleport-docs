@@ -133,28 +133,28 @@ Before you get started you’ll need:
 
 1. Select **Azure AD -> Enterprise Applications**
 
-   ![Select Enterprise Applications From Manage](../../../../../../assets/azuread-1-home-669f2daf28.png)
+   ![Select Enterprise Applications From Manage](/assets/azuread-1-home-669f2daf28.png)
 
 2. Select **New application**
 
-   ![Select New Applications From Manage](../../../../../../assets/azuread-2-newapp-0d484bf59a.png)
+   ![Select New Applications From Manage](/assets/azuread-2-newapp-0d484bf59a.png)
 
 3. Select **Create your own application**, enter the application name (e.g Teleport),
    and select **Integrate any other application you don't find in the gallery (Non-gallery)**.
 
-   ![Select Non-gallery application](../../../../../../assets/azuread-3-createnongalleryapp-556670960b.png)
+   ![Select Non-gallery application](/assets/azuread-3-createnongalleryapp-556670960b.png)
 
 4. Select **Properties** under **Manage** and set **User assignment required?** to **No**
 
-![Turn off user assignment](../../../../../../assets/azuread-4-turnoffuserassign-b371fd9f33.png)
+![Turn off user assignment](/assets/azuread-4-turnoffuserassign-b371fd9f33.png)
 
 5. Select **Single sign-on** under **Manage** and choose **SAML**
 
-   ![Select SAML](../../../../../../assets/azuread-5-selectsaml-b72a5c4219.png)
+   ![Select SAML](/assets/azuread-5-selectsaml-b72a5c4219.png)
 
 6. Edit the **Basic SAML Configuration**
 
-   ![Edit Basic SAML Configuration](../../../../../../assets/azuread-6-editbasicsaml-2b8a335236.png)
+   ![Edit Basic SAML Configuration](/assets/azuread-6-editbasicsaml-2b8a335236.png)
 
 7. For **Entity ID** and **Reply URL**, enter the same proxy URL.
 
@@ -162,26 +162,26 @@ Before you get started you’ll need:
 
    For Teleport Cloud users, the URL will be similar to `https://mytenant.teleport.sh`.
 
-   ![Put in Entity ID and Reply URL](../../../../../../assets/azuread-7-entityandreplyurl-f98588c035.png)
+   ![Put in Entity ID and Reply URL](/assets/azuread-7-entityandreplyurl-f98588c035.png)
 
 8. Edit **User Attributes & Claims**
 
    - Edit the claim name.
    - Change the name identifier format to **Default**. Make sure the source attribute is `user.userprincipalname`.
 
-   ![Confirm Name Identifier](../../../../../../assets/azuread-8a-nameidentifier-cfb6f52633.png)
+   ![Confirm Name Identifier](/assets/azuread-8a-nameidentifier-cfb6f52633.png)
 
    - Add a group claim to make user security groups available to the connector
 
-   ![Put in Security group claim](../../../../../../assets/azuread-8b-groupclaim-d7fd9a18cb.png)
+   ![Put in Security group claim](/assets/azuread-8b-groupclaim-d7fd9a18cb.png)
 
    - Add a claim that transforms an Azure AD username in order to pass it to Teleport.
 
-   ![Add a transformed username](../../../../../../assets/azuread-8c-usernameclaim-59dc4f52ff.png)
+   ![Add a transformed username](/assets/azuread-8c-usernameclaim-59dc4f52ff.png)
 
 9. In **SAML Signing Certificate**, click the link to download the **Federation Metadata XML**.
 
-   ![Download Federation Metadata XML](../../../../../../assets/azuread-9-fedmeatadataxml-bb0997eea1.png)
+   ![Download Federation Metadata XML](/assets/azuread-9-fedmeatadataxml-bb0997eea1.png)
 
 <Warning>
   This is an important document.  The Federation Metadata XML file sets the SSO location and other important values. Transmit the Federation Metadata XML file securely so it is not malformed.  Using the `entity_descriptor_url` setting allows for loading from the source.
@@ -239,7 +239,7 @@ $ tctl create azure-connector.yaml
   Teleport will generate a signing key pair and update the SAML connector with the `signing_key_pair`
   property.
 
-  ![Sample Connector Transform](../../../../../../assets/azuread-12-sampleconnector-08ac102851.png)
+  ![Sample Connector Transform](/assets/azuread-12-sampleconnector-08ac102851.png)
 
   Alternatively, you can generate your own keypair when creating a connector using `openssl`:
 
@@ -277,7 +277,7 @@ $ tctl create dev.yaml
 
 ## Testing
 
-![Login with Microsoft](../../../../../../assets/azure-11-loginwithmsft-9d41344e6d.png)
+![Login with Microsoft](/assets/azure-11-loginwithmsft-9d41344e6d.png)
 
 The CLI is the same as before:
 
@@ -450,15 +450,15 @@ $ tctl create -f azure-out.yaml
 
 - Navigate to **Token Encryption**
 
-![Navigate to token encryption](../../../../../../assets/azuread-token-encryption-0-ed4d1bc07d.png)
+![Navigate to token encryption](/assets/azuread-token-encryption-0-ed4d1bc07d.png)
 
 - Import certificate
 
-![Import certificate](../../../../../../assets/azuread-token-encryption-1-import-dd9702e966.png)
+![Import certificate](/assets/azuread-token-encryption-1-import-dd9702e966.png)
 
 - Activate it
 
-![Activate certificate](../../../../../../assets/azuread-token-encryption-2-activate-e1b484043b.png)
+![Activate certificate](/assets/azuread-token-encryption-2-activate-e1b484043b.png)
 
 If the SSO login with this connector is successful, the encryption works.
 
@@ -485,7 +485,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](../../../../../../assets/teleportauditlogssofailed-a5da7b0950.png)
+![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 
@@ -550,7 +550,7 @@ The error above is caused by a Name ID format that is not compatible with Telepo
 
 Change the Name ID format to use email instead:
 
-![Change NameID format to use email](../../../../../../assets/azuread-nameid-1d1d64e5e7.png)
+![Change NameID format to use email](/assets/azuread-nameid-1d1d64e5e7.png)
 
 ## Further reading
 

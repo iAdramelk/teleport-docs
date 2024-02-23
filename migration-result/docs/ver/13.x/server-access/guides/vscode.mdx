@@ -141,13 +141,13 @@ $ ssh user@example-node.teleport.example.com
 Install the [Remote - SSH extension][remote-ssh] in your local VS Code instance.
 A new "Window Indicator" (icon with two arrows) should appear in the bottom left of your VS Code window.
 
-![Window Indicator in bottom left corner of VS Code](../../../../../../assets/window-indicator-e1adfa6406.png)
+![Window Indicator in bottom left corner of VS Code](/assets/window-indicator-e1adfa6406.png)
 
 Prior to connecting with a host, set the `Remote.SSH: Use Local Server` setting
 to false in the extension setting. You can search for
 `@ext:ms-vscode-remote.remote-ssh ` to find the plugin-specific settings.
 
-![Remote SSH Extension VS Code Settings](../../../../../../assets/settings-b88b99dd25.png)
+![Remote SSH Extension VS Code Settings](/assets/settings-b88b99dd25.png)
 
 To connect, click on the icon with two arrows and select "Connect to Host...".
 Select "+ Add New SSH Host..."
@@ -158,7 +158,7 @@ For each host you wish to remotely develop on, add an entry like the following:
 alice@node000.foo.example.com
 ```
 
-![Input box to add new Node](../../../../../../assets/add-host-780969773a.png)
+![Input box to add new Node](/assets/add-host-780969773a.png)
 
 When prompted to choose which SSH Configuration file to update select the one we generated during Step 1.
 
@@ -170,18 +170,18 @@ Start a Remote Development session by either:
 
 1. Clicking "Connect" on the notification that opens after adding a new host.
 
-![Notification of "Host added" that has connect button](../../../../../../assets/host-added-notification-c752d8f363.png)
+![Notification of "Host added" that has connect button](/assets/host-added-notification-c752d8f363.png)
 
 2. Clicking on the Window Indicator again and selecting "Connect to Host".
    You should see the host you just added and any others in your Configuration file in the drop down.
 
-![Connecting to a Teleport host in VS Code](../../../../../../assets/select-host-to-connect-a25552fba5.png)
+![Connecting to a Teleport host in VS Code](/assets/select-host-to-connect-a25552fba5.png)
 
 On first connect, you'll be prompted to configure the remote OS. Select the
 proper platform and VS Code will install its server-side component. When it
 completes, you should be left with a working editor:
 
-![VS Code connected to a Teleport Node](../../../../../../assets/connected-editor-254c7ba9e7.png)
+![VS Code connected to a Teleport Node](/assets/connected-editor-254c7ba9e7.png)
 
 The Window Indicator in the bottom left highlights the currently connected remote host.
 

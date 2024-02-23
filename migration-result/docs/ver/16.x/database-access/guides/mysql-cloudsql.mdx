@@ -16,11 +16,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![Teleport Database Access CloudSQL Self-Hosted](../../../../../../assets/cloudsql_selfhosted-a8827f6109.png)
+    ![Teleport Database Access CloudSQL Self-Hosted](/assets/cloudsql_selfhosted-a8827f6109.png)
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![Teleport Database Access CloudSQL Cloud](../../../../../../assets/cloudsql_cloud-8fde563c0b.png)
+    ![Teleport Database Access CloudSQL Cloud](/assets/cloudsql_cloud-8fde563c0b.png)
   </Tab>
 </Tabs>
 
@@ -152,13 +152,13 @@ If creating a new service account, go to the
 [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
 page and create another service account:
 
-![Create Service Account](../../../../../../assets/service-account-db-service@2x-e1b164a4cb.png)
+![Create Service Account](/assets/service-account-db-service@2x-e1b164a4cb.png)
 
 ### Grant permissions
 
 Assign the Service Account the "Cloud SQL Admin" role:
 
-![Grant Cloud SQL Admin to Service Account](../../../../../../assets/service-account-sql-admin-grant@2x-d886f6f255.png)
+![Grant Cloud SQL Admin to Service Account](/assets/service-account-sql-admin-grant@2x-d886f6f255.png)
 
 <Note>
   The default "Cloud SQL Admin" IAM role includes more permissions than the
@@ -203,11 +203,11 @@ to allow port `3307` when using "Allow only SSL connections" with MySQL.
 
 Once created, go to that service account's Keys tab and create a new key:
 
-![Service Account Keys](../../../../../../assets/service-account-keys@2x-e1ddc54e71.png)
+![Service Account Keys](/assets/service-account-keys@2x-e1ddc54e71.png)
 
 Make sure to choose JSON format:
 
-![Service Account New Key](../../../../../../assets/service-account-new-key@2x-2990843e34.png)
+![Service Account New Key](/assets/service-account-new-key@2x-2990843e34.png)
 
 Save the file. Your Teleport Database Service will need to use it as GCP
 application credentials file.
@@ -226,14 +226,14 @@ You can normally see it in the organization view at the top of the GCP dashboard
 The instance ID is the name of your Cloud SQL instance shown at the top of the
 Overview page:
 
-![Instance ID](../../../../../../assets/instance-id-mysql@2x-3cbcc086ea.png)
+![Instance ID](/assets/instance-id-mysql@2x-3cbcc086ea.png)
 
 - Cloud SQL instance endpoint.
 
 You will use the instance's public IP address to connect to it. It can be viewed
 on the "Connect to this instance" panel on the Overview page:
 
-![Instance Public IP](../../../../../../assets/instance-public-ip@2x-e518dac4bf.png)
+![Instance Public IP](/assets/instance-public-ip@2x-e518dac4bf.png)
 
 - Cloud SQL instance root certificate.
 
@@ -241,7 +241,7 @@ The instance's root certificate is required so Teleport can validate the
 certificate presented by the database instance. You can download `server-ca.pem`
 file from the Connections tab under Security section:
 
-![Instance Root Certificate](../../../../../../assets/instance-root-ca@2x-2466edcc40.png)
+![Instance Root Certificate](/assets/instance-root-ca@2x-2466edcc40.png)
 
 ## Step 3/5. Set up the Teleport Database Service
 

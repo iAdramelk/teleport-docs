@@ -13,9 +13,9 @@ version: '14.x'
 This guide will help you to set up secure access and connect through Teleport
 to Azure PostgreSQL and MySQL servers.
 
-![Teleport Database Access Azure PostgreSQL/MySQL Self-Hosted](../../../../../../assets/azure_selfhosted-5d9a230019.png)
+![Teleport Database Access Azure PostgreSQL/MySQL Self-Hosted](/assets/azure_selfhosted-5d9a230019.png)
 
-![Teleport Database Access Azure PostgreSQL/MySQL Cloud](../../../../../../assets/azure_cloud-e8c21c6fe1.png)
+![Teleport Database Access Azure PostgreSQL/MySQL Cloud](/assets/azure_cloud-e8c21c6fe1.png)
 
 ## Prerequisites
 
@@ -636,20 +636,20 @@ resources:
     page in your Azure portal and click *Create* to create a new user-assigned
     managed identity:
 
-    ![Managed identities](../../../../../../assets/managed-identities@2x-4fbf040404.png)
+    ![Managed identities](/assets/managed-identities@2x-4fbf040404.png)
 
     Pick a name and resource group for the new identity and create it:
 
-    ![New identity](../../../../../../assets/new-identity-adfb8293a4.png)
+    ![New identity](/assets/new-identity-adfb8293a4.png)
 
     Take note of the created identity's *Client ID*:
 
-    ![Created identity](../../../../../../assets/created-identity-19fb160637.png)
+    ![Created identity](/assets/created-identity-19fb160637.png)
 
     Next, navigate to the Azure VM that will run your Database Service instance and
     add the identity you've just created to it:
 
-    ![VM identity](../../../../../../assets/vm-identity-6f3947a340.png)
+    ![VM identity](/assets/vm-identity-6f3947a340.png)
 
     Attach this identity to all Azure VMs that will be running the Database
     Service.
@@ -666,18 +666,18 @@ resources:
     Go the the [App registrations](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps)
     page of your Azure Active Directory and click on *New registration*:
 
-    ![App registrations](../../../../../../assets/app-registrations@2x-c12b7bec51.png)
+    ![App registrations](/assets/app-registrations@2x-c12b7bec51.png)
 
     Pick a name (e.g. *DatabaseService*) and register a new application. Once the
     app has been created, take note of its *Application (client) ID* and click on
     *Add a certificate or secret*:
 
-    ![Registered app](../../../../../../assets/registered-app@2x-8bf24c2fca.png)
+    ![Registered app](/assets/registered-app@2x-8bf24c2fca.png)
 
     Create a new client secret that the Database Service agent will use to
     authenticate with the Azure API:
 
-    ![Registered app secrets](../../../../../../assets/registered-app-secrets@2x-edb2a1366b.png)
+    ![Registered app secrets](/assets/registered-app-secrets@2x-edb2a1366b.png)
 
     The Teleport Database Service uses Azure SDK's default credential provider chain to
     look for credentials. Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
@@ -745,12 +745,12 @@ Go to the [Subscriptions](https://portal.azure.com/#view/Microsoft_Azure_Billing
 
 Click on *Access control (IAM)* in the subscription and select *Add > Add custom role*:
 
-![IAM custom role](../../../../../../assets/add-custom-role@2x-110ec3acb9.png)
+![IAM custom role](/assets/add-custom-role@2x-110ec3acb9.png)
 
 In the custom role creation page, click the *JSON* tab and click *Edit*, then paste the JSON example
 and replace the subscription in "assignableScopes" with your own subscription id:
 
-![Create JSON role](../../../../../../assets/create-role-from-json@2x-f3d5507b97.png)
+![Create JSON role](/assets/create-role-from-json@2x-f3d5507b97.png)
 
 ### Create a role assignment for the Teleport Database Service principal
 
@@ -761,7 +761,7 @@ Navigate to the resource scope where you want to make the role assignment. Click
 select *Add > Add role assignment*. Choose the custom role you created as the role and the Teleport
 service principal as a member.
 
-![Assign role](../../../../../../assets/create-role-assignment@2x-a32c0e4a63.png)
+![Assign role](/assets/create-role-assignment@2x-a32c0e4a63.png)
 
 <Note>
   The role assignment should be at a high enough scope to allow the Teleport Database Service to discover
@@ -785,21 +785,21 @@ Azure AD users.
     Go to your database's **Authentication** page and set the AD
     admin using the edit button:
 
-    ![Set AD admin](../../../../../../assets/set-ad-admin-889a3ceaf5.png)
+    ![Set AD admin](/assets/set-ad-admin-889a3ceaf5.png)
   </Tab>
 
   <Tab title="PostgreSQL Flexible">
     Go to your database's **Authentication** page and set the AD
     admin by selecting **+ Add Azure AD Admins**:
 
-    ![Set AD admin](../../../../../../assets/set-ad-admin-postgres-601de78bb4.png)
+    ![Set AD admin](/assets/set-ad-admin-postgres-601de78bb4.png)
   </Tab>
 
   <Tab title="Single server">
     Go to your database's *Active Directory admin* page
     and set the AD admin using the *Set admin* button:
 
-    ![Set AD admin](../../../../../../assets/set-ad-admin@2x-9fc54b97cf.png)
+    ![Set AD admin](/assets/set-ad-admin@2x-9fc54b97cf.png)
   </Tab>
 </Tabs>
 
