@@ -112,7 +112,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     local operating system and installs the provided Teleport version:
 
     ```code
-    $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+    $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
     ```
   </Tab>
 
@@ -132,9 +132,13 @@ Select an edition, then follow the instructions for that edition to install Tele
         https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
         | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Update the repo and install Teleport and the Teleport updater
         $ sudo apt-get update
-        $ sudo apt-get install teleport-ent=14.3.3
-        $ sudo apt-get install teleport-ent-updater
+        $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
 
@@ -148,9 +152,14 @@ Select an edition, then follow the instructions for that edition to install Tele
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         $ sudo yum install -y yum-utils
         $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-        $ sudo yum install teleport-ent-14.3.3
-        $ sudo yum install teleport-ent-updater
-        #
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
         ```
@@ -167,9 +176,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         # Use the dnf config manager plugin to add the teleport RPM repo
         $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-        # Install teleport
-        $ sudo dnf install teleport-ent-14.3.3
-        $ sudo dnf install teleport-ent-updater
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -187,9 +199,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         # Use Zypper to add the teleport RPM repo
         $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-        # Install teleport
-        $ sudo zypper install teleport-ent=14.3.3
-        $ sudo zypper install teleport-ent-updater
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
     </Tabs>
@@ -197,11 +212,11 @@ Select an edition, then follow the instructions for that edition to install Tele
     ### OS repository channels
 
     The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-    `stable/v15` anywhere in the Teleport documentation.
+    `stable/v16` anywhere in the Teleport documentation.
 
     | Channel name     | Description                                                                  |
     | ---------------- | ---------------------------------------------------------------------------- |
-    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
     | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
     | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
@@ -240,10 +255,10 @@ Select an edition, then follow the instructions for that edition to install Tele
         -o /usr/share/keyrings/teleport-archive-keyring.asc
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport APT repository for v15. You'll need to update this
+        # Add the Teleport APT repository for v16. You'll need to update this
         # file for each major release of Teleport.
         $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v16" \
         | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
         $ sudo apt-get update
@@ -261,13 +276,13 @@ Select an edition, then follow the instructions for that edition to install Tele
         ```code
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport YUM repository for v15. You'll need to update this
+        # Add the Teleport YUM repository for v16. You'll need to update this
         # file for each major release of Teleport.
         # First, get the major version from $VERSION_ID so this fetches the correct
         # package version.
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         $ sudo yum install -y yum-utils
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
         $ sudo yum install teleport-ent
         #
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
@@ -285,7 +300,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         ```code
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport Zypper repository for v15. You'll need to update this
+        # Add the Teleport Zypper repository for v16. You'll need to update this
         # file for each major release of Teleport.
         # First, get the OS major version from $VERSION_ID so this fetches the correct
         # package version.
@@ -309,13 +324,13 @@ Select an edition, then follow the instructions for that edition to install Tele
         ```code
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport YUM repository for v15. You'll need to update this
+        # Add the Teleport YUM repository for v16. You'll need to update this
         # file for each major release of Teleport.
         # First, get the major version from $VERSION_ID so this fetches the correct
         # package version.
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
 
         # Install teleport
         $ sudo dnf install teleport-ent
@@ -340,7 +355,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         # package version.
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         # Use Zypper to add the teleport RPM repo
-        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport-zypper.repo")
 
         # Install teleport
         $ sudo zypper install teleport-ent
@@ -359,12 +374,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         will update after one is filled out.
 
         ```code
-        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
         # Verify that the checksums match
-        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
         $ cd teleport-ent
         $ sudo ./install
         ```
@@ -373,12 +388,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         will be slightly different:
 
         ```code
-        $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
         # Verify that the checksums match
-        $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
         $ cd teleport-ent
         $ sudo ./install
         ```
@@ -388,11 +403,11 @@ Select an edition, then follow the instructions for that edition to install Tele
     ### OS repository channels
 
     The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-    `stable/v15` anywhere in the Teleport documentation.
+    `stable/v16` anywhere in the Teleport documentation.
 
     | Channel name     | Description                                                                  |
     | ---------------- | ---------------------------------------------------------------------------- |
-    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
     | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
     | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
   </Tab>
@@ -413,9 +428,13 @@ Select an edition, then follow the instructions for that edition to install Tele
         https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
         | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Update the repo and install Teleport and the Teleport updater
         $ sudo apt-get update
-        $ sudo apt-get install teleport-ent=14.3.3
-        $ sudo apt-get install teleport-ent-updater
+        $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
 
@@ -429,9 +448,14 @@ Select an edition, then follow the instructions for that edition to install Tele
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         $ sudo yum install -y yum-utils
         $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-        $ sudo yum install teleport-ent-14.3.3
-        $ sudo yum install teleport-ent-updater
-        #
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
         ```
@@ -448,9 +472,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         # Use the dnf config manager plugin to add the teleport RPM repo
         $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-        # Install teleport
-        $ sudo dnf install teleport-ent-14.3.3
-        $ sudo dnf install teleport-ent-updater
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -468,9 +495,12 @@ Select an edition, then follow the instructions for that edition to install Tele
         # Use Zypper to add the teleport RPM repo
         $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-        # Install teleport
-        $ sudo zypper install teleport-ent=14.3.3
-        $ sudo zypper install teleport-ent-updater
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
     </Tabs>
@@ -478,11 +508,11 @@ Select an edition, then follow the instructions for that edition to install Tele
     ### OS repository channels
 
     The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-    `stable/v15` anywhere in the Teleport documentation.
+    `stable/v16` anywhere in the Teleport documentation.
 
     | Channel name     | Description                                                                  |
     | ---------------- | ---------------------------------------------------------------------------- |
-    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
     | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
     | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
@@ -550,12 +580,6 @@ Busybox shell and tool suite in addition to Teleport, and are intended for
 troubleshooting deployments only. They are not intended for production use. An
 example is `public.ecr.aws/gravitational/teleport-distroless-debug`.
 
-You can specify the architecture of an image by appending a suffix to its tag.
-We support the following architecture suffixes: `amd64`, `arm`, and `arm64`. For
-example, if you want to pull the ARM64 image for
-`public.ecr.aws/gravitational/teleport`, you can use
-`public.ecr.aws/gravitational/teleport:15.0.0-dev-arm64`.
-
 `*-distroless` and `*-distroless-debug` images support multiple architectures
 natively, and do not require (or support) image suffixes. You can specify an
 architecture using the `--platform` flag of `docker pull` to pull the `arm`,
@@ -566,29 +590,24 @@ architecture using the `--platform` flag of `docker pull` to pull the `arm`,
 Images point to a static version of Teleport. Use the image's tag to specify
 either:
 
-- The major, minor, and patch version (e.g., `15.0.0-dev` for the
+- The major, minor, and patch version (e.g., `16.0.0-dev` for the
   latest version of Teleport Community Edition).
 - The major version only, which implies the latest minor and patch numbers for
-  that major version. For example, `15` implies
-  `15.0.0-dev`.
+  that major version. For example, `16` implies
+  `16.0.0-dev`.
 
 <Tabs>
-  <Tab title="Teleport Team/Community Edition">
+  <Tab title="Teleport Community Edition">
     | Image name                                                      | Troubleshooting Tools? | Image base                                                                 |
     | --------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------- |
     | `public.ecr.aws/gravitational/teleport-distroless:13.3.7`       | No                     | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
     | `public.ecr.aws/gravitational/teleport-distroless-debug:13.3.7` | Yes                    | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
 
-    For testing, we always recommend that you use the latest released version of
+    For testing, we always recommend that you use the latest release version of
     Teleport, which is currently `public.ecr.aws/gravitational/teleport-distroless:13.3.7`.
-
-    [Ubuntu 20.04](https://hub.docker.com/_/ubuntu)-based images are available from
-    our [Legacy Amazon ECR Public
-    repository](https://gallery.ecr.aws/gravitational/teleport-ent).  Their use is
-    considered deprecated, and they may be removed in future releases.
   </Tab>
 
-  <Tab title="Teleport Enterprise Cloud/Enterprise">
+  <Tab title="Teleport Enterprise">
     | Image name                                                          | Includes troubleshooting tools | Image base                                                                 |
     | ------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
     | `public.ecr.aws/gravitational/teleport-ent-distroless:13.3.7`       | No                             | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
@@ -598,16 +617,55 @@ either:
 
     | Image name                                                                   | Includes troubleshooting tools | Image base                                                                 |
     | ---------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
-    | `public.ecr.aws/gravitational/teleport-ent-fips-distroless:15.0.0-dev`       | No                             | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
-    | `public.ecr.aws/gravitational/teleport-ent-fips-distroless-debug:15.0.0-dev` | Yes                            | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
+    | `public.ecr.aws/gravitational/teleport-ent-fips-distroless:16.0.0-dev`       | No                             | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
+    | `public.ecr.aws/gravitational/teleport-ent-fips-distroless-debug:16.0.0-dev` | Yes                            | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
 
     For testing, we always recommend that you use the latest release version of
     Teleport Enterprise, which is currently `public.ecr.aws/gravitational/teleport-ent-distroless:13.3.7`.
+  </Tab>
 
-    [Ubuntu 20.04](https://hub.docker.com/_/ubuntu)-based images for non-FIPS
-    Teleport are available from our [Legacy Amazon ECR Public repository](https://gallery.ecr.aws/gravitational/teleport-ent).
+  <Tab title="Teleport Team/Teleport Enterprise Cloud">
+    | Image name                                                          | Includes troubleshooting tools | Image base                                                                 |
+    | ------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
+    | `public.ecr.aws/gravitational/teleport-ent-distroless:14.3.6`       | No                             | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
+    | `public.ecr.aws/gravitational/teleport-ent-distroless-debug:14.3.6` | Yes                            | [Distroless Debian 12](https://github.com/GoogleContainerTools/distroless) |
+
+    For testing, we always recommend that you use the latest Cloud release version of
+    Teleport Enterprise, which is currently `public.ecr.aws/gravitational/teleport-ent-distroless:14.3.6`.
   </Tab>
 </Tabs>
+
+#### Interacting with distroless images
+
+Since version 15, Teleport images are based on Google's [Distroless](https://github.com/GoogleContainerTools/distroless) images.
+Those images don't contain any shell.
+
+To execute Teleport commands on containers based on these images, run commands similar to the following:
+
+```code
+# in docker
+$ docker run -i my-container tctl status
+
+# in Kubernetes
+$ kubectl exec -i my-pod -- tctl status
+
+# sending local files via stdin
+$ kubectl exec -i my-pod -- tctl create -f < my-local-file.yaml
+
+# retrieving output via stdout and tar
+$ kubectl exec -i my-pod -- tctl auth sign --user admin --format tls --ttl 10m --tar -o admin| tar xv -C local
+$ ls -l local
+total 24
+-rw-------  1 trent  staff  1318 Jul 24 15:52 admin.cas
+-rw-------  1 trent  staff  1895 Jul 24 15:52 admin.crt
+-rw-------  1 trent  staff  1679 Jul 24 15:52 admin.key
+```
+
+Alternatively, you can use the debug variant of the image, which contains [busybox](https://www.busybox.net/about.html) and a minimal shell invocable via `busybox sh`:
+
+```code
+$ docker run -it --entrypoint="" public.ecr.aws/gravitational/teleport-distroless -debug:public.ecr.aws/gravitational/teleport-distroless:13.3.7 busybox sh
+```
 
 ### Running Teleport on Docker
 
@@ -681,7 +739,7 @@ to a local file for later use.
 For example:
 
 ```code
-docker exec ${TELEPORT_CONTAINER} \
+$ docker exec ${TELEPORT_CONTAINER} \
   tctl auth sign --user alice --format tls -o alice.local --tar | tar xv
 x alice.local.crt
 x alice.local.key
@@ -690,8 +748,8 @@ x alice.local.cas
 
 ### Example of running a Teleport container
 
-In this example, we will show you how to run the Teleport Auth and Proxy
-Services on a local Docker container using Teleport Community Edition.
+In this example, we will show you how to run the Teleport Auth Service and Proxy
+Service on a local Docker container using Teleport Community Edition.
 
 Since this container uses a self-signed certificate, we do not recommend using
 this configuration to protect any infrastructure outside your workstation. You
@@ -774,13 +832,24 @@ We are using the `--insecure` flag to trust Teleport's self-signed certificate.
 In production, you will want to provision TLS credentials to the Proxy Service
 from a trusted CA, e.g., Let's Encrypt.
 
+### Upgrading Teleport on Docker
+
+To upgrade a Teleport container running on Docker:
+
+1. Leave the container's data directory in place.
+2. Stop the container.
+3. Run a new container with an image based on a newer Teleport version, mounting
+   the data directory as you did while running the container initially. As long
+   as the data directory contains the same content as before the upgrade, the
+   Teleport container does not need to re-join the cluster.
+
 ## Amazon EC2
 
 We provide pre-built `amd64` and `arm64` Amazon Linux 2023 based EC2 AMIs with
 Teleport pre-installed.
 
 These images are primarily intended for deploying a Teleport cluster using our
-[reference Terraform code](https://github.com/gravitational/teleport/tree/branch/v15/examples/aws/terraform).
+[reference Terraform code](https://github.com/gravitational/teleport/tree/branch/v16/examples/aws/terraform).
 
 See the [AWS Single-Instance Deployment](/docs/ver/16.x/deploy-a-cluster/deployments/aws-starter-cluster-terraform)
 and the [Running Teleport Enterprise in High Availability mode on AWS using Terraform](/docs/ver/16.x/deploy-a-cluster/deployments/aws-ha-autoscale-cluster-terraform)
@@ -788,7 +857,7 @@ guide for detailed usage examples.
 
 In order to use these AMIs outside of the reference Terraform, you can configure
 the Teleport installation by setting configuration variables in the
-`/etc/teleport.d/conf` file on the EC2 instance. See the [Starter Cluster Configuration Template](https://github.com/gravitational/teleport/tree/branch/v15/examples/aws/terraform/starter-cluster/data.tpl)
+`/etc/teleport.d/conf` file on the EC2 instance. See the [Starter Cluster Configuration Template](https://github.com/gravitational/teleport/tree/branch/v16/examples/aws/terraform/starter-cluster/data.tpl)
 for a list of the available configuration options.
 
 The image names all include the build timestamp (shown as `$TIMESTAMP` in the
@@ -796,12 +865,12 @@ table below), and are tagged for easier searching.
 
 | Image name                                       | Edition    | Architecture | FIPS support | AMI Tags                                                                            |
 | ------------------------------------------------ | ---------- | ------------ | ------------ | ----------------------------------------------------------------------------------- |
-| `teleport-oss-15.0.0-dev-x86_64-$TIMESTAMP`      | OSS        | amd64        | No           | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: oss`, `TeleportFipsEnabled: false` |
-| `teleport-oss-15.0.0-dev-arm64-$TIMESTAMP`       | OSS        | arm64        | No           | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: oss`, `TeleportFipsEnabled: false` |
-| `teleport-ent-15.0.0-dev-x86_64-$TIMESTAMP`      | Enterprise | amd64        | No           | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: false` |
-| `teleport-ent-15.0.0-dev-arm64-$TIMESTAMP`       | Enterprise | arm64        | No           | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: false` |
-| `teleport-ent-15.0.0-dev-x86_64-fips-$TIMESTAMP` | Enterprise | amd64        | Yes          | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: true`  |
-| `teleport-ent-15.0.0-dev-arm64-fips-$TIMESTAMP`  | Enterprise | arm64        | Yes          | `TeleportVersion: 15.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: true`  |
+| `teleport-oss-16.0.0-dev-x86_64-$TIMESTAMP`      | OSS        | amd64        | No           | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: oss`, `TeleportFipsEnabled: false` |
+| `teleport-oss-16.0.0-dev-arm64-$TIMESTAMP`       | OSS        | arm64        | No           | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: oss`, `TeleportFipsEnabled: false` |
+| `teleport-ent-16.0.0-dev-x86_64-$TIMESTAMP`      | Enterprise | amd64        | No           | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: false` |
+| `teleport-ent-16.0.0-dev-arm64-$TIMESTAMP`       | Enterprise | arm64        | No           | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: false` |
+| `teleport-ent-16.0.0-dev-x86_64-fips-$TIMESTAMP` | Enterprise | amd64        | Yes          | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: true`  |
+| `teleport-ent-16.0.0-dev-arm64-fips-$TIMESTAMP`  | Enterprise | arm64        | Yes          | `TeleportVersion: 16.0.0-dev`, `TeleportEdition: ent`, `TeleportFipsEnabled: true`  |
 
 These AMIs are owned by AWS account ID `146628656107`.
 
@@ -846,17 +915,17 @@ chart.
 
         | Link                                                                          | Binaries                                      |
         | ----------------------------------------------------------------------------- | --------------------------------------------- |
-        | [`teleport-15.0.0-dev.pkg`](https://cdn.teleport.dev/teleport-15.0.0-dev.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
-        | [`tsh-15.0.0-dev.pkg`](https://cdn.teleport.dev/tsh-15.0.0-dev.pkg)           | `tsh`                                         |
+        | [`teleport-16.0.0-dev.pkg`](https://cdn.teleport.dev/teleport-16.0.0-dev.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
+        | [`tsh-16.0.0-dev.pkg`](https://cdn.teleport.dev/tsh-16.0.0-dev.pkg)           | `tsh`                                         |
 
         You can also fetch an installer via the command line:
 
         ```code
-        $ curl -O https://cdn.teleport.dev/teleport-15.0.0-dev.pkg
+        $ curl -O https://cdn.teleport.dev/teleport-16.0.0-dev.pkg
         # Installs on Macintosh HD
-        $ sudo installer -pkg teleport-15.0.0-dev.pkg -target /
+        $ sudo installer -pkg teleport-16.0.0-dev.pkg -target /
         # Password:
-        # installer: Package name is teleport-15.0.0-dev
+        # installer: Package name is teleport-16.0.0-dev
         # installer: Upgrading at base path /
         # installer: The upgrade was successful.
         $ which teleport
@@ -908,17 +977,17 @@ chart.
 
     | Link                                                                                  | Binaries                                      |
     | ------------------------------------------------------------------------------------- | --------------------------------------------- |
-    | [`teleport-ent-15.0.0-dev.pkg`](https://cdn.teleport.dev/teleport-ent-15.0.0-dev.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
-    | [`tsh-15.0.0-dev.pkg`](https://cdn.teleport.dev/tsh-15.0.0-dev.pkg)                   | `tsh`                                         |
+    | [`teleport-ent-16.0.0-dev.pkg`](https://cdn.teleport.dev/teleport-ent-16.0.0-dev.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
+    | [`tsh-16.0.0-dev.pkg`](https://cdn.teleport.dev/tsh-16.0.0-dev.pkg)                   | `tsh`                                         |
 
     You can also fetch an installer from the command line:
 
     ```code
-    $ curl -O https://cdn.teleport.dev/teleport-ent-15.0.0-dev.pkg
+    $ curl -O https://cdn.teleport.dev/teleport-ent-16.0.0-dev.pkg
     # Install on Macintosh HD
-    $ sudo installer -pkg teleport-ent-15.0.0-dev.pkg -target / 
+    $ sudo installer -pkg teleport-ent-16.0.0-dev.pkg -target / 
     Password:
-    installer: Package name is teleport-ent-15.0.0-dev
+    installer: Package name is teleport-ent-16.0.0-dev
     installer: Upgrading at base path /
     installer: The upgrade was successful.
     $ which teleport
@@ -931,17 +1000,17 @@ chart.
 
     | Link                                                                          | Binaries                                      |
     | ----------------------------------------------------------------------------- | --------------------------------------------- |
-    | [`teleport-ent-14.3.3.pkg`](https://cdn.teleport.dev/teleport-ent-14.3.3.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
-    | [`tsh-14.3.3.pkg`](https://cdn.teleport.dev/tsh-14.3.3.pkg)                   | `tsh`                                         |
+    | [`teleport-ent-14.3.6.pkg`](https://cdn.teleport.dev/teleport-ent-14.3.6.pkg) | `teleport`<br />`tctl`<br />`tsh`<br />`tbot` |
+    | [`tsh-14.3.6.pkg`](https://cdn.teleport.dev/tsh-14.3.6.pkg)                   | `tsh`                                         |
 
     You can also fetch an installer from the command line:
 
     ```code
-    $ curl -O https://cdn.teleport.dev/teleport-ent-14.3.3.pkg
+    $ curl -O https://cdn.teleport.dev/teleport-ent-14.3.6.pkg
     # Install on Macintosh HD
-    $ sudo installer -pkg teleport-ent-14.3.3.pkg -target / 
+    $ sudo installer -pkg teleport-ent-14.3.6.pkg -target / 
     Password:
-    installer: Package name is teleport-ent-14.3.3
+    installer: Package name is teleport-ent-14.3.6
     installer: Upgrading at base path /
     installer: The upgrade was successful.
     $ which teleport
@@ -963,27 +1032,27 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
-    $ $Resp = Invoke-WebRequest https://get.gravitational.com/teleport-v15.0.0-dev-windows-amd64-bin.zip.sha256
+    $ $Resp = Invoke-WebRequest https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip.sha256
     # PowerShell will return the binary representation of the response content
     # by default, so you need to convert it to a string
     $ [System.Text.Encoding]::UTF8.getstring($Resp.Content)
     # <checksum> <filename>
-    $ Invoke-WebRequest -OutFile teleport-v15.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ certUtil -hashfile teleport-v15.0.0-dev-windows-amd64-bin.zip SHA256
-    # SHA256 hash of teleport-v15.0.0-dev-windows-amd64-bin.zip:
+    $ Invoke-WebRequest -OutFile teleport-v16.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ certUtil -hashfile teleport-v16.0.0-dev-windows-amd64-bin.zip SHA256
+    # SHA256 hash of teleport-v16.0.0-dev-windows-amd64-bin.zip:
     # <checksum>
     # CertUtil: -hashfile command completed successfully.
     ```
 
     After you have verified that the checksums match, you can extract the archive.
     The executable will be available at
-    `teleport-v15.0.0-dev-windows-amd64-bin\tsh.exe`.
+    `teleport-v16.0.0-dev-windows-amd64-bin\tsh.exe`.
 
     ```code
-    $ Expand-Archive teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ cd teleport-v15.0.0-dev-windows-amd64-bin
+    $ Expand-Archive teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ cd teleport-v16.0.0-dev-windows-amd64-bin
     $ .\tsh.exe version
-    Teleport v15.0.0-dev git:v15.0.0-dev go1.21
+    Teleport v16.0.0-dev git:v16.0.0-dev go1.22
     ```
 
     Make sure to move `tsh.exe` into your PATH.
@@ -994,27 +1063,27 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
-    $ $Resp = Invoke-WebRequest https://get.gravitational.com/teleport-v15.0.0-dev-windows-amd64-bin.zip.sha256
+    $ $Resp = Invoke-WebRequest https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip.sha256
     # PowerShell will return the binary representation of the response content
     # by default, so you need to convert it to a string
     $ [System.Text.Encoding]::UTF8.getstring($Resp.Content)
     # <checksum> <filename>
-    $ Invoke-WebRequest -OutFile teleport-v15.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ certUtil -hashfile teleport-v15.0.0-dev-windows-amd64-bin.zip SHA256
-    # SHA256 hash of teleport-v15.0.0-dev-windows-amd64-bin.zip:
+    $ Invoke-WebRequest -OutFile teleport-v16.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ certUtil -hashfile teleport-v16.0.0-dev-windows-amd64-bin.zip SHA256
+    # SHA256 hash of teleport-v16.0.0-dev-windows-amd64-bin.zip:
     # <checksum>
     # CertUtil: -hashfile command completed successfully.
     ```
 
     After you have verified that the checksums match, you can extract the archive.
     The executable will be available at
-    `teleport-v15.0.0-dev-windows-amd64-bin\tsh.exe`.
+    `teleport-v16.0.0-dev-windows-amd64-bin\tsh.exe`.
 
     ```code
-    $ Expand-Archive teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ cd teleport-v15.0.0-dev-windows-amd64-bin
+    $ Expand-Archive teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ cd teleport-v16.0.0-dev-windows-amd64-bin
     $ .\tsh.exe version
-    Teleport v15.0.0-dev git:v15.0.0-dev go1.21
+    Teleport v16.0.0-dev git:v16.0.0-dev go1.22
     ```
 
     Make sure to move `tsh.exe` into your PATH.
@@ -1025,27 +1094,27 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
-    $ $Resp = Invoke-WebRequest https://get.gravitational.com/teleport-v15.0.0-dev-windows-amd64-bin.zip.sha256
+    $ $Resp = Invoke-WebRequest https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip.sha256
     # PowerShell will return the binary representation of the response content
     # by default, so you need to convert it to a string
     $ [System.Text.Encoding]::UTF8.getstring($Resp.Content)
     # <checksum> <filename>
-    $ Invoke-WebRequest -OutFile teleport-v15.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ certUtil -hashfile teleport-v15.0.0-dev-windows-amd64-bin.zip SHA256
-    # SHA256 hash of teleport-v15.0.0-dev-windows-amd64-bin.zip:
+    $ Invoke-WebRequest -OutFile teleport-v16.0.0-dev-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ certUtil -hashfile teleport-v16.0.0-dev-windows-amd64-bin.zip SHA256
+    # SHA256 hash of teleport-v16.0.0-dev-windows-amd64-bin.zip:
     # <checksum>
     # CertUtil: -hashfile command completed successfully.
     ```
 
     After you have verified that the checksums match, you can extract the archive.
     The executable will be available at
-    `teleport-v15.0.0-dev-windows-amd64-bin\tsh.exe`.
+    `teleport-v16.0.0-dev-windows-amd64-bin\tsh.exe`.
 
     ```code
-    $ Expand-Archive teleport-v15.0.0-dev-windows-amd64-bin.zip
-    $ cd teleport-v15.0.0-dev-windows-amd64-bin
+    $ Expand-Archive teleport-v16.0.0-dev-windows-amd64-bin.zip
+    $ cd teleport-v16.0.0-dev-windows-amd64-bin
     $ .\tsh.exe version
-    Teleport v15.0.0-dev git:v15.0.0-dev go1.21
+    Teleport v16.0.0-dev git:v16.0.0-dev go1.22
     ```
 
     Make sure to move `tsh.exe` into your PATH.
@@ -1056,27 +1125,27 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
-    $ $Resp = Invoke-WebRequest https://get.gravitational.com/teleport-v14.3.3-windows-amd64-bin.zip.sha256
+    $ $Resp = Invoke-WebRequest https://cdn.teleport.dev/teleport-v14.3.6-windows-amd64-bin.zip.sha256
     # PowerShell will return the binary representation of the response content
     # by default, so you need to convert it to a string
     $ [System.Text.Encoding]::UTF8.getstring($Resp.Content)
     # <checksum> <filename>
-    $ Invoke-WebRequest -OutFile teleport-v14.3.3-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v14.3.3-windows-amd64-bin.zip
-    $ certUtil -hashfile teleport-v14.3.3-windows-amd64-bin.zip SHA256
-    # SHA256 hash of teleport-v14.3.3-windows-amd64-bin.zip:
+    $ Invoke-WebRequest -OutFile teleport-v14.3.6-windows-amd64-bin.zip -Uri https://cdn.teleport.dev/teleport-v14.3.6-windows-amd64-bin.zip
+    $ certUtil -hashfile teleport-v14.3.6-windows-amd64-bin.zip SHA256
+    # SHA256 hash of teleport-v14.3.6-windows-amd64-bin.zip:
     # <checksum>
     # CertUtil: -hashfile command completed successfully.
     ```
 
     After you have verified that the checksums match, you can extract the archive.
     The executable will be available at
-    `teleport-v14.3.3-windows-amd64-bin\tsh.exe`.
+    `teleport-v14.3.6-windows-amd64-bin\tsh.exe`.
 
     ```code
-    $ Expand-Archive teleport-v14.3.3-windows-amd64-bin.zip
-    $ cd teleport-v14.3.3-windows-amd64-bin
+    $ Expand-Archive teleport-v14.3.6-windows-amd64-bin.zip
+    $ cd teleport-v14.3.6-windows-amd64-bin
     $ .\tsh.exe version
-    Teleport v14.3.3 git:v14.3.3 go1.21
+    Teleport v14.3.6 git:v14.3.6 go1.22
     ```
 
     Make sure to move `tsh.exe` into your PATH.
@@ -1085,7 +1154,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
 
 ## Building from source
 
-Teleport is written in Go, and currently requires **go v1.21** or
+Teleport is written in Go, and currently requires **go v1.22** or
 newer. Detailed instructions for building from source are available in the
 [README](https://github.com/gravitational/teleport#building-teleport).
 
@@ -1102,12 +1171,12 @@ obtain the checksum by adding `.sha256` to the download link. This is the method
 shown in the installation examples.
 
 ```code
-$ export version=v15.0.0-dev
+$ export version=v16.0.0-dev
 # 'darwin' 'linux' or 'windows'
 $ export os=linux
 # '386' 'arm' on linux or 'amd64' for all distros
 $ export arch=amd64
-$ curl https://get.gravitational.com/teleport-$version-$os-$arch-bin.tar.gz.sha256
+$ curl https://cdn.teleport.dev/teleport-$version-$os-$arch-bin.tar.gz.sha256
 # <checksum> <filename>
 ```
 

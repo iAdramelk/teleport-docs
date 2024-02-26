@@ -29,8 +29,8 @@ using `apt`, `yum`, and `zypper` package managers. The [Automatic Update
 Architecture](/docs/ver/16.x/architecture/agent-update-management) guide describes
 how agent updating works. Automatic agent upgrades require:
 
-- A Teleport Cloud account that supports automatic upgrades. To determine if
-  your account supports automatic upgrades, run the following command, replacing
+- A Teleport Cloud account that supports automatic updates. To determine if
+  your account supports automatic updates, run the following command, replacing
   `mytenant.teleport.sh` with the address of your Teleport Cloud account:
 
   ```code
@@ -47,7 +47,7 @@ how agent updating works. Automatic agent upgrades require:
 
 ## Step 1/2. Find agents to upgrade
 
-To list agents that are not enrolled in automatic upgrades, use the `tctl
+To list agents that are not enrolled in automatic updates, use the `tctl
 inventory ls` command with the `--upgrader=none` flag. This command also uses
 the `--services` flag to constrain the search to Teleport processes running
 agent services:
@@ -72,7 +72,7 @@ Server ID                            Hostname        Services Version Upgrader
 ...
 ```
 
-When you enroll each agent in automatic upgrades in the next section, you can
+When you enroll each agent in automatic updates in the next section, you can
 run the following commands to fetch the hostname for each agent and access it
 via Teleport.
 
@@ -86,12 +86,12 @@ $ tsh ssh "${USER?}@${HOST?}"
 ```
 
 You can then follow the steps in the next section on each agent to enroll it in
-automatic upgrades.
+automatic updates.
 
-## Step 2/2. Enroll agents in automatic upgrades
+## Step 2/2. Enroll agents in automatic updates
 
 Complete the following instructions on each agent you would like to enroll into
-automatic upgrades:
+automatic updates:
 
 1. Ensure the Teleport repository is added and Teleport Enterprise is installed.
 
@@ -108,7 +108,7 @@ automatic upgrades:
    it is up to date.
 
 2. If the repository was added, make sure the Teleport binary installed on the
-   agent can run the automatic upgrader:
+   agent can run the automatic updater:
 
    ```code
    $ which teleport-upgrade || echo "Install the upgrader"
@@ -134,9 +134,13 @@ automatic upgrades:
        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+       # Provide your Teleport domain to query the latest compatible Teleport version
+       $ export TELEPORT_DOMAIN=example.teleport.com
+       $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+       # Update the repo and install Teleport and the Teleport updater
        $ sudo apt-get update
-       $ sudo apt-get install teleport-ent=14.3.3
-       $ sudo apt-get install teleport-ent-updater
+       $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
        ```
      </Tab>
 
@@ -150,9 +154,14 @@ automatic upgrades:
        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
        $ sudo yum install -y yum-utils
        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-       $ sudo yum install teleport-ent-14.3.3
-       $ sudo yum install teleport-ent-updater
-       #
+
+       # Provide your Teleport domain to query the latest compatible Teleport version
+       $ export TELEPORT_DOMAIN=example.teleport.com
+       $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+       # Install Teleport and the Teleport updater
+       $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
        ```
@@ -169,9 +178,12 @@ automatic upgrades:
        # Use the dnf config manager plugin to add the teleport RPM repo
        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-       # Install teleport
-       $ sudo dnf install teleport-ent-14.3.3
-       $ sudo dnf install teleport-ent-updater
+       # Provide your Teleport domain to query the latest compatible Teleport version
+       $ export TELEPORT_DOMAIN=example.teleport.com
+       $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+       # Install Teleport and the Teleport updater
+       $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -189,9 +201,12 @@ automatic upgrades:
        # Use Zypper to add the teleport RPM repo
        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-       # Install teleport
-       $ sudo zypper install teleport-ent=14.3.3
-       $ sudo zypper install teleport-ent-updater
+       # Provide your Teleport domain to query the latest compatible Teleport version
+       $ export TELEPORT_DOMAIN=example.teleport.com
+       $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+       # Install Teleport and the Teleport updater
+       $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
        ```
      </Tab>
    </Tabs>
@@ -240,7 +255,7 @@ and look at its logs:
 $ sudo teleport-upgrade run
 ```
 
-To suspend automatic upgrades, disable the systemd timer:
+To suspend automatic updates, disable the systemd timer:
 
 ```code
 $ sudo systemctl disable --now teleport-upgrade.timer

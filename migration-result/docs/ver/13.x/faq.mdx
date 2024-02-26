@@ -38,6 +38,31 @@ Yes, Teleport supports reverse SSH tunnels out of the box. To configure
 behind-firewall clusters refer to our
 [Trusted Clusters](/docs/ver/13.x/management/admin/trustedclusters) guide.
 
+## Should we use Teleport Enterprise or Teleport Community Edition for connecting resources to our Teleport cluster?
+
+Teleport Team, Enterprise, and Enterprise Cloud customers should use the Enterprise release of the
+`teleport` binary for agents. Running the Community Edition binary could result in
+incompatibility to these cluster editions for certain features.
+
+To verify you have a Teleport Enterprise release installed run the `teleport version`
+command and Enterprise will be in the output.
+
+```code
+$ teleport version
+# Teleport Enterprise v13.4.16 go1.21
+```
+
+Teleport Community Edition clusters should use the Teleport Community Edition releases. The `teleport version`
+command will only include Teleport in its output for those releases.
+
+```code
+$ teleport version
+# Teleport v13.4.16 go1.21
+```
+
+See the [Installation](/docs/ver/13.x/installation) guide for details on installing to specific platforms
+with Enterprise or OSS releases.
+
 ## Can individual agents create reverse tunnels to the Proxy Service without creating a new cluster?
 
 Yes. When running a Teleport agent, use the `--auth-server` flag to point to the
@@ -105,7 +130,7 @@ Here is a detailed breakdown of the differences between Teleport's editions.
 | --------------------------------------------------------------------------------------- | ----------- | ---------- | ----- | ---- |
 | [Structured Audit Logs](/docs/ver/13.x/reference/audit)                                 | ✔           | ✔          | ✔     | ✔    |
 | [Session Recording with Playback](/docs/ver/13.x/architecture/session-recording)        | ✔           | ✔          | ✔     | ✔    |
-| [Recording Proxy Mode](/docs/ver/13.x/server-access/guides/recording-proxy-mode)        | ✔           | ✔          | ✖     | ✔    |
+| [Recording Proxy Mode](/docs/ver/13.x/server-access/guides/recording-proxy-mode)        | ✔           | ✔          | ✖     | ✖    |
 | [Enhanced Session Recording](/docs/ver/13.x/server-access/guides/bpf-session-recording) | ✔           | ✔          | ✔     | ✔    |
 
 ### Compliance
@@ -120,14 +145,14 @@ Here is a detailed breakdown of the differences between Teleport's editions.
 
 ### Operations
 
-|                                                                                                                     | Open Source                                                                                        | Enterprise                                                                                        | Cloud                                                                                                         | Team                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Auth and Proxy Service Management                                                                                   | Self-hosted                                                                                        | Self-hosted                                                                                       | Fully managed                                                                                                 | Fully managed                                                                                                 |
-| Proxy Service domain name                                                                                           | Custom                                                                                             | Custom                                                                                            | A subdomain of `teleport.sh`                                                                                  | A subdomain of `teleport.sh`                                                                                  |
-| Version support                                                                                                     | All supported releases available to install and download.                                          | All supported releases available to install and download.                                         | Deploys last stable release with 2-3 week lag for stability.                                                  | Deploys last stable release with 2-3 week lag for stability.                                                  |
-| [Backend support](/docs/ver/13.x/reference/backends)                                                                | Any S3-compatible storage for session records, many managed backends for custom audit log storage. | Any S3-compatible storage for session records, many managed backends for custom audit log storage | All data is stored in DynamoDB and S3 with server-side encryption.                                            | All data is stored in DynamoDB and S3 with server-side encryption.                                            |
-| Data storage location                                                                                               | Can store data anywhere in the world, on most managed cloud backends                               | Can store data anywhere in the world, on most managed cloud backends                              | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. |
-| [Hardware Security Module support](/docs/ver/13.x/choose-an-edition/teleport-enterprise/hsm) for encryption at rest | ✖                                                                                                  | ✔                                                                                                 | ✖                                                                                                             | ✖                                                                                                             |
+|                                                                                                                     | Open Source                                                                                        | Enterprise                                                                                        | Cloud                                                                                                                                                                                       | Team                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Auth and Proxy Service Management                                                                                   | Self-hosted                                                                                        | Self-hosted                                                                                       | Fully managed                                                                                                                                                                               | Fully managed                                                                                                                  |
+| Proxy Service domain name                                                                                           | Custom                                                                                             | Custom                                                                                            | A subdomain of `teleport.sh`                                                                                                                                                                | A subdomain of `teleport.sh`                                                                                                   |
+| Version support                                                                                                     | All supported releases available to install and download.                                          | All supported releases available to install and download.                                         | Deploys last stable release with 2-3 week lag for stability.                                                                                                                                | Deploys last stable release with 2-3 week lag for stability.                                                                   |
+| [Backend support](/docs/ver/13.x/reference/backends)                                                                | Any S3-compatible storage for session records, many managed backends for custom audit log storage. | Any S3-compatible storage for session records, many managed backends for custom audit log storage | All data is stored in DynamoDB and S3 with server-side encryption.                                                                                                                          | All data is stored in DynamoDB and S3 with server-side encryption.                                                             |
+| Data storage location                                                                                               | Can store data anywhere in the world, on most managed cloud backends                               | Can store data anywhere in the world, on most managed cloud backends                              | Data is stored in Teleport's AWS infrastructure with audit logs/sessions optionally in customer AWS accounts. Proxy Service instances are deployed across the world for low-latency access. | Data is stored in Teleport's AWS infrastructure. Proxy Service instances are deployed across the world for low-latency access. |
+| [Hardware Security Module support](/docs/ver/13.x/choose-an-edition/teleport-enterprise/hsm) for encryption at rest | ✖                                                                                                  | ✔                                                                                                 | ✖                                                                                                                                                                                           | ✖                                                                                                                              |
 
 ### Support
 
@@ -145,22 +170,20 @@ Here is a detailed breakdown of the differences between Teleport's editions.
 
 ## Which version of Teleport is supported?
 
-Teleport provides security-critical support for the current and two previous
-releases. With our typical release cadence, this means a release is usually
-supported for 9 months.
+Teleport releases a new major version approximately every 4 months, and provides
+security-critical support for the current and two previous major versions. With
+our typical release cadence, we usually support each major version for 12
+months.
 
 ### Supported versions
 
 Here are the major versions of Teleport and their support windows:
 
-| Release | Release Date     | EOL           | Minimum `tsh` version |
-| ------- | ---------------- | ------------- | --------------------- |
-| v13.0   | May 8, 2023      | February 2024 | v12.x.x               |
-| v12.0   | Feb 6, 2023      | November 2023 | v11.x.x               |
-| v11.0   | October 24, 2022 | July 2023     | v10.x.x               |
-
-See our [Upgrading](/docs/ver/13.x/management/operations/upgrading) guide for more
-information.
+| Release | Release Date       | EOL            | Minimum `tsh` version |
+| ------- | ------------------ | -------------- | --------------------- |
+| v14.0   | September 20, 2023 | September 2024 | v13.0.0               |
+| v13.0   | May 8, 2023        | May 2024       | v12.0.0               |
+| v12.0   | February 6, 2023   | February 2024  | v11.0.0               |
 
 ### Version compatibility
 
@@ -189,9 +212,9 @@ Yes. You can copy and paste using a mouse.
 
 Please refer to our [Networking](/docs/ver/13.x/reference/networking) guide.
 
-## Does Teleport support authentication via OAuth, SAML, or Active Directory?
+## Does Teleport support authentication via OIDC, SAML, or Active Directory?
 
-Teleport offers this feature for the [Enterprise versions of Teleport](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction).
+Teleport offers this feature for the [Enterprise Cloud](/docs/ver/13.x/choose-an-edition/teleport-cloud/introduction) and [Enterprise](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) versions of Teleport.
 
 ## Why do I see an alert that some agents are out of date?
 
@@ -211,7 +234,7 @@ you need its ID. You can get a listing of all alerts and their IDs with the
 `tctl alerts list` command.
 
 For detailed information on this family of commands, see the
-[CLI Reference](/docs/ver/13.x/reference/cli#tctl-alerts-list).
+[CLI Reference](/docs/ver/13.x/reference/cli/tctl#tctl-alerts-list).
 
 ## Does Teleport send any data back to the cloud?
 
@@ -237,6 +260,9 @@ without access to the cluster to deanonymize the data we store.
 The code that aggregates and anonymizes this data can be found [in our
 repository on
 GitHub](https://github.com/gravitational/teleport/tree/master/lib/usagereporter/teleport/aggregating).
+
+For more details, see the [Usage Reporting and Billing](/docs/ver/13.x/usage-billing)
+guide.
 
 Reach out to `sales@goteleport.com` if you have questions about the commercial
 editions of Teleport.

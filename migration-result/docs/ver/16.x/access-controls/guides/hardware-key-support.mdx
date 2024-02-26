@@ -69,16 +69,16 @@ like `tctl edit`. With touch required, hardware key support provides better secu
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v16.0.0-dev go1.22
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v16.0.0-dev go1.22
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -104,7 +104,7 @@ like `tctl edit`. With touch required, hardware key support provides better secu
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -262,7 +262,8 @@ metadata:
 spec:
   ...
   require_session_mfa: hardware_key
-  piv_slot: 9c
+  hardware_key:
+    piv_slot: 9c
   ...
 version: v2
 ```
@@ -285,7 +286,6 @@ Make sure that the touch and PIN policy satisfy the hardware key requirement for
 
 This error is returned by the Auth and Proxy services if a user does not meet the required private key policy.
 Both `tsh` and Teleport Connect automatically catch these errors and require the user to sign in again with a valid hardware-based private key.
-If you see this error, make sure that your client is up to date (v11.0.0+).
 
 ### `ERROR: authenticating with management key: auth challenge: smart card error 6982: security status not satisfied`
 

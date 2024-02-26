@@ -74,13 +74,12 @@ The `teleport-kube-agent` chart deploys the following Kubernetes resources:
 
 ## `roles`
 
-This parameter is not mandatory to preserve backwards compatibility with older chart versions, but we recommend it is set.
+| Type     | Default  |
+| -------- | -------- |
+| `string` | `"kube"` |
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `kube`        |
-
-`roles` is a comma-separated list of services which should be enabled when running the `teleport-kube-agent` chart.
+`roles` is a comma-separated list of services which will be enabled
+when running the `teleport-kube-agent` chart.
 
 | Services                     | Value for `roles` | Mandatory additional settings for this role                            |
 | ---------------------------- | ----------------- | ---------------------------------------------------------------------- |
@@ -89,277 +88,21 @@ This parameter is not mandatory to preserve backwards compatibility with older c
 | Teleport Database service    | `db`              | [`databases`](#databases) or [`databaseResources`](#databaseresources) |
 | Teleport Discovery service   | `discovery`       | [`kubeClusterName`](#kubeclustername)                                  |
 
-`values.yaml` example:
+For example:
 
 ```yaml
 roles: kube,app,discovery
 ```
 
-## `enterprise`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
-
-When `enterprise` is set to `true`, the container image used for Teleport agent
-pods run by the `teleport-kube-agent` chart will be the enterprise version.
-This should be set to `true` for connecting to Teleport Cloud and self-hosted
-Teleport Enterprise clusters to use enterprise features within the Kube Agent.
-
-`values.yaml` example:
-
-```yaml
-enterprise: true
-```
-
-## `updater`
-
-`updater` controls whether the Kube Agent Updater should be deployed alongside
-the `teleport-kube-agent`. The updater fetches the target version, validates the
-image signature, and updates the teleport deployment. The `enterprise` value should
-have been set to `true`.
-
-All Kubernetes-specific fields such as `tolerations`, `affinity`, `nodeSelector`,
-... default to the agent values. However, they can be overridden from the
-`updater` object. For example:
-
-```yaml
-# the agent pod requests 1cpu and 2 GiB of memory. It also has a memory limit.
-resources:
-  requests:
-    cpu: "1"
-    memory: "2Gi"
-  limits:
-    memory: "2Gi"
-
-# the updater pod requests 0.5 cpu and 512MiB of memory. The memory limit has also been unset.
-updater:
-  resources:
-    requests:
-      cpu: "0.5"
-      memory: "512Mi"
-    limits: ~
-```
-
-Other updater-specific values that can be defined in `updater` are described
-below:
-
-### `updater.enabled`
-
-| Type   | Default value | Required? |
-| ------ | ------------- | --------- |
-| `bool` | false         | No        |
-
-Enables the Kube Agent Updater and deploys it alongside the Teleport Agent.
-You can enable this when:
-
-- using Teleport Cloud and your tenant is enrolled into automatic updates.
-  (You can check this through the web UI, choose `Add Kubernetes` and
-  `Enroll New Resource of type Kubernetes`, and check if the value is turned
-  on.)
-- using self-hosted Teleport and you maintain your own version server.
-
-You must not enable this if:
-
-- you are a Teleport Cloud customer not enrolled in automatic updates.
-- you are a self-hosted Teleport user and have not set up your Teleport cluster to
-  support automatic updates.
-
-### `updater.versionServer`
-
-| Type     | Default value                                                                            | Required?                       |
-| -------- | ---------------------------------------------------------------------------------------- | ------------------------------- |
-| `string` | "[https://updates.releases.teleport.dev/v1/](https://updates.releases.teleport.dev/v1/)" | Yes if not using Teleport Cloud |
-
-`updater.versionServer` is the URL of the version server the agent fetches the
-target version from. The complete version endpoint is built by concatenating
-[`versionServer`](#updaterversionserver) and
-[`releaseChannel`](#updaterreleasechannel).
-
-You must set this if the updater is enabled, and you are not a Teleport Cloud user.
-
-You must not change the default values if you are a Teleport Cloud user.
-
-### `updater.releaseChannel`
-
-| Type     | Default value  | Required? |
-| -------- | -------------- | --------- |
-| `string` | "stable/cloud" | No        |
-
-`updater.releaseChannel` is the release channel the updater subscribes to.
-The complete version endpoint is built by concatenating
-[`versionServer`](#updaterversionserver) and
-[`releaseChannel`](#updaterreleasechannel).
-You must not change the default value if you are a Teleport Cloud user unless
-instructed by Teleport support.
-
-You can change this value if the updater is enabled, you are not a Teleport
-Cloud user, and manage your own version server.
-
-### `updater.image`
-
-| Type     | Default value                                              | Required? |
-| -------- | ---------------------------------------------------------- | --------- |
-| `string` | "public.ecr.aws/gravitational/teleport-kube-agent-updater" | No        |
-
-`image` sets the container image used for Teleport updater pods run when
-`updater.enabled` is true.
-
-You can override this to use your own Teleport Kube Agent Updater image rather
-than a Teleport-published image.
-
-## `roleBindingName`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | ""            | No        |
-
-`roleBindingName` provides a custom name for the `RoleBinding` resource that the
-`teleport-kube-agent` chart creates for the Teleport pod. By default, the
-`RoleBinding` has the name of the Helm release.
-
-You should set this value if there is a `RoleBinding` resource in the namespace
-of your `teleport-kube-agent` resources with the same name as your
-`teleport-kube-agent` release.
-
-`values.yaml` example:
-
-```yaml
-roleBindingName: myrolebinding
-```
-
-## `roleName`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | ""            | No        |
-
-`roleName` provides a custom name for the `Role` resource that the
-`teleport-kube-agent` chart creates for the Teleport pod. By default, the `Role`
-has the name of the Helm release.
-
-You should set this value if there is a `Role` resource in the namespace of your
-`teleport-kube-agent` resources with the same name as your `teleport-kube-agent`
-release.
-
-`values.yaml` example:
-
-```yaml
-roleName: myrole
-```
-
-## `serviceAccountName`
-
-This field is deprecated and will be removed in a future version. Use
-[`serviceAccount.name`](#serviceaccountname-1) instead.
-
-## `authToken`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | `nil`         | No        |
-
-`authToken` provides a Teleport join token which will be used to join the Teleport instance to a Teleport cluster.
-
-The value `joinParams` supports more methods to join the Teleport cluster and takes precedence if both `authToken`
-and `joinParams` are set.
-
-A token must be specified for the agent to join the Teleport cluster, either though `authToken`,
-[`joinParams`](#joinparams), or [an existing Kubernetes Secret](#joinTokenSecret).
-
-| Services                          | Service Name  | `tctl tokens add` example            | `teleport.yaml` static token example        |
-| --------------------------------- | ------------- | ------------------------------------ | ------------------------------------------- |
-| Kubernetes                        | `kube`        | `tctl tokens add --type=kube`        | `"kube:<replace-with-actual-token>"`        |
-| Kubernetes, Application           | `kube,app`    | `tctl tokens add --type=kube,app`    | `"kube,app:<replace-with-actual-token>"`    |
-| Kubernetes, Application, Database | `kube,app,db` | `tctl tokens add --type=kube,app,db` | `"kube,app,db:<replace-with-actual-token>"` |
-
-<Note>
-  When you use a token, all of the services that it provides **must** be used.
-
-  For example, you cannot use a token of type `app,db` to only join a Teleport `app` service by itself. It must join both `app` and `db` services at once.
-
-  Also, each static token you configure must be unique, as the token itself is used to define which services will be supported.
-
-  You cannot reuse the same static token and specify a different set of services.
-</Note>
-
-If you do not have the correct services (Teleport refers to these internally as `Roles`) assigned to your join token, the Teleport instance will
-fail to join the Teleport cluster.
-
-`values.yaml` example:
-
-```yaml
-authToken: <replace-with-actual-token>
-```
-
-## `joinParams`
-
-`joinParams` controls how the Teleport agent joins the Teleport cluster.
-These sub-values must be configured for the agent to connect to a cluster.
-
-### `joinParams.method`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | `token`       | Yes       |
-
-`joinParams.method` defines which join method will be used to join the Teleport cluster.
-Possible values are `token`, `iam` and `ec2`.
-
-- For `iam`, see [Joining Nodes Via AWS IAM Role](/docs/agents/join-services-to-your-cluster/aws-iam).
-- For `ec2`, see [Joining Nodes Via AWS EC2 Identity Document](/docs/agents/join-services-to-your-cluster/aws-ec2).
-- For `token` (default value), the token must be provided through `joinParams.tokenName` or
-  [through an existing Kubernetes Secret](#joinTokenSecret).
-
-<Note>
-  Using the IAM joining method requires either the pods to have access to [instance
-  metadata](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html),
-  or [IAM roles for service
-  accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) to be
-  set up on the pods's service account. For access to instance metadata (the quickest solution), see
-  [AWS's examples on how to restrict instance metadata access to a few
-  pods](https://aws.github.io/aws-eks-best-practices/security/docs/iam/#restrict-access-to-the-instance-profile-assigned-to-the-worker-node).
-</Note>
-
-`values.yaml` example:
-
-```yaml
-joinParams:
-  method: "token"|"ec2"|"iam"
-```
-
-### `joinParams.tokenName`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | `nil`         | Yes       |
-
-When `joinParams.method` is `iam` or `ec2`, `joinParams.tokenName` contains the name of the token that will be used to
-join the cluster. In this case, the value is not sensitive as authorization is checked through AWS IAM or EC2.
-
-When `joinParams.method` is `token` (by default), `joinParams.tokenName` contains the join token itself. In this case,
-the value is sensitive and is automatically stored in a Kubernetes Secret instead of being directly included in the
-agent's configuration.
-
-If method is `token`, `joinParams.tokenName` can be empty if the token is provided through an existing Kubernetes
-Secret, see [`joinTokenSecret`](#joinTokenSecret) for more details and instructions.
-
-`values.yaml` example:
-
-```yaml
-joinParams:
-  tokenName: "my-token"
-```
-
 ## `proxyAddr`
 
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | `nil`         | Yes       |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-`proxyAddr` provides the public-facing Teleport proxy endpoint which should be used to join the cluster. This is the same URL that is used
-to access the web UI of your Teleport cluster. It is the same as the value configured for `proxy_service.public_addr` in a traditional
-Teleport cluster. The port used is usually either 3080 or 443.
+`proxyAddr` provides the public-facing Teleport Proxy Service endpoint
+which should be used to join the cluster. This is the same URL used to access
+the web UI of your Teleport cluster. The port used is usually either 3080 or 443.
 
 Here are a few examples:
 
@@ -369,154 +112,194 @@ Here are a few examples:
 | Teleport Cloud cluster        | `example.teleport.sh:443`           |
 | `teleport-cluster` Helm chart | `teleport.example.com:443`          |
 
+## `enterprise`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`enterprise` controls if the `teleport-kube-agent` chart should deploy
+the OSS version or the enterprise version of the container image.
+This must be set to `true` when connecting to Teleport Cloud or self-hosted
+Teleport Enterprise clusters to allow the agent to leverage enterprise features.
+
+## `authToken`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`authToken` provides a Teleport join token which will be used to join
+the Teleport instance to a Teleport cluster. `authToken` only supports the `token`
+join method.
+
+For other methods such as `kubernetes`, `iam` or `gcp`, the value
+[`joinParams`](#joinParams) should be used as it supports more methods to
+join the Teleport cluster. `joinParams` takes precedence if both `authToken`
+and `joinParams` are set.
+
+A token must be specified for the agent to join the Teleport cluster, either
+via `authToken`, [`joinParams`](#joinparams), or
+[an existing Kubernetes Secret](#joinTokenSecret).
+
+The token used must at least grant the required system roles. For example, if
+the chart [`roles`](#roles) is `kube,app`, the token should allow the system
+roles `App` and `Kube`.
+
+## `joinParams`
+
+`joinParams` controls how the Teleport agent joins the Teleport cluster.
+These sub-values must be configured for the agent to connect to a cluster.
+
+This value serves the same purpose as [`authToken`](#authToken) but supports
+all join methods. When set, it takes precedence over `authToken`.
+Its usage should be preferred.
+
+### `joinParams.method`
+
+| Type     | Default   |
+| -------- | --------- |
+| `string` | `"token"` |
+
+`joinParams.method` controls which join method will be used by the
+instance to join the Teleport cluster.
+
+See [the join method reference](/docs/reference/join-methods) for the list of possible
+values, the implications of each join method, and guides to set up each method.
+
+Common join-methods for the `teleport-kube-agent` are:
+
+- `token`: the most basic one, with regular ephemeral secret tokens
+- `kubernetes`: either the `in-cluster` variant (if the agent runs in the
+  same Kubernetes cluster as the `teleport-cluster` chart) or the `JWKS`
+  variant (works in every Kubernetes cluster, regardless of the Teleport Auth
+  Service location).
+
+### `joinParams.tokenName`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`joinParams.tokenName` controls which token is used by the agent to
+join the Teleport cluster.
+
+When `joinParams.method` is [a delegated join method](/docs/reference/join-methods#delegated-join-methods),
+the value is not sensitive.
+
+When `joinParams.method` is `token` (by default), `joinParams.tokenName`
+contains the secret token itself. In this case, the value is sensitive and
+is automatically stored in a Kubernetes Secret instead of being directly
+included in the agent's configuration.
+
+If method is `token`, `joinParams.tokenName` can be empty if the token
+is provided through an existing Kubernetes Secret, see
+[`joinTokenSecret`](#joinTokenSecret) for more details and instructions.
+
 ## `kubeClusterName`
 
-| Type     | Default value | Required?                      |
-| -------- | ------------- | ------------------------------ |
-| `string` | `nil`         | When `kube` chart role is used |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-`kubeClusterName` sets the name used for the Kubernetes cluster proxied by the Teleport agent. This name will be shown to Teleport users
-connecting to the cluster.
+`kubeClusterName` sets the name used for the Kubernetes cluster proxied by
+the Teleport agent. This name will be shown to Teleport users connecting to
+the cluster.
 
-`values.yaml` example:
-
-```yaml
-kubeClusterName: my-gke-cluster
-```
-
-## `kubernetesDiscovery`
-
-| Type   | Required? |
-| ------ | --------- |
-| `list` | No        |
-
-`kubernetesDiscovery` is a YAML list object detailing the Kubernetes App Discovery Configuration
-
-You can specify multiple discovery configurations by adding additional list elements.
-
-`values.yaml` example:
-
-```yaml
-kubernetesDiscovery:
-- types: ["app"]
-  namespaces: [ "toronto", "porto" ]
-  labels:
-    env: staging
-- types: ["app"]
-  namespaces: [ "seattle", "oakland" ]
-  labels:
-    env: testing
-```
-
-### `kubernetesDiscovery.types`
-
-| Type   | Required? |
-| ------ | --------- |
-| `list` | Yes       |
-
-`kubernetesDiscovery.types` is a list of Teleport resource types to be created
-from the discovered Kubernetes Services. Currently only supports `app`.
-
-### `kubernetesDiscovery.namespaces`
-
-| Type   | Default        | Required? |
-| ------ | -------------- | --------- |
-| `list` | All Namespaces | No        |
-
-`kubernetesDiscovery.namespaces` is a list of Kubernetes namespaces to be scanned for resources.
-
-### `kubernetesDiscovery.labels`
-
-| Type  | Default     | Required? |
-| ----- | ----------- | --------- |
-| `map` | `{"*":"*"}` | No        |
-
-`kubernetesDiscovery.labels` is a map of labels to be matched against the Kubernetes Services.
-Only Services with matching labels will be imported to Teleport.
+This setting is required if the chart `roles` contains `kube`.
 
 ## `apps`
 
-| Type   | Default value | Required?                                                                            |
-| ------ | ------------- | ------------------------------------------------------------------------------------ |
-| `list` | `[]`          | When `app` chart role is used at least one of `apps` and `appResources` is required. |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-`apps` is a YAML list object detailing the applications that should be proxied by Teleport Application access.
+`apps` is a static list of applications that should be proxied by
+the agent. See [the Teleport Application access documentation](/docs/application-access/introduction)
+for more details.
 
-You can specify multiple apps by adding additional list elements.
+Proxied applications can be defined statically (through this value) or dynamically
+(through the [`appResources`](#appResources) value).
+One of `apps` and `appResources` is required if the chart `roles` contains `app`.
 
-`values.yaml` example:
+You can specify multiple apps by adding elements to the list.
+For example:
 
 ```yaml
 apps:
-- name: grafana
-  uri: http://localhost:3000
-  labels:
-    purpose: monitoring
-- name: jenkins
-  uri: http://jenkins:8080
-  labels:
-    purpose: ci
+  - name: grafana
+    uri: http://localhost:3000
+    labels:
+      purpose: monitoring
+  - name: jenkins
+    uri: http://jenkins:8080
+    labels:
+      purpose: ci
 ```
 
 <Tip>
-  You can see a list of all the supported [values which can be used in a Teleport application access configuration here](/docs/application-access/reference#configuration).
+  You can see a list of all the supported values that can be used in a Teleport
+  Application Service configuration in the [Application Service Configuration
+  Reference](/docs/application-access/reference#configuration).
 </Tip>
 
 ## `appResources`
 
-| Type   | Default value | Required?                                                                            |
-| ------ | ------------- | ------------------------------------------------------------------------------------ |
-| `list` | `[]`          | When `app` chart role is used at least one of `apps` and `appResources` is required. |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-`appResources` is a YAML list object detailing the resource selectors of the applications that should be proxied by the Teleport Application Service.
+`appResources` is a set of labels the agent will monitor. Any application
+matching those labels will be proxied by the agent. See [the Teleport
+Application access documentation](/docs/application-access/introduction)
+for more details.
+
+Proxied applications can be defined statically (through [`apps`](#apps)) or
+dynamically (through this value).
+One of `apps` and `appResources` is required if the chart `roles` contains `app`.
 
 You can specify multiple selectors by including additional list elements.
-
-`values.yaml` example:
+For example:
 
 ```yaml
 appResources:
-- labels:
-    "env": "prod"
-- labels:
-    "env": "test"
+  - labels:
+      "env": "prod"
+  - labels:
+      "env": "test"
 ```
 
 <Tip>
-  Once `appResources` is set, you can dynamically register application with `tsh` by following [this guide](/docs/application-access/guides/dynamic-registration).
+  Once `appResources` is set, you can dynamically register application with
+  `tsh` by following [the Dynamic App Registration guide](/docs/application-access/guides/dynamic-registration).
 </Tip>
 
 ## `awsDatabases`
 
-<Tip>
-  This section configures AWS database auto-discovery. You can configure databases for other platforms using the [`azureDatabases`](#azuredatabases) or [`databases`](#databases) sections.
-</Tip>
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
+
+`awsDatabases` configures AWS database auto-discovery.
 
 <Note>
   For AWS database auto-discovery to work, your Database Service pods will need to use a role which has appropriate IAM permissions as per the [database documentation](/docs/database-access/guides/rds#step-36-create-iam-policies-for-teleport).
-
   After configuring a role, you can use an `eks.amazonaws.com/role-arn` annotation with the `annotations.serviceAccount` value to associate it with the service account and grant permissions:
 
-  ```
+  ```yaml
   annotations:
     serviceAccount:
       eks.amazonaws.com/role-arn: arn:aws:iam::1234567890:role/my-rds-autodiscovery-role
   ```
 </Note>
 
-| Type   | Default value | Required?                                                                                                                              |
-| ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `list` | `[]`          | When the `db` chart role is used at least one of `databases`, `awsDatabases`,<br /> `azureDatabases`, `databaseResources` is required. |
-
-`awsDatabases` is a YAML list object detailing the filters for the AWS databases that should be discovered and proxied by Teleport Database access.
-
-You can specify multiple database filters by adding additional list elements.
+You can specify multiple database filters by adding elements to the list.
 
 - `types` is a list containing the types of AWS databases that should be discovered.
 - `regions` is a list of AWS regions which should be scanned for databases.
 - `tags` can be used to set AWS tags that must be matched for databases to be discovered.
 
-`values.yaml` example:
+For example:
 
 ```yaml
 roles: db
@@ -540,9 +323,11 @@ annotations:
 
 ## `azureDatabases`
 
-<Tip>
-  This section configures Azure database auto-discovery. You can configure databases for other platforms using the [`awsDatabases`](#awsdatabases) or [`databases`](#databases) sections.
-</Tip>
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
+
+`azureDatabases` configures Azure database auto-discovery.
 
 <Note>
   For Azure database auto-discovery to work, your Database Service pods will need to have appropriate IAM permissions as per the [database documentation](/docs/database-access/guides/azure-postgres-mysql#step-46-configure-iam-permissions-for-teleport).
@@ -574,13 +359,7 @@ annotations:
   ```
 </Note>
 
-| Type   | Default value | Required?                                                                                                                              |
-| ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `list` | `[]`          | When the `db` chart role is used at least one of `databases`, `awsDatabases`,<br /> `azureDatabases`, `databaseResources` is required. |
-
-`azureDatabases` is a YAML list object detailing the filters for the Azure databases that should be discovered and proxied by Teleport Database access.
-
-You can specify multiple database filters by adding additional list elements.
+You can specify multiple database filters by adding elements to the list.
 
 Required fields for each filter:
 
@@ -597,41 +376,46 @@ The default for each of these optional settings is `*`, which will auto-discover
 subscriptions, regions, or resource groups accessible by the Teleport service
 principal in Azure.
 
-`values.yaml` example:
+For example:
 
 ```yaml
 roles: db
 azureDatabases:
-- types: ["mysql", "postgres"]
-  tags:
-    "*": "*"
-- types: ["mysql"]
-  tags:
-    "env": ["dev", "staging"]
-    "origin": "alice"
-  regions: ["eastus", "centralus"]
-  subscriptions: ["subID1", "subID2"]
-  resource_groups: ["group1", "group2"]
+  - types: ["mysql", "postgres"]
+    tags:
+      "*": "*"
+  - types: ["mysql"]
+    tags:
+      "env": ["dev", "staging"]
+      "origin": "alice"
+    regions: ["eastus", "centralus"]
+    subscriptions: ["subID1", "subID2"]
+    resource_groups: ["group1", "group2"]
 extraEnv:
-- name: AZURE_CLIENT_SECRET
-  valueFrom:
-    secretKeyRef:
-    name: teleport-azure-client-secret
-    key: client_secret
-    optional: false
-- name: AZURE_TENANT_ID
-  value: "11111111-2222-3333-4444-555555555555"
-- name: AZURE_CLIENT_ID
-  value: "11111111-2222-3333-4444-555555555555"
+  - name: AZURE_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+      name: teleport-azure-client-secret
+      key: client_secret
+      optional: false
+  - name: AZURE_TENANT_ID
+    value: "11111111-2222-3333-4444-555555555555"
+  - name: AZURE_CLIENT_ID
+    value: "11111111-2222-3333-4444-555555555555"
 ```
 
 ## `databases`
 
-| Type   | Default value | Required?                                                                                                                              |
-| ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `list` | `[]`          | When the `db` chart role is used at least one of `databases`, `awsDatabases`,<br /> `azureDatabases`, `databaseResources` is required. |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-`databases` is a YAML list object detailing the databases that should be proxied by Teleport Database access.
+`databases` is a static list of databases that should be proxied by
+the agent. See [the Teleport Database access documentation](/docs/database-access/introduction)
+for more details.
+
+Proxied applications can be defined statically (through this value) or dynamically
+(through the [`databaseResources`](#databaseResources) value).
 
 You can specify multiple databases by adding additional list elements.
 
@@ -639,20 +423,20 @@ You can specify multiple databases by adding additional list elements.
 
 ```yaml
 databases:
-- name: aurora-postgres
-  uri: postgres-aurora-instance-1.xxx.us-east-1.rds.amazonaws.com:5432
-  protocol: postgres
-  aws:
-    region: us-east-1
-  static_labels:
-    env: staging
-- name: mysql
-  uri: mysql-instance-1.xxx.us-east-1.rds.amazonaws.com:3306
-  protocol: mysql
-  aws:
-    region: us-east-1
-  static_labels:
-    env: staging
+  - name: aurora-postgres
+    uri: postgres-aurora-instance-1.xxx.us-east-1.rds.amazonaws.com:5432
+    protocol: postgres
+    aws:
+      region: us-east-1
+    static_labels:
+      env: staging
+  - name: mysql
+    uri: mysql-instance-1.xxx.us-east-1.rds.amazonaws.com:3306
+    protocol: mysql
+    aws:
+      region: us-east-1
+    static_labels:
+      env: staging
 ```
 
 <Tip>
@@ -671,11 +455,11 @@ databases:
 
   ```yaml
   databases:
-  - name: my-postgres
-    uri: postgres.example.com:5432
-    protocol: postgres
-    tls:
-      ca_cert_file: "/etc/teleport-tls-db/my-postgres/ca.pem"
+    - name: my-postgres
+      uri: postgres.example.com:5432
+      protocol: postgres
+      tls:
+        ca_cert_file: "/etc/teleport-tls-db/my-postgres/ca.pem"
   extraVolumes:
     - name: my-postgres-ca
       secret:
@@ -689,136 +473,117 @@ databases:
 
 ## `databaseResources`
 
-| Type   | Default value | Required?                                                                                                                              |
-| ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `list` | `[]`          | When the `db` chart role is used at least one of `databases`, `awsDatabases`,<br /> `azureDatabases`, `databaseResources` is required. |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-`databaseResources` is a YAML list object detailing the resource selectors of the databases that should be proxied by the Teleport Database Service.
+`databaseResources` is a set of labels the agent will monitor.
+Any database matching those labels will be proxied by the agent. See [the Teleport
+Database access documentation](/docs/database-access/introduction)
+for more details.
 
-You can specify multiple selectors by adding elements to the list.
+Proxied databases can be defined statically (through [`databases`](#databases)) or
+dynamically (through this value).
 
-`values.yaml` example:
+You can specify multiple selectors by including additional list elements.
+For example:
 
 ```yaml
 databaseResources:
-- labels:
-    "env": "prod"
-    "engine": "postgres"
-- labels:
-    "env": "test"
-    "engine": "mysql"
+  - labels:
+      "env": "prod"
+      "engine": "postgres"
+  - labels:
+      "env": "test"
+      "engine": "mysql"
 ```
 
 <Tip>
-  Once `databaseResources` is set, you can dynamically register database with `tsh` by following [this guide](/docs/database-access/guides/dynamic-registration).
+  Once `databaseResources` is set, you can dynamically register database with
+  `tsh` by following [this guide](/docs/database-access/guides/dynamic-registration).
 </Tip>
 
-## kubernetesDiscovery
+## `kubernetesDiscovery`
 
-| Type   | Default value                                   | Required?                                                                   |
-| ------ | ----------------------------------------------- | --------------------------------------------------------------------------- |
-| `list` | Discovery of all applications in all namespaces | When the `discovery` chart role is used, `kubernetesDiscovery` is required. |
+| Type   | Default                                                     |
+| ------ | ----------------------------------------------------------- |
+| `list` | `[{"labels":{"*":"*"},"namespaces":["*"],"types":["app"]}]` |
 
-Default value:
+`kubernetesDiscovery` controls the Discovery Service configuration
+if it's enabled.
 
-```yaml
-kubernetesDiscovery:
-- types: ["app"]
-  namespaces: ["*"]
-  labels:
-    "*": "*"
-```
+The Discovery Service is enabled when the agent `roles` contains "discovery".
+The Discovery service automatically detects Kubernetes Services and configures
+the agent to provide access to them. See [the Kubernetes App Discovery
+documentation](/docs/application-access/enroll-kubernetes-applications/architecture)
+for more details.
 
-`kubernetesDiscovery` is a YAML list object detailing the filters for the services of the Kubernetes cluster that should be discovered
-and exposed as apps in Teleport. By default the Discovery Service will try to find all apps that are serving HTTP/HTTPS, but you can manually
-make it expose TCP apps as well, using Kubernetes annotations.
-
-You can specify multiple filters, each of which can include these parameters:
-
-- `types` is a list of types of services to be exposed in Teleport. Currently only `app` is supported.
-- `namespaces` is a list of namespaces of the Kubernetes cluster to search in. The default value is `*`, which denotes all namespaces.
-- `labels` is a list of Kubernetes labels based on which to filter out services. The default value is `*`: `*` that will match any labels.
-
-`values.yaml` example:
+The default value will try to discover all apps running in Kubernetes.
+The discovery can be restricted through this value. For example:
 
 ```yaml
 kubernetesDiscovery:
 - types: ["app"]
-  namespaces: ["staging", "test"]
+  namespaces: [ "toronto", "porto" ]
   labels:
-    "*": "*"
+    env: staging
 - types: ["app"]
-  namespaces: ["*"]
+  namespaces: [ "seattle", "oakland" ]
   labels:
-    "purpose": "monitoring"
-    "department": "security"
+    env: testing
 ```
 
 ## `teleportVersionOverride`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `nil`         |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-Normally the version of Teleport being used will match the version of the chart
-being installed. If you install chart version 10.0.0, you'll be using Teleport
-10.0.0. Upgrading the Helm chart will use the latest version from the repo.
+`teleportVersionOverride` controls the Teleport Kubernetes Operator
+image version deployed by the chart.
 
-You can optionally override this to use a different published Teleport Docker
-image tag like `10.1.2` or `11`.
+Normally, the version of the Teleport Kubernetes Operator matches the
+version of the chart. If you install chart version 15.0.0, you'll use
+Teleport version 15.0.0. Upgrading the agent is done by upgrading the chart.
 
-<Note>
-  `teleportVersionOverride` is intended for development and MUST NOT be used to control the Teleport version in a typical deployment.
-  This chart is designed to run a specific Teleport version. You will face
+<Warning>
+  `teleportVersionOverride` is intended for development and MUST NOT be
+  used to control the Teleport version in a typical deployment. This
+  chart is designed to run a specific Teleport version. You will face
   compatibility issues trying to run a different Teleport version with it.
 
   If you want to run Teleport version `X.Y.Z`, you should use
-  `helm --version X.Y.Z` instead.
-</Note>
-
-`values.yaml` example:
-
-```yaml
-teleportVersionOverride: "11"
-```
+  `helm install --version X.Y.Z` instead.
+</Warning>
 
 ## `caPin`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-When `caPin` is set, the Teleport pod will use its values to check the
-Auth Service's identity when first joining a cluster. This enables a more secure
-way of adding new Teleport instances to a cluster. See
-["Adding Nodes to the Cluster"](/docs/agents/join-services-to-your-cluster/join-token).
+`caPin` is a list of CA pins the agent must validate when joining
+the Teleport cluster to ensure it is connecting to the correct Auth Service.
 
-Each list element can be the pin itself (recommended, works out of the box),
-or a path to a file containing the pin. For the latter it is your
-responsibility to mount the file using [`extraVolumes`](#extraVolumes).
+This is only used when joining the Auth Service directly. When joining through
+a Proxy Service, authenticity is guaranteed by the x509 certificate used for
+the TLS connection.
 
-`values.yaml` example:
-
-```yaml
-caPin: ["sha256:7e12c17c20d9cb504bbcb3f0236be3f446861f1396dcbb44425fe28ec1c108f1"]
-```
+Each list element can be the pin itself (recommended), or a path to a file
+containing the pin. For the latter, it is your responsibility to mount
+the file, using [`extraVolumes`](#extraVolumes).
 
 ## `insecureSkipProxyTLSVerify`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
 
-When `insecureSkipProxyTLSVerify` is set to `true`, the Teleport instance will skip the verification of the TLS certificate presented by the Teleport
-Proxy Service specified using [`proxyAddr`](#proxyaddr).
+`insecureSkipProxyTLSVerify` disables TLS verification of the TLS
+certificate presented by the Proxy Service.
 
-This can be used for joining a Teleport instance to a Teleport cluster which does not have valid TLS certificates for testing.
-
-`values.yaml` example:
-
-```yaml
-insecureSkipProxyTLSVerify: false
-```
+This can be used for joining a Teleport instance to a Teleport cluster
+which does not have valid TLS certificates for testing.
 
 <Warning>
   Using a self-signed TLS certificate and disabling TLS verification is OK for testing, but is not viable when running a production Teleport
@@ -829,9 +594,13 @@ insecureSkipProxyTLSVerify: false
 
 ## `teleportConfig`
 
-`teleportConfig` contains YAML teleport configuration to pass to the Teleport pods.
-The configuration will be merged with the chart-generated configuration
-and will take precedence in case of conflict.
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`teleportConfig` contains YAML teleport configuration to pass to the
+Teleport pods. The configuration will be merged with the chart-generated
+configuration and will take precedence in case of conflict.
 
 See the [Teleport Configuration Reference](/docs/reference/config) for the list of supported fields.
 
@@ -849,19 +618,25 @@ teleportConfig:
 
 ## `tls`
 
-### `existingCASecretName`
+`tls` contains settings for mounting your own TLS material in the agent pod.
+The agent does not expose a TLS server, so this is only used to trust CAs.
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `""`          |
+### `tls.existingCASecretName`
 
-`tls.existingCASecretName` sets the `SSL_CERT_FILE` environment variable to load a trusted CA or bundle in PEM format into Teleport pods.
-This can be set to inject a root and/or intermediate CA so that Teleport can build a full trust chain on startup.
-The injected CA will be used to validate TLS communications, with the Proxy Service, with upstream applications or databases.
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`tls.existingCASecretName` sets the `SSL_CERT_FILE` environment
+variable to load a trusted CA or bundle in PEM format into Teleport pods.
+The injected CA will be used to validate TLS communications, with the Proxy
+Service, with upstream applications or databases.
 
 <Note>
-  The recommended way to trust a database CA is to do it per-database instead of adding the CA to the global Teleport trust store.
-  It allows to trust multiple CAs while limiting the trust scope to their specific databases. See [the `databases` section](#databases).
+  The recommended way to trust a database CA is to do it per-database instead
+  of adding the CA to the global Teleport trust store. It allows to trust
+  multiple CAs while limiting the trust scope to their specific databases.
+  See [the `databases` section](#databases).
 </Note>
 
 You must create a secret containing the CA certs in the same namespace as Teleport using a command like:
@@ -874,34 +649,160 @@ $ kubectl create secret generic my-root-ca --from-file=ca.pem=/path/to/root-ca.p
   The key containing the root CA in the secret must be `ca.pem`.
 </Warning>
 
-`values.yaml` example:
+## `updater`
+
+`updater` controls whether the Kube Agent Updater should be deployed alongside
+the `teleport-kube-agent`. The updater fetches the target version, validates the
+image signature, and updates the teleport deployment. The `enterprise` value should
+have been set to `true`.
+
+All Kubernetes-specific fields such as `tolerations`, `affinity`, `nodeSelector`,
+... default to the agent values. However, they can be overridden from the
+`updater` object. For example:
 
 ```yaml
-tls:
-  existingCASecretName: my-root-ca
+# the agent pod requests 1cpu and 2 GiB of memory. It also has a memory limit.
+resources:
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+  limits:
+    memory: "2Gi"
+
+# the updater pod requests 0.5 cpu and 512MiB of memory. The memory limit has also been unset.
+updater:
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "512Mi"
+    limits: ~
 ```
+
+Other updater-specific values that can be defined in `updater` are described
+below.
+
+### `updater.enabled`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`updater.enabled` Enables the Kube Agent Updater and deploys it alongside the Teleport Agent.
+You can enable this when:
+
+- using Teleport Cloud and your tenant is enrolled into automatic updates.
+  (You can check this through the web UI, choose `Add Kubernetes` and
+  `Enroll New Resource of type Kubernetes`, and check if the value is turned
+  on.)
+- using self-hosted Teleport and you maintain your own version server.
+
+You must not enable this when:
+
+- you are a Teleport Cloud customer not enrolled in automatic updates.
+- you are a self-hosted Teleport user and have not set up your Teleport cluster to
+  support automatic updates.
+
+### `updater.versionServer`
+
+| Type     | Default                                                                 |
+| -------- | ----------------------------------------------------------------------- |
+| `string` | `"https://{{ .Values.proxyAddr }}/v1/webapi/automaticupgrades/channel"` |
+
+`updater.versionServer` is the URL of the version server the agent
+fetches the target version from. The complete version endpoint is built by
+concatenating [`versionServer`](#updaterversionserver) and [`releaseChannel`
+](#updaterreleasechannel).
+This field supports gotemplate.
+
+You must set this if the updater is enabled, and you are not a Teleport Cloud user.
+
+You must not change the default values if you are a Teleport Cloud user.
+
+### `updater.releaseChannel`
+
+| Type     | Default          |
+| -------- | ---------------- |
+| `string` | `"stable/cloud"` |
+
+`updater.releaseChannel` is the release channel the updater
+subscribes to.
+
+The complete version endpoint is built by concatenating
+[`versionServer`](#updaterversionserver) and [`releaseChannel`](#updaterreleasechannel).
+You must not change the default value if you are a Teleport Cloud user unless
+instructed by Teleport support.
+
+You can change this value if the updater is enabled, you are not a Teleport
+Cloud user, and manage your own version server.
+
+### `updater.image`
+
+| Type     | Default                                                      |
+| -------- | ------------------------------------------------------------ |
+| `string` | `"public.ecr.aws/gravitational/teleport-kube-agent-updater"` |
+
+`updater.image` sets the container image used for Teleport updater
+pods run when `updater.enabled` is true.
+
+You can override this to use your own Teleport Kube Agent Updater image rather
+than a Teleport-published image.
+
+### `updater.serviceAccount`
+
+#### `updater.serviceAccount.name`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`updater.serviceAccount.name` is the updater Kubernetes Service
+Account name. When unset, it defaults to `<kube agent sa name>-updater`
+
+### `updater.pullCredentials`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`updater.pullCredentials` configures how the updater attempts to
+get the image pull credentials used to validate the image signature.
+
+This is not required when pulling images from official public Teleport
+registries (chart's default).
+
+Supported values are `amazon`, `google`, `docker` and `none`.
+
+### `updater.extraArgs`
+
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
+
+`updater.extraArgs` contains additional arguments to pass to the updater
+binary.
 
 ## `existingDataVolume`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `""`          |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-When `existingDataVolume` is set to the name of an existing volume, the `/var/lib/teleport` mount will use this volume instead of creating a new `emptyDir` volume.
+`existingDataVolume` is the name of an existing Kubernetes Persistent
+Volume that should be mounted at `/var/lib/teleport`.
 
-`values.yaml` example:
-
-```yaml
-existingDataVolume: my-volume
-```
+This is only useful if you had a previous agent running with persistence enabled
+and want for a new agent to reuse the volume.
 
 ## `podSecurityPolicy`
 
 ### `podSecurityPolicy.enabled`
 
-| Type   | Default value                          |
-| ------ | -------------------------------------- |
-| `bool` | `true` for \< 1.23 `false` for >= 1.23 |
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `true`  |
+
+`podSecurityPolicy.enabled` controls if the chart should deploy a Kubernetes
+PodSecurityPolicy.
 
 By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/15/examples/chart/teleport-cluster/templates/psp.yaml).
 
@@ -911,25 +812,18 @@ Kubernetes 1.23 or later, it is recommended to disable PSPs and use PSAs.
 The steps are documented in the
 [PSP removal guide](/docs/deploy-a-cluster/helm-deployments/migration-kubernetes-1-25-psp).
 
-To disable PSP creation, you can set `enabled` to `false`.
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/policy/pod-security-policy/)
-
-`values.yaml` example:
-
-```yaml
-podSecurityPolicy:
-  enabled: false
-```
+This value will be removed in a future chart version.
 
 ## `labels`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
 
-`labels` can be used to add a map of key-value pairs for the `kubernetes_service` which is deployed using the `teleport-kube-agent` chart.
-These labels can then be used with Teleport's RBAC policies to define access rules for the cluster.
+`labels` is the map of key-value pairs that will be applied on the
+Teleport resource representing the Kubernetes cluster. These labels can then
+be used with Teleport's RBAC policies to define access rules for the cluster.
+This is only used when the [`roles`](#roles) contains `kube`.
 
 <Note>
   These are Teleport-specific RBAC labels, not Kubernetes labels.
@@ -945,7 +839,7 @@ These labels can then be used with Teleport's RBAC policies to define access rul
   For more information on how to set static/dynamic labels for Teleport services, see [labelling nodes and applications](/docs/management/admin/labels).
 </Note>
 
-`values.yaml` example:
+For example:
 
 ```yaml
 labels:
@@ -953,106 +847,240 @@ labels:
   region: us-east
 ```
 
+## `highAvailability`
+
+`highAvailability` contains settings controlling the availability of the
+Teleport agent deployed by the chart.
+
+The availability can be increased by:
+
+- running more replicas with `replicaCount`
+- requiring that the Pods are not scheduled on the same Kubernetes Node with `requireAntiAffinity`
+- by asking Kubernetes not to delete all pods at the same time with `podDisruptionBudget`.
+
+Even with highAvailability settings Restarting/rolling-out pods can still cause
+disruption for established long-lived sessions, like `kubectl exec` or
+database shells.
+
+### `highAvailability.replicaCount`
+
+| Type  | Default |
+| ----- | ------- |
+| `int` | `1`     |
+
+`highAvailability.replicaCount` is the number of agent replicas deployed by the Chart.
+
+Set to a number higher than `1` for a high availability mode where multiple Teleport pods will be deployed.
+
+<Tip>
+  As a rough guide, we recommend configuring one replica per distinct
+  availability zone where your cluster has worker nodes.
+
+  2 replicas/availability zones will be fine for smaller workloads. 3-5
+  replicas/availability zones will be more appropriate for bigger
+  clusters with more traffic.
+</Tip>
+
+When adding new replicas to an existing agent, you must ensure the provided token
+(via [`authToken`](#authToken), [`joinParams`](#joinParams), or [`joinTokenSecret`](#joinTokenSecret))
+is still valid. Each replica has its own identity and needs to join the Teleport
+cluster on its first startup.
+
+### `highAvailability.requireAntiAffinity`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`highAvailability.requireAntiAffinity` configures Kubernetes `requiredDuringSchedulingIgnoredDuringExecution`
+to require that multiple Teleport pods must not be scheduled on the same physical host.
+
+<Warning>
+  This can result in Teleport pods failing to be scheduled in very small
+  clusters or during node downtime, so should be used with caution.
+</Warning>
+
+Setting `highAvailability.requireAntiAffinity` to `false` (the default)
+uses `preferredDuringSchedulingIgnoredDuringExecution` to make node
+anti-affinity a soft requirement.
+
+<Note>
+  This setting only has any effect when `highAvailability.replicaCount` is greater than `1`.
+</Note>
+
+### `highAvailability.podDisruptionBudget`
+
+`highAvailability.podDisruptionBudget` controls how the chart creates and
+configures a Kubernetes PodDisruptionBudget to ensure Kubernetes does not
+delete all agent replicas at the same time.
+
+#### `highAvailability.podDisruptionBudget.enabled`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`highAvailability.podDisruptionBudget.enabled` makes the chart create
+a Kubernetes PodDisruptionBudget for the agent pods.
+
+#### `highAvailability.podDisruptionBudget.minAvailable`
+
+| Type  | Default |
+| ----- | ------- |
+| `int` | `1`     |
+
+`highAvailability.podDisruptionBudget.minAvailable` is the minimum
+available pod specified on the PodDisruptionBudget.
+
+## `podMonitor`
+
+`podMonitor` controls the PodMonitor CR (from monitoring.coreos.com/v1)
+This CRD is managed by the prometheus-operator and allows workload to
+get monitored. To use this value, you need to run a `prometheus-operator`
+in the cluster for this value to take effect.
+See [https://prometheus-operator.dev/docs/prologue/introduction/](https://prometheus-operator.dev/docs/prologue/introduction/)
+
+### `podMonitor.enabled`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`podMonitor.enabled` controls if the chart deploys a PodMonitor.
+This is disabled by default as it requires the PodMonitor CRD to be installed.
+
+### `podMonitor.additionalLabels`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`podMonitor.additionalLabels` adds labels on the PodMonitor.
+This is used to be selected by a specific prometheus instance.
+
+For example:
+
+```yaml
+podMonitor:
+  additionalLabels:
+    prometheus: default
+```
+
+### `podMonitor.interval`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `"30s"` |
+
+`podMonitor.interval` is the interval between two metrics scrapes.
+
 ## `storage`
+
+`storage` controls how the agent stores data in a Kubernetes Persistent Volume.
+
+Since Teleport 12, the agent does not need PV storage to keep its identity across
+restarts: it stores it in a Kubernetes Secret. This means the `teleport-kubernetes-agent`
+can use one-time and short-lived join tokens, it will retain its identity and
+secrets even after a restart.
+
+The main benefit of enabling storage is to persist not-yet-uploaded session
+recordings after Pod termination, when the Teleport session recording mode is
+not synchronous.
 
 ### `storage.enabled`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
 
-Enables the creation of a Kubernetes persistent volume to hold Teleport instance state.
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
-
-#### Chart upgrades for legacy releases
-
-If you are upgrading a legacy `teleport-kube-agent` release (pre-v11), the way
-the `teleport-kube-agent` chart handles upgrades differs depending on the value
-of `storage.enabled`. Prior to v11, the chart ran the Teleport pod as a
-`Deployment` if `storage.enabled` was `false` and a `StatefulSet` if it was
-`true`. In v11 and after, the chart always runs the Teleport pod as a
-`StatefulSet`.
-
-During an upgrade, if `storage.enabled` is `false`, the chart installs a
-`StatefulSet` resource to run the Teleport pod alongside the existing
-`Deployment`. Once the `StatefulSet` joins the cluster and becomes healthy, the
-chart deletes the `Deployment` using a [Helm
-hook](https://helm.sh/docs/topics/charts_hooks/), and the upgrade finishes.
-
-If `storage.enabled` is `true`, then during the upgrade, the
-`teleport-kube-agent` chart will use the existing `StatefulSet` resource to run
-the Teleport pod. The chart will import the pod's identify from the previously
-configured external storage into a Kubernetes `Secret`.
-
-#### New chart installations
-
-New installations of `teleport-kube-agent` always launch the Teleport pod as a
-`StatefulSet`, and the pod reads its state from a Kubernetes `Secret`. Setting
-`storage.enabled` to `true` is not required for the Teleport pod to maintain its
-state.
-
-If `storage.enabled` is `true`, the chart creates a volume mount for the
-Teleport pod that persists across the lifetimes of all Teleport pods deployed on
-a particular node. The Teleport pod uses this volume mount to manage its data,
-which is useful for storing session recordings locally.
-
-You can configure this persistent storage using `storage.storageClassName` and
-`storage.requests`.
-
-If `storage.enabled` is `false`, the chart configures the Teleport pod to manage
-its data with a temporary directory that exists until the Teleport pod stops
-running.
-
-`values.yaml` example:
-
-```yaml
-storage:
-  enabled: true
-```
+`storage.enabled` enables the creation of a Kubernetes persistent
+volume to hold Teleport instance state.
 
 ### `storage.storageClassName`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `nil`         |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-The storage class name the persistent volume should use when creating persistent volume claims. The provided storage class
-name needs to exist on the Kubernetes cluster for Teleport to use.
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/storage/storage-classes/)
-
-`values.yaml` example:
-
-```yaml
-storage:
-  storageClassName: teleport-storage-class
-```
+`storage.storageClassName` controls which Kubernetes StorageClass
+the chart uses when creating Persistent Volume Claims. A StorageClass with
+the provided name must exist on the Kubernetes cluster.
 
 ### `storage.requests`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `128Mi`       |
+| Type     | Default   |
+| -------- | --------- |
+| `string` | `"128Mi"` |
 
-The size of persistent volume to create.
+`storage.requests` is the size of the persistent volume to create.
 
-`values.yaml` example:
+## `adminClusterRoleBinding`
 
-```yaml
-storage:
-  requests: 128Mi
-```
+`adminClusterRoleBinding` optionally creates a cluster admin role binding.
+This is useful for granting cluster admin permissions to a Kubernetes Group
+other than the default `system:masters` group.
+
+GKE Autopilot clusters forbid using the `system:masters` group for impersonation
+and require a custom group to be used instead.
+
+### `adminClusterRoleBinding.create`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `false` |
+
+`adminClusterRoleBinding.create` controls if the chart should create
+an additional admin cluster role binding.
+
+### `adminClusterRoleBinding.name`
+
+| Type     | Default           |
+| -------- | ----------------- |
+| `string` | `"cluster-admin"` |
+
+`adminClusterRoleBinding.name` is the name of the created admin
+cluster role binding.
 
 ## `image`
 
-| Type     | Default value                           |
-| -------- | --------------------------------------- |
-| `string` | `public.ecr.aws/gravitational/teleport` |
+| Type     | Default                                              |
+| -------- | ---------------------------------------------------- |
+| `string` | `"public.ecr.aws/gravitational/teleport-distroless"` |
 
-`image` sets the container image used for Teleport agent pods run by the `teleport-kube-agent` chart.
+`image` sets the container image used for Teleport OSS agent pods
+created by the chart.
 
 You can override this to use your own Teleport image rather than a Teleport-published image.
+
+<Warning>
+  When using the Teleport Kube Agent Updater, you must ensure the image is
+  available before the updater version target gets updated and Kubernetes tries
+  to pull the image.
+
+  For this reason, it is strongly discouraged to set a custom image when
+  using automatic updates. Teleport Cloud uses automatic updates by default.
+</Warning>
+
+Since version 13, hardened distroless images are used by default.
+You can use the deprecated debian-based images by setting the value to
+`public.ecr.aws/gravitational/teleport`. Those images will be
+removed with teleport 15.
+
+This setting only takes effect when [`enterprise`](#enterprise) is `false`.
+When running an enterprise version, you must use
+[`enterpriseImage`](#enterpriseImage) instead.
+
+## `enterpriseImage`
+
+| Type     | Default                                                  |
+| -------- | -------------------------------------------------------- |
+| `string` | `"public.ecr.aws/gravitational/teleport-ent-distroless"` |
+
+`enterpriseImage` sets the container image used for Teleport Enterprise
+agent pods created by the chart.
+
+You can override this to use your own Teleport image rather than a
+Teleport-published image.
 
 <Warning>
   When using the Teleport Kube Agent Updater you must ensure the image is
@@ -1060,272 +1088,160 @@ You can override this to use your own Teleport image rather than a Teleport-publ
   to pull the image.
 
   For this reason, it is strongly discouraged to set a custom image when
-  connecting to a Teleport Cloud instance enrolled in automatic updates.
+  using automatic updates. Teleport Cloud uses automatic updates by default.
 </Warning>
 
-`values.yaml` example:
+Since version 13, hardened distroless images are used by default.
+You can use the deprecated debian-based images by setting the value to
+`public.ecr.aws/gravitational/teleport-ent`. Those images will be
+removed with teleport 15.
 
-```yaml
-image: my.docker.registry/teleport-image-name
-```
+This setting only takes effect when [`enterprise`](#enterprise) is `true`.
+When running an enterprise version, you must use [`image`](#image) instead.
 
 ## `imagePullSecrets`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)
+`imagePullSecrets` is a list of secrets containing authorization tokens
+which can be optionally used to access a private Docker registry.
 
-A list of secrets containing authorization tokens which can be optionally used to access a private Docker registry.
-
-`values.yaml` example:
-
-```yaml
-imagePullSecrets:
-- name: my-docker-registry-key
-```
-
-### `highAvailability`
-
-## `highAvailability.replicaCount`
-
-| Type  | Default value |
-| ----- | ------------- |
-| `int` | `1`           |
-
-`highAvailability.replicaCount` can be used to set the number of replicas used in the deployment.
-
-Set to a number higher than `1` for a high availability mode where multiple Teleport pods will be deployed.
-
-<Tip>
-  As a rough guide, we recommend configuring one replica per distinct availability zone where your cluster has worker nodes.
-
-  2 replicas/availability zones will be fine for smaller workloads. 3-5 replicas/availability zones will be more appropriate for bigger
-  clusters with more traffic.
-</Tip>
-
-`values.yaml` example:
-
-```yaml
-highAvailability:
-  replicaCount: 3
-```
-
-## `highAvailability.requireAntiAffinity`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity)
-
-Setting `highAvailability.requireAntiAffinity` to `true` will use `requiredDuringSchedulingIgnoredDuringExecution` to require that multiple
-Teleport pods must not be scheduled on the same physical host.
-
-<Warning>
-  This can result in Teleport pods failing to be scheduled in very small clusters or during node downtime, so should be used with caution.
-</Warning>
-
-Setting `highAvailability.requireAntiAffinity` to `false` (the default) uses `preferredDuringSchedulingIgnoredDuringExecution` to make node
-anti-affinity a soft requirement.
-
-<Note>
-  This setting only has any effect when `highAvailability.replicaCount` is greater than `1`.
-</Note>
-
-`values.yaml` example:
-
-```yaml
-highAvailability:
-  requireAntiAffinity: true
-```
-
-## `highAvailability.podDisruptionBudget`
-
-### `highAvailability.podDisruptionBudget.enabled`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
-
-[Kubernetes reference](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
-
-Enable a Pod Disruption Budget for the Teleport Pod to ensure HA during voluntary disruptions.
-
-`values.yaml` example:
-
-```yaml
-highAvailability:
-  podDisruptionBudget:
-    enabled: true
-```
-
-### `highAvailability.podDisruptionBudget.minAvailable`
-
-| Type  | Default value |
-| ----- | ------------- |
-| `int` | `1`           |
-
-[Kubernetes reference](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
-
-Ensures that this number of replicas is available during voluntary disruptions, can be a number of replicas or a percentage.
-
-`values.yaml` example:
-
-```yaml
-highAvailability:
-  podDisruptionBudget:
-    minAvailable: 1
-```
-
-## `podMonitor`
-
-`podMonitor` controls [the PodMonitor CR (from monitoring.coreos.com/v1)
-](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.PodMonitor)
-that monitors the workload (Auth and Proxy Services) deployed by the chart.
-This custom resource configures Prometheus and makes it scrape Teleport metrics.
-
-The CRD is deployed by the prometheus-operator and allows workload to
-get monitored. You need to deploy the `prometheus-operator`
-in the cluster prior to configuring the `podMonitor` section of the chart. See
-[the prometheus-operator documentation](https://prometheus-operator.dev/docs/prologue/introduction/)
-for setup instructions.
-
-### `podMonitor.enabled`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `false`       |
-
-Whether the chart should deploy a `PodMonitor` resource. This is disabled by
-default as it requires the `PodMonitor` CRD to be installed in the cluster.
-
-### `podMonitor.additionalLabels`
-
-| Type                   | Default value              |
-| ---------------------- | -------------------------- |
-| `object[string]string` | `{"prometheus":"default"}` |
-
-Additional labels to put on the created PodMonitor Resource.
-Those labels are used to be selected by a specific Prometheus instance.
-
-### `podMonitor.interval`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `30s`         |
-
-`interval` is the interval between two metrics scrapes by Prometheus.
+See the [Kubernetes reference](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) for more details.
 
 ## `clusterRoleName`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `nil`         |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-`clusterRoleName` can be optionally used to override the name of the Kubernetes `ClusterRole` used by the `teleport-kube-agent` chart's `ServiceAccount`.
+`clusterRoleName` can be optionally used to override the name of the
+Kubernetes `ClusterRole` used by the agent's `ServiceAccount`.
 
 <Note>
   Most users will not need to change this.
 </Note>
-
-`values.yaml` example:
-
-```yaml
-clusterRoleName: kubernetes-clusterrole
-```
 
 ## `clusterRoleBindingName`
 
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`clusterRoleBindingName` can be optionally used to override the name
+of the Kubernetes `ClusterRoleBinding` used by the agent's `ServiceAccount`.
+
 <Note>
   Most users will not need to change this.
 </Note>
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `nil`         |
+## `roleName`
 
-`clusterRoleBindingName` can be optionally used to override the name of the Kubernetes `ClusterRoleBinding` used by the `teleport-kube-agent` chart's `ServiceAccount`.
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-`values.yaml` example:
+`roleName` provides a custom name for the `Role` resource that the
+`teleport-kube-agent` chart creates for the Teleport pod. By default, the `Role`
+has the name of the Helm release.
 
-```yaml
-clusterRoleBindingName: kubernetes-clusterrolebinding
-```
+You should set this value if there is a `Role` resource in the namespace of your
+`teleport-kube-agent` resources with the same name as your `teleport-kube-agent`
+release.
 
-## `priorityClassName`
+## `roleBindingName`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `nil`         |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-`priorityClassName` allows to specify a priority class for the `teleport-kube-agent` deployment/statefulset.
+`roleBindingName` provides a custom name for the `RoleBinding` resource that the
+`teleport-kube-agent` chart creates for the Teleport pod. By default, the
+`RoleBinding` has the name of the Helm release.
 
-`values.yaml` example:
-
-```yaml
-priorityClassName: "teleport-kube-agent"
-```
-
-## `serviceAccount.create`
-
-| Type      | Default value | Required? |
-| --------- | ------------- | --------- |
-| `boolean` | `true`        | No        |
-
-[Kubernetes reference](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/)
-
-Boolean value to control whether Helm Chart should create the `ServiceAccount`.
-When off, the `serviceAccount.name` parameter should be set to the existing `ServiceAccount` name.
-
-`values.yaml` example:
-
-```yaml
-serviceAccount:
-  create: false
-  name: kubernetes-serviceaccount
-```
-
-## `serviceAccount.name`
-
-| Type     | Default value | Required? |
-| -------- | ------------- | --------- |
-| `string` | `""`          | No        |
-
-`serviceAccount.name` provides a custom name for the `ServiceAccount` resource
-that the `teleport-kube-agent` chart creates for the Teleport pod. By default,
-the `ServiceAccount` has the name of the Helm release.
-
-You should set this value if there is a `ServiceAccount` resource in the
-namespace of your `teleport-kube-agent` resources with the same name as your
+You should set this value if there is a `RoleBinding` resource in the namespace
+of your `teleport-kube-agent` resources with the same name as your
 `teleport-kube-agent` release.
 
-`values.yaml` example:
+## `serviceAccountName`
 
-```yaml
-serviceAccount:
-  name: kubernetes-serviceaccount
-```
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`serviceAccountName` is deprecated and will be removed in a future
+version. Use [`serviceAccount.name`](#serviceaccountname-1) instead.
+
+## `serviceAccount`
+
+`serviceAccount` controls the Kubernetes ServiceAccounts deployed and used by
+the chart.
+
+### `serviceAccount.create`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `true`  |
+
+`serviceAccount.create` controls whether Helm Chart creates the
+Kubernetes `ServiceAccount` resources for the agent and optionally for the
+updater.
+When off, you are responsible for creating the appropriate ServiceAccount
+resources.
+
+### `serviceAccount.name`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`serviceAccount.name` sets the name of the `ServiceAccount` resource
+used by the chart. By default, the `ServiceAccount` has the name of the
+Helm release.
+
+## `rbac`
+
+### `rbac.create`
+
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `true`  |
+
+`rbac.create` controls if the chart should create RBAC Kubernetes resources.
+
+- When `true`, the chart creates both `ClusterRole` and `ClusterRoleBinding`
+  resources for the agent, and `Role`/`RoleBinding` for the updater if enabled.
+- When `false`, the chart does not create the `Role` and `RoleBinding` resources.
+  The user is responsible for deploying and maintaining them separately.
+
+This value can be set to `false` when deploying in constrained environments
+where the user deploying the operator is not allowed to edit RBAC resources.
 
 ## `joinTokenSecret`
 
+`joinTokenSecret` manages the join token secret creation and its name.
+See the [`joinParams`](#joinParams) section for more details.
+
 ### `joinTokenSecret.create`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `bool` | `true`        |
+| Type   | Default |
+| ------ | ------- |
+| `bool` | `true`  |
 
-Boolean value to control whether Helm Chart should create the `Secret`.
-When off, the `joinTokenSecret.name` parameter should be set to the existing `Secret` name.
+`joinTokenSecret.create` controls whether the chart creates the
+Kubernetes `Secret` containing the Teleport join token.
+If false, you must create a Kubernetes Secret with the configured name in
+the Helm release namespace.
 
 ### `joinTokenSecret.name`
 
-| Type     | Default value                    |
-| -------- | -------------------------------- |
-| `string` | `teleport-kube-agent-join-token` |
+| Type     | Default                            |
+| -------- | ---------------------------------- |
+| `string` | `"teleport-kube-agent-join-token"` |
 
-`name` is the name of the Kubernetes Secret containing the Teleport join token used by the chart.
+`joinTokenSecret.name` is the name of the Kubernetes Secret
+containing the Teleport join token used by the chart.
 
 If `joinTokenSecret.create` is `false`, the chart will not attempt to create the secret itself.
 Instead, it will read the value from an existing secret. `joinTokenSecret.name`
@@ -1335,19 +1251,19 @@ join token stored in your Teleport chart values.
 To create your own join token secret, you can use a command like this:
 
 ```code
-$ kubectl --namespace teleport create secret generic teleport-kube-agent-join-token --from-literal=auth-token=<replace-with-actual-token>
+$ kubectl --namespace teleport create secret generic my-token-secret --from-literal=auth-token=<replace-with-actual-token>
 ```
 
 <Note>
   The key used for the auth token inside the secret must be `auth-token`, as in the command above.
 </Note>
 
-`values.yaml` example:
+For example:
 
 ```yaml
 joinTokenSecret:
   create: false
-  name: "secret-i-created-before"
+  name: my-token-secret
 
 joinParams:
   method: "token"
@@ -1356,542 +1272,359 @@ joinParams:
 
 ## `log`
 
+`log` controls the agent logging.
+
 ### `log.level`
 
-<Note>
-  This field used to be called `logLevel`. For backwards compatibility this name can still be used, but we recommend changing your values file to use `log.level`.
-</Note>
+| Type     | Default  |
+| -------- | -------- |
+| `string` | `"INFO"` |
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `INFO`        |
-
-`log.level` sets the log level used for the Teleport process.
-
-Available log levels (in order of most to least verbose) are: `DEBUG`, `INFO`, `WARNING`, `ERROR`.
+`log.level` is the log level for the Teleport process.
+Available log levels are: `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 
 The default is `INFO`, which is recommended in production.
-
 `DEBUG` is useful during first-time setup or to see more detailed logs for debugging.
-
-`values.yaml` example:
-
-```yaml
-log:
-  level: DEBUG
-```
 
 ### `log.output`
 
-| Type     | Default value | `teleport.yaml` equivalent |
-| -------- | ------------- | -------------------------- |
-| `string` | `stderr`      | `teleport.log.output`      |
+| Type     | Default    |
+| -------- | ---------- |
+| `string` | `"stderr"` |
 
 `log.output` sets the output destination for the Teleport process.
+This can be set to any of the built-in values: `stdout`, `stderr` or `syslog`
+to use that destination.
 
-This can be set to any of the built-in values: `stdout`, `stderr` or `syslog` to use that destination.
-
-The value can also be set to a file path (such as `/var/log/teleport.log`) to write logs to a file. Bear in mind that a few service startup messages will still go to `stderr` for resilience.
-
-`values.yaml` example:
-
-```yaml
-log:
-  output: stderr
-```
+The value can also be set to a file path (such as `/var/log/teleport.log`)
+to write logs to a file. Bear in mind that a few service startup messages
+will still go to `stderr` for resilience.
 
 ### `log.format`
 
-| Type     | Default value | `teleport.yaml` equivalent   |
-| -------- | ------------- | ---------------------------- |
-| `string` | `text`        | `teleport.log.format.output` |
+| Type     | Default  |
+| -------- | -------- |
+| `string` | `"text"` |
 
-`log.format` sets the output type for the Teleport process.
-
+`log.format` sets the log output format for the Teleport process.
 Possible values are `text` (default) or `json`.
-
-`values.yaml` example:
-
-```yaml
-log:
-  format: json
-```
 
 ### `log.extraFields`
 
-| Type   | Default value                                   | `teleport.yaml` equivalent         |
-| ------ | ----------------------------------------------- | ---------------------------------- |
-| `list` | `["timestamp", "level", "component", "caller"]` | `teleport.log.format.extra_fields` |
+| Type   | Default                                      |
+| ------ | -------------------------------------------- |
+| `list` | `["timestamp","level","component","caller"]` |
 
 `log.extraFields` sets the fields used in logging for the Teleport process.
 
-See the [Teleport config file reference](/docs/reference/config) for more details on possible values for `extra_fields`.
-
-`values.yaml` example:
-
-```yaml
-log:
-  extraFields: ["timestamp", "level"]
-```
+See the [Teleport config file reference](/docs/reference/config) for
+more details on possible values for `extra_fields`.
 
 ## `affinity`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity)
-
-Kubernetes affinity to set for pod assignments.
-
-<Note>
-  You cannot set both `affinity` and `highAvailability.requireAntiAffinity` as they conflict with each other.
-</Note>
-
-`values.yaml` example:
-
-```yaml
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: gravitational.io/dedicated
-          operator: In
-          values:
-          - teleport
-```
+`affinity` sets the affinities for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity)
+for more details.
 
 ## `dnsConfig`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)
+`dnsConfig` contains custom Pod DNS Configuration for the agent pods.
+This value is useful if you need to reduce the DNS load: set "ndots" to 0 and
+only use FQDNs to refer to applications and databases.
 
-Kubernetes pod DNS configuration. This value can reduce the DNS load by setting `ndots` to 0.
+See [the Kubernetes pod DNS documentation
+](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)
+for more information.
+
+For example:
 
 ```yaml
-dnsConfig:
-  nameservers:
-    - 1.2.3.4
-  searches:
-    - ns1.svc.cluster-domain.example
-    - my.dns.search.suffix
-  options:
-    - name: ndots
-      value: "2"
+ nameservers:
+   - 1.2.3.4
+ searches:
+   - ns1.svc.cluster-domain.example
+   - my.dns.search.suffix
+ options:
+   - name: ndots
+     value: "2"
 ```
 
 ## `dnsPolicy`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `string` | `""`          |
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy)
+`dnsPolicy` sets the Pod's DNS Policy
 
-Kubernetes pod DNS policy.
-
-```yaml
-dnsPolicy: "Default"
-```
+See [the Kubernetes pod DNS documentation
+](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy)
+for more information.
 
 ## `nodeSelector`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
 
-`nodeSelector` can be used to add a map of key-value pairs to constrain the
-nodes that Teleport pods will run on.
+`nodeSelector` sets the node selector for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+for more details.
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+## `extraLabels`
 
-`values.yaml` example:
+`extraLabels` contains additional Kubernetes labels to apply on the resources
+created by the chart.
+See [the Kubernetes label documentation
+](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+for more information.
+
+### `extraLabels.clusterRole`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.clusterRole` are labels to set on the ClusterRole.
+
+### `extraLabels.clusterRoleBinding`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.clusterRoleBinding` are labels to set on the ClusterRoleBinding.
+
+### `extraLabels.role`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.role` are labels to set on the Role.
+
+### `extraLabels.roleBinding`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.roleBinding` are labels to set on the RoleBinding.
+
+### `extraLabels.config`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.config` are labels to set on the ConfigMap.
+
+### `extraLabels.deployment`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.deployment` are labels to set on the Deployment or StatefulSet.
+
+### `extraLabels.pod`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.pod` are labels to set on the Pods created by the
+Deployment or StatefulSet.
+
+### `extraLabels.podDisruptionBudget`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.podDisruptionBudget` are labels to set on the podDisruptionBudget.
+
+### `extraLabels.podSecurityPolicy`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.podSecurityPolicy` are labels to set on the podSecurityPolicy.
+
+### `extraLabels.secret`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.secret` are labels to set on the Secret.
+
+### `extraLabels.serviceAccount`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`extraLabels.serviceAccount` are labels to set on the ServiceAccount.
+
+## `annotations`
+
+`annotations` contains annotations to apply to the different Kubernetes
+objects created by the chart. See [the Kubernetes annotation
+documentation](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+for more details.
+
+### `annotations.config`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`annotations.config` contains the Kubernetes annotations
+put on the `ConfigMap` resource created by the chart.
+
+### `annotations.deployment`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`annotations.deployment` contains the Kubernetes annotations
+put on the `Deployment` or `StatefulSet` resource created by the chart.
+
+### `annotations.pod`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`annotations.pod` contains the Kubernetes annotations
+put on the `Pod` resources created by the chart.
+
+### `annotations.secret`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`annotations.secret` contains the Kubernetes annotations
+put on the `Secret` resource created by the chart.
+This has no effect when `joinTokenSecret.create` is `false`.
+
+### `annotations.serviceAccount`
+
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
+
+`annotations.serviceAccount` contains the Kubernetes annotations
+put on the `ServiceAccount` resource created by the chart.
+
+## `extraArgs`
+
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
+
+`extraArgs` contains extra arguments to pass to `teleport start` for
+the main Teleport pod
+
+## `extraEnv`
+
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
+
+`extraEnv` contains extra environment variables to set in the main
+Teleport pod.
+
+For example:
 
 ```yaml
-nodeSelector:
-  role: node
-  region: us-east
+extraEnv:
+  - name: HTTPS_PROXY
+    value: "http://username:password@my.proxy.host:3128"
 ```
 
-## `extraLabels.clusterRole`
+## `extraContainers`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+`extraContainers` contains extra containers to add in the main Teleport
+pod.
 
-Kubernetes labels that should be applied to the `ClusterRole` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  clusterRole:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.clusterRoleBinding`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `ClusterRoleBinding` created by the chart.
-
-`values.yaml` example:
+For example:
 
 ```yaml
-extraLabels:
-  clusterRoleBinding:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.role`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `Role` created by the chart for
-the Teleport pod.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  role:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.roleBinding`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `RoleBinding` created by the
-chart for the Teleport pod.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  roleBinding:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.config`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `ConfigMap` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  config:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.deployment`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `Deployment` or `StatefulSet` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  deployment:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.pod`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to every `Pod` in the `Deployment` or `StatefulSet` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  pod:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.podDisruptionBudget`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `PodDisruptionBudget` created by the chart (if enabled).
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  podDisruptionBudget:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.podSecurityPolicy`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `PodSecurityPolicy` created by the chart (if enabled).
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  podSecurityPolicy:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.secret`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `Secret` created by the chart (if enabled).
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  secret:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `extraLabels.serviceAccount`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-
-Kubernetes labels that should be applied to the `ServiceAccount` created by the
-chart for the Teleport pod.
-
-`values.yaml` example:
-
-```yaml
-extraLabels:
-  serviceAccount:
-    app.kubernetes.io/name: teleport-kube-agent
-```
-
-## `annotations.config`
-
-| Type     | Default value | `teleport.yaml` equivalent |
-| -------- | ------------- | -------------------------- |
-| `object` | `{}`          | None                       |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-
-Kubernetes annotations which should be applied to the `ConfigMap` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-annotations:
-  config:
-    kubernetes.io/annotation: value
-```
-
-## `annotations.deployment`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-
-Kubernetes annotations which should be applied to the `Deployment` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-annotations:
-  deployment:
-    kubernetes.io/annotation: value
-```
-
-## `annotations.pod`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-
-Kubernetes annotations which should be applied to each `Pod` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-annotations:
-  pod:
-    kubernetes.io/annotation: value
-```
-
-## `annotations.secret`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-
-Kubernetes annotations which should be applied to the `Secret` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-annotations:
-  secret:
-    kubernetes.io/annotation: value
-```
-
-## `annotations.serviceAccount`
-
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-
-Kubernetes annotations which should be applied to the `ServiceAccount` created by the chart.
-
-`values.yaml` example:
-
-```yaml
-annotations:
-  serviceAccount:
-    kubernetes.io/annotation: value
+extraContainers:
+- name: debug-sidecar
+  command:
+    - busybox
+    - sh
+    - -c
+    - "echo waiting && sleep infinity"
+  image: busybox:latest
+  imagePullPolicy: IfNotPresent
+  securityContext:
+    privileged: true
+    runAsNonRoot: false
 ```
 
 ## `extraVolumes`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/storage/volumes/)
+`extraVolumes` contains extra volumes to mount into the Teleport pods.
+See [the Kubernetes volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/)
+for more details.
 
-A list of extra Kubernetes `Volumes` which should be available to any `Pod` created by the chart. These volumes
-will also be available to any `initContainers` configured by the chart.
-
-`values.yaml` example:
+For example:
 
 ```yaml
 extraVolumes:
 - name: myvolume
   secret:
-    secretName: mysecret
-```
-
-## `extraArgs`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
-
-A list of extra arguments to pass to the `teleport start` command when running a Teleport Pod.
-
-`values.yaml` example:
-
-```yaml
-extraArgs:
-- "--debug"
-```
-
-## `extraEnv`
-
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
-
-[Kubernetes reference](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
-
-A list of extra environment variables to be set on the main Teleport container.
-
-`values.yaml` example:
-
-```yaml
-extraEnv:
-- name: HTTPS_PROXY
-  value: "http://username:password@my.proxy.host:3128"
+    secretName: testSecret
 ```
 
 ## `extraVolumeMounts`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/storage/volumes/)
+`extraVolumeMounts` contains extra volumes mounts for the main Teleport container.
+See [the Kubernetes volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/)
+for more details.
 
-A list of extra Kubernetes volume mounts which should be mounted into any `Pod` created by the chart. These volume
-mounts will also be mounted into any `initContainers` configured by the chart.
-
-`values.yaml` example:
+For example:
 
 ```yaml
-extraVolumeMounts:
+extraVolumesMounts:
 - name: myvolume
-  mountPath: /path/to/mount/volume
+  mountPath: /path/on/host
 ```
 
 ## `hostAliases`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+`hostAliases` sets Host aliases in the Teleport Pod.
+See [the Kubernetes hosts file documentation](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/)
+for more details.
 
-Configure aliases in the pod's `/etc/hosts`.
-This can be used to have the agent join the Teleport cluster through a different
-non-public route, or to allow the agent to access applications or databases that
-are not resolvable. See [the Kubernetes documentation
-](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) for
-more details.
+For example:
 
 ```yaml
 hostAliases:
@@ -1907,129 +1640,106 @@ hostAliases:
 
 ## `imagePullPolicy`
 
-| Type     | Default value  |
-| -------- | -------------- |
-| `string` | `IfNotPresent` |
+| Type     | Default          |
+| -------- | ---------------- |
+| `string` | `"IfNotPresent"` |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/containers/images/#updating-images)
-
-Allows the `imagePullPolicy` for any pods created by the chart to be overridden.
-
-`values.yaml` example:
-
-```yaml
-imagePullPolicy: Always
-```
+`imagePullPolicy` sets the pull policy for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/containers/images/#updating-images)
+for more details.
 
 ## `initContainers`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/)
+`initContainers` sets the Teleport Pod's init-containers.
+See [the Kubernetes init-container documentation](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/)
+for more details.
 
-A list of `initContainers` which will be run before the main Teleport container in any pod created by the chart.
-
-`values.yaml` example:
+For example:
 
 ```yaml
 initContainers:
-- name: teleport-init
-  image: alpine
-  args: ['echo test']
+- name: "teleport-init"
+  image: "alpine"
+  args: ["echo test"]
 ```
 
 ## `resources`
 
-| Type     | Default value |
-| -------- | ------------- |
-| `object` | `{}`          |
+| Type     | Default |
+| -------- | ------- |
+| `object` | `{}`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
-
-Resource requests/limits which should be configured for each container inside the pod. These resource limits
-will also be applied to `initContainers`.
-
-`values.yaml` example:
-
-```yaml
-resources:
-  requests:
-    cpu: 1
-    memory: 2Gi
-```
+`resources` sets the resource requests/limits for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
+for more details.
 
 ## `initSecurityContext`
 
-[Container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
-to set for the [initContainer](#initcontainers).
-Defaults to:
+| Type     | Default                                                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807}` |
 
-```yaml
-initSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - all
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 9807
-```
+`initSecurityContext` sets the init container security context for any
+pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container)
+for more details.
 
 To unset the security context, set it to `null` or `~`.
 
 ## `securityContext`
 
-[Container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
-to set for the main Teleport container.
-Defaults to:
+| Type     | Default                                                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807}` |
 
-```yaml
-securityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - all
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 9807
-```
+`securityContext` sets the container security context for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container)
+for more details.
 
 To unset the security context, set it to `null` or `~`.
 
+## `podSecurityContext`
+
+| Type     | Default            |
+| -------- | ------------------ |
+| `object` | `{"fsGroup":9807}` |
+
+`podSecurityContext` sets the pod security context for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod)
+for more details.
+
+To unset the security context, set it to `null` or `~`.
+
+## `priorityClassName`
+
+| Type     | Default |
+| -------- | ------- |
+| `string` | `""`    |
+
+`priorityClassName` sets the priority class used by any pods created by the chart.
+The user is responsible for creating the `PriorityClass` resource before deploying the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+for more details.
+
 ## `tolerations`
 
-| Type   | Default value |
-| ------ | ------------- |
-| `list` | `[]`          |
+| Type   | Default |
+| ------ | ------- |
+| `list` | `[]`    |
 
-[Kubernetes reference](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
-
-Kubernetes Tolerations to set for pod assignment.
-
-`values.yaml` example:
-
-```yaml
-tolerations:
-- key: "dedicated"
-  operator: "Equal"
-  value: "teleport"
-  effect: "NoSchedule"
-```
+`tolerations` sets the tolerations for any pods created by the chart.
+See [the Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
+for more details.
 
 ## `probeTimeoutSeconds`
 
-| Type      | Default value |
-| --------- | ------------- |
-| `integer` | `1`           |
+| Type  | Default |
+| ----- | ------- |
+| `int` | `1`     |
 
-[Kubernetes reference](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
-
-Kubernetes timeouts for the liveness and readiness probes.
-
-`values.yaml` example:
-
-```yaml
-probeTimeoutSeconds: 5
-```
+`probeTimeoutSeconds` sets the timeout for the readiness and liveness probes
+[https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)

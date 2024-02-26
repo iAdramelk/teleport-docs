@@ -134,7 +134,7 @@ Any set environment variable starting with `TF_VAR_` is automatically processed 
 `TF_VAR_test_variable` becomes `test_variable`.
 
 We maintain an up-to-date list of the variables and what they do in the README.md file under [the
-`examples/aws/terraform/ha-autoscale-cluster` section of the Teleport repo](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/README.md)
+`examples/aws/terraform/ha-autoscale-cluster` section of the Teleport repo](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/README.md)
 but we'll run through an example list here.
 
 Things you will need to decide on:
@@ -143,7 +143,7 @@ Things you will need to decide on:
 
 Setting `export TF_VAR_region="us-west-2"`
 
-The AWS region to run in. You should pick from the supported list as detailed in the [README](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/README.md). These are regions which support [DynamoDB encryption
+The AWS region to run in. You should pick from the supported list as detailed in the [README](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/README.md). These are regions which support [DynamoDB encryption
 at rest](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html).
 
 ### cluster\_name
@@ -157,11 +157,11 @@ cluster from scratch, so choose carefully.
 
 ### ami\_name
 
-Setting `export TF_VAR_ami_name="gravitational-teleport-ami-ent-13.2.0"`
+Setting `export TF_VAR_ami_name="gravitational-teleport-ami-ent-13.4.16"`
 
-Gravitational automatically builds and publishes OSS, Enterprise and Enterprise FIPS 140-2 AMIs when we
-release a new version of Teleport. The AMI names follow the format: `gravitational-teleport-ami-<type>-<version>`
-where `<type>` is either `oss` or `ent` (Enterprise) and `version` is the version of Teleport e.g. `13.2.0`.
+Gravitational automatically builds and publishes Teleport Community Edition, Enterprise, and Enterprise FIPS 140-2
+AMIs when we release a new version of Teleport. The AMI names follow the format: `gravitational-teleport-ami-<type>-<version>`
+where `<type>` is either `oss` or `ent` (Enterprise) and `version` is the version of Teleport e.g. `13.4.16`.
 
 FIPS 140-2 compatible AMIs (which deploy Teleport in FIPS 140-2 mode by default) have the `-fips` suffix.
 
@@ -198,14 +198,15 @@ account name (e.g., `my-license`). After logging in, click
 the "DOWNLOAD LICENSE KEY" button to download your
 license file.
 
-![License File Download](/assets/license-fe80b12ff0.png)
+![License File Download](/assets/license-23cee352ae.png)
 
 Set `export TF_VAR_license_path="/home/user/teleport-license.pem"`
 
 This license will be uploaded to AWS SSM and automatically downloaded to Teleport auth nodes in order to enable
-Teleport Enterprise/Pro functionality.
+Teleport Enterprise functionality.
 
-(OSS users can provide any valid local file path here - it isn't used by the auth server in a Teleport OSS install)
+(Teleport Community Edition users can provide any valid local file path here. It isn't used by the Teleport Auth
+Service in a Teleport Community Edition installs.)
 
 ### route53\_zone
 
@@ -310,15 +311,15 @@ $ terraform import aws_acm_certificate.cert <certificate_arn>
 Our reference deployment will provision the following instances for your cluster using AWS Auto Scaling Groups (ASG) with these default settings:
 
 - 2 x m4.large Teleport **auth** instances in an ASG, behind an internal network load balancer, configured using DynamoDB for
-  shared storage. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/auth_asg.tf#L11)
-- 2 x m4.large Teleport **proxy** instances in an ASG, behind a public-facing load balancer - NLB for LetsEncrypt, ALB for ACM. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/proxy_asg.tf#L12)
+  shared storage. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/auth_asg.tf#L11)
+- 2 x m4.large Teleport **proxy** instances in an ASG, behind a public-facing load balancer - NLB for LetsEncrypt, ALB for ACM. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/proxy_asg.tf#L12)
 - 1 x m4.large Teleport **node** instance in an ASG. Server instances in this ASG will join with Teleport SSH Service enabled and connected to the **auth**
-  service. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/node_asg.tf#L10)
-- 1 x m4.large monitoring server in an ASG which hosts the Grafana instance and receives monitoring data from each service in the cluster. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/monitor_asg.tf#L12)
+  service. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/node_asg.tf#L10)
+- 1 x m4.large monitoring server in an ASG which hosts the Grafana instance and receives monitoring data from each service in the cluster. [The desired size of the ASG is configured here](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/monitor_asg.tf#L12)
 - 1 x t2.medium bastion server which is the only permitted source for inbound SSH traffic to the instances. This is done
   to avoid exposing each instance to the internet directly.
 
-[The instance types used for each ASG can be configured here](https://github.com/gravitational/teleport/blob/master/examples/aws/terraform/ha-autoscale-cluster/vars.tf#L23-L45)
+[The instance types used for each ASG can be configured here](https://github.com/gravitational/teleport/blob/branch/v13/examples/aws/terraform/ha-autoscale-cluster/vars.tf#L23-L45)
 
 If you don't wish to set up a node or the monitoring services, you can set the `desired_size` and `min_size` for an ASG
 to `0` and Terraform will not provision it.
@@ -497,25 +498,31 @@ $ ssh -i ${TF_VAR_key_name}.pem -o ProxyCommand="ssh -i ${TF_VAR_key_name}.pem -
 
 4 - Use the `tctl` command to create an admin user for Teleport:
 
-```code
-# From EC2 host
-$ sudo tctl users add teleport-admin --roles=editor,access --logins=root
-# Signup token has been created and is valid for 1 hours. Share this URL with the user:
-# https://teleport.example.com:443/web/newuser/6489ae886babf4232826076279bcb2fb
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    # From EC2 host
+    $ sudo tctl users add teleport-admin --roles=editor,access --logins=root
+    # Signup token has been created and is valid for 1 hours. Share this URL with the user:
+    # https://teleport.example.com:443/web/newuser/6489ae886babf4232826076279bcb2fb
 
-# NOTE: Make sure teleport.example.com:443 points at a Teleport proxy which users can access.
-# When the user 'teleport-admin' activates their account, they will be assigned roles [editor, access]
-```
+    # NOTE: Make sure teleport.example.com:443 points at a Teleport proxy which users can access.
+    # When the user 'teleport-admin' activates their account, they will be assigned roles [editor, access]
+    ```
+  </Tab>
 
-```code
-# From EC2 host
-$ sudo tctl users add teleport-admin --roles=editor,access,reviewer --logins=root
-# Signup token has been created and is valid for 1 hours. Share this URL with the user:
-# https://teleport.example.com:443/web/newuser/6489ae886babf4232826076279bcb2fb
+  <Tab title="Commercial">
+    ```code
+    # From EC2 host
+    $ sudo tctl users add teleport-admin --roles=editor,access,reviewer --logins=root
+    # Signup token has been created and is valid for 1 hours. Share this URL with the user:
+    # https://teleport.example.com:443/web/newuser/6489ae886babf4232826076279bcb2fb
 
-# NOTE: Make sure teleport.example.com:443 points at a Teleport proxy which users can access.
-# When the user 'teleport-admin' activates their account, they will be assigned roles [editor, access, reviewer]
-```
+    # NOTE: Make sure teleport.example.com:443 points at a Teleport proxy which users can access.
+    # When the user 'teleport-admin' activates their account, they will be assigned roles [editor, access, reviewer]
+    ```
+  </Tab>
+</Tabs>
 
 5 - Click the link to launch the Teleport web UI and finish setting up your user. You will need to scan the QR
 code with an TOTP-compatible app like Google Authenticator or Authy. You will also set a password for the
@@ -529,51 +536,57 @@ You can use the Teleport command line tool (`tsh`) to log into your Teleport clu
 
 You can [download the Teleport package containing the `tsh` client from here](https://goteleport.com/download)
 
-- the client is the same for both OSS and Enterprise versions of Teleport.
+- the client is the same for both Teleport Community Edition and Teleport Enterprise.
 
-```code
-$ tsh login --proxy=${TF_VAR_route53_domain} --user=teleport-admin
-# Enter password for Teleport user teleport-admin:
-# Enter your OTP token:
-# 567989
-# > Profile URL:  https://teleport.example.com:443
-#  Logged in as: teleport-admin
-#  Cluster:      example-cluster
-#  Roles:        editor,access
-#  Logins:       root
-#  Valid until:  2020-03-06 22:07:11 -0400 AST [valid for 12h0m0s]
-#  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ tsh login --proxy=${TF_VAR_route53_domain} --user=teleport-admin
+    # Enter password for Teleport user teleport-admin:
+    # Enter your OTP token:
+    # 567989
+    # > Profile URL:  https://teleport.example.com:443
+    #  Logged in as: teleport-admin
+    #  Cluster:      example-cluster
+    #  Roles:        editor,access
+    #  Logins:       root
+    #  Valid until:  2020-03-06 22:07:11 -0400 AST [valid for 12h0m0s]
+    #  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
 
-$ tsh ls
-# Node Name                    Address           Labels
-# ---------------------------- ----------------- ------
-# ip-172-31-11-69-ec2-internal 172.31.11.69:3022
+    $ tsh ls
+    # Node Name                    Address           Labels
+    # ---------------------------- ----------------- ------
+    # ip-172-31-11-69-ec2-internal 172.31.11.69:3022
 
-$ tsh ssh root@ip-172-31-11-69-ec2-internal
-# [root@ip-172-31-11-69 ~]#
-```
+    $ tsh ssh root@ip-172-31-11-69-ec2-internal
+    # [root@ip-172-31-11-69 ~]#
+    ```
+  </Tab>
 
-```code
-$ tsh login --proxy=${TF_VAR_route53_domain} --user=teleport-admin
-# Enter password for Teleport user teleport-admin:
-# Enter your OTP token:
-# 567989
-# > Profile URL:  https://teleport.example.com:443
-#  Logged in as: teleport-admin
-#  Cluster:      example-cluster
-#  Roles:        editor,access,reviewer
-#  Logins:       root
-#  Valid until:  2020-03-06 22:07:11 -0400 AST [valid for 12h0m0s]
-#  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
+  <Tab title="Commercial">
+    ```code
+    $ tsh login --proxy=${TF_VAR_route53_domain} --user=teleport-admin
+    # Enter password for Teleport user teleport-admin:
+    # Enter your OTP token:
+    # 567989
+    # > Profile URL:  https://teleport.example.com:443
+    #  Logged in as: teleport-admin
+    #  Cluster:      example-cluster
+    #  Roles:        editor,access,reviewer
+    #  Logins:       root
+    #  Valid until:  2020-03-06 22:07:11 -0400 AST [valid for 12h0m0s]
+    #  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
 
-$ tsh ls
-# Node Name                    Address           Labels
-# ---------------------------- ----------------- ------
-# ip-172-31-11-69-ec2-internal 172.31.11.69:3022
+    $ tsh ls
+    # Node Name                    Address           Labels
+    # ---------------------------- ----------------- ------
+    # ip-172-31-11-69-ec2-internal 172.31.11.69:3022
 
-$ tsh ssh root@ip-172-31-11-69-ec2-internal
-# [root@ip-172-31-11-69 ~]#
-```
+    $ tsh ssh root@ip-172-31-11-69-ec2-internal
+    # [root@ip-172-31-11-69 ~]#
+    ```
+  </Tab>
+</Tabs>
 
 ## Restarting/checking Teleport services
 

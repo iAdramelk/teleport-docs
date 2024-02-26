@@ -21,19 +21,10 @@ In short, private key material will never leave Google Cloud KMS.
 
 If launching a new Teleport cluster this will all be handled during initial
 startup with no specific interventions required after configuration.
-For existing Teleport clusters that already have private key material on disk,
-a CA rotation must be performed. This ensures that the private key material
-only ever exists in KMS when this feature is enabled.
+For existing Teleport clusters that already have already generated software
+private keys, a CA rotation must be performed.
 Read on to [migrating an existing cluster](#migrating-an-existing-cluster) to
 learn more.
-
-<Tip>
-  Teleport Team takes care of this setup for you so you can provide secure access
-  to your infrastructure right away.
-
-  Get started with a [free trial](https://goteleport.com/signup?t_source=docs) of
-  Teleport Team.
-</Tip>
 
 ## Prerequisites
 
@@ -45,16 +36,16 @@ higher.
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v16.0.0-dev go1.22
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v16.0.0-dev go1.22
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -69,7 +60,7 @@ higher.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -278,6 +269,10 @@ them trusted by the rest of the cluster, you will need to rotate all of your
 Teleport CAs.
 
 `teleport start` will print a warning during startup if any CA needs to be rotated.
+Any users allowed the `update` verb for `cert_authority` resources in any of
+their Teleport roles will also see a cluster alert reminding them to rotate the
+CAs.
+
 CA rotation can be performed manually or semi-automatically, see our admin guide
 on [Certificate rotation](/docs/ver/16.x/management/operations/ca-rotation).
 All CAs listed in the output of `tctl status` must be rotated.

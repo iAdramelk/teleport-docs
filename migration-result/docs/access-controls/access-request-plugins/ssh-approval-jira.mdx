@@ -1,24 +1,30 @@
 ---
 title: Run the Jira Access Request Plugin
-description: How to configure Access Request approval using Jira and Teleport
+description: How to set up the Teleport Jira plugin to notify users when another user requests elevated privileges.
 version: '15.x'
 ---
 
-This guide will talk through how to set up Teleport with Jira. Teleport's Jira
-integration allows you to treat Teleport access and permission requests using
-Jira tickets.
+This guide explains how to set up the Teleport Access Request plugin for Jira.
+Teleport's Jira integration allows you to manage Teleport Access Requests as
+Jira issues.
+
+The Teleport Jira plugin synchronizes a Jira project board with the Access
+Requests processed by your Teleport cluster. When you change the status of an
+Access Request within Teleport, the plugin updates the board. And when you
+update the status of an Access Request on the board, the plugin notifies a Jira
+webhook run by the plugin, which modifies the Access Request in Teleport.
 
 <Accordion title="This integration is hosted on Teleport Cloud">
-  In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Jira integration for
-  you, and you can enroll the Jira integration from the Teleport Web UI.
+  In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Mattermost integration for
+  you, and you can enroll the Mattermost integration from the Teleport Web UI.
 
-  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
-  screen. Select the **Management** option.
+  Visit the Teleport Web UI and click **Access Management** on the menu bar at the
+  top of the screen.
 
   On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
   Integration" page:
 
-  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+  ![Enroll an Access Request plugin](/assets/enroll-336e8c2e41.png)
 
   On the "Select Integration Type" menu, click the tile for your integration. You
   will see a page with instructions to set up the integration, as well as a form
@@ -32,23 +38,47 @@ Jira tickets.
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
   instructions](/docs/installation#installation-instructions) for your environment and Teleport edition.
 
-- Jira Server or Jira Cloud installation with an owner privileges, specifically
-  to set up webhooks, issue types, and workflows
+**Recommended:** Configure Machine ID to provide short-lived Teleport
+credentials to the plugin. Before following this guide, follow a Machine ID
+[deployment guide](/docs/machine-id/deployment) to run the `tbot` binary on
+your infrastructure.
+
+- A Jira account with permissions to create applications and webhooks.
+
+- A registered domain name for the Jira webhook. Jira notifies the webhook of
+  changes in your project board.
+
+- An environment where you will run the Jira plugin. This is either:
+
+  - A Linux virtual machine with ports `80` and `8081` open, plus a means of
+    accessing the host (e.g., OpenSSH with an SSH port exposed to your
+    workstation).
+  - A Kubernetes cluster deployed via a cloud provider. This guide shows you how
+    to allow traffic to the Jira plugin via a `LoadBalancer` service, so your
+    environment must support services of this type.
+
+- A means of providing TLS credentials for the Jira webhook run by the plugin.
+
+  - If you run the plugin on a Linux server, you must provide TLS credentials to
+    a directory available to the plugin.
+  - If you run the plugin on Kubernetes, you must write these credentials to a
+    secret that the plugin can read.
+
 - To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
   verify that you can run `tctl` commands using your current credentials.
   `tctl` is supported on macOS and Linux machines.
@@ -58,7 +88,7 @@ Jira tickets.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -66,7 +96,201 @@ Jira tickets.
   If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
   hosts the Teleport Auth Service for full permissions.
 
-## Step 1/6. Create a user and role for access
+## Step 1/7. Define RBAC resources
+
+### Enable Role Access Requests
+
+Before you set up the Jira plugin, you need to enable Role Access Requests in
+your Teleport cluster.
+
+For the purpose of this guide, we will define an `editor-requester` role, which
+can request the built-in `editor` role, and an `editor-reviewer` role that can
+review requests for the `editor` role.
+
+Create a file called `editor-request-rbac.yaml` with the following content:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: editor-reviewer
+spec:
+  allow:
+    review_requests:
+      roles: ['editor']
+---
+kind: role
+version: v5
+metadata:
+  name: editor-requester
+spec:
+  allow:
+    request:
+      roles: ['editor']
+      thresholds:
+        - approve: 1
+          deny: 1
+```
+
+Create the roles you defined:
+
+```code
+$ tctl create -f editor-request-rbac.yaml
+role 'editor-reviewer' has been created
+role 'editor-requester' has been created
+```
+
+Allow yourself to review requests by users with the `editor-requester` role by
+assigning yourself the `editor-reviewer` role.
+
+Assign the `editor-reviewer` role to your Teleport user by running the appropriate
+commands for your authentication provider:
+
+<Tabs>
+  <Tab title="Local User">
+    1. Retrieve your local user's roles as a comma-separated list:
+
+       ```code
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
+       ```
+
+    2. Edit your local user to add the new role:
+
+       ```code
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},editor-reviewer"
+       ```
+
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
+  </Tab>
+
+  <Tab title="GitHub">
+    1. Retrieve your `github` authentication connector:
+
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
+
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
+
+    2. Edit `github.yaml`, adding `editor-reviewer` to the `teams_to_roles` section.
+
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
+
+       Here is an example:
+
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
+
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+  </Tab>
+
+  <Tab title="SAML">
+    1. Retrieve your `saml`  configuration resource:
+
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
+
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
+
+    2. Edit `saml.yaml`, adding `editor-reviewer` to the `attributes_to_roles` section.
+
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
+
+       Here is an example:
+
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
+
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+  </Tab>
+
+  <Tab title="OIDC">
+    1. Retrieve your `oidc`  configuration resource:
+
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
+
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
+
+    2. Edit `oidc.yaml`, adding `editor-reviewer` to the `claims_to_roles` section.
+
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
+
+       Here is an example:
+
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
+
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+  </Tab>
+</Tabs>
+
+Create a user called `myuser` who has the `editor-requester` role. This user
+cannot edit your cluster configuration unless they request the `editor` role:
+
+```code
+$ tctl users add myuser --roles=editor-requester 
+```
+
+`tctl` will print an invitation URL to your terminal. Visit the URL and log in
+as `myuser` for the first time, registering credentials as configured for your
+Teleport cluster.
+
+Later in this guide, you will have `myuser` request the `editor` role so you can
+review the request using the Teleport plugin.
+
+### Create a user and role for the plugin
 
 Teleport's Access Request plugins authenticate to your Teleport cluster as a
 user with permissions to list, read, and update Access Requests. This way,
@@ -162,91 +386,15 @@ $ tctl create -f myuser.yaml
 Log out of your Teleport cluster and log in again. You will now be able to
 generate signed certificates for the `access-plugin` role and user.
 
-## Step 2/6. Export the access-plugin certificate
+## Step 2/7. Install the Teleport Jira plugin
 
-Like all Teleport users, `access-plugin` needs signed credentials in
-order to connect to your Teleport cluster. You will use the `tctl auth sign`
-command to request these credentials for your plugin.
+Install the Teleport Jira plugin following the instructions below, which depend
+on whether you are deploying the plugin on a host (e.g., an EC2 instance) or a
+Kubernetes cluster.
 
-The following `tctl auth sign` command impersonates the `access-plugin` user,
-generates signed credentials, and writes an identity file to the local
-directory:
-
-```code
-$ tctl auth sign --user=access-plugin --out=auth.pem
-```
-
-The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
-
-The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
-uses the SSH credentials to connect to the Proxy Service, which establishes a
-reverse tunnel connection to the Auth Service. The plugin uses this reverse
-tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
-endpoint.
-
-You will refer to this file later when configuring the plugin.
-
-<Note>
-  By default, `tctl auth sign` produces certificates with a relatively short
-  lifetime. For production deployments, we suggest using [Machine
-  ID](/docs/machine-id/introduction) to programmatically issue and renew
-  certificates for your plugin. See our Machine ID [getting started
-  guide](/docs/machine-id/getting-started) to learn more.
-
-  Note that you cannot issue certificates that are valid longer than your existing credentials.
-  For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
-  valid for at least 1000 hours. This means your user must have a role allowing
-  a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
-  when logging in:
-
-  ```code
-  $ tsh login --proxy=teleport.example.com --ttl=60060
-  ```
-</Note>
-
-We'll reference these files later when configuring the plugin.
-
-## Step 3/6. Set up your Jira project
-
-### Create the permission management project
-
-All new permission requests are going to show up in a project you choose. We recommend that you create a separate project for permissions management, and a new board in said project.
-
-You'll need the project Jira key to configure the plugin.
-
-### Set up the status board
-
-Create a new board for tasks in the permission management project. The board has to have at least these three columns:
-
-- Pending
-- Approved
-- Denied
-
-Teleport's Jira plugin will create a new issue for each new permission request in the first available column on the board. When you drag the request task to the Approved column in Jira, the request will be approved. If you drag the request task to the Denied column in Jira, the request will be denied.
-
-### Get your Jira API token
-
-If you're using Jira Cloud, navigate to [Account Settings → Security → API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens) and create a new app specific API token in your Jira installation. You'll need this token later to configure the plugin.
-
-For Jira Server, the URL of the API tokens page will be different depending on your installation.
-
-### Set up Jira webhooks
-
-Go to Settings → General → System → Webhooks and create a new webhook for Jira to tell the Teleport plugin about updates.
-
-For the webhook URL, use the URL that you'll run the plugin on. It needs to be a publicly accessible URL (we will show you how to set this up later). Jira requires the webhook listener to run over HTTPS.
-
-The webhook needs to be notified only about new issues being created, issues being updated, or deleted. You can leave all the other boxes empty.
-
-<Note>
-  Jira will send updates about any issues in any projects in your Jira installation to the webhook. We suggest that you use JQL filters to limit which issues are being sent to the plugin.
-
-  The plugin's web server will run with TLS, but you can disable it with `--insecure-no-tls` to test things out in a dev environment.
-</Note>
-
-In the webhook settings page, make sure that the webhook will only send Issue Updated updates. It's not critical if anything else gets sent, since the plugin will just ignore everything else.
-
-## Step 4/6. Install the plugin
+The Teleport Jira plugin must run on a host or Kubernetes cluster that can
+access both Jira and your Teleport Proxy Service (or Teleport Enterprise Cloud
+tenant).
 
 <Tabs>
   <Tab title="Download">
@@ -255,8 +403,8 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
     development machine.
 
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-jira-v13.3.7-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-jira-v13.3.7-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-access-jira-v15.0.2-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-jira-v15.0.2-linux-amd64-bin.tar.gz
     $ cd teleport-access-jira
     $ sudo ./install
     ```
@@ -265,7 +413,7 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
 
     ```code
     $ teleport-jira version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.21
+    teleport-jira v15.0.2 git:teleport-jira-v15.0.2-fffffffff go1.21
     ```
   </Tab>
 
@@ -274,14 +422,14 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
     Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-jira:13.3.7
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-jira:15.0.2
     ```
 
     Make sure the plugin is installed by running the following command:
 
     ```code
-    $ docker run public.ecr.aws/gravitational/teleport-plugin-jira:13.3.7 version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-api/14.0.0-gd1e081e 1.21
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-jira:15.0.2 version
+    teleport-jira v15.0.2 git:teleport-jira-v15.0.2-api/14.0.0-gd1e081e 1.21
     ```
 
     For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-jira).
@@ -303,7 +451,7 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
 
     ```code
     $ teleport-jira version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.21
+    teleport-jira v15.0.2 git:teleport-jira-v15.0.2-fffffffff go1.21
     ```
   </Tab>
 
@@ -326,139 +474,563 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
   </Tab>
 </Tabs>
 
-## Step 5/6. Configure the plugin
+## Step 3/7. Export the access plugin identity
 
-Depending on whether you are running the plugin as an executable in a
-non-containerized environment or on Kubernetes, follow the appropriate
-instructions for your environment to configure the plugin:
+Give the plugin access to a Teleport identity file. We recommend using Machine
+ID for this in order to produce short-lived identity files that are less
+susceptible to exfiltration, though in demo deployments, you can generate
+longer-lived identity files with `tctl`:
+
+<Tabs>
+  <Tab title="Machine ID">
+    Configure `tbot` with an output that will produce the credentials needed by
+    the plugin. As the plugin will be accessing the Teleport API, the correct
+    output type to use is `identity`.
+
+    For this guide, the `directory` destination will be used. This will write these
+    credentials to a specified directory on disk. Ensure that this directory can
+    be written to by the Linux user that `tbot` runs as, and that it can be read by
+    the Linux user that the plugin will run as.
+
+    Modify your `tbot` configuration to add an `identity` output.
+
+    If running `tbot` on a Linux server, use the `directory` output to write
+    identity files to the `/opt/machine-id` directory:
+
+    ```yaml
+    outputs:
+    - type: identity
+      destination:
+        type: directory
+        # For this guide, /opt/machine-id is used as the destination directory.
+        # You may wish to customize this. Multiple outputs cannot share the same
+        # destination.
+        path: /opt/machine-id
+    ```
+
+    If running `tbot` on Kubernetes, write the identity file to Kubernetes secret
+    instead:
+
+    ```yaml
+    outputs:
+      - type: identity
+        destination:
+          type: kubernetes_secret
+          name: teleport-plugin-slack-identity
+    ```
+
+    If operating `tbot` as a background service, restart it. If running `tbot` in
+    one-shot mode, execute it now.
+
+    You should now see an `identity` file under `/opt/machine-id` or a Kubernetes
+    secret named `teleport-plugin-slack-identity`. This contains the private key and signed
+    certificates needed by the plugin to authenticate with the Teleport Auth
+    Service.
+  </Tab>
+
+  <Tab title="Long-lived identity files">
+    Like all Teleport users, `access-plugin` needs signed credentials in order to
+    connect to your Teleport cluster. You will use the `tctl auth sign` command to
+    request these credentials.
+
+    The following `tctl auth sign` command impersonates the `access-plugin` user,
+    generates signed credentials, and writes an identity file to the local
+    directory:
+
+    ```code
+    $ tctl auth sign --user=access-plugin --out=identity
+    ```
+
+    The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+
+    The identity file, `identity`, includes both TLS and SSH credentials. The
+    plugin uses the SSH credentials to connect to the Proxy Service, which
+    establishes a reverse tunnel connection to the Auth Service. The plugin
+    uses this reverse tunnel, along with your TLS credentials, to connect to the
+    Auth Service's gRPC endpoint.
+
+    <Accordion title="Certificate Lifetime">
+      By default, `tctl auth sign` produces certificates with a relatively short
+      lifetime. For production deployments, we suggest using [Machine
+      ID](/docs/machine-id/introduction) to programmatically issue and renew
+      certificates for your plugin. See our Machine ID [getting started
+      guide](/docs/machine-id/getting-started) to learn more.
+
+      Note that you cannot issue certificates that are valid longer than your existing credentials.
+      For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+      valid for at least 1000 hours. This means your user must have a role allowing
+      a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
+      when logging in:
+
+      ```code
+      $ tsh login --proxy=teleport.example.com --ttl=60060
+      ```
+    </Accordion>
+
+    If you are running the plugin on a Linux server, create a data directory
+    to hold certificate files for the plugin:
+
+    ```code
+    $ sudo mkdir -p /var/lib/teleport/api-credentials
+    $ sudo mv identity /var/lib/teleport/plugins/api-credentials
+    ```
+
+    If you are running the plugin on Kubernetes, Create a Kubernetes secret
+    that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-jira-identity
+    ```
+
+    Once the Teleport credentials expire, you will need to renew them by running the
+    `tctl auth sign` command again.
+  </Tab>
+</Tabs>
+
+## Step 4/7. Set up a Jira project
+
+In this section, you will create a Jira a project that the Teleport plugin can
+modify when a Teleport user creates or updates an Access Request. The plugin
+then uses the Jira webhook to monitor the state of the board and respond to any
+changes in the tickets it creates.
+
+### Create a project for managing Access Requests
+
+In Jira, find the top navigation bar and click **Projects** -> **Create
+project**. Select **Kanban** for the template, then **Use template**. Click
+**Select a company-managed project**.
+
+You'll see a screen where you can enter a name for your project. In this guide,
+we assume that your project is called "Teleport Access Requests", which
+receives the key `TAR` by default.
+
+Make sure "Connect repositories, documents, and more" is unset, then click
+**Create project**.
+
+In the three-dots menu on the upper right of your new board, click **Board
+settings**, then click **Columns**. Edit the statuses in your board so it
+contains the following four:
+
+1. Pending
+2. Approved
+3. Denied
+4. Expired
+
+Create a column with the same name as each status. The result should be the
+following:
+
+![Jira board setup](/assets/board-setup-b1569ac1af.png)
+
+<Warning>
+  If your project board does not contain these (and only these) columns, each with
+  a status of the same name, the Jira Access Request plugin will behave in
+  unexpected ways. Remove all other columns and statuses.
+</Warning>
+
+Click **Back to board** to review your changes.
+
+### Set up a request ID field
+
+The Teleport Jira plugin expects tasks in the Teleport Access Requests project
+to include a field called `teleportAccessRequestId`, which it uses to track
+individual Access Requests. This prevents users from tampering with or forging
+Access Requests.
+
+To set up the `teleportAccessRequestId` field, click **Project settings** on the
+left navigation bar, then click **Issues** -> **Fields**.
+
+In the **Actions** menu, click **Edit fields**. Click the **Custom fields** tab
+in the left sidebar, then **Create custom field**. Add a **Short Text** field
+named `teleportAccessRequestId`. Click the checkbox next to **Default Screen**
+to associate that field with this screen. Click **Update**.
+
+Next, add the custom field to your Teleport Access Requests project. Click
+**Projects** > **Teleport Access Requests (TAR)**, then **Project settings**.
+Click **Issues** -> **Types** on the left sidebar, then click **Task** >
+**Fields**. Find the dropdown menu called **Select Field**, then select the
+`teleportAccessRequestId` field you added earlier.
+
+### Retrieve your Jira API token
+
+Obtain an API token that the Teleport Access Request plugin uses to make
+changes to your Jira project. Click the gear menu at the upper right of the
+screen, then click **Atlassian account settings**. Click **Security** >
+**Create and manage API tokens** > **Create API token**.
+
+Choose any label and click **Copy**. Paste the API token into a convenient
+location (e.g., a password manager or local text document) so you can use it
+later in this guide when you configure the Jira plugin.
+
+### Set up a Jira webhook
+
+Now that you have generated an API key that the Teleport Jira plugin uses to
+manage your project, enable Jira to notify the Teleport Jira plugin when your
+project is updated by creating a webhook.
+
+Return to Jira. Click the gear menu on the upper right of the screen. Click
+**System** > **WebHooks** > **Create a WebHook**.
 
 <Tabs>
   <Tab title="Executable">
-    The Teleport Jira plugin uses a config file in TOML format. Generate a
-    boilerplate config by running the following command:
+    Enter "Teleport Access Request Plugin" in the "Name" field. In the "URL" field,
+    enter the domain name you created for the plugin earlier, plus port `8081`.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Enter "Teleport Access Request Plugin" in the "Name" field. In the "URL" field,
+    enter the domain name you created for the plugin earlier, plus port `443`.
+  </Tab>
+</Tabs>
+
+The webhook needs to be notified only when an issue is created, updated, or
+deleted. You can leave all the other boxes empty.
+
+Click **Create**.
+
+## Step 6/7. Configure the Jira Access Request plugin
+
+Earlier, you retrieved credentials that the Jira plugin uses to connect to
+Teleport and the Jira API. You will now configure the plugin to use these
+credentials and run the Jira webhook at the address you configured earlier.
+
+### Create a configuration file
+
+<Tabs>
+  <Tab title="Executable or Docker">
+    The Teleport Jira plugin uses a configuration file in TOML format. Generate a
+    boilerplate configuration by running the following command (the plugin will not run
+    unless the config file is in `/etc/teleport-jira.toml`):
 
     ```code
-    $ teleport-jira configure > teleport-jira.toml
-    $ sudo mv teleport-jira.toml /etc
+    $ teleport-jira configure | sudo tee /etc/teleport-jira.toml > /dev/null
     ```
 
-    By default, the Jira Teleport plugin will use a config in
-    `/etc/teleport-jira.toml`, and you can override it with `-c
-    config/file/path.toml` flag.
-
-    The configuration file will resemble the following:
+    This should result in a configuration file like the one below:
 
     ```toml
-    # example jira plugin configuration TOML file
+    # Example Jira plugin configuration TOML file
     [teleport]
-    auth_server = "myinstance.teleport.sh:443"             # Teleport Cloud proxy HTTPS address
-    identity = "/var/lib/teleport/plugins/jira/auth.pem"   # Teleport identity file location
+    # Proxy Service domain and HTTPS port
+    auth_server = "myinstance.teleport.sh:443"
+    # Teleport identity file location
+    identity = "/var/lib/teleport/plugins/jira/identity"
+    # Refresh identity file on a periodic basis.
+    refresh_identity = true
 
     [jira]
-    url = "https://example.com/jira"    # JIRA URL. For JIRA Cloud, https://[my-jira].atlassian.net
-    username = "bot@example.com"        # JIRA username
-    api_token = "token"                 # JIRA API Basic Auth token
-    project = "MYPROJ"                  # JIRA Project key
+    url = "https://[my-jira].atlassian.net"    # JIRA URL
+    username = "bot@example.com"               # JIRA username
+    api_token = "token"                        # JIRA API token
+    project = "TAR"                            # JIRA Project key
 
     [http]
-    # listen_addr = ":8081" # Network address in format [addr]:port on which webhook server listens, e.g. 0.0.0.0:443
-    # public_addr = "example.com" # URL on which webhook server is accessible externally, e.g. [https://]teleport-jira.example.com
+    # URL on which webhook server is accessible externally, for example,
+    # [https://]teleport-jira.example.com
+    public_addr = "example.com" 
     https_key_file = "/var/lib/teleport/plugins/jira/server.key"  # TLS private key
     https_cert_file = "/var/lib/teleport/plugins/jira/server.crt" # TLS certificate
 
     [log]
     output = "stderr" # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/jira.log"
     severity = "INFO" # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
+
     ```
   </Tab>
 
-  <Tab title="Helm Chart">
-    Create a file called `values.yaml` with the following content, which configures
-    the Helm chart for the plugin. It should resemble the following:
+  <Tab title="Helm chart">
+    The Helm chart for the Jira plugin uses a YAML values file to configure the
+    plugin. On your local workstation, create a file called
+    `teleport-jira-helm.yaml` based on the following example:
 
     ```yaml
     teleport:
-      # Teleport HTTPS Proxy web address, for Teleport Enterprise Cloud should be in the form "your-account.teleport.sh:443"
+      # Teleport Proxy Service domain name and HTTPS port. If you are using Teleport
+      # Enterprise Cloud, this should be in the form "your-account.teleport.sh:443"
       address: "teleport.example.com:443"
-      # Secret containing identity
-      identitySecretName: teleport-plugin-jira-identity
+      # Secret containing a Teleport identity document
+      identityFromSecret: teleport-plugin-jira-identity
+      # Path within the secret containing the identity file.
+      identitySecretPath: identity
 
     jira:
-      url: https://jira.example.com/  # URL of the Jira instance
-      username: bot@example.com       # Email of the bot user
-      apiToken: token                 # Token of the bot user
-      project: MYPROJ                 # Project where issues will be created
+      url: "https://[my-jira].atlassian.net"      # URL of the Jira instance
+      username: bot@example.com                   # Email of the bot user
+      apiToken: token                             # Token of the bot user
+      project: TAR                                # Project where issues will be created
 
     http:
-      publicAddress: https://jira-teleport.example.com/  # Publicly available
-      tlsFromSecret: teleport-plugin-jira-tls            # Secret containing the TLS certificate
-      # tlsKeySecretPath:  tls.key                       # Name of the key inside the secret
-      # tlsCertSecretPath: tls.crt                       # Name of the certificate inside the secret
+      publicAddress: https://jira-teleport.example.com/ 
+      # Secret containing the TLS certificate
+      tlsFromSecret: teleport-plugin-jira-tls            
+      # tlsKeySecretPath:  tls.key                # Name of the key inside the secret
+      # tlsCertSecretPath: tls.crt                # Name of the certificate inside the secret
 
     log:
       output: stderr  # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/jira.log"
       severity: INFO  # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
 
-    ```
+    serviceType: ClusterIP
 
-    Use the following command to create the Kubernetes secret referenced in the
-    values file from the identity file you generated earlier:
-
-    ```console
-    kubectl create secret generic teleport-plugin-jira-identity --from-file=auth_id=auth.pem
     ```
   </Tab>
 </Tabs>
 
-The `[teleport]` sections includes configuration options for connecting the Jira
-plugin to Teleport.
+### Edit the configuration file
 
-The `[jira]` section requires a few things:
+Open the configuration file created for the Teleport Jira plugin and update the
+following fields:
 
-- Your Jira Cloud or Jira Server URL. For Jira Cloud, it looks something like `yourcompany.atlassian.net`.
-- Your username on Jira, i.e. [ben@goteleport.com](mailto:ben@goteleport.com)
-- Your Jira API token that you've created above.
-- A Jira Project key, available in Project settings.
+**`[teleport]`**
 
-The `[http]` setting block describes how the plugin's HTTP server works. The HTTP server is responsible for listening for updates from Jira, and processing updates, like when someone drags a task from Inbox to Approved column.
+The Jira plugin uses this section to connect to your Teleport cluster:
 
-You must provide an address the server should listen on, and a certificate to use. It's possible to
-run the Jira plugin on the same server as the Teleport Proxy, so you can use the same TLS certificate.
+<Tabs>
+  <Tab title="Executable or Docker">
+    **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
 
-## Step 6/6. Test the plugin
+    **`identity`**: Fill this in with the path to the identity file you exported
+    earlier.
 
-You should be able to run the Teleport plugin now!
+    **`client_key`**, **`client_crt`**, **`root_cas`**: Comment these out, since we
+    are not using them in this configuration.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    **`address`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identitySecretName`**: Fill in the `identitySecretName` field with the name
+    of the Kubernetes secret you created earlier.
+
+    **`identitySecretPath`**: Fill in the `identitySecretPath` field with the path
+    of the identity file within the Kubernetes secret. If you have followed the
+    instructions above, this will be `identity`.
+  </Tab>
+</Tabs>
+
+If you are providing credentials to the plugin using a `tbot` binary that runs
+on a Linux server, make sure the value of `identity` is the same as the path of
+the identity file you configured `tbot` to generate, `/opt/machine-id/identity`.
+
+Configure the plugin to periodically reload the identity file, ensuring that it
+does not attempt to connect to the Teleport Auth Service with expired
+credentials.
+
+Add the following to the `teleport` section of the configuration:
+
+```toml
+refresh_identity = true
+```
+
+<Tabs>
+  <Tab title="Executable">
+    ### `jira`
+
+    **url:** The URL of your Jira tenant, e.g., `https://[your-jira].atlassian.net`.
+
+    **username:** The username you were logged in as when you created your API
+    token.
+
+    **api\_token:** The Jira API token you retrieved earlier.
+
+    **project:** The project key for your project, which in our case is `TAR`.
+
+    You can leave `issue_type` as `Task` or remove the field, as `Task` is the
+    default.
+
+    ### `http`
+
+    The `[http]` setting block describes how the plugin's webhook works.
+
+    **listen\_addr** indicates the address that the plugin listens on, and defaults
+    to `:8081`. If you opened port `8081` on your plugin host as we recommended
+    earlier in the guide, you can leave this option unset.
+
+    **public\_addr** is the public address of your webhook. This is the domain name you
+    added to the DNS A record you created earlier.
+
+    **https\_key\_file** and **https\_cert\_file** correspond to the private key and
+    certificate you generated earlier via Caddy. Use the following values, assigning
+    EXAMPLE.COM to the domain name you created for the plugin
+    earlier:
+
+    - **https\_key\_file:**
+
+      ```code
+      $ /var/teleport-jira/tls/certificates/acme-v02.api.letsencrypt.org-directory/example.com/example.com.key
+      ```
+
+    - **https\_cert\_file:**
+
+      ```code
+      $ /var/teleport-jira/tls/certificates/acme-v02.api.letsencrypt.org-directory/example.com/example.com.crt
+      ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    ### `jira`
+
+    **url:** The URL of your Jira tenant, e.g., `https://[your-jira].atlassian.net`.
+
+    **username:** The username you were logged in as when you created your API
+    token.
+
+    **apiToken:** The API token you retrieved earlier.
+
+    **project:** The project key for your project, which in our case is `TAR`.
+
+    You can leave `issueType` as `Task` or remove the field, as `Task` is the
+    default.
+
+    ### `http`
+
+    The `http` setting block describes how the plugin's webhook works.
+
+    **publicAddress:** The public address of your webhook. This is the domain name
+    you created for your webhook. (We will create a DNS record for this domain name
+    later.)
+
+    **tlsFromSecret:** The name of a Kubernetes secret containing TLS credentials
+    for the webhook. Use `teleport-plugin-jira-tls`. We will create a `Certificate`
+    resource later that populates this secret with TLS credentials.
+  </Tab>
+</Tabs>
+
+## Step 7/8. Run the Jira plugin
+
+After finishing your configuration, you can now run the plugin and test your
+Jira-based Access Request flow:
+
+<Tabs>
+  <Tab title="Executable">
+    Run the following on your Linux host:
+
+    ```code
+    $ sudo teleport-jira start
+    INFO   Starting Teleport Jira Plugin 12.1.1: jira/app.go:112
+    INFO   Plugin is ready jira/app.go:142
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Install the Helm chart for the Teleport Jira plugin:
+
+    ```code
+    $ helm install teleport-plugin-jira teleport/teleport-plugin-jira \
+      --namespace teleport \
+      --values values.yaml \
+      --version 15.0.2
+    ```
+
+    Create a DNS record that associates the webhook's domain name with the address
+    of the load balancer created by the Jira plugin Helm chart.
+
+    See whether the load balancer has a domain name or IP address:
+
+    ```code
+    $ kubectl -n teleport get services/teleport-plugin-jira
+    NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP                          PORT(S)                      AGE
+    teleport-plugin-jira   LoadBalancer   10.100.135.75   abc123.us-west-2.elb.amazonaws.com   80:30625/TCP,443:31672/TCP   134m
+    ```
+
+    If the `EXTERNAL-IP` field has a domain name for the value, create a `CNAME`
+    record in which the domain name for your webhook points to the domain name of
+    the load balancer.
+
+    If the `EXTERNAL-IP` field's value is an IP address, create a DNS `A` record
+    instead.
+
+    You can then generate signed TLS credentials for the Jira plugin, which expects
+    them to be written to a Kubernetes secret.
+  </Tab>
+</Tabs>
+
+### Check the status of the webhook
+
+Confirm that the Jira webhook has started serving by sending a GET request to
+the `/status` endpoint. If the webhook is running, it will return a `200` status
+code with no document body:
 
 <Tabs>
   <Tab title="Executable">
     ```code
-    $ teleport-jira start
+    $ curl -v https://example.com:8081/status 2>&1 | grep "^< HTTP/2"
+    < HTTP/2 200
     ```
   </Tab>
 
   <Tab title="Helm Chart">
     ```code
-    $ helm install teleport-plugin-jira teleport/teleport-plugin-jira \
-      --values teleport-jira-helm.yaml \
-      --version 13.3.7
+    $ curl -v https://example.com:443/status 2>&1 | grep "^< HTTP/2"
+    < HTTP/2 200
     ```
   </Tab>
 </Tabs>
 
-The log output should look familiar to what Teleport service logs. You should see that it connected to Teleport, and is listening for new Teleport requests and Jira webhooks.
+### Create an Access Request
 
-Go ahead and test it:
+Sign in to your cluster as the `myuser` user you created earlier and create an
+Access Request:
 
-```code
-$ tsh login --request-roles=admin
-```
+<Tabs>
+  <Tab title="As an Admin">
+    A Teleport admin can create an Access Request for another user with `tctl`:
 
-That should create a new permission request on Teleport (you can test if it did with `tctl request ls`), and you should see a new task on your Jira project board.
+    ```code
+    $ tctl request create myuser --roles=editor
+    ```
+  </Tab>
 
-### Set up systemd
+  <Tab title="As a User">
+    Users can use `tsh` to create an Access Request and log in with approved roles:
 
-In production, we recommend starting the Teleport plugin daemon via an init system like systemd.
-Here's the recommended Teleport plugin service unit file for systemd:
+    ```code
+    $ tsh request create --roles=editor
+    Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
+    ```
+  </Tab>
+
+  <Tab title="From the Web UI">
+    Users can request access using the Web UI by visiting the "Access Requests"
+    tab and clicking "New Request":
+
+    ![Creating an Access Request using the Web UI](/assets/request-access-989f648dce.png)
+  </Tab>
+</Tabs>
+
+When you create the request, you will see a new task in the "Pending" column of
+the Teleport Access Requests board:
+
+![New Access Request](/assets/new-request-447ef83aa1.png)
+
+### Resolve the request
+
+Move the card corresponding to your new Access Request to the "Denied" column,
+then click the card and navigate to Teleport. You will see that the Access
+Request has been denied.
+
+<Note>
+  Anyone with access to the Jira project board can modify the status of Access
+  Requests reflected on the board. You can check the Teleport audit log to ensure
+  that the right users are reviewing the right requests.
+
+  When auditing Access Request reviews, check for events with the type `Access
+  Request Reviewed` in the Teleport Web UI.
+</Note>
+
+## Step 8/8. Set up systemd
+
+<Tip>
+  This step is only applicable if you are running the Teleport Jira plugin on a
+  Linux machine.
+</Tip>
+
+In production, we recommend starting the Teleport plugin daemon via an init
+system like systemd. Here's the recommended Teleport plugin service unit file
+for systemd:
 
 ```txt
 [Unit]
@@ -476,15 +1048,11 @@ PIDFile=/run/teleport-jira.pid
 WantedBy=multi-user.target
 ```
 
-Save this as `teleport-jira.service`. Make sure the `teleport-jira start` command includes a `--config` flag that refers to the configuration file you created earlier.
+Save this as `teleport-jira.service` or another [unit file load
+path](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Unit%20File%20Load%20Path)
+supported by systemd.
 
-## Audit log
-
-The plugin will let anyone with access to the Jira board approve/deny requests so it's
-important to review Teleport's audit log.
-
-## Next steps
-
-To see all of the options available to you when using the Helm chart for the
-Teleport Jira plugin, consult our [reference
-guide](/docs/reference/helm-reference/teleport-plugin-jira).
+```code
+$ sudo systemctl enable teleport-jira
+$ sudo systemctl start teleport-jira
+```

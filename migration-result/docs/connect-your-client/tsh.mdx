@@ -97,7 +97,7 @@ To find the version number, either:
 
   ```code
   $ curl https://teleport.example.com/webapi/find | jq '.server_version'
-  "15.0.0-dev"
+  "15.0.2"
   ```
 
 <Tabs>
@@ -105,7 +105,7 @@ To find the version number, either:
     Download the signed macOS .pkg installer for `tsh`. In Finder double-click the `pkg` file to install it:
 
     ```code
-    $ curl -O https://cdn.teleport.dev/tsh-15.0.0-dev.pkg
+    $ curl -O https://cdn.teleport.dev/tsh-15.0.2.pkg
     ```
   </Tab>
 
@@ -121,13 +121,13 @@ To find the version number, either:
       If you choose to use Homebrew, you must verify that the versions of `tsh` and
       `tctl` are compatible with the versions you run server-side. Homebrew usually
       ships the latest release of Teleport, which may be incompatible with older
-      versions. See our [compatibility policy](/docs/management/operations/upgrading#component-compatibility) for details.
+      versions. See our [compatibility policy](/docs/upgrading/overview) for details.
     </Note>
   </Tab>
 
   <Tab title="Windows - Powershell">
     ```code
-    $ curl.exe -O https://cdn.teleport.dev/teleport-v15.0.0-dev-windows-amd64-bin.zip
+    $ curl.exe -O https://cdn.teleport.dev/teleport-v15.0.2-windows-amd64-bin.zip
     # Unzip the archive and move `tsh.exe` to your %PATH%
     ```
   </Tab>
@@ -137,8 +137,8 @@ To find the version number, either:
     For more options (including RPM/DEB packages and downloads for i386/ARM/ARM64) please see our [installation page](/docs/installation).
 
     ```code
-    $ curl -O https://cdn.teleport.dev/teleport-v15.0.0-dev-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-v15.0.0-dev-linux-amd64-bin.tar.gz
+    $ curl -O https://cdn.teleport.dev/teleport-v15.0.2-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-v15.0.2-linux-amd64-bin.tar.gz
     $ cd teleport
     $ sudo ./install
     # Teleport binaries have been copied to /usr/local/bin
@@ -283,9 +283,9 @@ command:
     # > Profile URL:  https://proxy.example.com:3080
     #   Logged in as: johndoe
     #  Cluster:      proxy.example.com
-    #   Roles:        admin*
+    #   Roles:        access, auditor, editor
     #   Logins:       root, admin, guest
-    #   Kubernetes:   disabled
+    #   Kubernetes:   enabled
     #  Valid until:  2017-04-25 15:02:30 -0700 PDT [valid for 1h0m0s]
     #  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
     ```
@@ -298,9 +298,9 @@ command:
     # > Profile URL:  https://mytenant.teleport.sh:443
     #   Logged in as: johndoe
     #  Cluster:      mytenant.teleport.sh
-    #   Roles:        admin*
+    #   Roles:        access, editor, auditor
     #   Logins:       root, admin, guest
-    #   Kubernetes:   disabled
+    #   Kubernetes:   enabled
     #  Valid until:  2017-04-25 15:02:30 -0700 PDT [valid for 1h0m0s]
     #  Extensions:   permit-agent-forwarding, permit-port-forwarding, permit-pty
     ```
@@ -442,9 +442,8 @@ $ tsh ls
 
 # Node Name     Address            Labels
 # ---------     -------            ------
-# turing        10.1.0.5:3022      os:linux
-# turing        10.1.0.6:3022      os:linux
-# graviton      10.1.0.7:3022      os:osx
+# turing        ⟵ Tunnel          os=linux
+# graviton      10.1.0.7:3022      os=osx
 ```
 
 [CLI Docs - tsh ls](/docs/reference/cli/tsh#tsh-ls)
@@ -455,9 +454,9 @@ $ tsh ls
 # Only show Nodes with os label set to 'osx':
 $ tsh ls os=osx
 
-# Nodename      UUID                   Address            Labels
-# ---------     -------                -------            ------
-# graviton      33333333-aaaa-1284     10.1.0.7:3022      os:osx
+# Nodename      Address            Labels
+# ---------     -------            ------
+# graviton      10.1.0.7:3022      os=osx
 ```
 
 [CLI Docs -tsh ls](/docs/reference/cli/tsh#tsh-ls)
@@ -926,8 +925,6 @@ tmpfs            1982720       0   1982720   0% /proc/acpi
 tmpfs            1982720       0   1982720   0% /sys/firmware
 root@ubuntu:/# exit
 exit
-
-end of session playback
 ```
 
 ## tsh configuration files

@@ -1,5 +1,5 @@
 ---
-title: Access Requests with Slack
+title: Run the Slack Access Request Plugin
 description: How to set up Teleport's Slack plugin for privilege elevation approvals.
 version: '13.x'
 ---
@@ -10,24 +10,24 @@ Access Requests. Users are then directed to log in to the Teleport cluster where
 they can approve and deny Access Requests, making it easier to implement security
 best practices without compromising productivity.
 
-```mermaid
-flowchart LR
-subgraph teleport["Teleport cluster"]
-  direction LR
-  auth["Auth Service"]
-  proxy["Proxy Service"]
-end
-api[Slack API]
+<Accordion title="This integration is hosted on Teleport Cloud">
+  In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Slack integration for
+  you, and you can enroll the Slack integration from the Teleport Web UI.
 
-subgraph private["Private network"]
-  subgraph plugin[Slack plugin]
-    id["Teleport identity file"]
-  end 
-  plugin<-- "Listen for Access Requests\n(via reverse tunnel)"-->proxy
-end 
-proxy<-- Forward gRPC traffic -->auth
-plugin-- "Slack messages" -->api
-```
+  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
+  screen. Select the **Management** option.
+
+  On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
+  Integration" page:
+
+  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+
+  On the "Select Integration Type" menu, click the tile for your integration. You
+  will see a page with instructions to set up the integration, as well as a form
+  that you can use to configure the integration.
+</Accordion>
+
+![The Slack Access Request plugin](/assets/diagram-258db6d174.png)
 
 Here is an example of sending an Access Request via Teleport's Slack plugin:
 
@@ -42,20 +42,20 @@ Here is an example of sending an Access Request via Teleport's Slack plugin:
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -64,15 +64,15 @@ Here is an example of sending an Access Request via Teleport's Slack plugin:
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -82,30 +82,37 @@ Here is an example of sending an Access Request via Teleport's Slack plugin:
   below your profile picture.
 - Either a Linux host or Kubernetes cluster where you will run the Slack plugin.
 
-Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-remotely:
+Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+so you can execute commands with the `tctl` admin tool:
 
-```code
-$ tsh login --proxy=teleport.example.com --user=email@example.com
-$ tctl status
-# Cluster  teleport.example.com
-# Version  13.2.0
-# CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh login --proxy=teleport.example.com --user=email@example.com
+    $ tctl status
+    # Cluster  teleport.example.com
+    # Version  13.4.16
+    # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+    ```
 
-You can run subsequent `tctl` commands in this guide on your local machine.
+    You can run subsequent `tctl` commands in this guide on your local machine.
 
-For full privileges, you can also run `tctl` commands on your Auth Service host.
+    For full privileges, you can also run `tctl` commands on your Teleport Auth
+    Service host.
+  </Tab>
 
-```code
-$ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-$ tctl status
-# Cluster  myinstance.teleport.sh
-# Version  13.2.0
-# CA pin   sha256:sha-hash-here
-```
+  <Tab title="Teleport Cloud">
+    ```code
+    $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+    $ tctl status
+    # Cluster  myinstance.teleport.sh
+    # Version  14.3.6
+    # CA pin   sha256:sha-hash-here
+    ```
 
-You must run subsequent `tctl` commands in this guide on your local machine.
+    You must run subsequent `tctl` commands in this guide on your local machine.
+  </Tab>
+</Tabs>
 
 ## Step 1/8. Define RBAC resources
 
@@ -152,147 +159,147 @@ role 'editor-requester' has been created
 Allow yourself to review requests by users with the `editor-requester` role by
 assigning yourself the `editor-reviewer` role.
 
-Assign the `editor-reviewer` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `editor-reviewer` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
+    2. Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - editor-reviewer
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - editor-reviewer 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `editor-reviewer` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `editor-reviewer` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `editor-reviewer` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `editor-reviewer` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `editor-reviewer` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `editor-reviewer` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
@@ -310,66 +317,77 @@ review the request using the Teleport plugin.
 
 ## Step 2/8. Install the Teleport Slack plugin
 
-We currently only provide `linux-amd64` binaries. You can also compile these
-plugins from source. You can run the plugin from a remote host or your local
-development machine.
-
-<Tip>
-  We recommend installing Teleport plugins on the same host as the Teleport
-  Proxy Service. This is an ideal location as plugins have a low memory footprint
-  and will require access to both the public internet and the Teleport Auth Service.
-</Tip>
-
 <Tabs>
   <Tab title="Download">
+    We currently only provide `linux-amd64` binaries. You can also compile these
+    plugins from source. You can run the plugin from a remote host or your local
+    development machine.
+
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-slack-v13.2.0-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-slack-v13.2.0-linux-amd64-bin.tar.gz
-    $ ./teleport-access-slack/install
+    $ curl -L -O https://get.gravitational.com/teleport-access-slack-v13.3.8-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-slack-v13.3.8-linux-amd64-bin.tar.gz
+    $ cd teleport-access-slack
+    $ sudo ./install
     ```
 
     Make sure the binary is installed:
 
     ```code
     $ teleport-slack version
-    teleport-slack v13.2.0 git:teleport-slack-v13.2.0-fffffffff go1.20
+    teleport-slack v13.3.8 git:teleport-slack-v13.3.8-fffffffff go1.21
     ```
   </Tab>
 
-  <Tab title="From Source">
-    To install from source you need `git` and `go` >= 1.20
-    installed.
+  <Tab title="Docker Image">
+    We currently only provide Docker images for `linux-amd64`.
+    Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    # Check out the teleport-plugins repository
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-slack:13.3.8
+    ```
+
+    Make sure the plugin is installed by running the following command:
+
+    ```code
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-slack:13.3.8 version
+    teleport-slack v13.3.8 git:teleport-slack-v13.3.8-fffffffff 1.21
+    ```
+
+    For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-slack).
+  </Tab>
+
+  <Tab title="From Source">
+    To install from source you need `git` and `go` installed. If you do not have Go
+    installed, visit the Go [downloads page](https://go.dev/dl/).
+
+    ```code
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/slack
     $ make
     ```
 
-    Place the `teleport-slack` binary into an appropriate location
-    within the system's `PATH`, e.g., `/usr/local/bin`:
-
-    ```code
-    $ mv ./build/teleport-slack /usr/local/bin
-    ```
+    Move the `teleport-slack` binary into your PATH.
 
     Make sure the binary is installed:
 
     ```code
     $ teleport-slack version
-    teleport-slack v13.2.0 git:teleport-slack-v13.2.0-fffffffff go1.20
+    teleport-slack v13.3.8 git:teleport-slack-v13.3.8-fffffffff go1.21
     ```
   </Tab>
 
   <Tab title="Helm Chart">
-    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+    {/*TODO: Replace this with the following partial once we fix
+    gravitational/docs#299:
+    docs/pages/kubernetes-access/helm/includes/helm-repo-add.mdx*/}
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
     ```code
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
-    To update the cache of charts from the remote repository, run `helm repo update`:
+    Update the cache of charts from the remote repository:
 
     ```code
     $ helm repo update
@@ -419,8 +437,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -446,147 +465,147 @@ Create the `access-plugin-impersonator` role:
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
-Assign the `access-plugin-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `access-plugin-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - access-plugin-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - access-plugin-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `access-plugin-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `access-plugin-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `access-plugin-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `access-plugin-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `access-plugin-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `access-plugin-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 You will now be able to generate signed certificates for the `access-plugin`
 role and user.
@@ -633,15 +652,27 @@ You will refer to this file later when configuring the plugin.
   ```
 </Note>
 
-The rest of this guide assumes that you have placed any files generated by this
-command into `/var/lib/teleport/plugins/slack` for later reference when
-configuring the plugin:
+<Tabs>
+  <Tab title="Virtual Machine">
+    The rest of this guide assumes that you have placed any files generated by this
+    command into `/var/lib/teleport/plugins/slack` for later reference when
+    configuring the plugin:
 
-```code
-# create a data directory to hold certificate files for the plugin.
-$ sudo mkdir -p /var/lib/teleport/plugins/slack
-$ sudo mv auth.* /var/lib/teleport/plugins/slack
-```
+    ```code
+    # create a data directory to hold certificate files for the plugin.
+    $ sudo mkdir -p /var/lib/teleport/plugins/slack
+    $ sudo mv auth.* /var/lib/teleport/plugins/slack
+    ```
+  </Tab>
+
+  <Tab title="Kubernetes">
+    Create a Kubernetes secret that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=auth.pem teleport-plugin-slack-identity
+    ```
+  </Tab>
+</Tabs>
 
 ## Step 5/8. Register a Slack app
 
@@ -713,19 +744,19 @@ configure the Slack plugin to use these credentials. You will also configure the
 plugin to notify the right Slack channels when it receives an Access Request
 update.
 
-### Create a config file
+### Create a configuration file
 
 <Tabs>
-  <Tab title="Executable">
-    The Teleport Slack plugin uses a config file in TOML format. Generate a
-    boilerplate config by running the following command (the plugin will not run
+  <Tab title="Executable or Docker">
+    The Teleport Slack plugin uses a configuration file in TOML format. Generate a
+    boilerplate configuration by running the following command (the plugin will not run
     unless the config file is in `/etc/teleport-slack.toml`):
 
     ```code
     $ teleport-slack configure | sudo tee /etc/teleport-slack.toml > /dev/null
     ```
 
-    This should result in a config file like the one below:
+    This should result in a configuration file like the one below:
 
     ```toml
     # Example Slack plugin configuration TOML file
@@ -795,7 +826,7 @@ update.
   </Tab>
 </Tabs>
 
-### Edit the config file
+### Edit the configuration file
 
 Open the configuration file created for the Teleport Slack plugin and update the following fields:
 
@@ -804,7 +835,7 @@ Open the configuration file created for the Teleport Slack plugin and update the
 The Slack plugin uses this section to connect to your Teleport cluster:
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
     or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
     `mytenant.teleport.sh:443`).
@@ -840,7 +871,7 @@ receives an Access Request from the Auth Service, it will look up the role being
 requested and identify the Slack channels to notify.
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     Here is an example of a `role_to_recipients` map:
 
     ```toml
@@ -897,7 +928,7 @@ by adding the following to your `role_to_recipients` config (replace
 earlier):
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     ```toml
     [role_to_recipients]
     "*" = "access-requests"
@@ -947,6 +978,14 @@ configured, you can now run the plugin and test the workflow.
     $ teleport-slack start
     INFO   Starting Teleport Access Slack Plugin 7.2.1: slack/app.go:80
     INFO   Plugin is ready slack/app.go:101
+    ```
+  </Tab>
+
+  <Tab title="Docker">
+    run the plugin:
+
+    ```code
+    $ docker run -v <path-to-config>:/etc/teleport-slack.toml public.ecr.aws/gravitational/teleport-plugin-slack:13.4.16 start
     ```
   </Tab>
 
@@ -1049,8 +1088,7 @@ was approved or denied.
   reviewing the right requests.
 
   When auditing Access Request reviews, check for events with the type `Access
-  Request Reviewed` in the Teleport Web UI and `access_request.review` if reviewing the audit log on the
-  Auth Service host.
+  Request Reviewed` in the Teleport Web UI.
 </Note>
 
 ## Step 8/8. Set up systemd
@@ -1096,7 +1134,3 @@ $ sudo systemctl start teleport-slack
   Requests](/docs/ver/13.x/access-controls/access-requests/resource-requests) and [Role Access
   Requests](/docs/ver/13.x/access-controls/access-requests/role-requests) so you can get the most out
   of your Access Request plugins.
-
-## Feedback
-
-If you have any issues with this plugin, please create a GitHub issue in our [`gravitational/teleport-plugins`](https://github.com/gravitational/teleport-plugins/issues/new) repo.

@@ -10,9 +10,10 @@ provider via **authentication connectors**.
 ## Local (no authentication connector)
 
 Local authentication is used to authenticate against a local Teleport user
-database. This database is managed by the [`tctl users`](/docs/ver/13.x/reference/cli#tctl-users-add)
-command. Teleport also supports multi-factor authentication (MFA) for the local
-connector. There are several possible values (types) of MFA:
+database. This database is managed by the [`tctl
+users`](/docs/ver/13.x/reference/cli/tctl#tctl-users-add) command. Teleport also supports
+multi-factor authentication (MFA) for the local connector. There are several
+possible values (types) of MFA:
 
 - `otp` is the default. It implements the [TOTP](https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
   standard. You can use [Google Authenticator](https://en.wikipedia.org/wiki/Google_Authenticator), [Authy](https://www.authy.com/) or any other TOTP client.
@@ -57,8 +58,6 @@ connector. There are several possible values (types) of MFA:
     $ tctl get cap > cap.yaml
     ```
 
-    If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
-
     Ensure that `cap.yaml` includes the following content:
 
     ```yaml
@@ -80,11 +79,10 @@ connector. There are several possible values (types) of MFA:
     ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Cloud-Hosted">
     You can modify these settings using dynamic configuration resources.
 
-    Log in to Teleport from your local machine so you can use the Enterprise
-    edition of the `tctl` admin tool:
+    Log in to Teleport from your local machine so you can use the `tctl` admin tool:
 
     ```code
     $ tsh login --proxy=myinstance.teleport.sh
@@ -96,8 +94,6 @@ connector. There are several possible values (types) of MFA:
     ```code
     $ tctl get cap > cap.yaml
     ```
-
-    If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
 
     Ensure that `cap.yaml` includes the following content:
 
@@ -168,7 +164,27 @@ The user will now be unblocked from login attempts and can attempt to authentica
 ## Authentication connectors
 
 <Tabs>
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Team">
+    ### GitHub
+
+    This connector implements GitHub's OAuth 2.0 authentication flow. Please refer to GitHub's documentation on [Creating an OAuth App](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
+    to learn how to create and register an OAuth app.
+
+    Here is an example of this setting in a `cluster_auth_preference` resource:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      name: cluster-auth-preference
+    spec:
+      type: github
+    version: v2
+    ```
+
+    See [GitHub OAuth 2.0](/docs/ver/13.x/access-controls/sso/github-sso) for details on how to configure it.
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
     ### GitHub
 
     This connector implements GitHub's OAuth 2.0 authentication flow. Please refer to GitHub's documentation on [Creating an OAuth App](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)

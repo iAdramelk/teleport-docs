@@ -4,10 +4,6 @@ description: Teleport allows users to request access to specific resources from 
 version: '13.x'
 ---
 
-<Tip>
-  Resource Access Requests are currently in Preview.
-</Tip>
-
 With Teleport Resource Access Requests, users can request access to specific
 resources without needing to know anything about the roles or RBAC controls used
 under the hood.
@@ -15,7 +11,7 @@ The Access Request API makes it easy to dynamically approve or deny these
 requests.
 
 Just-in-time Access Requests are a feature of Teleport Enterprise.
-Open-source Teleport users can get a preview of how Access Requests work by
+Teleport Community Edition users can get a preview of how Access Requests work by
 requesting a role via the Teleport CLI. Full Access Request functionality,
 including Resource Access Requests and an intuitive and searchable UI are
 available in Teleport Enterprise.
@@ -23,20 +19,20 @@ available in Teleport Enterprise.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -45,49 +41,49 @@ available in Teleport Enterprise.
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
 
-<Warning>
-  All `teleport` instances in the cluster must be running Teleport `v10.0.0` or
-  greater in order for Resource Access Requests to be properly enforced.
-  Older versions of `teleport` will only do RBAC checks based on roles and will
-  not respect resource restrictions.
-  It is not recommended to enable Resource Access Requests by setting any
-  `search_as_roles` until all `teleport` instances in your cluster have been
-  upgraded to version 10.
-</Warning>
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Step 1/8. Create the requester role
 
@@ -634,19 +630,20 @@ the Teleport Web UI.
 With Teleport's Access Request plugins, users can manage Access Requests from
 within your organization's existing messaging and project management solutions.
 
-| Integration     | Type          | Setup Instructions                                                                                   |
-| --------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Slack           | Messaging     | [Set up Slack](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-slack)             |
-| Mattermost      | Messaging     | [Set up Mattermost](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
-| Microsoft Teams | Messaging     | [Set up Microsoft Teams](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-msteams) |
-| Jira            | Project Board | [Set up Jira](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-jira)               |
-| PagerDuty       | Schedule      | [Set up PagerDuty](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
-| Email           | Messaging     | [Set up email](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-email)             |
-| Discord         | Messaging     | [Set up Discord](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| Integration     | Type                | Setup Instructions                                                                                   |
+| --------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Slack           | Messaging           | [Set up Slack](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-slack)             |
+| Mattermost      | Messaging           | [Set up Mattermost](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
+| Microsoft Teams | Messaging           | [Set up Microsoft Teams](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-msteams) |
+| Jira            | Project Board       | [Set up Jira](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-jira)               |
+| PagerDuty       | Schedule            | [Set up PagerDuty](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
+| Email           | Messaging           | [Set up email](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-email)             |
+| Discord         | Messaging           | [Set up Discord](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| OpsGenie        | Incident Management | [Set up OpsGenie](/docs/ver/13.x/access-controls/access-request-plugins/opsgenie)                    |
 
 ### Using TTLs with Access Requests
 
 `tsh request create` supports flags to control TTLs for the request and
 elevated access. See the [CLI
-Reference](/docs/ver/13.x/reference/cli#tsh-request-create) for more
+Reference](/docs/ver/13.x/reference/cli/tsh#tsh-request-create) for more
 details.

@@ -30,7 +30,7 @@ their on-disk Teleport certificates.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -39,11 +39,11 @@ their on-disk Teleport certificates.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -52,7 +52,7 @@ their on-disk Teleport certificates.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -61,11 +61,11 @@ their on-disk Teleport certificates.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -75,7 +75,7 @@ their on-disk Teleport certificates.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -85,11 +85,11 @@ their on-disk Teleport certificates.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -99,7 +99,7 @@ their on-disk Teleport certificates.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -108,11 +108,11 @@ their on-disk Teleport certificates.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -127,7 +127,7 @@ their on-disk Teleport certificates.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -183,8 +183,6 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
         $ tctl get cap > cap.yaml
         ```
 
-        If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
-
         Ensure that `cap.yaml` contains the following content:
 
         ```yaml
@@ -211,8 +209,6 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
     ```code
     $ tctl get cap > cap.yaml
     ```
-
-    If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
 
     Ensure that `cap.yaml` contains the following content:
 
@@ -321,7 +317,7 @@ $ tsh ssh jerry@prod3.example.com
   If you are using `tsh` in a constrained environment, you can tell it to use
   OTP by doing `tsh --mfa-mode=otp ssh prod3.example.com`.
 
-  OTP can only be used with per-session MFA when using the `tsh` client to
+  OTP can only be used with per-session MFA when using `tsh` or Teleport Connect to
   establish connections. A hardware MFA key is required for using per-session
   MFA with Teleport's Web UI.
 </Tip>

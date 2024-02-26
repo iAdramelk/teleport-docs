@@ -22,7 +22,7 @@ You will need the following tools to use Teleport with Ansible.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -31,11 +31,11 @@ You will need the following tools to use Teleport with Ansible.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -44,7 +44,7 @@ You will need the following tools to use Teleport with Ansible.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -53,11 +53,11 @@ You will need the following tools to use Teleport with Ansible.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -67,7 +67,7 @@ You will need the following tools to use Teleport with Ansible.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -77,11 +77,11 @@ You will need the following tools to use Teleport with Ansible.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -91,7 +91,7 @@ You will need the following tools to use Teleport with Ansible.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -100,11 +100,11 @@ You will need the following tools to use Teleport with Ansible.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -136,7 +136,7 @@ You will need the following tools to use Teleport with Ansible.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -238,15 +238,23 @@ remote_tmp=/tmp
 
 [ssh_connection]
 scp_if_ssh = True
-# Replace ".example.com" below with the name of your cluster.
-ssh_args = -F /opt/machine-id/ssh_config -o CanonicalizeHostname=yes -o CanonicalDomains=example.com
+ssh_args = -F /opt/machine-id/ssh_config
 ```
 
-You can create an inventory file called `hosts` manually or use a script like the one
-below to generate it from your environment.
+You can then create an inventory file called `hosts`. This should refer to the
+hosts using their hostname as registered in Teleport and the name of your
+Teleport cluster should be appended to this. For example, if your cluster is
+called `teleport.example.com` and your host is called `node1`, the entry in
+`hosts` would be `node1.teleport.example.com`.
+
+You can generate an inventory file for all your nodes that meets this
+requirement with a script like the following:
 
 ```code
-$ tsh ls --format=json | jq -r '.[].spec.hostname' > hosts
+# Source tsh env to get the name of the current Teleport cluster.
+$ eval "$( tsh env )"
+# You can modify the `tsh ls` command to filter nodes based ont he label.
+$ tsh ls --format=json | jq --arg cluster $TELEPORT_CLUSTER -r '.[].spec.hostname + "." + $cluster' > hosts
 ```
 
 <Accordion title="Not seeing Nodes?">

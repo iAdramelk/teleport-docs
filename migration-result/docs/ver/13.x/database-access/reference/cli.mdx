@@ -13,30 +13,37 @@ the Database Service, including:
 - The `tctl` administration tool, which you use to manage `db` resources that
   represent databases known to your Teleport cluster.
 
-  Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
+  Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
 
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  You can run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
 
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
 
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 - The `tsh` client tool, which end-users run in order to access databases in
   your cluster.
@@ -45,23 +52,29 @@ the Database Service, including:
 
 Starts Teleport Database Service.
 
-```code
-$ teleport db start \
-    --token=/path/to/token \
-    --auth-server=proxy.example.com:3080 \
-    --name=example \
-    --protocol=postgres \
-    --uri=postgres.example.com:5432
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ teleport db start \
+        --token=/path/to/token \
+        --auth-server=proxy.example.com:3080 \
+        --name=example \
+        --protocol=postgres \
+        --uri=postgres.example.com:5432
+    ```
+  </Tab>
 
-```code
-$ teleport db start \
-    --token=/path/to/token \
-    --auth-server=mytenant.teleport.sh:443 \
-    --name=example \
-    --protocol=postgres \
-    --uri=postgres.mytenant.teleport.sh:5432
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ teleport db start \
+        --token=/path/to/token \
+        --auth-server=mytenant.teleport.sh:443 \
+        --name=example \
+        --protocol=postgres \
+        --uri=postgres.mytenant.teleport.sh:5432
+    ```
+  </Tab>
+</Tabs>
 
 | Flag                        | Description                                                                                            |
 | --------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -87,27 +100,33 @@ $ teleport db start \
 
 Creates a sample Database Service configuration.
 
-```code
-$ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
-$ teleport db configure create \
-  --token=/tmp/token \
-  --proxy=proxy.example.com:3080 \
-  --name=example \
-  --protocol=postgres \
-  --uri=postgres://postgres.example.com:5432 \
-  --labels=env=prod
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
+    $ teleport db configure create \
+      --token=/tmp/token \
+      --proxy=proxy.example.com:3080 \
+      --name=example \
+      --protocol=postgres \
+      --uri=postgres://postgres.example.com:5432 \
+      --labels=env=prod
+    ```
+  </Tab>
 
-```code
-$ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
-$ teleport db configure create \
-  --token=/tmp/token \
-  --proxy=mytenant.teleport.sh:443 \
-  --name=example \
-  --protocol=postgres \
-  --uri=postgres://postgres.mytenant.teleport.sh:5432 \
-  --labels=env=prod
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
+    $ teleport db configure create \
+      --token=/tmp/token \
+      --proxy=mytenant.teleport.sh:443 \
+      --name=example \
+      --protocol=postgres \
+      --uri=postgres://postgres.mytenant.teleport.sh:5432 \
+      --labels=env=prod
+    ```
+  </Tab>
+</Tabs>
 
 | Flag                              | Description                                                                                                                               |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -162,7 +181,8 @@ configuring the Database Service with self-hosted database instances.
 
 <Note>
   For database formats, `tctl` must be run on an Auth Service host or the remote
-  user must be be able to impersonate the built-in `Db` role and user. See the [impersonation guide](/docs/ver/13.x/access-controls/guides/impersonation)
+  user must be be able to impersonate the built-in `Db` role and user. See the
+  [impersonation guide](/docs/ver/13.x/access-controls/guides/impersonation)
   for details on how to allow impersonation.
 </Note>
 
@@ -170,6 +190,10 @@ configuring the Database Service with self-hosted database instances.
 $ tctl auth sign --format=db --host=db.example.com --out=db --ttl=2190h
 $ tctl auth sign --format=db --host=host1,localhost,127.0.0.1 --out=db --ttl=2190h
 ```
+
+In this example, `db.example.com` is the hostname where the Teleport Database
+Service can reach the database server. The second example assumes a
+database running on the same host as Teleport.
 
 | Flag       | Description                                                                                                                |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------- |

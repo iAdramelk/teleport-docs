@@ -34,53 +34,36 @@ This guide covers how to:
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
-  </Tab>
-
-  <Tab title="Teleport Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
-      and upgrade to Teleport Enterprise Cloud.
-
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
-
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
-
-      $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 </Tabs>
@@ -130,7 +113,7 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
             --create-namespace --namespace teleport-cluster \
             --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
             --set operator.enabled=true \
-            --version 13.2.0
+            --version 13.4.16
     ```
   </Tab>
 
@@ -150,7 +133,7 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
     the "DOWNLOAD LICENSE KEY" button to download your
     license file.
 
-    ![License File Download](/assets/license-fe80b12ff0.png)
+    ![License File Download](/assets/license-23cee352ae.png)
 
     Create a secret called "license" in the namespace you created:
 
@@ -166,7 +149,7 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
             --set enterprise=true \
             --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
             --set operator.enabled=true \
-            --version 13.2.0
+            --version 13.4.16
     ```
   </Tab>
 </Tabs>
@@ -322,6 +305,14 @@ $ kubectl logs "$AUTH_POD" -c operator
 
   To diagnose reconciliation issues, you will have to inspect all pods to find the one reconciling the resources.
 </Note>
+
+### The operator does not see the resource
+
+If you created a resource, and can get it with `kubectl get <resource-type>`, but
+the resource status stays empty and the operator does not produce logs,
+check if the resource lives in the `teleport-cluster` namespace.
+
+The operator only watches for resources in its own namespace.
 
 ### Cluster instability after enabling the Operator
 

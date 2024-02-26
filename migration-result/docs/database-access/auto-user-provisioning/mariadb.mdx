@@ -4,19 +4,15 @@ description: Configure automatic user provisioning for MariaDB.
 version: '15.x'
 ---
 
-<Accordion title="Version warning">
-  Automatic user provisioning for MariaDB is available starting from Teleport
-  14.2.
-</Accordion>
-
 Teleport can automatically create users in your database, removing the need for
 creating individual user accounts in advance or using the same set of shared
 database accounts for all users.
 
 ## Prerequisites
 
-- Teleport cluster with a configured [self-hosted MariaDB](/docs/database-access/guides/mysql-self-hosted)
-  or [RDS MariaDB](/docs/database-access/guides/rds) database.
+- Teleport cluster v14.1.3 or higher with a configured [self-hosted
+  MariaDB](/docs/database-access/guides/mysql-self-hosted) or [RDS MariaDB](/docs/database-access/guides/rds)
+  database.
 - Ability to connect to and create user accounts in the target database.
 
 <Note>
@@ -52,6 +48,7 @@ This schema is also used to store custom user attributes and stored procedures.
     GRANT PROCESS, CREATE USER ON *.* TO 'teleport-admin';
     GRANT SELECT ON mysql.roles_mapping TO 'teleport-admin';
     GRANT UPDATE ON mysql.* TO 'teleport-admin'; -- For SET DEFAULT ROLE FOR
+    GRANT SELECT ON *.* TO 'teleport-admin'; -- Required when using best_effort_drop mode for checking if users own resources before dropping them.
 
     CREATE DATABASE IF NOT EXISTS `teleport`;
     GRANT ALL ON `teleport`.* TO 'teleport-admin' WITH GRANT OPTION;
@@ -87,6 +84,7 @@ This schema is also used to store custom user attributes and stored procedures.
     GRANT PROCESS, CREATE USER ON *.* TO 'teleport-admin';
     GRANT SELECT ON mysql.roles_mapping TO 'teleport-admin';
     GRANT UPDATE ON mysql.* TO 'teleport-admin'; -- For SET DEFAULT ROLE FOR
+    GRANT SELECT ON *.* TO 'teleport-admin'; -- Required when using best_effort_drop mode for checking if users own resources before dropping them.
 
     CREATE DATABASE IF NOT EXISTS `teleport`;
     GRANT ALL ON `teleport`.* TO 'teleport-admin' WITH GRANT OPTION;
@@ -126,7 +124,7 @@ Teleport creates an all-in-one role `tp-role-<user>` and assigns it to the
 created user. The true roles are then assigned to this all-in-one role and the
 all-in-one role is set as the default role.
 
-Next, enable the database admin on the Teleport database configuration:
+Next, configure the database admin user in the Teleport database configuration:
 
 <Tabs>
   <Tab title="Static config">
@@ -140,7 +138,7 @@ Next, enable the database admin on the Teleport database configuration:
         admin_user:
           name: "teleport-admin"
           # Optional default database the admin user logs into. Default is
-          # "teleport" if not specified.
+          # 'teleport', if not specified.
           # default_database: teleport
     ```
   </Tab>
@@ -157,7 +155,7 @@ Next, enable the database admin on the Teleport database configuration:
       admin_user:
         name: "teleport-admin"
         # Optional default database the admin user logs into. Default is
-        # "teleport" if not specified.
+        # 'teleport', if not specified.
         # default_database: teleport
     ```
   </Tab>
@@ -169,7 +167,7 @@ Next, enable the database admin on the Teleport database configuration:
   `teleport.dev/db-admin-default-database` label.
 </Tip>
 
-## Step 2/3. Configure Teleport role
+## Step 2/3. Configure a Teleport role
 
 To specify the database roles a user should be assigned within the database,
 use the `db_roles` role option:
@@ -206,9 +204,10 @@ The available provisioning modes are:
 - `keep`: Enables user provisioning and disables users at session end. The user
   will be stripped of all roles and the user account will be locked.
 
-- `best_effort_drop`: Enables user provisioning and tries to drop user
-  at session end. If the drop fails, fallback to disabling them (same as `keep`
-  mode).
+- `best_effort_drop`: Enables user provisioning and, when the session ends,
+  drops the user if no resources depend on it. In cases where any resource
+  depends on the user, it falls back to disabling the user, mirroring the
+  behavior of `keep` mode.
 
 Users created within the database will:
 
@@ -260,7 +259,38 @@ $ tsh db connect --db-name <database> example
   username as the database username. `tsh db connect` will default to your
   Teleport username automatically when connecting to a database with user
   provisioning enabled.
+
+  When connecting to a leaf cluster database with user provisioning enabled, the
+  Database Service expects the database username to be
+  `remote-<your-teleport-username>-<root-cluster-name>`.
 </Note>
+
+To view the list of database roles that are allowed for each database, you can
+use the command `tsh db ls -v`. By default, all database roles will be assigned
+to your auto-provisioned database user. You can optionally select a subset of
+the database roles with `--db-roles`:
+
+```code
+$ tsh db connect --db-name <database> --db-roles reader example
+```
+
+## Troubleshooting
+
+### Use your mapped remote username error
+
+You may encounter the following error when connecting to a database in a remote
+cluster:
+
+```shell
+> tsh db connect --db-name <database> example
+ERROR: please use your mapped remote username ("remote-<your-teleport-username>-<root-cluster-name>") to connect instead of "<database-user>"
+```
+
+When you access resources in a remote cluster, the remote cluster will receive
+the name `remote-<your-teleport-username>-<root-cluster-name>` from the local
+cluster. This is to prevent any naming collisions with users in the remote
+cluster. Please use the username from the error message as the database
+username for when connecting through `tsh` or GUI clients.
 
 ## Next steps
 

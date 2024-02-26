@@ -4,10 +4,6 @@ description: How to install and configure Machine ID on GitLab CI
 version: '15.x'
 ---
 
-<Accordion title="Version warning">
-  Machine ID for GitLab is available starting from Teleport `v12.2`.
-</Accordion>
-
 In this guide, you will use Teleport Machine ID to allow a GitLab pipeline to
 securely connect to a Teleport SSH node without the need for long-lived secrets.
 
@@ -22,12 +18,14 @@ control.
 
 ## Prerequisites
 
+Machine ID for GitLab is available starting from Teleport `v12.2`.
+
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -36,11 +34,11 @@ control.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -49,7 +47,7 @@ control.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -58,11 +56,11 @@ control.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -72,7 +70,7 @@ control.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -82,11 +80,11 @@ control.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -96,7 +94,7 @@ control.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -105,11 +103,11 @@ control.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -124,7 +122,7 @@ control.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -282,8 +280,8 @@ deploy-job:
       aud: teleport.example.com
   script:
     - cd /tmp
-    - 'curl -O https://cdn.teleport.dev/teleport-v15.0.0-dev-linux-amd64-bin.tar.gz'
-    - tar -xvf teleport-v15.0.0-dev-linux-amd64-bin.tar.gz
+    - 'curl -O https://cdn.teleport.dev/teleport-v15.0.2-linux-amd64-bin.tar.gz'
+    - tar -xvf teleport-v15.0.2-linux-amd64-bin.tar.gz
     - sudo ./teleport/install
     - 'TELEPORT_ANONYMOUS_TELEMETRY=1 tbot start -c tbot.yaml'
 ```

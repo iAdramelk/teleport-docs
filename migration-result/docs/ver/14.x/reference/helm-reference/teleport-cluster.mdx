@@ -34,12 +34,13 @@ The `teleport-cluster` chart runs three Teleport services, split into two sets o
 The `teleport-cluster` chart can be deployed in four different modes.
 Get started with a guide for each mode:
 
-| `chartMode`               | Purpose                                                                                                                                                                                                                           | Guide                                                                                                                   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `standalone`              | Runs by relying only on Kubernetes resources.                                                                                                                                                                                     | [Getting Started - Kubernetes with SSO](/docs/ver/14.x/deploy-a-cluster/helm-deployments/kubernetes-cluster)            |
-| `aws`                     | Leverages AWS managed services to store data.                                                                                                                                                                                     | [Running an HA Teleport cluster using an AWS EKS Cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws)         |
-| `gcp`                     | Leverages GCP managed services to store data.                                                                                                                                                                                     | [Running an HA Teleport cluster using a Google Cloud GKE cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp) |
-| `scratch` (v12 and above) | Generates empty Teleport configuration. User must pass their own config. This is discouraged, use `standalone` mode with [`auth.teleportConfig`](#authteleportconfig) and [`proxy.teleportConfig`](#proxyteleportconfig) instead. | [Running a Teleport cluster with a custom config](/docs/ver/14.x/deploy-a-cluster/helm-deployments/custom)              |
+| `chartMode`               | Purpose                                                                                                                                                                                                                           | Guide                                                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `standalone`              | Runs by relying only on Kubernetes resources.                                                                                                                                                                                     | [Getting Started - Kubernetes with SSO](/docs/ver/14.x/deploy-a-cluster/helm-deployments/kubernetes-cluster)                 |
+| `aws`                     | Leverages AWS managed services to store data.                                                                                                                                                                                     | [Running an HA Teleport cluster using an AWS EKS Cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws)              |
+| `gcp`                     | Leverages GCP managed services to store data.                                                                                                                                                                                     | [Running an HA Teleport cluster using a Google Cloud GKE cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp)      |
+| `azure`                   | Leverages Azure managed services to store data.                                                                                                                                                                                   | [Running an HA Teleport cluster using a Microsoft Azure AKS cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/azure) |
+| `scratch` (v12 and above) | Generates empty Teleport configuration. User must pass their own config. This is discouraged, use `standalone` mode with [`auth.teleportConfig`](#authteleportconfig) and [`proxy.teleportConfig`](#proxyteleportconfig) instead. | [Running a Teleport cluster with a custom config](/docs/ver/14.x/deploy-a-cluster/helm-deployments/custom)                   |
 
 <Note>
   `custom` mode has been removed in Teleport version 12. See the [version 12
@@ -99,16 +100,25 @@ used as the cluster's public address by default.
   the IP, or a CNAME record pointing to the hostname of the Kubernetes load balancer.
 
   <Accordion title="Using Application Access?">
-    Teleport assigns a subdomain to each application you have configured for Application
-    Access (e.g., `grafana.teleport.example.com`), so you will need to ensure that a
-    DNS A (or CNAME for services that only provide a hostname) record exists for each
-    application-specific subdomain so clients can access your applications via Teleport.
+    Teleport assigns a subdomain to each application you configure for Application
+    Access. For example, if you enroll Grafana as a resource, Teleport assigns the resource
+    to the `grafana.teleport.example.com` subdomain.
 
-    You should create either a separate DNS record for each subdomain, or a single
-    record with a wildcard subdomain such as `*.teleport.example.com`. This way, your
-    certificate authority (e.g., Let's Encrypt) can issue a certificate for each
-    subdomain, enabling clients to verify your Teleport hosts regardless of the
+    If you host the Teleport cluster on your own network, you should update your DNS
+    configuration to account for application subdomains.
+    You can update DNS in one of two ways:
+
+    - Create a single DNS address (A) or canonical name (CNAME) record using wildcard substitution
+      for the subdomain name. For example, create a DNS record with the name `*.teleport.example.com`.
+    - Create a separate DNS address (A) or canonical name (CNAME) record for each application subdomain.
+
+    Modifying DNS ensures that the certificate authority—for example, Let's Encrypt—can issue a
+    certificate for each subdomain and that clients can verify Teleport hosts regardless of the
     application they are accessing.
+
+    If you use the Teleport cloud platform, no DNS updates are needed because your Teleport
+    cluster automatically provides the subdomains and signed TLS certificates for your
+    applications under your tenant address.
   </Accordion>
 </Note>
 
@@ -135,8 +145,8 @@ This name will be shown to Teleport users connecting to the Kubernetes cluster.
 The `teleport-cluster` chart deploys two sets of pods, one for the Auth Service
 and another for the Proxy Service.
 
-`auth` contains values specific for Auth Service pods. You can use it to set
-specific values for auth pods, taking precedence over chart-scoped values.
+`auth` allows you to set chart values only for Kubernetes resources related to the Teleport Auth Service.
+This is merged with chart-scoped values and takes precedence in case of conflict.
 
 For example, to override the [`postStart`](#postStart) value only for auth pods:
 
@@ -149,6 +159,35 @@ auth:
   postStart: ["curl", "http://hook"]
   imagePullPolicy: Always
 ```
+
+### `proxyProtocol`
+
+| Component | Type     | Default value | Required? | `teleport.yaml` equivalent     |
+| --------- | -------- | ------------- | --------- | ------------------------------ |
+| `proxy`   | `string` | `null`        | no        | `proxy_service.proxy_protocol` |
+
+The `proxyProtocol` value controls whether the Proxy pods will
+accept PROXY lines with the client's IP address when they are
+behind a L4 load balancer (e.g. AWS ELB, GCP L4 LB, etc) with PROXY protocol
+enabled. Since L4 LBs do not preserve the client's IP address, PROXY protocol is
+required to ensure that Teleport can properly audit the client's IP address.
+
+When Teleport pods are not behind a L4 LB with PROXY protocol enabled, this
+value should be set to `off` to prevent Teleport from accepting PROXY headers
+from untrusted sources.
+
+Possible values are:
+
+- `on`: will enable the PROXY protocol for all connections and will require the
+  L4 LB to send a PROXY header.
+- `off` will disable the PROXY protocol for all connections and denies all
+  connections prefixed a PROXY header.
+
+If `proxyProtocol` is unspecified, Teleport does not require PROXY header for the
+connection, but will accept it if present. This mode is considered insecure
+and should only be used for testing purposes.
+
+See the [PROXY Protocol security section](/docs/ver/14.x/management/security/proxy-protocol) for more details.
 
 ### `auth.teleportConfig`
 
@@ -191,10 +230,11 @@ auth:
 The `teleport-cluster` charts deploys two sets of pods: one for the Auth Service
 and another for the Proxy Service.
 
-`proxy` contains values specific to Proxy Service pods. You can use it to
-set specific values for proxy pods, taking precedence over chart-scoped values.
+`proxy` allows you to set chart values only for Kubernetes resources related to the Teleport Proxy Service.
+This is merged with chart-scoped values and takes precedence in case of conflict.
 
-For example, to override the [`postStart`](#postStart) value only for proxy pods:
+For example, to override the [`postStart`](#postStart) value only for Teleport Proxy Service pods
+and annotate the Kubernetes Service deployed for the Teleport Proxy Service:
 
 ```yaml
 # By default all pods postStart command should be "echo starting"
@@ -204,6 +244,11 @@ proxy:
   # But we override the `postStart` value specifically for proxy pods
   postStart: ["curl", "http://hook"]
   imagePullPolicy: Always
+
+  # We also annotate only the Kubernetes Service sending traffic to Proxy Service pods.
+  annotations:
+    service:
+      external-dns.alpha.kubernetes.io/hostname: "teleport.example.com"
 ```
 
 ### `proxy.teleportConfig`
@@ -248,7 +293,7 @@ proxy:
 | `string` | `local`       | Yes       | `auth_service.authentication.type` |
 
 `authentication.type` controls the authentication scheme used by Teleport.
-Possible values are `local` and `github` for OSS, plus `oidc` and `saml` for Enterprise.
+Possible values are `local` and `github` for Teleport Community Edition, plus `oidc` and `saml` for Enterprise.
 
 ### `authentication.connectorName`
 
@@ -276,7 +321,7 @@ Defaults to `local`.
 `authentication.localAuth` controls whether local authentication is enabled.
 When disabled, users can only log in through authentication connectors like `saml`, `oidc` or `github`.
 
-[Disabling local auth is required for FedRAMP / FIPS](/docs/ver/14.x/access-controls/compliance-frameworks/fedramp#teleport-auth-server).
+[Disabling local auth is required for FedRAMP / FIPS](/docs/ver/14.x/access-controls/compliance-frameworks/fedramp#configure-the-teleport-auth-service).
 
 ### `authentication.lockingMode`
 
@@ -354,7 +399,7 @@ By default no devices are forbidden.
 | -------- | ------------- | --------- | ---------------------------------- |
 | `string` | `nil`         | no        | `auth_service.proxy_listener_mode` |
 
-`proxyListenerMode` controls proxy TLS routing used by Teleport. Possible values are `multiplex`.
+`proxyListenerMode` controls proxy TLS routing used by Teleport. Possible values are `multiplex`, `separate`.
 
 `values.yaml` example:
 
@@ -777,7 +822,7 @@ acmeURI: https://acme-staging-v02.api.letsencrypt.org/directory
 | ------ | ------------------------------------------------------ |
 | `bool` | `true` for 1.22 and lower, `false` for 1.23 and higher |
 
-By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/master/examples/chart/teleport-cluster/templates/psp.yaml).
+By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/v14/examples/chart/teleport-cluster/templates/psp.yaml).
 
 PodSecurityPolicy resource has been removed in Kubernetes 1.25
 and replaced since 1.23 by PodSecurityAdmission. If you are running on
@@ -825,12 +870,13 @@ labels:
 
 `chartMode` is used to configure the chart's operation mode. You can find more information about each mode on its specific guide page:
 
-| `chartMode`  | Guide                                                                                                                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `standalone` | [Getting Started - Kubernetes with SSO](/docs/ver/14.x/deploy-a-cluster/helm-deployments/kubernetes-cluster)            |
-| `aws`        | [Running an HA Teleport cluster using an AWS EKS Cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws)         |
-| `gcp`        | [Running an HA Teleport cluster using a Google Cloud GKE cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp) |
-| `scratch`    | [Running a Teleport cluster with a custom config](/docs/ver/14.x/deploy-a-cluster/helm-deployments/custom)              |
+| `chartMode`  | Guide                                                                                                                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `standalone` | [Getting Started - Kubernetes with SSO](/docs/ver/14.x/deploy-a-cluster/helm-deployments/kubernetes-cluster)                 |
+| `aws`        | [Running an HA Teleport cluster using an AWS EKS Cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws)              |
+| `gcp`        | [Running an HA Teleport cluster using a Google Cloud GKE cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp)      |
+| `azure`      | [Running an HA Teleport cluster using a Microsoft Azure AKS cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/azure) |
+| `scratch`    | [Running a Teleport cluster with a custom config](/docs/ver/14.x/deploy-a-cluster/helm-deployments/custom)                   |
 
 <Warning>
   Using the `scratch` chart mode is discouraged. Precise chart and Teleport
@@ -841,6 +887,45 @@ labels:
   [`auth.teleportConfig`](#authteleportconfig) and [`proxy.teleportConfig`](#proxyteleportconfig)
   to inject your custom configuration.
 </Warning>
+
+## `podMonitor`
+
+`podMonitor` controls [the PodMonitor CR (from monitoring.coreos.com/v1)
+](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.PodMonitor)
+that monitors the workload (Auth and Proxy Services) deployed by the chart.
+This custom resource configures Prometheus and makes it scrape Teleport metrics.
+
+The CRD is deployed by the prometheus-operator and allows workload to
+get monitored. You need to deploy the `prometheus-operator`
+in the cluster prior to configuring the `podMonitor` section of the chart. See
+[the prometheus-operator documentation](https://prometheus-operator.dev/docs/prologue/introduction/)
+for setup instructions.
+
+### `podMonitor.enabled`
+
+| Type   | Default value |
+| ------ | ------------- |
+| `bool` | `false`       |
+
+Whether the chart should deploy a `PodMonitor` resource. This is disabled by
+default as it requires the `PodMonitor` CRD to be installed in the cluster.
+
+### `podMonitor.additionalLabels`
+
+| Type                   | Default value              |
+| ---------------------- | -------------------------- |
+| `object[string]string` | `{"prometheus":"default"}` |
+
+Additional labels to put on the created PodMonitor Resource.
+Those labels are used to be selected by a specific Prometheus instance.
+
+### `podMonitor.interval`
+
+| Type     | Default value |
+| -------- | ------------- |
+| `string` | `30s`         |
+
+`interval` is the interval between two metrics scrapes by Prometheus.
 
 ## `persistence`
 
@@ -884,6 +969,21 @@ persistence:
   existingClaimName: my-existing-pvc-name
 ```
 
+### `persistence.storageClassName`
+
+| Type     | Default value |
+| -------- | ------------- |
+| `string` | `nil`         |
+
+`persistence.storageClassName` can be used to set the storage class for the `PersistentVolumeClaim`.
+
+`values.yaml` example:
+
+```yaml
+persistence:
+  storageClassName: ebs-ssd
+```
+
 ### `persistence.volumeSize`
 
 | Type     | Default value |
@@ -911,6 +1011,10 @@ persistence:
 
 `gcp` settings are described in the GCP guide: [Running an HA Teleport cluster using a Google Cloud GKE cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp)
 
+## `azure`
+
+`azure` settings are described in the Azure guide: [Running an HA Teleport cluster using a Microsoft Azure AKS cluster](/docs/ver/14.x/deploy-a-cluster/helm-deployments/azure)
+
 ## `highAvailability`
 
 `highAvailability` contains settings controlling how Teleport pods are
@@ -930,7 +1034,8 @@ is not supported with multiple replicas.
 ### For proxy pods
 
 Proxy pods need to be provided a certificate to be replicated (via either
-`tls.existingSecretName` or `highAvailability.certManager`).
+`tls.existingSecretName` or `highAvailability.certManager`) or be exposed
+via an ingress (`ingress.enabled`).
 If proxy pods are replicable, they will default to 2 replicas,
 even if `highAvailability.replicaCount` is 1. To force a single proxy replica,
 set `proxy.highAvailability.replicaCount: 1`.
@@ -1032,7 +1137,7 @@ cluster deployed in HA mode.
   You must install and configure `cert-manager` in your Kubernetes cluster yourself.
 
   See the [cert-manager Helm install instructions](https://cert-manager.io/docs/installation/kubernetes/#option-2-install-crds-as-part-of-the-helm-release)
-  and the relevant sections of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-36-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
+  and the relevant sections of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-47-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
 </Note>
 
 ### `highAvailability.certManager.addCommonName`
@@ -1047,7 +1152,7 @@ Setting `highAvailability.certManager.addCommonName` to `true` will instruct `ce
   You must install and configure `cert-manager` in your Kubernetes cluster yourself.
 
   See the [cert-manager Helm install instructions](https://cert-manager.io/docs/installation/kubernetes/#option-2-install-crds-as-part-of-the-helm-release)
-  and the relevant sections of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-36-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
+  and the relevant sections of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-47-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
 </Note>
 
 `values.yaml` example:
@@ -1057,6 +1162,26 @@ highAvailability:
   certManager:
     enabled: true
     addCommonName: true
+    issuerName: letsencrypt-production
+```
+
+### `highAvailability.certManager.addPublicAddrs`
+
+| Type   | Default value | `teleport.yaml` equivalent                                        |
+| ------ | ------------- | ----------------------------------------------------------------- |
+| `bool` | `false`       | `proxy_service.https_keypairs` (to provide your own certificates) |
+
+Setting `highAvailability.certManager.addPublicAddrs` to `true` will instruct `cert-manager` to also add any additional addresses configured under the `publicAddr` chart value
+in its certificate signing request to the issuing CA.
+
+`values.yaml` example:
+
+```yaml
+publicAddr: ['teleport.example.com:443']
+highAvailability:
+  certManager:
+    enabled: true
+    addPublicAddrs: true
     issuerName: letsencrypt-production
 ```
 
@@ -1072,7 +1197,7 @@ Sets the name of the `cert-manager` `Issuer` or `ClusterIssuer` to use for issui
   You must install configure an appropriate `Issuer` supporting a DNS01 challenge yourself.
 
   Please see the [cert-manager DNS01 docs](https://cert-manager.io/docs/configuration/acme/dns01/#supported-dns01-providers) and the relevant sections
-  of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-36-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
+  of the [AWS](/docs/ver/14.x/deploy-a-cluster/helm-deployments/aws#step-47-configure-tls-certificates-for-teleport) and [GCP](/docs/ver/14.x/deploy-a-cluster/helm-deployments/gcp#step-36-install-and-configure-cert-manager) guides for more information.
 </Note>
 
 `values.yaml` example:
@@ -1461,6 +1586,25 @@ annotations:
     kubernetes.io/annotation: value
 ```
 
+## `annotations.ingress`
+
+| Type     | Default value |
+| -------- | ------------- |
+| `object` | `{}`          |
+
+[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+
+Kubernetes annotations which should be applied to the `Ingress` created by the chart.
+
+`values.yaml` example:
+
+```yaml
+annotations:
+  ingress:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+```
+
 ## `serviceAccount.create`
 
 | Type      | Default value | Required? |
@@ -1513,6 +1657,60 @@ Allows to specify the `loadBalancerIP`.
 service:
   spec:
     loadBalancerIP: 1.2.3.4
+```
+
+## `ingress.enabled`
+
+| Type      | Default value | Required? |
+| --------- | ------------- | --------- |
+| `boolean` | `false`       | No        |
+
+[Kubernetes reference](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+
+Boolean value that specifies whether to generate a Kubernetes `Ingress` for the Teleport deployment.
+
+`values.yaml` example:
+
+```yaml
+ingress:
+  enabled: true
+```
+
+## `ingress.suppressAutomaticWildcards`
+
+| Type      | Default value | Required? |
+| --------- | ------------- | --------- |
+| `boolean` | `false`       | No        |
+
+Setting `suppressAutomaticWildcards` to true will not automatically add `*.<clusterName>` as a hostname served
+by the Ingress. This may be desirable if you don't use Teleport application access, or want to configure
+individual public addresses for applications instead.
+
+`values.yaml` example:
+
+```yaml
+ingress:
+  enabled: true
+  suppressAutomaticWildcards: true
+```
+
+## `ingress.spec`
+
+| Type     | Default value | Required? |
+| -------- | ------------- | --------- |
+| `object` | `{}`          | No        |
+
+Object value which can be used to define additional properties for the configured Ingress.
+
+For example, you can use this to set an `ingressClassName`:
+
+`values.yaml` example:
+
+```yaml
+ingress:
+  enabled: true
+  spec:
+    ingressClassName: alb
 ```
 
 ## `extraArgs`
@@ -1668,6 +1866,15 @@ postStart:
 
 Resource requests/limits which should be configured for Teleport containers. These resource limits will also be
 applied to `initContainers`.
+
+<Note>
+  Setting CPU limits is an anti-pattern and is harmful in most cases. Unless you enabled
+  [the Static CPU management policy](https://kubernetes.io/docs/tasks/administer-cluster/cpu-management-policies/#static-policy),
+  a multithreaded workload with CPU limits will very likely not behave the way you expect when approaching its CPU limit.
+
+  Teleport will become unstable once throttling starts. We recommend not to set CPU limits.
+  See [the GitHub PR](https://github.com/gravitational/teleport/pull/36251) for technical details.
+</Note>
 
 `values.yaml` example:
 

@@ -10,53 +10,85 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>

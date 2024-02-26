@@ -16,16 +16,16 @@ This guide will explain how to:
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -40,7 +40,7 @@ This guide will explain how to:
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -104,29 +104,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `loginrule-manager` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - loginrule-manager 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},loginrule-manager"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">

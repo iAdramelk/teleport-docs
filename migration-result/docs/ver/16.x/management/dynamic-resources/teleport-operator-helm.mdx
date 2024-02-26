@@ -37,7 +37,7 @@ $ kubectl cluster-info
   ```
 </Tip>
 
-## Step 1/3. Install teleport-cluster Helm chart with the operator
+## Step 1/2. Install teleport-cluster Helm chart with the operator
 
 Set up the Teleport Helm repository.
 
@@ -64,7 +64,7 @@ in the TELEPORT-CLUSTER namespace:
             --create-namespace --namespace teleport-cluster \
             --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
             --set operator.enabled=true \
-            --version 15.0.0-dev
+            --version 16.0.0-dev
     ```
   </Tab>
 
@@ -78,11 +78,11 @@ in the TELEPORT-CLUSTER namespace:
     The Teleport Auth Service reads a license file to authenticate your Teleport
     Enterprise account.
 
-    To obtain your license file, navigate to your [Teleport
-    account](https://teleport.sh) and enter your
-    account name (e.g., `my-license`). After logging in, click
-    the "DOWNLOAD LICENSE KEY" button to download your
-    license file.
+    To obtain your license file, navigate to your Teleport account dashboard and log
+    in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+    account name (e.g. my-company). After logging in you will see a "GENERATE
+    LICENSE KEY" button, which will generate a new license file and allow you to
+    download it.
 
     ![License File Download](/assets/license-23cee352ae.png)
 
@@ -100,7 +100,7 @@ in the TELEPORT-CLUSTER namespace:
             --set enterprise=true \
             --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
             --set operator.enabled=true \
-            --version 15.0.0-dev
+            --version 16.0.0-dev
     ```
   </Tab>
 </Tabs>
@@ -108,100 +108,29 @@ in the TELEPORT-CLUSTER namespace:
 This command installs the required Kubernetes CRDs and deploys the Teleport Kubernetes Operator next to the Teleport
 cluster. All resources (except CRDs, which are cluster-scoped) are created in the `teleport-cluster` namespace.
 
-## Step 2/3. Manage Teleport users and roles using `kubectl`
-
-Create a manifest called `teleport-resources.yaml` that describes two custom resources: a `TeleportUser` and a `TeleportRole`:
-
-```yaml
-apiVersion: resources.teleport.dev/v5
-kind: TeleportRole
-metadata:
-  name: myrole
-spec:
-  allow:
-    rules:
-      - resources: ['user', 'role']
-        verbs: ['list','create','read','update','delete']
----
-apiVersion: resources.teleport.dev/v2
-kind: TeleportUser
-metadata:
-  name: myuser
-spec:
-  roles: ['myrole']
-```
-
-<Note>
-  Kubernetes validates all custom resource names to follow RFC 1123, which includes specifications for hostnames.
-  This requires the `metadata.name` field of Teleport resources controlled by the operator to consist of lowercase alphanumeric
-  characters, `-` or `.`, and to start and end with an alphanumeric character.
-</Note>
-
-Apply the manifests to the Kubernetes cluster:
+## Step 2/2. Validate the cluster and operator are running and healthy
 
 ```code
-$ kubectl apply -n teleport-cluster -f teleport-resources.yaml
+$ kubectl get deployments -n teleport-cluster
+#
+
+$ kubectl get pods -n teleport-cluster
+#
 ```
 
-List the created Kubernetes resources:
+## Next steps
 
-```code
-$ kubectl get teleportroles -n teleport-cluster
-# NAME     AGE
-# myrole   10m
+Follow [the user and role IaC guide](/docs/ver/16.x/management/dynamic-resources/user-and-role) to use your newly
+deployed Teleport Kubernetes Operator to create Teleport users and grant them
+roles.
 
-$ kubectl get teleportusers -n teleport-cluster
-# NAME     AGE
-# myuser   10m
-```
+Helm Chart parameters are documented in the [`teleport-cluster` Helm chart reference](/docs/ver/16.x/reference/helm-reference/teleport-cluster).
 
-Check the user `myuser` has been created in Teleport and has been granted the role `myrole`:
-
-```code
-$ AUTH_POD=$(kubectl get pods -n teleport-cluster -l app=teleport-cluster -o jsonpath='{.items[0].metadata.name}')
-$ kubectl exec -it "$AUTH_POD" -c teleport -- tctl users ls
-# User                          Roles
-# ----------------------------- -----------------------------
-# bot-teleport-operator-sidecar bot-teleport-operator-sidecar
-# myuser                        myrole
-```
-
-At this point the Teleport Kubernetes Operator is functional and Teleport users and roles can be managed from
-Kubernetes.
-
-## Step 3/3. Explore the Teleport CRDs
-
-Available fields can be browsed with `kubectl explain` in a cluster with Teleport CRDs installed.
-For example the command:
-
-```code
-$ kubectl explain teleportroles.spec
-```
-
-Returns the following fields:
-
-```shell
-KIND:     TeleportRole
-VERSION:  resources.teleport.dev/v5
-
-RESOURCE: spec <Object>
-
-DESCRIPTION:
-    Role resource definition v5 from Teleport
-
-FIELDS:
-   allow	<Object>
-     Allow is the set of conditions evaluated to grant access.
-
-   deny	<Object>
-     Deny is the set of conditions evaluated to deny access. Deny takes priority
-     over allow.
-
-   options	<Object>
-     Options is for OpenSSH options like agent forwarding.
-```
+See the [Helm Deployment guides](/docs/ver/16.x/deploy-a-cluster/helm-deployments) detailing specific setups like running Teleport on AWS or GCP.
 
 ## Troubleshooting
+
+### The CustomResources (CRs) are not reconciled
 
 The Teleport Operator watches for new resources or changes in Kubernetes.
 When a change happens, it triggers the reconciliation loop. This loop is in
@@ -242,30 +171,59 @@ Here `SuccessfullyReconciled` is `False` and the error is `role my-non-existing-
 If the status is not present or does not give sufficient information to solve
 the issue, check the operator logs:
 
-```shell
-$ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME>
-```
+### The CR doesn't have a status
 
-<Note>
-  In case of multi-replica deployments, only one operator instance is running
-  the reconciliation loop. This operator is called the leader and is the only
-  one producing reconciliation logs. The other operator instances are waiting
-  with the following log:
+1. Check if the CR is in the same namespace as the operator. The operator only
+   watches for resource in its own namespace.
+2. Check if the operator pods are running and healthy:
+   ```code
+   kubectl get pods -n "$OPERATOR_NAMESPACE"`
+   ```
+3. Check the operator logs:
 
+   ```code
+   $ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME> -n "$OPERATOR_NAMESPACE"
+   ```
+
+   <Note>
+     In case of multi-replica deployments, only one operator instance is running
+     the reconciliation loop. This operator is called the leader and is the only
+     one producing reconciliation logs. The other operator instances are waiting
+     with the following log:
+
+     ```
+     leaderelection.go:248] attempting to acquire leader lease teleport/431e83f4.teleport.dev...
+     ```
+
+     To diagnose reconciliation issues, you will have to inspect all pods to find
+     the one reconciling the resources.
+   </Note>
+
+### I cannot delete the Kubernetes CR
+
+The operator protects Kubernetes CRs from deletion with a finalizer.
+It will not allow the CR to be deleted until the Teleport resource is deleted as
+well, this is a safety to avoid leaving dangling resources and potentially grant
+unintentional access.
+
+There might be some reasons causing Teleport to refuse a resource deletion, the
+most frequent one is if another resource depends on it. For example: you cannot
+delete a role if it is still assigned to a user.
+
+If this happens, the operator will report the error sent by Teleport in its log.
+
+To resolve this lock, you can either:
+
+- resolve the dependency issue so the resource gets successfully deleted in
+  Teleport. In the role example, this would imply removing any mention of the
+  role from the various users who had it.
+- patch the Kubernetes CR to remove the finalizers. This will tell Kubernetes to
+  stop waiting for the operator deletion and remove the CR. If you do this, the
+  CR will be removed but the Teleport resource will remain. The operator will
+  never attempt to remove it again.
+
+  For example, if the role is named `my-role`:
+
+  ```code
+  kubectl patch TeleportRole my-role -p '{"metadata":{"finalizers":null}}' --type=merge
   ```
-  leaderelection.go:248] attempting to acquire leader lease teleport/431e83f4.teleport.dev...
-  ```
-
-  To diagnose reconciliation issues, you will have to inspect all pods to find
-  the one reconciling the resources.
-</Note>
-
-If the Kubernetes resource has no status update and the operator does not produce
-any logs regarding the resource, please check if the resource lives in the same
-namespace as the operator.  The operator only watches for resource in its own namespace.
-
-## Next steps
-
-Helm Chart parameters are documented in the [`teleport-cluster` Helm chart reference](/docs/ver/16.x/reference/helm-reference/teleport-cluster).
-
-See the [Helm Deployment guides](/docs/ver/16.x/deploy-a-cluster/helm-deployments) detailing specific setups like running Teleport on AWS or GCP.

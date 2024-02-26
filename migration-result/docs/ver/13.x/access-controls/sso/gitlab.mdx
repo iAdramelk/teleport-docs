@@ -22,20 +22,20 @@ like:
   in the default `editor` role.
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -44,39 +44,49 @@ like:
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Configure GitLab
 
@@ -113,6 +123,9 @@ to each of these groups.
 
 Create an OIDC connector resource using `tctl`.
 
+On your workstation, create a file called `client-secret.txt` consisting only of
+your client secret.
+
 <Tabs>
   <Tab title="GitLab.com">
     Replace the application ID and secret with the values from GitLab:
@@ -120,7 +133,7 @@ Create an OIDC connector resource using `tctl`.
     ```code
     $ tctl sso configure oidc --preset gitlab \
     --id <APPLICATION-ID> \
-    --secret <APPLICATION-SECRET> \
+    --secret $( cat client-secret.txt) \
     --claims-to-roles groups,company/admin,admin \
     --claims-to-roles groups,company/dev,dev > oidc.yaml
     ```
@@ -134,7 +147,7 @@ Create an OIDC connector resource using `tctl`.
     $ tctl sso configure oidc --preset gitlab \
     --id <APPLICATION-ID> \
     --issuer-url https://gitlab.company.com \
-    --secret <APPLICATION-SECRET> \
+    --secret $( cat client-secret.txt) \
     --claims-to-roles groups,company/admin,admin \
     --claims-to-roles groups,company/dev,dev > oidc.yaml
     ```
@@ -160,7 +173,7 @@ spec:
     value: company/gitlab-dev
   client_id: <APPLICATION-ID>
   client_secret: <APPLICATION-SECRET>
-  display: Gitlab
+  display: GitLab
   issuer_url: https://gitlab.com
   prompt: none
   redirect_url: https://teleport.example.com:443/v1/webapi/oidc/callback
@@ -181,7 +194,7 @@ of the command to diagnose.
 Create the connector using `tctl` tool:
 
 ```code
-$ tctl create -f oidc.yaml.yaml
+$ tctl create -f oidc.yaml
 ```
 
 ## Create Teleport Roles
@@ -241,8 +254,7 @@ $ tctl create -f dev.yaml
 Configure Teleport to use OIDC authentication as the default instead of the local
 user database.
 
-You can either edit your Teleport configuration file or create a dynamic
-resource.
+Follow the instructions for your Teleport edition:
 
 <Tabs>
   <Tab title="Static Config (Self-Hosted)">
@@ -302,13 +314,13 @@ automatically in a browser).
 Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
 must be able to:
 
-- Ensure that HTTP/TLS certificates are configured properly for both Teleport
-  proxy and the SSO provider.
-
 - Be able to see what SAML/OIDC claims and values are getting exported and passed
   by the SSO provider to Teleport.
 - Be able to see how Teleport maps the received claims to role mappings as defined
   in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
 
 If something is not working, we recommend to:
 
@@ -371,3 +383,14 @@ spec:
       'env': 'dev'
 version: v5
 ```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.

@@ -9,10 +9,6 @@ This guide will show you how to set up your Teleport Cluster to use the Google
 Cloud Key Management Service (KMS) to store and handle the CA private key
 material used to sign all certificates issued by your Teleport cluster.
 
-<Accordion title="Version warning">
-  The features documented on this page are available in Teleport `11.1.0` and higher.
-</Accordion>
-
 Teleport generates private key material for its internal Certificate Authorities
 (CAs) during the first Auth Server's initial startup.
 These CAs are used to sign all certificates issued to clients and hosts in the
@@ -25,37 +21,31 @@ In short, private key material will never leave Google Cloud KMS.
 
 If launching a new Teleport cluster this will all be handled during initial
 startup with no specific interventions required after configuration.
-For existing Teleport clusters that already have private key material on disk,
-a CA rotation must be performed. This ensures that the private key material
-only ever exists in KMS when this feature is enabled.
+For existing Teleport clusters that already have already generated software
+private keys, a CA rotation must be performed.
 Read on to [migrating an existing cluster](#migrating-an-existing-cluster) to
 learn more.
 
-<Tip>
-  Teleport Team takes care of this setup for you so you can provide secure access
-  to your infrastructure right away.
-
-  Get started with a [free trial](https://goteleport.com/signup?t_source=docs) of
-  Teleport Team.
-</Tip>
-
 ## Prerequisites
+
+The features documented on this page are available in Teleport `11.1.0` and
+higher.
 
 - Access to an Enterprise edition of Teleport running in your environment.
 
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -70,7 +60,7 @@ learn more.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -269,42 +259,20 @@ certificates can be signed without error.
 
 ## Migrating an existing cluster
 
-If you have an existing Teleport cluster it will have already created CA keys
-during its first start.
+If you have an existing Teleport cluster it will have already created software
+CA keys during its first start.
 Those existing CA keys will have been used to sign all existing user and host
 certificates, and will be trusted by all other services in your cluster.
 
-When an Auth Server starts up with a `gcp_kms` keyring configured in its
-`ca_key_params`, it will refuse to sign any certificates with any existing
-software keys in the CA.
-This will prevent any new user logins or new hosts from joining your cluster if
-their requests are directed to that Auth Server and effectively cause downtime
-for that server until a CA rotation is completed.
+In order for the Teleport Auth Service to generate new keys in GCP KMS and have
+them trusted by the rest of the cluster, you will need to rotate all of your
+Teleport CAs.
 
-If some downtime until you can complete a CA rotation is acceptable, the
-migration can be performed in three steps:
+`teleport start` will print a warning during startup if any CA needs to be rotated.
+Any users allowed the `update` verb for `cert_authority` resources in any of
+their Teleport roles will also see a cluster alert reminding them to rotate the
+CAs.
 
-1. Configure all Auth Servers `ca_key_params` to use your desired KMS keyring,
-   as described in [Step 4](#step-45-configure-your-auth-server-to-use-kms-keys).
-2. Restart all Auth Servers.
-3. Perform a full [CA rotation](/docs/management/operations/ca-rotation).
-
-To avoid any downtime while migrating your cluster, do the following procedure
-instead:
-
-1. Start a new Auth Server with an identical backend configuration to your
-   existing Auth Servers and with `ca_key_params` configured to use your KMS key
-   ring. Make sure no requests are routed to this new, temporary, Auth Server by
-   not adding it to your load balancer. You can run this anywhere with access to
-   your existing backend and new KMS key ring, one option would be to run it
-   locally on an existing Auth Server host (make sure to give it its own
-   `teleport.yaml` and unique `data_dir`).
-2. Perform a full [CA rotation](/docs/management/operations/ca-rotation).
-   The temporary Auth Server will generate new KMS keys and include their names in
-   the backend CA state.
-3. Stop/remove/delete the temporary Auth Server as it is no longer necessary.
-4. Configure all other existing Auth Servers with identical `ca_key_params` and
-   reload/restart them, one by one. They will now use the KMS keys generated by the
-   temporary Auth Server.
-5. Perform one more full CA rotation to evict all now-unused software keys from the
-   CA backend state so that hosts will no longer trust them.
+CA rotation can be performed manually or semi-automatically, see our admin guide
+on [Certificate rotation](/docs/management/operations/ca-rotation).
+All CAs listed in the output of `tctl status` must be rotated.

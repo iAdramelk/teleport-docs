@@ -23,108 +23,119 @@ Teleport Services to a Cluster](/docs/ver/14.x/agents/join-services-to-your-clus
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
 - An AWS EC2 instance to host a Teleport service, with the Teleport binary
   installed.
 
-Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-remotely:
+To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+verify that you can run `tctl` commands using your current credentials.
+`tctl` is supported on macOS and Linux machines.
 
-{/* Ignoring scope linting since we use this partial throughout the docs and
-cannot guarantee that it will line up with a page's configured scopes*/}
-
-{/*lint ignore scopes*/}
+For example:
 
 ```code
 $ tsh login --proxy=teleport.example.com --user=email@example.com
 $ tctl status
 # Cluster  teleport.example.com
-# Version  14.0.0-dev
+# Version  14.3.6
 # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
 ```
 
-You can run subsequent `tctl` commands in this guide on your local machine.
-
-For full privileges, you can also run `tctl` commands on your Auth Service host.
-
-{/*lint ignore scopes*/}
-
-```code
-$ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-$ tctl status
-# Cluster  myinstance.teleport.sh
-# Version  13.2.0
-# CA pin   sha256:sha-hash-here
-```
-
-You must run subsequent `tctl` commands in this guide on your local machine.
+If you can connect to the cluster and run the `tctl status` command, you can use your
+current credentials to run subsequent `tctl` commands from your workstation.
+If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+hosts the Teleport Auth Service for full permissions.
 
 ## Step 1/4. Set up AWS IAM credentials
 
@@ -150,7 +161,7 @@ service joining token.
 Create the following `token.yaml` with an `allow` rule specifying your AWS
 account and the ARN that the Teleport process's identity must match.
 
-```
+```yaml
 # token.yaml
 kind: token
 version: v2
@@ -161,19 +172,19 @@ metadata:
 spec:
   # use the minimal set of roles required (e.g. Node, App, Kube, DB, WindowsDesktop)
   roles: [Node]
-
+  
   # set the join method allowed for this token
   join_method: iam
-
+  
   allow:
-  # specify the AWS account which Teleport processes may join from
-  - aws_account: "111111111111"
-  # multiple allow rules are supported
-  - aws_account: "222222222222"
-  # aws_arn is optional and allows you to restrict the IAM role of joining
-  # Teleport processes
-  - aws_account: "333333333333"
-    aws_arn: "arn:aws:sts::333333333333:assumed-role/teleport-node-role/i-*"
+    # specify the AWS account which Teleport processes may join from
+    - aws_account: "111111111111"
+    # multiple allow rules are supported
+    - aws_account: "222222222222"
+    # aws_arn is optional and allows you to restrict the IAM role of joining
+    # Teleport processes
+    - aws_account: "333333333333"
+      aws_arn: "arn:aws:sts::333333333333:assumed-role/teleport-node-role/i-*"
 ```
 
 The token name `iam-token` is just an example and can be any value you want to

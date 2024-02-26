@@ -59,25 +59,30 @@ environment variables when running Teleport. You can also optionally set the
 `NO_PROXY` environment variable to avoid use of the proxy when accessing
 specified hosts/netmasks/ports.
 
-For example, when launching Teleport with `systemd`, you can add
-the following lines to your `systemd` unit file, replacing `proxy.example.com` with
-the address of your proxy.
+By default, Teleport installations based on package managers (such as `apt` and
+`yum`) configure The `teleport` systemd unit to read environment variables from
+the file `/etc/default/teleport`.
+
+To configure HTTP CONNECT tunneling, you can assign these environment variables
+within `/etc/default/teleport` on machines that run Teleport binaries. Use the
+following example, replacing `proxy.example.com` with the address of your proxy:
 
 ```
-[Service]
-Environment="HTTP_PROXY=http://proxy.example.com:8080/"
-Environment="HTTPS_PROXY=http://proxy.example.com:8080/"
-Environment="NO_PROXY=localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/12,10.0.0.0/8"
+HTTP_PROXY=http://proxy.example.com:8080/
+HTTPS_PROXY=http://proxy.example.com:8080/
+NO_PROXY=localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/12,10.0.0.0/8
 ```
 
 When Teleport builds and establishes the reverse tunnel to the main cluster, it will funnel all traffic through the proxy. Specifically, if using the default configuration, Teleport will tunnel ports `3024` (SSH, reverse tunnel) and `3080` (HTTPS, establishing trust) through the proxy.
-If you don't want to proxy some of this traffic (for example, proxying HTTPS but not SSH), assign `NO_PROXY` to the address of the Teleport Proxy Service endpoint you want to exclude from HTTP\_CONNECT tunneling in `host:port` format:
+If you don't want to proxy some of this traffic (for example, proxying HTTPS but not SSH), assign `NO_PROXY` to the address of the Teleport Proxy Service endpoint you want to exclude from HTTP\_CONNECT tunneling in `host:port` format.
+
+For example, you can modify the environment file at `/etc/default/teleport` on
+each machine that runs a Teleport binary to resemble the following:
 
 ```
-[Service]
-Environment="HTTP_PROXY=http://httpproxy.example.com:8080/"
-Environment="HTTPS_PROXY=http://httpproxy.example.com:8080/"
-Environment="NO_PROXY=teleportproxy.example.com:3024"
+HTTP_PROXY=http://httpproxy.example.com:8080/
+HTTPS_PROXY=http://httpproxy.example.com:8080/
+NO_PROXY=teleportproxy.example.com:3024
 ```
 
 The value of `HTTPS_PROXY` or `HTTP_PROXY` should be in the format
@@ -137,6 +142,10 @@ This section describes the ports you should open on your Teleport instances.
     | 3023        | All clients        | SSH port clients connect to. The Proxy Service will forward this connection to port `3022` on the destination service. |
     | 3024        | Auth Service       | SSH port used to create reverse SSH tunnels from behind-firewall environments into a trusted Proxy Service instance.   |
     | 3080 or 443 | Proxy Service      | HTTPS connection to authenticate `tsh` users into the cluster. The same connection is used to serve a Web UI.          |
+    | 3036        | Database Service   | Traffic to MySQL databases.                                                                                            |
+    | 5432        | Database Service   | Traffic to Postgres databases.                                                                                         |
+    | 27017       | Database Service   | Traffic to MongoDB instances.                                                                                          |
+    | 6379        | Database Service   | Traffic to Redis instances.                                                                                            |
 
     ### Auth Service ports
 
@@ -211,19 +220,21 @@ meaning that you can expose ports on that service's host directly to clients.
 This is useful when you need to connect to resources directly if the Proxy
 Service becomes unavailable.
 
+<Tip>
+  In Teleport Cloud, the Auth and Proxy Services run in Teleport-owned infrastructure.
+  For this reason, Teleport Cloud customers must connect their resources via reverse tunnels.
+  Exposing ports for direct dial is only supported in self-hosted deployments.
+</Tip>
+
 The table below describes the ports that each Teleport Service opens for proxied
 traffic:
 
-| Port  | Service                 | Traffic Type                                             |
-| ----- | ----------------------- | -------------------------------------------------------- |
-| 3022  | SSH Service             | Incoming SSH connections.                                |
-| 3026  | Kubernetes Service      | HTTPS traffic to a Kubernetes API server.                |
-| 3036  | Database Service        | Traffic to MySQL databases.                              |
-| 5432  | Database Service        | Traffic to Postgres databases.                           |
-| 27017 | Database Service        | Traffic to MongoDB instances.                            |
-| 6379  | Database Service        | Traffic to Redis instances.                              |
-| 3028  | Windows Desktop Service | Teleport Desktop Protocol traffic from Teleport clients. |
+| Port | Service                 | Traffic Type                                             |
+| ---- | ----------------------- | -------------------------------------------------------- |
+| 3022 | SSH Service             | Incoming SSH connections.                                |
+| 3026 | Kubernetes Service      | HTTPS traffic to a Kubernetes API server.                |
+| 3028 | Windows Desktop Service | Teleport Desktop Protocol traffic from Teleport clients. |
 
-Applications registered with the Teleport Application Service can only be
-accessed via the Teleport Proxy Service, not directly via the Application
-Service.
+You can only access enrolled applications and databases through the Teleport Proxy Service.
+The Teleport Application Service and Teleport Database Service use reverse tunnel
+connections through the Teleport Proxy Service and cannot expose ports directly.

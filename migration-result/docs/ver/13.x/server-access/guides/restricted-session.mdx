@@ -13,53 +13,85 @@ Teleport supports network restrictions with more types coming in the future.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -89,38 +121,48 @@ Teleport supports network restrictions with more types coming in the future.
   </tbody>
 </table>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
 
-## Network Restrictions
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
+
+## Network restrictions
 
 Network restrictions work similarly to a firewall but with several differences:
 
-1. Firewall rules apply to the entire machine whereas network restrictions are applied
-   only to SSH sessions.
-2. Whereas firewall typically blocks ingress (inbound) connections, network restrictions
-   block egress (outbound) connections.
-3. Firewall rules are typically static but Teleport provides an API for
-   Restricted Sessions that allows the rules to be dynamically updated across
-   the entire fleet.
+- Firewall rules apply to the entire machine whereas network restrictions are applied
+  only to SSH sessions.
+- Whereas firewall typically blocks ingress (inbound) connections, network restrictions
+  block egress (outbound) connections.
+- Firewall rules are typically static but Teleport provides an API for
+  Restricted Sessions that allows the rules to be dynamically updated across
+  the entire fleet.
 
 ## Step 1/4. Install and configure a Teleport Node
 

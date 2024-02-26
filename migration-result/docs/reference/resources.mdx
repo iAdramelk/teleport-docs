@@ -545,6 +545,40 @@ spec:
   deny: {}
 ```
 
+### Role versions
+
+Versions 5, 6 and 7 of the Teleport role resource have different behaviors when
+accessing Kubernetes resources.
+
+{/*lint ignore messaging*/}
+
+Roles not [granting Kubernetes access](/docs/kubernetes-access/introduction) are
+equivalent in the three versions.
+
+Roles v5 and v6 can only restrict actions on pods (e.g. executing in them).
+Role v7 supports restricting all common resource kinds (
+see [the `kubernetes_resource` documentation](/docs/kubernetes-access/controls#kubernetes_resources)
+for a complete list).
+
+When no `kubernetes_resource` is set:
+
+- Roles v5 and v7 grant all access by default
+- Roles v6 blocks pod execution by default, this was reverted by roles v7 to improve the user experience.
+
+{/* This table is cursed. Our current docs engine doesn't support HTML tables
+(due to SSR and the rehydration process). We have dto do everything inlined in
+markdown. Some HTML character codes are used to render specific chars like {}
+or to avoid line breaks in the middle fo the YAML. Whitespaces before br tags
+are required.*/}
+
+| Allow rule                                                                                                                                                                                                                                                                        | Role v5                                                                                                             | Role v6                                                                                                             | Role v7                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: \{} <br />kubernetes\_resources: \[]<br /></pre>                                                                                                                                                    | ❌ no access                                                                                                         | ❌ no access                                                                                                         | ❌ no access                                                                                                                                                                                               |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: \[]<br /></pre>                                                                                                                                  | ✅ full access to `dev` clusters                                                                                     | ❌ cannot exec in pods <br /> ✅ can access other <br />resources like `secrets`                                      | ✅ full access to `dev` clusters                                                                                                                                                                           |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - name: "\*" <br />    kind: pod <br />    namespace: "foo"</pre>                                                                        | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in all namespaces. <br />❌ cannot exec in other namespaces | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in all namespaces. <br />❌ cannot exec in other namespaces | ✅ can exec in pods in `foo` <br />❌ cannot access `secrets` in all namespaces <br />❌ cannot exec in other namespaces                                                                                     |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - name: "\*" <br />    kind: pod <br />    namespace: "foo" <br />  - name: "\*" <br />    kind: secret <br />    namespace: "foo"</pre> | ⚠️ not supported                                                                                                    | ⚠️ not supported                                                                                                    | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in `foo` <br />❌ cannot exec in other namespaces <br />❌ cannot access `secrets` in other namespaces <br />❌ cannot access `configmaps` in `foo` |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - kind: "namespace" <br />    name: "foo"</pre>                                                                                          | ⚠️ not supported                                                                                                    | ⚠️ not supported                                                                                                    | ✅ full access in namespace `foo` <br />❌ cannot access other namespaces                                                                                                                                   |
+
 ## Windows desktop
 
 In most cases, Teleport will register `windows_desktop` resources automatically
@@ -738,7 +772,7 @@ metadata:
 spec:
   # Sets the type of second factor to use.
   # Possible values: "on", "off", "otp", "webauthn" and "optional".
-  # If "on" is set, all 2FA protocols are supported.
+  # If "on" is set, all MFA protocols are supported.
   second_factor: "otp"
 
   # The name of the OIDC or SAML connector. if this is not set, the first connector in the backend is used.
@@ -814,4 +848,31 @@ spec:
   type: local
 
 version: v2
+```
+
+## Bot
+
+Bot resources define a Machine ID Bot identity and its access.
+
+Find out more on the
+[Machine ID configuration reference](/docs/machine-id/reference/configuration).
+
+```yaml
+kind: bot
+version: v1
+metadata:
+  # name is a unique identifier for the bot in the cluster.
+  name: robot
+spec:
+  # roles is a list of roles that the bot should be able to generate credentials
+  # for.
+  roles:
+  - editor
+  # traits controls the traits applied to the Bot user. These are fed into the
+  # role templating system and can be used to grant a specific Bot access to
+  # specific resources without the creation of a new role.
+  traits:
+  - name: logins
+    values:
+    - root
 ```

@@ -1,56 +1,90 @@
 ---
 title: Machine ID
 description: Teleport Machine ID introduction, demo and resources.
+videoBanner: QWd0eqIa9mA
+tocDepth: 3
 version: '14.x'
 ---
 
-Machine ID is a service that programmatically issues and renews short-lived
-certificates to any service account (e.g., a CI/CD server) by retrieving
-credentials from the Teleport Auth Service. This enables fine-grained
-role-based access controls and audit.
+Teleport Machine ID enables machines, such as CI/CD workflows, to securely
+authenticate with your Teleport cluster in order to connect to resources and
+configure the cluster itself. This is sometimes referred to as
+machine-to-machine access.
 
-<iframe width="712" height="400" src="https://www.youtube-nocookie.com/embed/QWd0eqIa9mA?" frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+Machine ID supports a number of use cases and platforms, but is commonly used
+for:
 
-<br />
+- Granting CI/CD workflows access to resources such as SSH servers,
+  Kubernetes clusters, databases and applications that are protected by Teleport
+  in order to deploy changes.
+- Granting SecOps tooling access to resources in order to run security analysis
+  against them.
+- Creating and renewing credentials for custom scripts that use `tctl` or
+  the Teleport API in order to control Teleport configuration.
 
-Machine ID supports the following Teleport features:
+## Concepts
 
-- [Server Access](/docs/ver/14.x/machine-id/getting-started)
-- [Database Access](/docs/ver/14.x/machine-id/guides/databases)
-- [Kubernetes Access](/docs/ver/14.x/machine-id/guides/kubernetes) (*in Teleport v10.1*)
-- [Application Access](/docs/ver/14.x/machine-id/guides/applications) (*in Teleport v10.1*)
-  - Note: [AWS Console](/docs/ver/14.x/application-access/cloud-apis/aws-console) and API access are currently unsupported.
-- [Teleport API Access](/docs/ver/14.x/api/introduction)
+Read this section to understand the high-level architecture of a Machine ID
+setup. For a more in-depth overview, check out the [architecture
+page](/docs/ver/14.x/machine-id/architecture).
 
-These features are supported in Teleport Enterprise and Teleport Cloud.
+![Machine ID architecture](/assets/architecture-diagram-882b017810.png)
 
-The following features are **not** yet supported by Machine ID:
+### Bots
 
-- [Desktop Access](/docs/ver/14.x/desktop-access/introduction)
-- [User Impersonation](/docs/ver/14.x/access-controls/guides/impersonation): Machine
-  ID uses Role Impersonation which cannot be combined with User Impersonation
-- Multifactor authentication like [WebAuthn](/docs/ver/14.x/access-controls/guides/webauthn) and [Passwordless](/docs/ver/14.x/access-controls/guides/passwordless)
-- [AWS Console Access](/docs/ver/14.x/application-access/cloud-apis/aws-console)
+Machine ID provides machines with an identity that can authenticate to the
+Teleport cluster. This identity is known as a **bot**. Bots share a number of
+similarities with human users:
 
-## Getting started
+- Access controlled by roles assigned to them in Teleport
+- Access to resources recorded in audit logs
+- Identity encoded in an x.509 client certificate which is signed by the
+  Teleport Auth Service and which can then be used for access.
 
-- [Getting started](/docs/ver/14.x/machine-id/getting-started): Getting started with Teleport Machine ID
-- [Architecture](/docs/ver/14.x/machine-id/architecture): A technical overview of how Machine ID works
+### Join tokens
 
-## Guides
+Unlike a human Teleport user, a bot does not "log in" using a static username
+and password. Instead, a bot authenticates to Teleport with a **join token**,
+which is configured within Teleport and specifies which bot user it grants
+access to and what sort of proof (known as the **join method**) is needed to use
+this join token. This proof is typically an identity issued to the machine by
+the platform it runs on (e.g. AWS IAM).
 
-- [Using Machine ID with Ansible](/docs/ver/14.x/machine-id/guides/ansible): How to integrate Machine ID with Ansible.
-- [Using Machine ID with Applications](/docs/ver/14.x/machine-id/guides/applications): How to use Machine ID to connect automated services to applications.
-- [Using Machine ID with Databases](/docs/ver/14.x/machine-id/guides/databases): How to use Machine ID to connect custom applications to your databases.
-- [Using Machine ID with GitHub Actions](/docs/ver/14.x/machine-id/guides/github-actions): How to use Machine ID to SSH into Teleport nodes from GitHub Actions.
-- [Using Machine ID with GitHub Actions and Kubernetes](/docs/ver/14.x/machine-id/guides/github-actions-kubernetes): How to use Machine ID to access Kubernetes clusters from GitHub Actions.
-- [Using Machine ID with CircleCI](/docs/ver/14.x/machine-id/guides/circleci): How to use Machine ID to to access Teleport resources from CircleCI.
-- [Using Machine ID with Jenkins](/docs/ver/14.x/machine-id/guides/jenkins): How to integrate Machine ID with Jenkins.
-- [Using Machine ID with Kubernetes](/docs/ver/14.x/machine-id/guides/kubernetes): How to use Machine ID to connect automated services to Kubernetes clusters.
-- [Using Machine ID with GitLab CI](/docs/ver/14.x/machine-id/guides/gitlab): How to use Machine ID to SSH into Teleport nodes from GitLab CI.
-- [Generating Short-Lived Host Certificates with Machine ID](/docs/ver/14.x/machine-id/guides/host-certificate): How to use Machine ID to generate a host certificate for an OpenSSH server.
+### tbot
 
-## FAQ & Troubleshooting
+Machine ID is used through an agent called `tbot`. `tbot` authenticates with the
+Teleport Cluster and then generates credentials and configuration files for
+other tools to use to connect to Teleport resources using the bot's identity.
 
-Finally, check out [Frequently Asked Questions](/docs/ver/14.x/machine-id/faq) and the
-[troubleshooting guide](/docs/ver/14.x/machine-id/troubleshooting) for common questions and issues.
+### Artifacts
+
+The files generated by `tbot` are referred to as its **artifacts**. Artifacts
+can be a number of things from credentials, such as signed certificates, to
+configuration files that will automatically configure a tool (such as `kubectl`)
+to use Teleport. This behaviour is controlled by configuring `tbot`'s
+**outputs**. An output specifies what should be generated and where it should be
+saved.
+
+## Get started
+
+For a quickstart non-production introduction to Machine ID, read the
+[Getting Started Guide](/docs/ver/14.x/machine-id/getting-started).
+
+## Deploy to production
+
+Production-ready guidance on deploying Machine ID is broken out into two parts:
+
+- [Deploying Machine ID](/docs/ver/14.x/machine-id/deployment): How to install and configure
+  Machine ID for a specific platform.
+- [Access your Infrastructure with Machine ID](/docs/ver/14.x/machine-id/access-guides): How to use Machine ID to access
+  Teleport and Teleport resources.
+
+## Further reading
+
+- [Frequently Asked Questions](/docs/ver/14.x/machine-id/faq): Commonly asked questions.
+- [Troubleshooting Guide](/docs/ver/14.x/machine-id/troubleshooting): Common issues and how to solve
+  them.
+- [Architecture](/docs/ver/14.x/machine-id/architecture): A technical deep-dive into how Machine ID
+  works.
+- [Reference](/docs/ver/14.x/machine-id/reference): Complete documentation of available
+  configuration options.

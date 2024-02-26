@@ -1,444 +1,627 @@
 ---
-title: Desktop Access with Active Directory
-description: Integrate the Teleport Desktop Service with your Active Directory domain
+title: Configure access for Active Directory with scripts
+description: Demonstrates how to integrate the Teleport Windows Desktop Service with your Active Directory domain using scripts.
 videoBanner: v36tlB8D5kk
 version: '13.x'
 ---
 
-<Accordion title="Version warning">
-  The features documented on this page are available in Teleport `10.2.6` and higher.
-</Accordion>
+This guide demonstrates how to use scripts available in the Teleport Web UI to configure
+Teleport and Active Directory for passwordless access to Windows computers.
 
-This guide will help you configure Teleport and Active Directory in order to
-provide secure, passwordless access to Windows desktops.
-
-<Warning>
-  Microsoft's Azure Active Directory (Azure AD) offering does not support the
-  Kerberos authentication protocol, which is required for Teleport's
-  certificate-based authentication.
-
-  At this time, Teleport does not support integration with Azure AD, however
-  Teleport Enterprise customers can access Windows desktops (including those
-  joined to Azure AD) using local accounts via the process described in [Getting
-  Started with Desktop Access](/docs/ver/13.x/desktop-access/getting-started).
-</Warning>
-
-<Accordion title="Compare Desktop Access to other RDP clients">
-  The Teleport Desktop Service is designed to be a secure access solution for Windows
-  environments. Teleport implements a minimal feature set of the RDP protocol with
-  security as a priority, and may not be as performant as standard RDP clients.
-  Consider the Desktop Service to manage access to your most sensitive Windows
-  environments, not as a drop-in replacement for other tools to provide general
-  access to Windows desktops.
-</Accordion>
+You should note that Teleport requires the Kerberos authentication protocol to support
+certificate-based authentication for Active Directory. Because Azure Active Directory
+doesn't use Kerberos, you can't use the Teleport Windows Desktop Service for
+Azure Active Directory.
 
 ## Prerequisites
 
-<Tabs>
-  <Tab title="Open Source">
-    - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+- Access to a running Teleport cluster, `tctl` admin tool, and `tsh` client tool
+  version >= 13.4.16.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+  You can verify the tools you have installed by running the following commands:
 
-      ```code
-      $ tctl version
-      # Teleport v13.2.0 go1.20
+  ```code
+  $ tctl version
+  # Teleport Enterprise v13.4.16 go1.21
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+  $ tsh version
+  # Teleport v13.4.16 go1.21
+  ```
 
-      See [Installation](/docs/ver/13.x/installation) for details.
-  </Tab>
+  You can download these tools by following the appropriate [Installation
+  instructions](/docs/ver/13.x/installation#installation-instructions) for your environment
+  and Teleport edition.
 
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
-      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+- A server or virtual machine running the Windows Server operating system on which you can
+  install Active Directory services.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+- A Linux host to run the Teleport Windows Desktop Service.
+  You can use an existing server that runs the Teleport agent for other resources.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+## Step 1/3. Install and configure Active Directory
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
-  </Tab>
-
-  <Tab title="Teleport Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
-      and upgrade to Teleport Enterprise Cloud.
-
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
-
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
-
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
-  </Tab>
-</Tabs>
-
-- A server or virtual machine running a Windows Server operating system.
-  In this guide, we'll install Active Directory on this server in order
-  to support passwordless logins with Teleport to the Windows desktops
-  in the Active Directory domain.
-- A Linux host where you will run the Teleport Desktop Service.
-- An Active Directory domain, configured for LDAPS (Teleport requires an
-  encrypted LDAP connection). Typically this means installing
-  [AD CS](https://learn.microsoft.com/en-us/windows-server/identity/ad-cs/).
-
-## Step 1/2. Run the discovery wizard
-
-In this step, you will use the Teleport Web UI to download and run two scripts:
-
-- An Active Directory installation script to run on your Windows Server host
-- An installation script for the Teleport Desktop Service, which you will run on
-  your Linux host
-
-### Install Active Directory
-
-In your web browser, access the Teleport Web UI at the address of your Proxy
-Service host, e.g.,&#x20;
-`teleport.example.com`
-`mytennant.teleport.sh`. Go to the Desktops section,
-then select **Add Desktop**. Select **Active Directory** resource to start
-the guided enrollment from the **Enroll New Resource** section.
-
-If you already have Active Directory installed on your Windows Server host, skip
-to the next step. Otherwise, copy and paste the first command provided into a
-Windows PowerShell window on your Windows Server host. If you aren't already
-running AD Certificate services, copy and paste the second command after the
-first one completes and the server restarts:
-
-![Install Active Directory](/assets/install-active-directory-61b817530e.png)
-
-Once the server is restarted from one or both command executions, click **NEXT**.
-
-Copy and paste the provided command into a Windows PowerShell window to download
-and run the "configure Active Directory" script:
-
-![Configure Active Directory](/assets/configure-active-directory-b8921217f8.png)
-
-Click **NEXT**.
-
-The PowerShell script will output a Teleport configuration block. Copy this
-block to a temporary location. Click **Next**.
-
-### Install the Teleport Desktop Service
-
-On the Linux host where you will run the Teleport Desktop Service, create a file
-called `/etc/teleport.yaml` and paste the configuration provided by the output
-of the previous step.
-
-<Tip>
-  If you would like to run the Teleport Desktop Service from a Teleport process
-  that is already running other services, copy and paste only the
-  `windows_desktop_service` section.
-</Tip>
-
-The configuration file will resemble the following:
-
-```yaml
-version: v3
-teleport:
-  auth_token: abcd123-insecure-do-not-use-this
-  proxy_server: teleport.example.com:443
-
-auth_service:
-  enabled: no
-ssh_service:
-  enabled: no
-proxy_service:
-  enabled: no
-
-windows_desktop_service:
-  enabled: yes
-  ldap:
-    addr: '10.10.1.50:636'
-    domain: 'windows.teleport.example.com'
-    username: 'WIN\svc-teleport'
-    server_name: 'windows-server-hostname'
-    # insecure_skip_verify prevents teleport from authenticating the LDAP CA
-    # against the systems trust store.
-    insecure_skip_verify: false
-    ldap_ca_cert: |
-      -----BEGIN CERTIFICATE-----
-      MIIDnzCCAoegAwIBAgIQT/UIn+MT4aZC9ix/QuiV9zANBgkqhkiG9w0BAQsFADBi
-      ...
-      31qA4dO3if7RdikD9hVbiIF9jQ==
-      -----END CERTIFICATE-----
-
-  discovery:
-    base_dn: '*'
-  labels:
-    teleport.internal/resource-id: 42d8859c-60d0-4d7f-9767-bdd66b63fce6
-```
-
-Install the Teleport Desktop Service on your Linux host.
-
-Use the appropriate commands for your environment to install your package:
-
-<Tabs dropdownView dropdownCaption="Teleport Edition">
-  <Tab title="Open Source">
-    ```code
-    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
-    ```
-  </Tab>
-
-  <Tab title="Enterprise">
-    <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-        ```code
-        # Download Teleport's PGP public key
-        $ sudo curl https://apt.releases.teleport.dev/gpg \
-        -o /usr/share/keyrings/teleport-archive-keyring.asc
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport APT repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
-        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
-
-        $ sudo apt-get update
-        $ sudo apt-get install teleport-ent
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo apt-get install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport YUM repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        # First, get the major version from $VERSION_ID so this fetches the correct
-        # package version.
-        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
-        $ sudo yum install teleport-ent
-        #
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo yum install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport YUM repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
-
-        # Install teleport
-        $ sudo dnf install teleport-ent
-
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo dnf install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Tarball">
-        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-        will update after one is filled out.
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-
-        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
-        will be slightly different:
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-      </Tab>
-    </Tabs>
-  </Tab>
-
-  <Tab title="Cloud">
-    <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-        Add the Teleport repository to your repository list:
-
-        ```code
-        # Download Teleport's PGP public key
-        $ sudo curl https://apt.releases.teleport.dev/gpg \
-        -o /usr/share/keyrings/teleport-archive-keyring.asc
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport apt repository for cloud.
-        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
-        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
-
-        $ sudo apt-get update
-        $ sudo apt-get install teleport-ent
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
-        # First, get the major version from $VERSION_ID so this fetches the correct
-        # package version.
-        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-        $ sudo yum install teleport-ent
-        #
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
-        # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-
-        # Install teleport
-        $ sudo dnf install teleport-ent
-
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-      </Tab>
-
-      <Tab title="Tarball">
-        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-        will update after one is filled out.
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-      </Tab>
-    </Tabs>
-
-    <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
-      Before installing a `teleport` binary with a version besides v13,
-      read our compatibility rules to ensure that the binary is compatible with
-      Teleport Cloud.
-
-      When running multiple `teleport` binaries within a cluster, the following rules
-      apply:
-
-      - **Patch and minor** versions are always compatible, for example, any 8.0.1
-        component will work with any 8.0.3 component and any 8.1.0 component will work
-        with any 8.3.0 component.
-      - Servers support clients that are 1 major version behind, but do not support
-        clients that are on a newer major version. For example, an 8.x.x Proxy Service
-        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
-        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
-        You must upgrade to 7.x.x first.
-      - Proxy Services and resource services do not support Auth Services that are on
-        an older major version, and will fail to connect to older Auth Services by
-        default. This behavior can be overridden by passing `--skip-version-check`
-        when starting Proxy Services and resource services.
-    </Accordion>
-  </Tab>
-</Tabs>
-
-In the Teleport Web UI, click **Next**.
-
-## Step 2/2. Start Teleport
-
-Once you've saved `/etc/teleport.yaml`, start Teleport:
-
-Configure the Teleport Desktop Service to start automatically when the host boots up by
-creating a systemd service for it. The instructions depend on how you installed
-the Teleport Desktop Service.
-
-<Tabs>
-  <Tab title="Package Manager">
-    On the host where you will run the Teleport Desktop Service, enable and start Teleport:
-
-    ```code
-    $ sudo systemctl enable teleport
-    $ sudo systemctl start teleport
-    ```
-  </Tab>
-
-  <Tab title="TAR Archive">
-    On the host where you will run the Teleport Desktop Service, create a systemd service
-    configuration for Teleport, enable the Teleport service, and start Teleport:
-
-    ```code
-    $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
-    $ sudo systemctl enable teleport
-    $ sudo systemctl start teleport
-    ```
-  </Tab>
-</Tabs>
-
-You can check the status of the Teleport Desktop Service with `systemctl status teleport`
-and view its logs with `journalctl -fu teleport`.
-
-The access wizard will detect when the new Teleport instance has joined the
-cluster, and you can then click **Next**.
-
-Teleport will discover available Windows desktops in the domain, and list them
-under **Desktops**. Click **Finish** then **BROWSE EXISTING RESOURCES** to see them:
-
-![Desktops Discovered](/assets/auto-discovered-desktops-63d00bf505.png)
-
-## Troubleshooting
-
-If you hit any issues, check out the
-[Troubleshooting documentation](/docs/ver/13.x/desktop-access/troubleshooting) for common problems and
+The Teleport Web UI provides scripts to automate the configuration of Active Directory
+for the Teleport Windows Desktop Service. From the Teleport Web UI, you can
+download the following scripts to convert a Windows Server into an Active Directory
+domain controller:
+
+- The Active Directory installation script adds basic Active Directory services and tools to the
+  Windows Server.
+- The Active Directory Certificate Services installation script adds a certificate authority and
+  certificate management services to the domain controller.
+- The Active Directory configuration script generates Teleport configuration settings for your specific
+  cluster.
+
+Installing Active Directory Certificate Services is optional. However, Teleport requires secure LDAP
+connections for certificate-based authentication, and LDAP traffic is not encrypted by default.
+To provide secure LDAP connections (LDAPS), you must have a certificate authority that issues properly
+formatted and encrypted certificates. You can install Active Directory Certificate Services on the
+domain controller to ensure that the domain issues certificates configured for LDAPS.
+
+If you already have Active Directory installed and the domain is configured for encrypted LDAPS
+communication, you can skip running the first two scripts.
+
+To install Active Directory services:
+
+1. Sign in to the Teleport Web UI using your Teleport cluster address.
+
+2. Select **Resources**.
+
+3. Click **Enroll New Resource**.
+
+4. Click **Active Directory** to start the guided enrollment.
+
+5. Copy the first command from the Teleport Web UI and paste it into the Windows PowerShell
+   console on your Windows Server host.
+
+   ![Install Active Directory](/assets/install-active-directory-5836c41920.png)
+
+   Follow the prompts displayed to set the domain name and password for the administrative account.
+   Wait for the script to complete and the Windows computer to restart before continuing.
+
+6. Copy the second command from the Teleport Web UI and paste it into the Windows PowerShell
+   console on your Windows Server host.
+
+   Wait for the script to complete and the Windows computer to restart before continuing.
+
+7. Click **Next**, then click **Copy** to copy the Active Directory configuration script from
+   the Teleport Web UI and paste it into the Windows PowerShell console on your Windows Server host.
+
+   The script generates Teleport configuration settings, including an authentication token for
+   joining the Teleport cluster.
+
+8. Click **Next** in the Teleport Web UI to view the Teleport configuration settings.
+
+9. Copy the PowerShell script output from the PowerShell console to a temporary file, and save the
+   file in a location you can access from your administrative workstation.
+
+   After you have saved the configuration settings, click **Next** in the Teleport Web UI.
+
+## Step 2/3. Install the Teleport Windows Desktop Service
+
+To install the Windows Desktop Service:
+
+1. Open a terminal shell on the Linux host where you want to run the Windows Desktop Service.
+
+2. Create a file called `/etc/teleport.yaml` and paste the configuration output generated by the
+   PowerShell script you ran previously.
+
+   If you would like to run the Windows Desktop Service from a Teleport instance
+   that is already running other services, copy and paste only the `windows_desktop_service` section.
+
+   You should have a configuration file similar to the following:
+
+   ```yaml
+   version: v3
+   teleport:
+     auth_token: abcd123-insecure-do-not-use-this
+     proxy_server: teleport.example.com:443
+
+   auth_service:
+     enabled: no
+   ssh_service:
+     enabled: no
+   proxy_service:
+     enabled: no
+
+   windows_desktop_service:
+     enabled: yes
+     ldap:
+       addr: '10.10.1.50:636'
+       domain: 'windows.teleport.example.com'
+       username: 'WIN\svc-teleport'
+       sid:  'S-1-5-21-1234567890-1234567890-1234567890-1111'
+       server_name: 'windows-server-hostname'
+       # insecure_skip_verify prevents Teleport from authenticating the LDAP CA
+       # against the systems trust store.
+       insecure_skip_verify: false
+       ldap_ca_cert: |
+         -----BEGIN CERTIFICATE-----
+         MIIDnzCCAoegAwIBAgIQT/UIn+MT4aZC9ix/QuiV9zANBgkqhkiG9w0BAQsFADBi
+         ...
+         31qA4dO3if7RdikD9hVbiIF9jQ==
+         -----END CERTIFICATE-----
+
+     discovery:
+       base_dn: '*'
+     labels:
+       teleport.internal/resource-id: 42d8859c-60d0-4d7f-9767-bdd66b63fce6
+   ```
+
+3. Install the Teleport Windows Desktop Service on your Linux host.
+
+   Use the appropriate commands for your environment to install your package:
+
+   <Tabs dropdownView dropdownCaption="Teleport Edition">
+     <Tab title="Teleport Community Edition">
+       ```code
+       $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
+       ```
+     </Tab>
+
+     <Tab title="Teleport Team">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           Add the Teleport repository to your repository list:
+
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for cloud.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Update the repo and install Teleport and the Teleport updater
+           $ sudo apt-get update
+           $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+       <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+         Before installing a `teleport` binary with a version besides
+         v14, read our compatibility rules to ensure that the
+         binary is compatible with Teleport Cloud.
+
+         When running multiple `teleport` binaries within a cluster, the following rules
+         apply:
+
+         - **Patch and minor** versions are always compatible, for example, any 8.0.1
+           component will work with any 8.0.3 component and any 8.1.0 component will work
+           with any 8.3.0 component.
+         - Servers support clients that are 1 major version behind, but do not support
+           clients that are on a newer major version. For example, an 8.x.x Proxy Service
+           is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+           guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+           This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+           You must upgrade to 7.x.x first.
+         - Proxy Services and resource services do not support Auth Services that are on
+           an older major version, and will fail to connect to older Auth Services by
+           default. This behavior can be overridden by passing `--skip-version-check`
+           when starting Proxy Services and resource services.
+       </Accordion>
+     </Tab>
+
+     <Tab title="Teleport Enterprise">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+           $ sudo apt-get update
+           $ sudo apt-get install teleport-ent
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo apt-get install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+           $ sudo yum install teleport-ent
+           #
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo yum install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+           $ sudo yum install teleport-ent
+           #
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo yum install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+
+           # Install teleport
+           $ sudo dnf install teleport-ent
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo dnf install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport-zypper.repo")
+
+           # Install teleport
+           $ sudo zypper install teleport-ent
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo zypper install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Tarball">
+           In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+           value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+           will update after one is filled out.
+
+           ```code
+           $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+           # <checksum> <filename>
+           $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           # Verify that the checksums match
+           $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           $ cd teleport-ent
+           $ sudo ./install
+           ```
+
+           For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+           will be slightly different:
+
+           ```code
+           $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+           # <checksum> <filename>
+           $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           # Verify that the checksums match
+           $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           $ cd teleport-ent
+           $ sudo ./install
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+     </Tab>
+
+     <Tab title="Teleport Enterprise Cloud">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           Add the Teleport repository to your repository list:
+
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for cloud.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Update the repo and install Teleport and the Teleport updater
+           $ sudo apt-get update
+           $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+       <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+         Before installing a `teleport` binary with a version besides v14,
+         read our compatibility rules to ensure that the binary is compatible with
+         Teleport Enterprise Cloud.
+
+         When running multiple `teleport` binaries within a cluster, the following rules
+         apply:
+
+         - **Patch and minor** versions are always compatible, for example, any 8.0.1
+           component will work with any 8.0.3 component and any 8.1.0 component will work
+           with any 8.3.0 component.
+         - Servers support clients that are 1 major version behind, but do not support
+           clients that are on a newer major version. For example, an 8.x.x Proxy Service
+           is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+           guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+           This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+           You must upgrade to 7.x.x first.
+         - Proxy Services and resource services do not support Auth Services that are on
+           an older major version, and will fail to connect to older Auth Services by
+           default. This behavior can be overridden by passing `--skip-version-check`
+           when starting Proxy Services and resource services.
+       </Accordion>
+     </Tab>
+   </Tabs>
+
+## Step 3/3. Start Teleport
+
+After you've saved the `/etc/teleport.yaml` configuration file, you can start Teleport
+on the Linux host.
+
+To start Teleport:
+
+1. Configure the Teleport Desktop Service to start automatically when the host boots up by
+   creating a systemd service for it. The instructions depend on how you installed
+   the Teleport Desktop Service.
+   <Tabs>
+     <Tab title="Package Manager">
+       On the host where you will run the Teleport Desktop Service, enable and start Teleport:
+
+       ```code
+       $ sudo systemctl enable teleport
+       $ sudo systemctl start teleport
+       ```
+     </Tab>
+
+     <Tab title="TAR Archive">
+       On the host where you will run the Teleport Desktop Service, create a systemd service
+       configuration for Teleport, enable the Teleport service, and start Teleport:
+
+       ```code
+       $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
+       $ sudo systemctl enable teleport
+       $ sudo systemctl start teleport
+       ```
+     </Tab>
+   </Tabs>
+   You can check the status of the Teleport Desktop Service with `systemctl status teleport`
+   and view its logs with `journalctl -fu teleport`.
+2. Wait for Teleport to discover the new instance and enroll it in the cluster,
+   then click **Next** in the Teleport Web UI.
+3. Click **Finish**, then click **Resources** to see your domain computers.
+
+## Next steps
+
+If you encounter any issues, see [Troubleshooting](/docs/ver/13.x/desktop-access/troubleshooting) for common problems and
 solutions.
+For information about configuring Windows-specific role permissions, see
+[Role-Based Access Control for Desktops](/docs/ver/13.x/desktop-access/rbac).

@@ -10,7 +10,7 @@ clusters.
 
 Teleport agents run an **upgrader** that queries a **version server** to
 determine whether they are out of date. This guide describes how to set up your
-infrastructure to support automatic upgrades. If you are a Teleport Cloud user
+infrastructure to support automatic updates. If you are a Teleport Cloud user
 or run a version server already, return to the [Upgrading](/docs/ver/16.x/upgrading)
 menu for the appropriate next steps to upgrade Teleport.
 
@@ -18,7 +18,7 @@ The [Automatic Update Architecture](/docs/ver/16.x/architecture/agent-update-man
 guide explains how automatic agent upgrades work in more detail.
 
 <Warning>
-  Systemd agents enrolled into automatic upgrades can only install versions
+  Systemd agents enrolled into automatic updates can only install versions
   present in their package repositories. As Teleport 14 won't be published to
   `stable/v13`, those agents will require manual intervention to be upgraded to
   the next major version (adding a new APT/YUM/zypper repo for `stable/v14`).
@@ -53,7 +53,7 @@ agent upgrades. Terraform is not required to set up a version server.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -73,7 +73,7 @@ The version server is a static file server that responds to the following querie
 
 ```code
 $ curl https://<hosting-domain-and-path>/current/version
-15.0.0-dev
+16.0.0-dev
 
 $ curl https://<hosting-domain-and-path>/current/critical
 no
@@ -92,10 +92,10 @@ no
    $ mkdir current/
    ```
 
-3. Make the `current` release channel target the version 15.0.0-dev:
+3. Make the `current` release channel target the version 16.0.0-dev:
 
    ```code
-   $ echo -n "15.0.0-dev" > current/version
+   $ echo -n "16.0.0-dev" > current/version
    ```
 
 4. And mark the upgrade as not critical:
@@ -263,8 +263,9 @@ roles provide this ability, so you will need to create one.
    version: v7
    metadata:
      name: cmc-editor
-   allow:
-     rules:
+   spec:
+     allow:
+       rules:
        - resources: ['cluster_maintenance_config']
          verbs: ['create', 'read', 'update', 'delete']
    ```
@@ -282,29 +283,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `myrole` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - myrole 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},myrole"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -448,12 +440,12 @@ $ tctl create cmc.yaml
 maintenance window has been updated
 ```
 
-## Step 4/5. Enroll Kubernetes agents in automatic upgrades
+## Step 4/5. Enroll Kubernetes agents in automatic updates
 
 Now that you have deployed a version server, you can enroll agents in automatic
 upgrades. This guide begins with agents deployed on Kubernetes. If all of your
 agents run on Linux servers, you can skip to [Step
-5](#step-55-enroll-linux-agents-in-automatic-upgrades).
+5](#step-55-enroll-linux-agents-in-automatic-updates).
 
 ### Install the agent upgrader Helm chart
 
@@ -488,7 +480,7 @@ This section assumes that the name of your `teleport-kube-agent` release is
    ```code
    $ helm -n teleport  upgrade teleport-agent teleport/teleport-kube-agent \
    --values=values.yaml \
-   --version=15.0.0-dev
+   --version=16.0.0-dev
    ```
 
 ### Verify that the upgrader is working properly
@@ -526,15 +518,15 @@ until the next reconciliation, you can trigger an event.
    $ kubectl -n teleport annotate statefulset/teleport-agent 'debug.teleport.dev/trigger-event=1'
    ```
 
-2. To suspend automatic upgrades for an agent, annotate the agent deployment
+2. To suspend automatic updates for an agent, annotate the agent deployment
    with `teleport.dev/skipreconcile: "true"`, either by setting the
    `annotations.deployment` value in Helm, or by patching the deployment
    directly with `kubectl`.
 
-## Step 5/5. Enroll Linux agents in automatic upgrades
+## Step 5/5. Enroll Linux agents in automatic updates
 
 This section shows you how to enroll Teleport agents running on Linux virtual or
-bare-metal machines into automatic upgrades.
+bare-metal machines into automatic updates.
 
 Follow these instructions on each of your Teleport agents.
 
@@ -554,7 +546,7 @@ Follow these instructions on each of your Teleport agents.
    it is up to date.
 
 2. If the repository was added, make sure the Teleport binary installed on the
-   agent can run the automatic upgrader:
+   agent can run the automatic updater:
 
    ```code
    $ which teleport-upgrade || echo "Install the upgrader"
@@ -573,10 +565,10 @@ Follow these instructions on each of your Teleport agents.
        -o /usr/share/keyrings/teleport-archive-keyring.asc
        # Source variables about OS version
        $ source /etc/os-release
-       # Add the Teleport APT repository for v15. You'll need to update this
+       # Add the Teleport APT repository for v16. You'll need to update this
        # file for each major release of Teleport.
        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-       https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+       https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v16" \
        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
        $ sudo apt-get update
@@ -594,13 +586,13 @@ Follow these instructions on each of your Teleport agents.
        ```code
        # Source variables about OS version
        $ source /etc/os-release
-       # Add the Teleport YUM repository for v15. You'll need to update this
+       # Add the Teleport YUM repository for v16. You'll need to update this
        # file for each major release of Teleport.
        # First, get the major version from $VERSION_ID so this fetches the correct
        # package version.
        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
        $ sudo yum install -y yum-utils
-       $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+       $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
        $ sudo yum install teleport-ent-updater
        #
        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
@@ -618,7 +610,7 @@ Follow these instructions on each of your Teleport agents.
        ```code
        # Source variables about OS version
        $ source /etc/os-release
-       # Add the Teleport Zypper repository for v15. You'll need to update this
+       # Add the Teleport Zypper repository for v16. You'll need to update this
        # file for each major release of Teleport.
        # First, get the OS major version from $VERSION_ID so this fetches the correct
        # package version.
@@ -642,13 +634,13 @@ Follow these instructions on each of your Teleport agents.
        ```code
        # Source variables about OS version
        $ source /etc/os-release
-       # Add the Teleport YUM repository for v15. You'll need to update this
+       # Add the Teleport YUM repository for v16. You'll need to update this
        # file for each major release of Teleport.
        # First, get the major version from $VERSION_ID so this fetches the correct
        # package version.
        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
        # Use the dnf config manager plugin to add the teleport RPM repo
-       $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+       $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
 
        # Install teleport
        $ sudo dnf install teleport-ent-updater
@@ -673,7 +665,7 @@ Follow these instructions on each of your Teleport agents.
        # package version.
        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
        # Use Zypper to add the teleport RPM repo
-       $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+       $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport-zypper.repo")
 
        # Install teleport
        $ sudo zypper install teleport-ent-updater
@@ -692,12 +684,12 @@ Follow these instructions on each of your Teleport agents.
        will update after one is filled out.
 
        ```code
-       $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+       $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
        # <checksum> <filename>
-       $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
-       $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+       $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+       $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
        # Verify that the checksums match
-       $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+       $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
        $ cd teleport-ent
        $ sudo ./install
        ```
@@ -706,12 +698,12 @@ Follow these instructions on each of your Teleport agents.
        will be slightly different:
 
        ```code
-       $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+       $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
        # <checksum> <filename>
-       $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-       $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+       $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+       $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
        # Verify that the checksums match
-       $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+       $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
        $ cd teleport-ent
        $ sudo ./install
        ```
@@ -774,7 +766,7 @@ Follow these instructions on each of your Teleport agents.
    $ sudo teleport-upgrade run
    ```
 
-2. To suspend automatic upgrades, disable the systemd timer:
+2. To suspend automatic updates, disable the systemd timer:
 
    ```code
    $ sudo systemctl disable --now teleport-upgrade.timer

@@ -4,8 +4,8 @@ description: Cloud Downloads
 version: '16.x'
 ---
 
-Teleport Enterprise Cloud is currently running Teleport 14.3.3. We recommend
-running Teleport agents at Teleport 14.3.3 or one major version
+Teleport Enterprise Cloud is currently running Teleport 14.3.6. We recommend
+running Teleport agents at Teleport 14.3.6 or one major version
 below.
 
 ## Teleport package repositories
@@ -38,9 +38,13 @@ Binaries include:
     https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
     | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+    # Provide your Teleport domain to query the latest compatible Teleport version
+    $ export TELEPORT_DOMAIN=example.teleport.com
+    $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+    # Update the repo and install Teleport and the Teleport updater
     $ sudo apt-get update
-    $ sudo apt-get install teleport-ent=14.3.3
-    $ sudo apt-get install teleport-ent-updater
+    $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
     ```
   </Tab>
 
@@ -54,9 +58,14 @@ Binaries include:
     $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
     $ sudo yum install -y yum-utils
     $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-    $ sudo yum install teleport-ent-14.3.3
-    $ sudo yum install teleport-ent-updater
-    #
+
+    # Provide your Teleport domain to query the latest compatible Teleport version
+    $ export TELEPORT_DOMAIN=example.teleport.com
+    $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+    # Install Teleport and the Teleport updater
+    $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
     # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
     # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
     ```
@@ -73,9 +82,12 @@ Binaries include:
     # Use the dnf config manager plugin to add the teleport RPM repo
     $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-    # Install teleport
-    $ sudo dnf install teleport-ent-14.3.3
-    $ sudo dnf install teleport-ent-updater
+    # Provide your Teleport domain to query the latest compatible Teleport version
+    $ export TELEPORT_DOMAIN=example.teleport.com
+    $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+    # Install Teleport and the Teleport updater
+    $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
     # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
     # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -93,9 +105,12 @@ Binaries include:
     # Use Zypper to add the teleport RPM repo
     $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-    # Install teleport
-    $ sudo zypper install teleport-ent=14.3.3
-    $ sudo zypper install teleport-ent-updater
+    # Provide your Teleport domain to query the latest compatible Teleport version
+    $ export TELEPORT_DOMAIN=example.teleport.com
+    $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+    # Install Teleport and the Teleport updater
+    $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
     ```
   </Tab>
 </Tabs>
@@ -125,9 +140,9 @@ Here are the available archives:
 
 | Description                        |                                                                                                    |                                                                                |                                                                                |                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Linux (Debian/Ubuntu compatible)   | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.3-linux-amd64-bin.tar.gz)                      | [arm64](https://cdn.teleport.dev/teleport-ent-v14.3.3-linux-arm64-bin.tar.gz)  | [armv7](https://cdn.teleport.dev/teleport-ent-v14.3.3-linux-arm-bin.tar.gz)    | [i386](https://cdn.teleport.dev/teleport-ent-v14.3.3-linux-386-bin.tar.gz) |
-| Linux (RHEL/CentOS 7.x compatible) | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.3-linux-amd64-centos7-bin.tar.gz)              |                                                                                |                                                                                |                                                                            |
-| macOS                              | [universal amd64/arm64](https://cdn.teleport.dev/teleport-ent-v14.3.3-darwin-universal-bin.tar.gz) | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.3-darwin-amd64-bin.tar.gz) | [arm64](https://cdn.teleport.dev/teleport-ent-v14.3.3-darwin-arm64-bin.tar.gz) |                                                                            |
+| Linux (Debian/Ubuntu compatible)   | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-amd64-bin.tar.gz)                      | [arm64](https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-arm64-bin.tar.gz)  | [armv7](https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-arm-bin.tar.gz)    | [i386](https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-386-bin.tar.gz) |
+| Linux (RHEL/CentOS 7.x compatible) | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-amd64-centos7-bin.tar.gz)              |                                                                                |                                                                                |                                                                            |
+| macOS                              | [universal amd64/arm64](https://cdn.teleport.dev/teleport-ent-v14.3.6-darwin-universal-bin.tar.gz) | [amd64](https://cdn.teleport.dev/teleport-ent-v14.3.6-darwin-amd64-bin.tar.gz) | [arm64](https://cdn.teleport.dev/teleport-ent-v14.3.6-darwin-arm64-bin.tar.gz) |                                                                            |
 
 ### Package installation
 
@@ -138,9 +153,9 @@ Here are the available archives:
 
 | Description           |                                                                           |                                                                   |                                                                 |                                                                 |
 | --------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
-| Linux Debian Packages | [amd64](https://cdn.teleport.dev/teleport-ent_14.3.3_amd64.deb)           | [arm64](https://cdn.teleport.dev/teleport-ent_14.3.3_arm64.deb)   | [armv7](https://cdn.teleport.dev/teleport-ent_14.3.3_arm.deb)   | [i386](https://cdn.teleport.dev/teleport-ent_14.3.3_i386.deb)   |
-| Linux RPM Packages    | [amd64](https://cdn.teleport.dev/teleport-ent-14.3.3-1.x86_64.rpm)        | [arm64](https://cdn.teleport.dev/teleport-ent-14.3.3-1.arm64.rpm) | [armv7](https://cdn.teleport.dev/teleport-ent-14.3.3-1.arm.rpm) | [i386](https://cdn.teleport.dev/teleport-ent-14.3.3-1.i386.rpm) |
-| macOS Packages        | [universal amd64/arm64](https://cdn.teleport.dev/teleport-ent-14.3.3.pkg) |                                                                   |                                                                 |                                                                 |
+| Linux Debian Packages | [amd64](https://cdn.teleport.dev/teleport-ent_14.3.6_amd64.deb)           | [arm64](https://cdn.teleport.dev/teleport-ent_14.3.6_arm64.deb)   | [armv7](https://cdn.teleport.dev/teleport-ent_14.3.6_arm.deb)   | [i386](https://cdn.teleport.dev/teleport-ent_14.3.6_i386.deb)   |
+| Linux RPM Packages    | [amd64](https://cdn.teleport.dev/teleport-ent-14.3.6-1.x86_64.rpm)        | [arm64](https://cdn.teleport.dev/teleport-ent-14.3.6-1.arm64.rpm) | [armv7](https://cdn.teleport.dev/teleport-ent-14.3.6-1.arm.rpm) | [i386](https://cdn.teleport.dev/teleport-ent-14.3.6-1.i386.rpm) |
+| macOS Packages        | [universal amd64/arm64](https://cdn.teleport.dev/teleport-ent-14.3.6.pkg) |                                                                   |                                                                 |                                                                 |
 
 ### Teleport tsh-only packages
 
@@ -156,5 +171,5 @@ Here are the available archives:
 
 | Description    |                                                                          |
 | -------------- | ------------------------------------------------------------------------ |
-| macOS (signed) | [universal amd64/arm64 signed](https://cdn.teleport.dev/tsh-14.3.3.pkg)  |
-| Windows        | [amd64](https://cdn.teleport.dev/teleport-v14.3.3-windows-amd64-bin.zip) |
+| macOS (signed) | [universal amd64/arm64 signed](https://cdn.teleport.dev/tsh-14.3.6.pkg)  |
+| Windows        | [amd64](https://cdn.teleport.dev/teleport-v14.3.6-windows-amd64-bin.zip) |

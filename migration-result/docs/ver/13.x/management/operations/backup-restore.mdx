@@ -55,8 +55,9 @@ backed up and lays out our recommended approach for performing backups.
     | Firestore        | [Follow GCP's guidelines for automated backups](https://firebase.google.com/docs/database/backups)                                    |
   </Tab>
 
-  <Tab title="Teleport Cloud">
-    Teleport Cloud manages all Auth Service and Proxy Service backups.
+  <Tab title="Cloud-Hosted">
+    Teleport Team and Teleport Enterprise Cloud manage all Auth Service and Proxy
+    Service backups.
 
     While Teleport Nodes are stateless, you should ensure that you can restore their
     configuration files.
@@ -85,7 +86,7 @@ If you're running Teleport at scale, your teams need to have an automated way to
       if a resource already exists, so this command can be run regularly.
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Cloud-Hosted">
     - Store your dynamic resource configurations as discrete files in a git
       repository.
     - Have your continuous integration system run `tctl create -f *.yaml` from the
@@ -226,8 +227,9 @@ If you're running Teleport at scale, your teams need to have an automated way to
       dynamically will need to be re-invited.
   </Tab>
 
-  <Tab title="Teleport Cloud">
-    In Teleport Cloud, backend data is managed for you automatically.
+  <Tab title="Team/Enterprise Cloud">
+    In Teleport Team and Teleport Enterprise Cloud, backend data is managed for you
+    automatically.
 
     If you would like to migrate configuration resources to a self-hosted Teleport
     cluster, follow our recommended backup practice of storing configuration

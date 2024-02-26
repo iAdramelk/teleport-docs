@@ -23,7 +23,7 @@ You will learn how to:
 - The Teleport `tsh.exe` client, version 14.0.3 or higher. To download the `tsh.exe` client, run the following command:
 
   ```code
-  $ curl.exe -O https://cdn.teleport.dev/teleport-v15.0.0-dev-windows-amd64-bin.zip
+  $ curl.exe -O https://cdn.teleport.dev/teleport-v15.0.2-windows-amd64-bin.zip
   ```
 
   You should then unzip the archive and move `tsh.exe` to your `%PATH%`.
@@ -70,7 +70,7 @@ To add saved sessions to PuTTY:
     If you don't provide a login to this command, your local Windows username is used instead.
 
     If you are adding a session for a registered OpenSSH node within your cluster (added with
-    [`teleport join openssh`](/docs/server-access/guides/openssh/openssh)), you must specify the `sshd` port
+    [`teleport join openssh`](/docs/server-access/openssh/openssh)), you must specify the `sshd` port
     (usually 22) when adding a session with `tsh puttyconfig`:
 
     ```bash

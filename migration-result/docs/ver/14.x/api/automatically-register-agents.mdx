@@ -37,77 +37,101 @@ Automatic registration consists of the following steps:
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
 - Docker installed on your workstation. [Get Started With
   Docker](https://www.docker.com/get-started).
-- Go version 1.20 or above installed on your workstation. See the
+- Go version 1.21 or above installed on your workstation. See the
   [Go download page](https://go.dev/dl/). You will not need to be familiar with
   Go to complete this guide, though Go knowledge is required if you want to
   build a production-ready Teleport client application.
@@ -191,8 +215,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will request the credentials manually by *impersonating* the `register-apps`
 role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `register-apps`, create a file
 called `register-apps-impersonator.yaml` defining a role:
@@ -218,147 +243,147 @@ $ tctl create -f register-apps-impersonator.yaml
 role 'register-apps-impersonator' has been created
 ```
 
-Assign the `register-apps-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `register-apps-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `register-apps-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `register-apps-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - register-apps-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - register-apps-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `register-apps-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `register-apps-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - register-apps-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - register-apps-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `register-apps-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `register-apps-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - register-apps-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - register-apps-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `register-apps-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `register-apps-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - register-apps-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - register-apps-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 You will now be able to generate signed certificates for the `register-apps`
 role and user.
@@ -449,7 +474,7 @@ make them configurable:
 const (
 	// Assign proxyAddr to the host and port of your Teleport Proxy Service instance
 	proxyAddr      string = ""
-	teleportImage  string = "public.ecr.aws/gravitational/teleport-distroless:12.1.5"
+	teleportImage  string = "public.ecr.aws/gravitational/teleport-distroless:14.3.6"
 	initTimeout           = time.Duration(30) * time.Second
 	updateInterval        = time.Duration(5) * time.Second
 	tokenTTL              = time.Duration(5) * time.Minute
@@ -1073,7 +1098,7 @@ Make sure you have pulled the Teleport container image so the application can
 create containers based on it:
 
 ```code
-$ docker image pull public.ecr.aws/gravitational/teleport-distroless:12.1.5
+$ docker image pull public.ecr.aws/gravitational/teleport-distroless:14.3.6
 ```
 
 In your project directory, run the following command:

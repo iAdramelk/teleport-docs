@@ -10,7 +10,9 @@ that can become a vector for attacks.
 
 Teleport's ServiceNow integration allows you to treat Teleport Access
 Requests as ServiceNow incidents, notify the appropriate on-call team, and
-approve or deny the requests via Teleport.
+approve or deny the requests via Teleport. You can also configure the plugin to
+approve Access Requests automatically if the user making the request is in
+a specific on-call rotation.
 
 This guide will explain how to set up Teleport's Access Request plugin for
 ServiceNow.
@@ -22,16 +24,16 @@ ServiceNow.
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -47,7 +49,7 @@ ServiceNow.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -68,6 +70,35 @@ API.
 
 Before making the access request ensure the user making the request has
 the `requester` role.
+
+For the plugin to know which ServiceNow rotations to check for the
+auto approval flow, the rotation you wish users to be checked against
+must be included in one of the requesting user's roles. To do so, add the `teleport.dev/schedules` annotation as shown in the following example:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: YOUR_ROLE_NAME_HERE
+spec:
+  allow:
+    request:
+      roles: ['editor']
+      thresholds:
+        - approve: 1
+          deny: 1
+      annotations:
+        teleport.dev/schedules:
+        - YOUR_SERVICENOW_ROTA_ID_HERE
+```
+
+To retrieve the ServiceNow rotation ID, navigate to the group record
+of the ServiceNow group the rotation belongs to and right click on
+header, then click 'Select copy sys\_id' to copy the ID.
+
+Then using the ServiceNow endpoint '/api/now/on\_call\_rota/workbench/group/{groupSysId}'
+retrieve the group's on-call rota information.
+Select the value of the desired 'rota' from the response.
 
 ## Step 3/4. Configure the ServiceNow plugin
 
@@ -113,6 +144,10 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
 
 In ServiceNow, you will see a new incident containing information about the
 Access Request.
+
+If the a ServiceNow rotation was specified in the requester's role annotations,
+then the ServiceNow plugin will check that the requester's username matches the
+ServiceNow user currently on-call in that rotation and approve the Access Request.
 
 ### Resolve the request
 

@@ -25,7 +25,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -34,11 +34,11 @@ balancer or reverse proxy is available in Teleport 13.0+.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -47,7 +47,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -56,11 +56,11 @@ balancer or reverse proxy is available in Teleport 13.0+.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -70,7 +70,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -80,11 +80,11 @@ balancer or reverse proxy is available in Teleport 13.0+.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -94,7 +94,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -103,11 +103,11 @@ balancer or reverse proxy is available in Teleport 13.0+.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -139,7 +139,7 @@ $ kubectl version
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -360,7 +360,8 @@ Allow Helm to install charts that are hosted in the Teleport Helm repository:
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
-Update the cache of charts from the remote repository:
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
 
 ```code
 $ helm repo update
@@ -372,17 +373,19 @@ Switch `kubectl` to the Kubernetes cluster and run:
 # Deploy a Kubernetes agent. It dials back to the Teleport cluster tele.example.com.
 $ CLUSTER=iam-cluster
 $ PROXY=tele.example.com:443
+# Install the Teleport Kubernetes agent. Does not create a service account and uses the existing
+#   service account. See serviceAccount.create and serviceAccount.name parameters.
 $ helm install teleport-agent teleport/teleport-kube-agent \
   --set kubeClusterName=${CLUSTER?} \
   --set roles="kube\,app\,discovery" \
   --set proxyAddr=${PROXY?} \
   --set joinParams.method=iam \
   --set joinParams.tokenName=kube-iam-token \
-  --set serviceAccount.create=false # do not create a new service account # \
-  --set serviceAccount.name=teleport-kube-agent-sa # use the existing service account # \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=teleport-kube-agent-sa \
   --create-namespace \
   --namespace=teleport-agent \
-  --version 15.0.0-dev
+  --version 15.0.2
 ```
 
 Make sure that the Teleport agent pod is running. You should see one Teleport
@@ -468,29 +471,20 @@ For both cases, please refer to the section below.
 
   <Tabs>
     <Tab title="Local User">
-      1. Retrieve your local user's configuration resource:
+      1. Retrieve your local user's roles as a comma-separated list:
 
          ```code
-         $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+         $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
          ```
 
-      2. Edit `out.yaml`, adding `kube-access` to the list of existing roles:
-
-         ```diff
-           roles:
-            - access
-            - auditor
-            - editor
-         +  - kube-access 
-         ```
-
-      3. Apply your changes:
+      2. Edit your local user to add the new role:
 
          ```code
-         $ tctl create -f out.yaml
+         $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+           --set-roles "${ROLES?},kube-access"
          ```
 
-      4. Sign out of the Teleport cluster and sign in again to assume the new role.
+      3. Sign out of the Teleport cluster and sign in again to assume the new role.
     </Tab>
 
     <Tab title="GitHub">

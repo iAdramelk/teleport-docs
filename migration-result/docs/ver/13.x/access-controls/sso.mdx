@@ -46,17 +46,23 @@ information about the temporary user.
   You can inspect a temporary `user` resource created via your SSO integration
   by using the `tctl` command:
 
-  ```code
-  # Log in to your cluster with tsh so you can use tctl remotely
-  $ tsh login --proxy=proxy.example.com --user=myuser
-  $ tctl get users/<username>
-  ```
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      # Log in to your cluster with tsh so you can use tctl remotely
+      $ tsh login --proxy=proxy.example.com --user=myuser
+      $ tctl get users/<username>
+      ```
+    </Tab>
 
-  ```code
-  # Log in to your cluster with tsh so you can use tctl remotely
-  $ tsh login --proxy=mytenant.teleport.sh --user=myuser
-  $ tctl get users
-  ```
+    <Tab title="Teleport Enterprise Cloud">
+      ```code
+      # Log in to your cluster with tsh so you can use tctl remotely
+      $ tsh login --proxy=mytenant.teleport.sh --user=myuser
+      $ tctl get users
+      ```
+    </Tab>
+  </Tabs>
 
   Here is an example of a temporary `user` resource created when the GitHub user
   `myuser` signed in to GitHub to authenticate to Teleport. This resource
@@ -200,367 +206,400 @@ users.
 
 The following authentication connectors are supported:
 
-| Type     | Description                                                                                                                                                                                               |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| None     | If no authentication connector is created, Teleport will use local authentication based user information stored<br /> in the Auth Service backend. You can manage user data via the `tctl users` command. |
-| `saml`   | The SAML connector type uses the [SAML protocol](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language) to authenticate users and query their group membership.                                |
-| `oidc`   | The OIDC connector type uses the [OpenID Connect protocol](https://en.wikipedia.org/wiki/OpenID_Connect) to authenticate users<br /> and query their group membership.                                    |
-| `github` | The GitHub connector uses GitHub SSO to authenticate users and query their group membership.                                                                                                              |
-
-| Type     | Description                                                                                                                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| None     | If no authentication connector is created, Teleport will use local authentication based user information stored in the Auth Service backend. You can manage user data via the `tctl users` command. |
-| `github` | The GitHub connector uses GitHub SSO to authenticate users and query their group membership.                                                                                                        |
-
-### Creating an authentication connector
-
-Before you can create an authentication connector, you must enable
-authentication via that connector's protocol.
-
-To set the default authentication type as `saml` or `oidc`, either modify your Auth Service configuration file
-or create a `cluster_auth_preference` resource.
-
 <Tabs>
-  <Tab title="Static Config (Self-Hosted)">
-    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
-
-    ```yaml
-    auth_service:
-      authentication:
-        # Set as saml, oidc, or github
-        type: saml|oidc|github
-    ```
-
-    <Accordion title="IdP-initiated SSO">
-      Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
-      log in to Teleport with one click from the dashboard provided by the IdP.
-
-      This feature is potentially unsafe and should be used with caution.
-
-      Enabling IdP-initiated login comes with notable security risks such as:
-
-      - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
-      - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
-    </Accordion>
+  <Tab title="Commercial">
+    | Type     | Description                                                                                                                                                                                               |
+    | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | None     | If no authentication connector is created, Teleport will use local authentication based user information stored<br /> in the Auth Service backend. You can manage user data via the `tctl users` command. |
+    | `saml`   | The SAML connector type uses the [SAML protocol](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language) to authenticate users and query their group membership.                                |
+    | `oidc`   | The OIDC connector type uses the [OpenID Connect protocol](https://en.wikipedia.org/wiki/OpenID_Connect) to authenticate users<br /> and query their group membership.                                    |
+    | `github` | The GitHub connector uses GitHub SSO to authenticate users and query their group membership.                                                                                                              |
   </Tab>
 
-  <Tab title="Dynamic Resources (All Editions)">
-    Create a file called `cap.yaml`:
-
-    ```yaml
-    kind: cluster_auth_preference
-    metadata:
-      name: cluster-auth-preference
-    spec:
-      # Set as saml, oidc, or github
-      type: saml|oidc|github
-    version: v2
-    ```
-
-    Create the resource:
-
-    ```code
-    # Log in to your cluster with tsh so you can run tctl commands.
-    # You can also run tctl directly on the Auth Service host.
-    $ tsh login --proxy=teleport.example.com --user=myuser
-    $ tctl create -f cap.yaml
-    ```
-
-    ```code
-    # Log in to your cluster with tsh so you can run tctl commands.
-    $ tsh login --proxy=mytenant.teleport.sh --user=myuser
-    $ tctl create -f cap.yaml
-    ```
-
-    <Accordion title="IdP-initiated SSO">
-      Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
-      log in to Teleport with one click from the dashboard provided by the IdP.
-
-      This feature is potentially unsafe and should be used with caution.
-
-      Enabling IdP-initiated login comes with notable security risks such as:
-
-      - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
-      - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
-    </Accordion>
+  <Tab title="Teleport Community Edition">
+    | Type     | Description                                                                                                                                                                                         |
+    | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | None     | If no authentication connector is created, Teleport will use local authentication based user information stored in the Auth Service backend. You can manage user data via the `tctl users` command. |
+    | `github` | The GitHub connector uses GitHub SSO to authenticate users and query their group membership.                                                                                                        |
   </Tab>
 </Tabs>
 
-Next, define an authentication connector. Create a file called `connector.yaml`
-with the following content:
-
-```yaml
-kind: cluster_auth_preference
-metadata:
-  name: cluster-auth-preference
-spec:
-  type: github
-  webauthn:
-    # Replace with the address of your Teleport cluster
-    rp_id: 'example.teleport.sh'
-version: v2
-
-```
-
-Next, define an authentication connector. Create a file called `connector.yaml`
-based on one of the following examples.
+### Creating an authentication connector
 
 <Tabs>
-  <Tab title="Okta">
-    ```yaml
-    # connector.yaml
-    kind: saml
-    version: v2
-    metadata:
-      name: corporate
-    spec:
-      # display allows to set the caption of the "login" button
-      # in the Web interface
-      display: "Okta"
+  <Tab title="Commercial">
+    Before you can create an authentication connector, you must enable
+    authentication via that connector's protocol.
 
-      # enables/disables idp-initiated saml login
-      allow_idp_initiated: false
+    To set the default authentication type as `saml` or `oidc`, either modify your
+    Auth Service configuration file (if using a self-hosted edition of Teleport) or
+    create a `cluster_auth_preference` resource.
 
-      # The last segment of the URL must be identical to the connector metadata name
-      # when IdP-initiated login is enabled.
-      acs: https://teleport-proxy.example.com:3080/v1/webapi/saml/acs/corporate
-      attributes_to_roles:
-        - {name: "groups", value: "okta-admin", roles: ["access"]}
-        - {name: "groups", value: "okta-dev", roles: ["dev"]}
+    <Tabs>
+      <Tab title="Static Config (Self-Hosted)">
+        Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
 
-         # note that wildcards can also be used. the next line instructs Teleport
-         # to assign "access" role to any user who has the SAML attribute that begins with "admin":
-         - { name: "group", value: "admin*", roles: ["access"] }
-         # regular expressions with capture are also supported. the next line instructs Teleport
-         # to assign users to roles `admin-1` if his SAML "group" attribute equals 'ssh_admin_1':
-         - { name: "group", value: "^ssh_admin_(.*)$", roles: ["admin-$1"] }
+        ```yaml
+        auth_service:
+          authentication:
+            # Set as saml, oidc, or github
+            type: saml|oidc|github
+        ```
 
-      entity_descriptor: |
-        <paste SAML XML contents here>
-    ```
+        <Accordion title="IdP-initiated SSO">
+          Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
+          log in to Teleport with one click from the dashboard provided by the IdP.
 
-    <Accordion title="IdP-initiated SSO">
-      Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
-      log in to Teleport with one click from the dashboard provided by the IdP.
+          This feature is potentially unsafe and should be used with caution.
 
-      This feature is potentially unsafe and should be used with caution.
+          Enabling IdP-initiated login comes with notable security risks such as:
 
-      Enabling IdP-initiated login comes with notable security risks such as:
+          - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
+          - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
+        </Accordion>
+      </Tab>
 
-      - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
-      - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
-    </Accordion>
+      <Tab title="Dynamic Resources (All Editions)">
+        Create a file called `cap.yaml`:
+
+        ```yaml
+        kind: cluster_auth_preference
+        metadata:
+          name: cluster-auth-preference
+        spec:
+          # Set as saml, oidc, or github
+          type: saml|oidc|github
+        version: v2
+        ```
+
+        Create the resource:
+
+        ```code
+        # Log in to your cluster with tsh so you can run tctl commands.
+        $ tsh login --proxy=mytenant.teleport.sh --user=myuser
+        $ tctl create -f cap.yaml
+        ```
+
+        <Accordion title="IdP-initiated SSO">
+          Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
+          log in to Teleport with one click from the dashboard provided by the IdP.
+
+          This feature is potentially unsafe and should be used with caution.
+
+          Enabling IdP-initiated login comes with notable security risks such as:
+
+          - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
+          - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    Next, define an authentication connector. Create a file called `connector.yaml`
+    based on one of the following examples.
+
+    <Tabs>
+      <Tab title="Okta">
+        ```yaml
+        # connector.yaml
+        kind: saml
+        version: v2
+        metadata:
+          name: corporate
+        spec:
+          # display allows to set the caption of the "login" button
+          # in the Web interface
+          display: "Okta"
+
+          # enables/disables idp-initiated saml login
+          allow_idp_initiated: false
+
+          # The last segment of the URL must be identical to the connector metadata name
+          # when IdP-initiated login is enabled.
+          acs: https://teleport-proxy.example.com:3080/v1/webapi/saml/acs/corporate
+          attributes_to_roles:
+            - {name: "groups", value: "okta-admin", roles: ["access"]}
+            - {name: "groups", value: "okta-dev", roles: ["dev"]}
+
+             # note that wildcards can also be used. the next line instructs Teleport
+             # to assign "access" role to any user who has the SAML attribute that begins with "admin":
+             - { name: "group", value: "admin*", roles: ["access"] }
+             # regular expressions with capture are also supported. the next line instructs Teleport
+             # to assign users to roles `admin-1` if his SAML "group" attribute equals 'ssh_admin_1':
+             - { name: "group", value: "^ssh_admin_(.*)$", roles: ["admin-$1"] }
+
+          entity_descriptor: |
+            <paste SAML XML contents here>
+        ```
+
+        <Accordion title="IdP-initiated SSO">
+          Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
+          log in to Teleport with one click from the dashboard provided by the IdP.
+
+          This feature is potentially unsafe and should be used with caution.
+
+          Enabling IdP-initiated login comes with notable security risks such as:
+
+          - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
+          - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
+        </Accordion>
+      </Tab>
+
+      <Tab title="OneLogin">
+        ```yaml
+        kind: saml
+        version: v2
+        metadata:
+          name: OneLogin
+        spec:
+          acs: https://teleport.example.com/v1/webapi/saml/acs/onelogin
+          attributes_to_roles:
+          - name: groups
+            roles:
+            - editor
+            value: admin
+          - name: groups
+            roles:
+            - access
+            value: dev
+          audience: https://teleport.example.com:443/v1/webapi/saml/acs/onelogin
+          cert: ""
+          display: OneLogin
+          entity_descriptor: |
+            <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://www.example.com/00000000000000000000">
+              <md:IDPSSODescriptor WantAuthnRequestsSigned="false"
+          entity_descriptor_url: ""
+          issuer: ""
+          service_provider_issuer: https://teleport.example.com:443/v1/webapi/saml/acs/onelogin
+          sso: ""
+        version: v2
+        ```
+      </Tab>
+
+      <Tab title="OIDC">
+        ```yaml
+        kind: oidc
+        metadata:
+          name: oidc_connector
+        spec:
+          claims_to_roles:
+          - claim: groups
+            roles:
+            - access
+            value: users
+          - claim: groups
+            roles:
+            - editor
+            value: admins
+          client_id: <CLIENT-NAME>
+          client_secret: <CLIENT-SECRET>
+          issuer_url: https://idp.example.com/
+          redirect_url: https://mytenant.teleport.sh:443/v1/webapi/oidc/callback
+          max_age: 24h
+        version: v3
+
+        ```
+      </Tab>
+
+      <Tab title="Google Workspace">
+        ```yaml
+        kind: oidc
+        metadata:
+          name: google
+        spec:
+          claims_to_roles:
+          - claim: groups
+            roles:
+            - auditor
+            value: auditor@google-workspace-group-email.com
+          - claim: groups
+            roles:
+            - access
+            value: teleport-developers@example.com
+          client_id: <GOOGLE-WORKSPACE-CLIENT-ID>.apps.googleusercontent.com
+          client_secret: <OAUTH-CLIENT-SECRET>
+          display: Google
+          google_admin_email: <GOOGLE-WORKSPACE-ADMIN-EMAIL>
+          google_service_account: |
+            {
+             "type": "service_account",
+             "project_id": "<PROJECT-ID>",
+             "private_key_id": "<PRIVATE-KEY-ID>",
+             "private_key": "-----BEGIN PRIVATE KEY-----\n<PRIVATE-KEY-CONTENTS>\n-----END PRIVATE KEY-----\n",
+             "client_email": "<TELEPORT-SERVICE-ACCOUNT-EMAIL>",
+             "client_id": "<CLIENT-ID>",
+             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+             "token_uri": "https://oauth2.googleapis.com/token",
+             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+             "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/teleport-service-account%40access-304316.iam.gserviceaccount.com"
+            }
+          issuer_url: https://accounts.google.com
+          redirect_url: https://<SELF-HOSTED-CLUSTER-URL|TENANT-ID.teleport.sh>/v1/webapi/oidc/callback
+          scope:
+          - openid
+          - email
+        version: v3
+
+        ```
+      </Tab>
+
+      <Tab title="ADFS">
+        ```yaml
+        # This example connector uses SAML to authenticate against
+        # Active Directory Federation Services (ADFS)
+        kind: saml
+        version: v2
+        metadata:
+          name: adfs_connector
+        spec:
+          # display allows to set the caption of the "login" button
+          # in the Web interface
+          # Using the work 'Microsoft' will show the windows symbol in the UI.
+          display: Microsoft
+
+          # "adfs" provider setting tells Teleport that this SAML connector uses ADFS
+          # as a provider
+          provider: adfs
+
+          # Controls whether IdP-initiated SSO is allowed. If false, all such requests will be rejected with an error.
+          allow_idp_initiated: false
+
+          # entity_descriptor XML can either be copied into connector or fetched from a URL
+          entity_descriptor: |
+            <EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+            ...
+            </md:EntityDescriptor>
+          # entity_descriptor_url is commented out, as only one is required to setup adfs.
+          # if you're running Teleport in FIPS mode entity_descriptor_url with Azure AD may
+          # fail
+          #entity_descriptor_url: "https://example.com"
+
+          # issuer typically comes from the "entity_descriptor" but can be overridden here
+          issuer: "foo"
+          # sso typically comes from the "entity_descriptor" but can be overridden here
+          sso: "bar"
+          # cert typically comes from the "entity_descriptor" but can be overridden here
+          cert: |
+            -----BEGIN RSA PRIVATE KEY-----
+            ...
+            -----END RSA PRIVATE KEY-----
+
+          acs: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
+          # if "service_provider_issuer" is not set, comes from "acs"
+          service_provider_issuer: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
+          # if "audience" is not set, comes from "acs"
+          audience: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
+
+          # if "signing_key_pair" is not set, teleport will generate a self signed
+          # signing key pair
+          signing_key_pair:
+            private_key: |
+              -----BEGIN RSA PRIVATE KEY-----
+              ...
+              -----END RSA PRIVATE KEY-----
+            cert:
+              -----BEGIN RSA PRIVATE KEY-----
+              ...
+              -----END RSA PRIVATE KEY-----
+
+          attributes_to_roles:
+            - name: "http://schemas.xmlsoap.org/claims/Group"
+              value: "Administrators"
+              roles: ["editor"]
+            - name: "http://schemas.xmlsoap.org/claims/Group"
+              value: "Users"
+              roles: ["access"]
+
+        ```
+      </Tab>
+
+      <Tab title="SAML">
+        ```yaml
+        #
+        # Example resource for a SAML connector
+        # This connector can be used for SAML endpoints like Okta
+        #
+        kind: saml
+        version: v2
+        metadata:
+          # the name of the connector
+          name: okta
+        spec:
+          # connector display name that will be appended to the title of "Login with"
+          # button on the cluster login screen so it will say "Login with Okta"
+          display: Okta
+          # SAML provider will make a callback to this URL after successful authentication
+          # cluster-url is the address the cluster UI is reachable at.
+          # The last segment of the URL must be identical to the connector metadata name.
+          acs: https://<cluster-url>/v1/webapi/saml/acs/new_saml_connector
+          # Controls whether IdP-initiated SSO is allowed. If false, all such requests will be rejected with an error.
+          allow_idp_initiated: false
+          attributes_to_roles:
+          - name: groups
+            value: okta-admin
+            roles:
+            - editor
+          - name: groups
+            value: okta-dev
+            roles:
+            - access
+          # Provides a path to the IdP metadata.
+          entity_descriptor_url: https://example.okta.com/app/your-app-id/sso/saml/metadata
+          
+        ```
+
+        <Accordion title="IdP-initiated SSO">
+          Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
+          log in to Teleport with one click from the dashboard provided by the IdP.
+
+          This feature is potentially unsafe and should be used with caution.
+
+          Enabling IdP-initiated login comes with notable security risks such as:
+
+          - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
+          - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
+        </Accordion>
+      </Tab>
+
+      <Tab title="GitHub">
+        ```yaml
+        kind: github
+        version: v3
+        metadata:
+          name: github
+        spec:
+          # GitHub OAuth app client ID
+          client_id: <client-id>
+          # GitHub OAuth app client secret
+          client_secret: <client-secret>
+          # GitHub will make a callback to this URL after successful authentication
+          # cluster-url is the address the cluster UI is reachable at
+          redirect_url: "https://<cluster-url>/v1/webapi/github/callback"
+          # connector display name that will be appended to the title of "Login with"
+          # button on the cluster login screen so it will say "Login with GitHub"
+          display: Github
+          # mapping of GitHub team memberships to Teleport cluster roles
+          teams_to_logins:
+          - logins:
+            - access
+            - editor
+            organization: <github-org>
+            team: <github-team>
+
+        ```
+      </Tab>
+    </Tabs>
+
+    You may use `entity_descriptor_url`, in lieu of `entity_descriptor`, to fetch
+    the entity descriptor from your IDP.
+
+    We recommend "pinning" the entity descriptor by including the XML rather than
+    fetching from a URL.
   </Tab>
 
-  <Tab title="OneLogin">
-    ```yaml
-    kind: saml
-    version: v2
-    metadata:
-      name: OneLogin
-    spec:
-      acs: https://<cluster-url>/v1/webapi/saml/acs
-      # Controls whether IdP-initiated SSO is allowed. If false, all such requests will be rejected with an error.
-      allow_idp_initiated: false
-      attributes_to_roles:
-        - {name: "groups", value: "admin", roles: ["editor"]}
-        - {name: "groups", value: "dev", roles: ["access"]}
-      display: OneLogin
-      entity_descriptor: |
-        # Paste in downloaded content from OneLogin Dashboard.
-        <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://www.example.com/00000000000000000000">
-          <md:IDPSSODescriptor WantAuthnRequestsSigned="false"
+  <Tab title="Teleport Community Edition">
+    Next, define an authentication connector. Create a file called `connector.yaml`
+    with the following content:
 
-    ```
-  </Tab>
-
-  <Tab title="OIDC">
-    ```yaml
-    #
-    # Example resource for an OIDC connector
-    # We recommend using OIDC for G Suite, Auth0 and Keycloak
-    #
-    kind: oidc
-    version: v2
-    metadata:
-      name: new_oidc_connector
-    spec:
-      redirect_url: "https://<cluster-url>/v1/webapi/oidc/callback"
-      client_id: <client id>
-      # connector display name that will be appended to the title of "Login with"
-      # button on the cluster login screen so it will say "Login with Google".
-      # Teleport will provide custom CSS for 'Google'.
-      display: Google
-      client_secret: <client secret>
-      issuer_url: https://<issuer-url>
-      scope: [<scope value>]
-      claims_to_roles:
-        - {claim: "hd", value: "example.com", roles: ["editor"]}
-
-    ```
-  </Tab>
-
-  <Tab title="Google Workspace">
-    ```yaml
-    kind: oidc
-    metadata:
-      name: google
-    spec:
-      claims_to_roles:
-      - claim: groups
-        roles:
-        - auditor
-        value: auditor@google-workspace-group-email.com
-      - claim: groups
-        roles:
-        - access
-        value: teleport-developers@example.com
-      client_id: <GOOGLE-WORKSPACE-CLIENT-ID>.apps.googleusercontent.com
-      client_secret: <OAUTH-CLIENT-SECRET>
-      display: Google
-      google_admin_email: <GOOGLE-WORKSPACE-ADMIN-EMAIL>
-      google_service_account: |
-        {
-         "type": "service_account",
-         "project_id": "<PROJECT-ID>",
-         "private_key_id": "<PRIVATE-KEY-ID>",
-         "private_key": "-----BEGIN PRIVATE KEY-----\n<PRIVATE-KEY-CONTENTS>\n-----END PRIVATE KEY-----\n",
-         "client_email": "<TELEPORT-SERVICE-ACCOUNT-EMAIL>",
-         "client_id": "<CLIENT-ID>",
-         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-         "token_uri": "https://oauth2.googleapis.com/token",
-         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/teleport-service-account%40access-304316.iam.gserviceaccount.com"
-        }
-      issuer_url: https://accounts.google.com
-      redirect_url: https://<SELF-HOSTED-CLUSTER-URL|TENANT-ID.teleport.sh>/v1/webapi/oidc/callback
-      scope:
-      - openid
-      - email
-    version: v3
-
-    ```
-  </Tab>
-
-  <Tab title="ADFS">
-    ```yaml
-    # This example connector uses SAML to authenticate against
-    # Active Directory Federation Services (ADFS)
-    kind: saml
-    version: v2
-    metadata:
-      name: adfs_connector
-    spec:
-      # display allows to set the caption of the "login" button
-      # in the Web interface
-      # Using the work 'Microsoft' will show the windows symbol in the UI.
-      display: Microsoft
-
-      # "adfs" provider setting tells Teleport that this SAML connector uses ADFS
-      # as a provider
-      provider: adfs
-
-      # Controls whether IdP-initiated SSO is allowed. If false, all such requests will be rejected with an error.
-      allow_idp_initiated: false
-
-      # entity_descriptor XML can either be copied into connector or fetched from a URL
-      entity_descriptor: |
-        <EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
-        ...
-        </md:EntityDescriptor>
-      # entity_descriptor_url is commented out, as only one is required to setup adfs.
-      # if you're running Teleport in FIPS mode entity_descriptor_url with Azure AD may
-      # fail
-      #entity_descriptor_url: "https://example.com"
-
-      # issuer typically comes from the "entity_descriptor" but can be overridden here
-      issuer: "foo"
-      # sso typically comes from the "entity_descriptor" but can be overridden here
-      sso: "bar"
-      # cert typically comes from the "entity_descriptor" but can be overridden here
-      cert: |
-        -----BEGIN RSA PRIVATE KEY-----
-        ...
-        -----END RSA PRIVATE KEY-----
-
-      acs: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
-      # if "service_provider_issuer" is not set, comes from "acs"
-      service_provider_issuer: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
-      # if "audience" is not set, comes from "acs"
-      audience: "https://<cluster-url>.example.com:3080/v1/webapi/saml/acs"
-
-      # if "signing_key_pair" is not set, teleport will generate a self signed
-      # signing key pair
-      signing_key_pair:
-        private_key: |
-          -----BEGIN RSA PRIVATE KEY-----
-          ...
-          -----END RSA PRIVATE KEY-----
-        cert:
-          -----BEGIN RSA PRIVATE KEY-----
-          ...
-          -----END RSA PRIVATE KEY-----
-
-      attributes_to_roles:
-        - name: "http://schemas.xmlsoap.org/claims/Group"
-          value: "Administrators"
-          roles: ["editor"]
-        - name: "http://schemas.xmlsoap.org/claims/Group"
-          value: "Users"
-          roles: ["access"]
-
-    ```
-  </Tab>
-
-  <Tab title="SAML">
-    ```yaml
-    #
-    # Example resource for a SAML connector
-    # This connector can be used for SAML endpoints like Okta
-    #
-    kind: saml
-    version: v2
-    metadata:
-      # the name of the connector
-      name: okta
-    spec:
-      # connector display name that will be appended to the title of "Login with"
-      # button on the cluster login screen so it will say "Login with Okta"
-      display: Okta
-      # SAML provider will make a callback to this URL after successful authentication
-      # cluster-url is the address the cluster UI is reachable at.
-      # The last segment of the URL must be identical to the connector metadata name.
-      acs: https://<cluster-url>/v1/webapi/saml/acs/new_saml_connector
-      # Controls whether IdP-initiated SSO is allowed. If false, all such requests will be rejected with an error.
-      allow_idp_initiated: false
-      attributes_to_roles:
-      - name: groups
-        value: okta-admin
-        roles:
-        - editor
-      - name: groups
-        value: okta-dev
-        roles:
-        - access
-      # Provides a path to the IdP metadata.
-      entity_descriptor_url: https://example.okta.com/app/your-app-id/sso/saml/metadata
-      
-    ```
-
-    <Accordion title="IdP-initiated SSO">
-      Enabling the `spec.allow_idp_initiated` flag in SAML connectors allows users to
-      log in to Teleport with one click from the dashboard provided by the IdP.
-
-      This feature is potentially unsafe and should be used with caution.
-
-      Enabling IdP-initiated login comes with notable security risks such as:
-
-      - Possibility of replay attacks on the SAML payload giving an attacker a secret web session
-      - Increased risk of session hijacking and impersonation attacks based on intercepting SAML communications
-    </Accordion>
-  </Tab>
-
-  <Tab title="GitHub">
     ```yaml
     kind: cluster_auth_preference
     metadata:
@@ -575,12 +614,6 @@ based on one of the following examples.
     ```
   </Tab>
 </Tabs>
-
-You may use `entity_descriptor_url`, in lieu of `entity_descriptor`, to fetch
-the entity descriptor from your IDP.
-
-We recommend "pinning" the entity descriptor by including the XML rather than
-fetching from a URL.
 
 Create the connector:
 
@@ -711,8 +744,12 @@ of SSO buttons in the Teleport Web UI.
 Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
 must be able to:
 
-- Ensure that HTTP/TLS certificates are configured properly for both Teleport
-  proxy and the SSO provider.
+<Tabs>
+  <Tab title="Self-Hosted">
+    - Ensure that HTTP/TLS certificates are configured properly for both Teleport
+      proxy and the SSO provider.
+  </Tab>
+</Tabs>
 
 - Be able to see what SAML/OIDC claims and values are getting exported and passed
   by the SSO provider to Teleport.

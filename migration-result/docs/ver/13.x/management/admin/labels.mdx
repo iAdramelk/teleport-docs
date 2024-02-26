@@ -1,651 +1,833 @@
 ---
-title: Labels
-description: Labeling Teleport resources
+title: Add Labels to Resources
+description: How to assign static and command-based dynamic labels to Teleport resources.
 version: '13.x'
 ---
 
 Teleport allows you to add arbitrary key-value pairs to applications, servers,
-databases, and other resources in your cluster. You can use these to filter
-resources when making queries via `tctl` and `tsh` as well as to limit the
-resources that Teleport roles can access.
+databases, and other resources in your cluster. You can use labels to do
+the following:
 
-This guide explains how to add labels to Teleport resources.
+- Filter the resources returned when running `tctl` and `tsh` commands.
+- Define roles that limit the resources Teleport users can access.
 
-There are two kinds of labels:
+This guide demonstrates how to add labels to enrolled server resources.
+However, you can follow similar steps to add labels to other types of resources.
 
-### Static labels
+## Static and dynamic labels
 
-Static labels are hardcoded in a `teleport` daemon's configuration file and do
-not change over time while the `teleport` process is running. An example of a static
-label is a Node's environment, e.g., `staging` vs. `production`.
+The labels you assign to resources can be **static labels** or **dynamic labels**.
 
-### Dynamic labels
+- Static labels are hardcoded in the Teleport configuration file and don't change
+  while the `teleport` process is running. For example, you might use a static label to identify
+  the resources in a `staging` or `production` environment.
+- Dynamic labels—also known as **commands-based labels**—allow you to generate labels at runtime.
+  With a dynamic label, the `teleport` process executes an external command on its host at
+  a configurable frequency and the output of the command becomes the label value.
 
-Dynamic labels, also known as **label commands**, allow you to generate labels
-at runtime. The `teleport` daemon will execute an external command on its host
-at a configurable frequency and the output of the command becomes the label's
-value.
+You can add multiple static and dynamic labels for the same resource.
+However, you can't add static labels that use the same key with different values or use
+a static label to define multiple potential values.
 
-This is especially useful for decoupling the label's value from your Teleport
-configuration. For example, if you start Teleport on an Amazon EC2 instance, you
-can set a `region` label based on a command that sends a request to the EC2
-[instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html).
-This means that you can keep your configuration the same for each Node (and set
-the configuration within an Amazon Machine Image) while enabling users to search for Nodes by AWS
-region.
+Dynamic labels are especially useful for decoupling a label value from the Teleport configuration.
+For example, if you start Teleport on an Amazon EC2 instance, you can use a dynamic label to set the
+`region` value based on the result from a command sent to the EC2 instance
+[metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html).
+The dynamic label enables you to use the same configuration for each server in an Amazon Machine Image
+but filter and limit access to the servers based on their AWS region.
 
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+so you can execute commands with the `tctl` admin tool:
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
-- A host where you will run a Teleport Node. In this guide, we will apply labels
-  to this Node.
-
-<Tip>
-  You can label any resource managed by Teleport using the instructions in this
-  guide. See the following guides for how to add resources to a Teleport cluster:
-
-  | Guide                                                                   | Notes on labeling                                                                                                                                                     |
-  | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | [Applications](/docs/ver/13.x/application-access/getting-started)       |                                                                                                                                                                       |
-  | [Databases](/docs/ver/13.x/database-access/getting-started)             | Teleport can discover some AWS-hosted databases automatically. In this case, labels will also be automatically applied.                                               |
-  | [Kubernetes clusters](/docs/ver/13.x/kubernetes-access/getting-started) |                                                                                                                                                                       |
-  | [Servers](/docs/ver/13.x/server-access/getting-started)                 |                                                                                                                                                                       |
-  | [Windows desktops](/docs/ver/13.x/desktop-access/getting-started)       | Dynamic labels are not supported for Windows desktops. See our [Desktop Access documentation](/docs/ver/13.x/desktop-access/rbac#labeling) for how to label desktops. |
-</Tip>
-
-## Step 1/3. Prepare your Node
-
-### Install Teleport on your Node
-
-On the host where you will run your Teleport Node, follow the instructions for
-your environment to install Teleport.
-
-Use the appropriate commands for your environment to install your package:
-
-<Tabs dropdownView dropdownCaption="Teleport Edition">
-  <Tab title="Open Source">
+<Tabs>
+  <Tab title="Self-Hosted">
     ```code
-    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    $ tsh login --proxy=teleport.example.com --user=email@example.com
+    $ tctl status
+    # Cluster  teleport.example.com
+    # Version  13.4.16
+    # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
     ```
+
+    You can run subsequent `tctl` commands in this guide on your local machine.
+
+    For full privileges, you can also run `tctl` commands on your Teleport Auth
+    Service host.
   </Tab>
 
-  <Tab title="Enterprise">
-    <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-        ```code
-        # Download Teleport's PGP public key
-        $ sudo curl https://apt.releases.teleport.dev/gpg \
-        -o /usr/share/keyrings/teleport-archive-keyring.asc
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport APT repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
-        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+  <Tab title="Teleport Cloud">
+    ```code
+    $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+    $ tctl status
+    # Cluster  myinstance.teleport.sh
+    # Version  14.3.6
+    # CA pin   sha256:sha-hash-here
+    ```
 
-        $ sudo apt-get update
-        $ sudo apt-get install teleport-ent
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo apt-get install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport YUM repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        # First, get the major version from $VERSION_ID so this fetches the correct
-        # package version.
-        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
-        $ sudo yum install teleport-ent
-        #
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo yum install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport YUM repository for v13. You'll need to update this
-        # file for each major release of Teleport.
-        # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
-
-        # Install teleport
-        $ sudo dnf install teleport-ent
-
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-
-        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
-
-        ```code
-        $ sudo dnf install teleport-ent-fips
-        ```
-      </Tab>
-
-      <Tab title="Tarball">
-        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-        will update after one is filled out.
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-
-        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
-        will be slightly different:
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-      </Tab>
-    </Tabs>
-  </Tab>
-
-  <Tab title="Cloud">
-    <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-        Add the Teleport repository to your repository list:
-
-        ```code
-        # Download Teleport's PGP public key
-        $ sudo curl https://apt.releases.teleport.dev/gpg \
-        -o /usr/share/keyrings/teleport-archive-keyring.asc
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport apt repository for cloud.
-        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
-        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
-
-        $ sudo apt-get update
-        $ sudo apt-get install teleport-ent
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
-        # First, get the major version from $VERSION_ID so this fetches the correct
-        # package version.
-        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-        $ sudo yum install teleport-ent
-        #
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-      </Tab>
-
-      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
-        # Source variables about OS version
-        $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
-        # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-
-        # Install teleport
-        $ sudo dnf install teleport-ent
-
-        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-        ```
-      </Tab>
-
-      <Tab title="Tarball">
-        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-        will update after one is filled out.
-
-        ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
-        ```
-      </Tab>
-    </Tabs>
-
-    <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
-      Before installing a `teleport` binary with a version besides v13,
-      read our compatibility rules to ensure that the binary is compatible with
-      Teleport Cloud.
-
-      When running multiple `teleport` binaries within a cluster, the following rules
-      apply:
-
-      - **Patch and minor** versions are always compatible, for example, any 8.0.1
-        component will work with any 8.0.3 component and any 8.1.0 component will work
-        with any 8.3.0 component.
-      - Servers support clients that are 1 major version behind, but do not support
-        clients that are on a newer major version. For example, an 8.x.x Proxy Service
-        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
-        This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
-        You must upgrade to 7.x.x first.
-      - Proxy Services and resource services do not support Auth Services that are on
-        an older major version, and will fail to connect to older Auth Services by
-        default. This behavior can be overridden by passing `--skip-version-check`
-        when starting Proxy Services and resource services.
-    </Accordion>
+    You must run subsequent `tctl` commands in this guide on your local machine.
   </Tab>
 </Tabs>
 
-### Generate a token
+## Step 1/3. Install Teleport
 
-On your local machine, use the `tctl` tool to generate an invite token that your
-Node will use to join the cluster. In the following example, a new token is
-created with a TTL of five minutes:
+1. Select a host for running the Teleport agent.
 
-```code
-# Generate a short-lived invitation token for a new node:
-$ tctl tokens add --ttl=5m --type=node
-# The invite token: abcd123-insecure-do-not-use-this
+2. Use the appropriate commands for your environment to install your package:
+   <Tabs dropdownView dropdownCaption="Teleport Edition">
+     <Tab title="Teleport Community Edition">
+       ```code
+       $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
+       ```
+     </Tab>
 
-# You can also list all generated non-expired tokens:
-$ tctl tokens ls
-# Token                            Type            Expiry Time
-# ------------------------         -----------     ---------------
-# abcd123-insecure-do-not-use-this         Node            25 Sep 18 00:21 UTC
-```
+     <Tab title="Teleport Team">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           Add the Teleport repository to your repository list:
 
-Copy the token. On the remote host that you will add to your Teleport cluster as a
-Node, assign the token to an environment variable:
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for cloud.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
-```code
-$ export INVITE_TOKEN=<token>
-```
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
 
-We will use this in the next step.
+           # Update the repo and install Teleport and the Teleport updater
+           $ sudo apt-get update
+           $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
 
-## Step 2/3. Apply a static label to your Node
+         <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-You can configure Node labels by editing Teleport's configuration file, then
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+       <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+         Before installing a `teleport` binary with a version besides
+         v14, read our compatibility rules to ensure that the
+         binary is compatible with Teleport Cloud.
+
+         When running multiple `teleport` binaries within a cluster, the following rules
+         apply:
+
+         - **Patch and minor** versions are always compatible, for example, any 8.0.1
+           component will work with any 8.0.3 component and any 8.1.0 component will work
+           with any 8.3.0 component.
+         - Servers support clients that are 1 major version behind, but do not support
+           clients that are on a newer major version. For example, an 8.x.x Proxy Service
+           is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+           guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+           This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+           You must upgrade to 7.x.x first.
+         - Proxy Services and resource services do not support Auth Services that are on
+           an older major version, and will fail to connect to older Auth Services by
+           default. This behavior can be overridden by passing `--skip-version-check`
+           when starting Proxy Services and resource services.
+       </Accordion>
+     </Tab>
+
+     <Tab title="Teleport Enterprise">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+           $ sudo apt-get update
+           $ sudo apt-get install teleport-ent
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo apt-get install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+           $ sudo yum install teleport-ent
+           #
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo yum install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+           $ sudo yum install teleport-ent
+           #
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo yum install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for v13. You'll need to update this
+           # file for each major release of Teleport.
+           # First, get the major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+
+           # Install teleport
+           $ sudo dnf install teleport-ent
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo dnf install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport-zypper.repo")
+
+           # Install teleport
+           $ sudo zypper install teleport-ent
+           ```
+
+           For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+           ```code
+           $ sudo zypper install teleport-ent-fips
+           ```
+         </Tab>
+
+         <Tab title="Tarball">
+           In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+           value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+           will update after one is filled out.
+
+           ```code
+           $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+           # <checksum> <filename>
+           $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           # Verify that the checksums match
+           $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+           $ cd teleport-ent
+           $ sudo ./install
+           ```
+
+           For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+           will be slightly different:
+
+           ```code
+           $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+           # <checksum> <filename>
+           $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           # Verify that the checksums match
+           $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+           $ cd teleport-ent
+           $ sudo ./install
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+     </Tab>
+
+     <Tab title="Teleport Enterprise Cloud">
+       <Tabs>
+         <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+           Add the Teleport repository to your repository list:
+
+           ```code
+           # Download Teleport's PGP public key
+           $ sudo curl https://apt.releases.teleport.dev/gpg \
+           -o /usr/share/keyrings/teleport-archive-keyring.asc
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport APT repository for cloud.
+           $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+           https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+           | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Update the repo and install Teleport and the Teleport updater
+           $ sudo apt-get update
+           $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           $ sudo yum install -y yum-utils
+           $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport YUM repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use the dnf config manager plugin to add the teleport RPM repo
+           $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+           # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+           # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+           ```
+         </Tab>
+
+         <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+           ```code
+           # Source variables about OS version
+           $ source /etc/os-release
+           # Add the Teleport Zypper repository for cloud.
+           # First, get the OS major version from $VERSION_ID so this fetches the correct
+           # package version.
+           $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+           # Use Zypper to add the teleport RPM repo
+           $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+           # Provide your Teleport domain to query the latest compatible Teleport version
+           $ export TELEPORT_DOMAIN=example.teleport.com
+           $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+           # Install Teleport and the Teleport updater
+           $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+           ```
+         </Tab>
+       </Tabs>
+
+       ### OS repository channels
+
+       The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+       `stable/v13` anywhere in the Teleport documentation.
+
+       | Channel name     | Description                                                                  |
+       | ---------------- | ---------------------------------------------------------------------------- |
+       | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+       | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+       | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+       <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+         Before installing a `teleport` binary with a version besides v14,
+         read our compatibility rules to ensure that the binary is compatible with
+         Teleport Enterprise Cloud.
+
+         When running multiple `teleport` binaries within a cluster, the following rules
+         apply:
+
+         - **Patch and minor** versions are always compatible, for example, any 8.0.1
+           component will work with any 8.0.3 component and any 8.1.0 component will work
+           with any 8.3.0 component.
+         - Servers support clients that are 1 major version behind, but do not support
+           clients that are on a newer major version. For example, an 8.x.x Proxy Service
+           is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+           guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+           This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+           You must upgrade to 7.x.x first.
+         - Proxy Services and resource services do not support Auth Services that are on
+           an older major version, and will fail to connect to older Auth Services by
+           default. This behavior can be overridden by passing `--skip-version-check`
+           when starting Proxy Services and resource services.
+       </Accordion>
+     </Tab>
+   </Tabs>
+
+3. Generate an invitation token for the host.
+
+   The invitation token is required for the local computer to join the Teleport cluster.\
+   The following example generates a new token that is valid for five minutes and can be used
+   to enroll a server:
+
+   ```code
+   $ tctl tokens add --ttl=5m --type=node
+   # The invite token: abcd123-insecure-do-not-use-this
+   ```
+
+4. List all generated non-expired tokens by running the following command:
+
+   ```code
+   $ tctl tokens ls
+   # Token                            Type        Labels Expiry Time (UTC)               
+   # -------------------------------- ----------- ------ ------------------------------- 
+   # abcd123-insecure-do-not-use-this Node,Db,App        10 Aug 23 19:49 UTC (4m11s) 
+   ```
+
+5. Copy the token and assign it to an environment variable on the computer you are enrolling
+   as a resource:
+
+   ```code
+   $ export INVITE_TOKEN=<token>
+   ```
+
+## Step 2/3. Apply a static label
+
+You can configure static labels by editing the Teleport configuration file, then
 starting Teleport.
 
-On the host where you will run your Node, paste the following content into
-`/etc/teleport.yaml` and adjust it for your environment:
+To add a static label:
+
+1. Open the Teleport configuration file, `/etc/teleport.yaml`, in an editor on the computer
+   where you installed the Teleport agent.
+
+2. Locate the `labels` configuration under the `ssh_service` section.
+
+3. Add the static label key and value.
+   For example, add `environment` as the label key and `dev` as the value:
+
+   ```yaml
+   ssh_service:
+     enabled: true
+     labels:
+       environment: dev
+   ```
+
+   The preceding example illustrates a simple value setting. However, you can also use static labels
+   to define more complex string values that include white space or punctuation marks.
+   For example:
+
+   ```code
+   ssh_service:
+     enabled: true
+     labels:
+       location: San Francisco Bldg 301 4th floor
+   ```
+
+4. Save your changes and close the file.
+
+5. Start Teleport with the invitation token you saved in the `INVITE_TOKEN` environment variable:
+
+   ```code
+   $ sudo teleport start --token=${INVITE_TOKEN?}
+   ```
+
+6. Verify that you have added the label by running the following command
+   on your local computer.
+
+   ```code
+   $ tsh ls --query 'labels["environment"]=="dev"'
+   ```
+
+   You should see output similar to the following:
+
+   ```code
+   Node Name        Address    Labels                                                                                                       
+   ---------------- ---------- ------------------------------------------
+   ip-192-168-13-57 ⟵ Tunnel   environment=dev,hostname=ip-192-168-13-57
+   ```
+
+   **Checking the status of your server**
+
+   If you don't see your server listed when you query for the label you added, you should verify that the
+   SSH Service is running on the server. Check the log for the server to verify that there are
+   messages similar to the following:
+
+   ```text
+   2023-08-07T22:22:21Z INFO [NODE:1]    Service is starting in tunnel mode. pid:149932.1 service/service.go:2630
+   2023-08-07T22:22:21Z INFO [UPLOAD:1]  starting upload completer service pid:149932.1 service/service.go:2723
+   2023-08-07T22:22:21Z INFO [PROC:1]    The new service has started successfully. Starting syncing rotation status...
+   ```
+
+   **Checking your user profile**
+
+   If the SSH Service is running on the server, verify that your current Teleport user has a login on the local host.
+   You can check the status of your user account by running the following command:
+
+   ```code
+   $ tsh status
+   ```
+
+   You should see output similar to the following with at least one login listed for your current user:
+
+   ```code
+   > Profile URL:        https://ajuba-aws.teledocs.click:443
+     Logged in as:       teleport-admin
+     Cluster:            teleport-aws.example.com
+     Roles:              access, editor
+     Logins:             root, ubuntu, ec2-user
+     Kubernetes:         enabled
+     Valid until:        2023-08-08 10:08:46 +0000 UTC [valid for 10h36m0s]
+     Extensions:         login-ip, permit-agent-forwarding, permit-port-forwarding, permit-pty, private-key-policy
+   ```
+
+   If no valid logins have been assigned to the user, you should update your current user profile to include
+   at least one valid login.
+
+   You can add logins to a user by running a command similar to the following:
+
+   ```code
+   $ tctl users update myuser --set-logins=root
+   ```
+
+   This example adds the `root` login to the `myuser` Teleport user.
+   For more information about managing logins for Teleport users, see [Local Users](/docs/ver/13.x/management/admin/users).
+
+**Using hidden static labels**
+
+If you want to use labels for role-based access control but don't want to
+display the labels in command output or the Teleport Web UI, you can define them
+in a hidden namespace by prefixing the label key with `teleport.hidden/`.
+For example:
 
 ```yaml
-version: v3
-teleport:
-  # The address of your Auth Service.
-  auth_server: tele.example.com:3025
-  # Or, you can also use a Proxy Service
-  # address, e.g., tele.example.com:443, if your Auth Service is not
-  # exposed to the internet.
-  proxy_server: tele.example.com:443
-
-auth_service:
-  enabled: false
-
-proxy_service:
-  enabled: false
-
 ssh_service:
   enabled: true
-  # Static labels are simple key/value pairs:
   labels:
-    environment: dev
+    teleport.hidden/team-id: ai-lab-01
 ```
 
-```yaml
-version: v3
-teleport:
-  # Your Teleport Cloud tenant address
-  proxy_server: mytenant.teleport.sh:443
-
-auth_service:
-  enabled: false
-
-proxy_service:
-  enabled: false
-
-ssh_service:
-  enabled: true
-  # Static labels are simple key/value pairs:
-  labels:
-    environment: dev
-```
-
-Next, start Teleport with the invite token you created earlier:
-
-```code
-$ sudo teleport start --token=${INVITE_TOKEN?}
-```
-
-Verify that you have added the label by running the following on your local
-machine. Your Teleport user must be authorized to access the Node.
-
-```code
-$ tsh ls --query 'labels["environment"]=="dev"'
-Node Name    Address    Labels
------------- ---------- ---------------
-bdcb47b87ad6 ⟵ Tunnel environment=dev
-```
-
-<Accordion title="Don't see your Node?">
-  First, check the logs for your Node to ensure the SSH Service is running. Your logs should resemble the following:
-
-  ```text
-  2022-04-27T14:44:23Z INFO [NODE:1]    Service is starting in tunnel mode. service/service.go:1993
-  2022-04-27T14:44:23Z INFO [PROC:1]    The new service has started successfully. Starting syncing rotation status with period 10m0s. service/connect.go:482
-  2022-04-27T14:44:23Z INFO             Service has started successfully. service/service.go:523
-  2022-04-27T14:44:24Z INFO [NODE:PROX] Connected. addr:172.17.0.2:40184 remote-addr:192.0.2.0:443 leaseID:1 target:teleport.example.com:443 reversetunnel/agent.go:409
-  ```
-
-  Next, ensure that your Teleport user has a login that corresponds to a user on
-  your Node.
-
-  Run the following command to get the current logins for your user:
-
-  ```code
-  $ tsh status
-  > Profile URL:        https://teleport.example.com:443
-    Logged in as:       myuser
-    Cluster:            teleport.example.com
-    Roles:              access, editor
-    Logins:             -teleport-nologin-d4bc1dad-ce49-4bbe-925d-a67f8d2d6afe
-    Kubernetes:         enabled
-    Valid until:        2022-04-27 22:26:50 -0400 EDT [valid for 11h40m0s]
-    Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-  ```
-
-  ```code
-  $ tsh status
-  > Profile URL:        https://teleport.example.com:443
-    Logged in as:       myuser
-    Cluster:            teleport.example.com
-    Roles:              access, editor, reviewer
-    Logins:             -teleport-nologin-d4bc1dad-ce49-4bbe-925d-a67f8d2d6afe
-    Kubernetes:         enabled
-    Valid until:        2022-04-27 22:26:50 -0400 EDT [valid for 11h40m0s]
-    Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-  ```
-
-  ```code
-  tsh status
-  > Profile URL:        https://mytenant.teleport.sh:443
-    Logged in as:       myuser
-    Cluster:            mytenant.teleport.sh
-    Roles:              access, editor, reviewer
-    Logins:             -teleport-nologin-d4bc1dad-ce49-4bbe-925d-a67f8d2d6afe
-    Kubernetes:         enabled
-    Valid until:        2022-04-27 22:26:50 -0400 EDT [valid for 11h40m0s]
-    Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-  ```
-
-  In this example, `-teleport-nologin-d4bc1dad-ce49-4bbe-925d-a67f8d2d6afe` means
-  that no logins have been assigned to the user.
-
-  To add logins, retrieve your user configuration as YAML:
-
-  ```code
-  # Replace "myuser" with your Teleport username
-  $ tctl get user/myuser > user.yaml
-  ```
-
-  Edit the `logins` field for your user. Each login must exist as a user on the
-  host:
-
-  ```diff
-       db_users: null
-       kubernetes_groups: null
-       kubernetes_users: null
-  -    logins: null
-  +    logins:
-  +      - root
-       windows_logins: null
-   version: v2
-  ```
-
-  Apply your changes:
-
-  ```code
-  $ tctl create -f user.yaml
-  user "myuser" has been updated
-  ```
-
-  Log out of your cluster, then log in again. You should now see your Node when
-  you run `tsh ls`.
-</Accordion>
-
-<Accordion title="Hidden labels">
-  If you wish to use labels for RBAC purposes but don't want to see the labels
-  in the UI, you can put them in the hidden namespace by prefixing the label's
-  key with `teleport.hidden/`, for example `teleport.hidden/account-id`.
-</Accordion>
-
-## Step 3/3. Apply dynamic labels via commands
-
-Before following this step, stop Teleport on your Node.
+## Step 3/3. Apply dynamic labels using commands
 
 As with static labels, you can apply dynamic labels by editing the
-Teleport configuration file.
+Teleport configuration file, then restarting the Teleport service on your server.
 
-Edit `/etc/teleport.yaml` to define a `commands` array as shown below:
+To add a command to generate a dynamic label:
 
-```yaml
-version: v3
-teleport:
-  auth_server: tele.example.com:3025
+1. Stop the Teleport service running on your server.
 
-auth_service:
-  enabled: false
+2. Open the Teleport configuration file—by default, `/etc/teleport.yaml`—in a text editor.
 
-proxy_service:
-  enabled: false
+3. Locate the `commands` configuration under the `ssh_service` section.
 
-ssh_service:
-  enabled: "yes"
-  # Configure dynamic labels using the "commands" field:
-  commands:
-  - name: hostname
-    command: [hostname]
-    period: 1m0s
-  - name: arch
-    command: [uname, -p]
-    # This setting tells Teleport to execute the command above
-    # once an hour. This value cannot be less than one minute.
-    period: 1h0m0s
-```
+4. Add a `command` array that runs the `uname` command with the `-p` argument to return the architecture of the
+   host server every one hour.
 
-```yaml
-version: v3
-teleport:
-  proxy_server: mytenant.teleport.sh:443
+   For example, add the `name`, `command`, and `period` fields as follows:
 
-auth_service:
-  enabled: false
+   ```yaml
+   ...
+   ssh_service:
+     enabled: "yes"
+     labels:
+       teleport.internal/resource-id: 1f2cdcc5-cde3-41fa-b390-bc872087821a
+       environment: dev
+     commands:
+     - name: hostname
+       command: [hostname]
+       period: 1m0s
+     - name: arch
+       command: [uname, -p]
+       period: 1h0m0s
+   ```
 
-proxy_service:
-  enabled: false
+   In the `command` setting, the first element is a valid executable.
+   Each subsequent element is an argument.
+   The following syntax is valid:
 
-ssh_service:
-  enabled: "yes"
-  # Configure dynamic labels using the "commands" field:
-  commands:
-  - name: hostname
-    command: [hostname]
-    period: 1m0s
-  - name: arch
-    command: [uname, -p]
-    # This setting tells Teleport to execute the command above
-    # once an hour. This value cannot be less than one minute.
-    period: 1h0m0s
-```
+   ```yaml
+   command: ["/bin/uname", "-m"]
+   ```
 
-Notice that the `command` setting is an array where the first element
-is a valid executable and each subsequent element is an argument.
+   The following syntax is not valid:
 
-This is valid syntax:
+   ```yaml
+   command: ["/bin/uname -m"]
+   ```
 
-```yaml
-command: ["/bin/uname", "-m"]
-```
+   For more complex commands, you can use single (') and double (")
+   quotation marks interchangeably to create nested expressions.
+   For example:
 
-This is invalid syntax:
+   ```yaml
+   command: ["/bin/sh", "-c", "uname -a | egrep -o '[0-9]+\\.[0-9]+\\.[0-9]+'"]
+   ```
 
-```yaml
-command: ["/bin/uname -m"]
-```
+   In configuring commands, keep the following in mind:
 
-If you want to pipe several bash commands together, here's how to do it. Notice
-how `'` and `"` are interchangeable, so you can use them for nested quotations.
+   - The executable must be discoverable in the `$PATH` or specified using an absolute path.
+   - You must set the executable permission bit on any file you use as a command.
+   - Shell scripts must have a [shebang line](https://en.wikipedia.org/wiki/Shebang_\(Unix\)).
 
-```yaml
-command: ["/bin/sh", "-c", "uname -a | egrep -o '[0-9]+\\.[0-9]+\\.[0-9]+'"]
-```
+   The `period` setting specifies how frequently Teleport executes each command.
+   In this example, the `uname -p` command is executed every one hour (1h), zero minutes (0m),
+   and zero seconds (0s). This value can't be less than one minute.
 
-<Warning>
-  When configuring a command to generate dynamic labels, the executable named
-  within your command must be the path to a valid file. The executable permission
-  bit must be set and shell scripts must have a
-  [shebang line](https://en.wikipedia.org/wiki/Shebang_\(Unix\)).
-</Warning>
+5. Save your changes and close the file.
 
-Once you have configured your labels, start Teleport with the invite token you
-created earlier:
+6. Start Teleport with the invitation token you saved in the `INVITE_TOKEN` environment variable:
 
-```code
-$ sudo teleport start --token=${INVITE_TOKEN?}
-```
+   ```code
+   $ sudo teleport start --token=${INVITE_TOKEN?}
+   ```
 
-Verify that you have added the labels by running the following on your local
-machine. Your Teleport user must be authorized to access the Node.
+7. Verify that you have added the label by running the following command on your local
+   computer. Your Teleport user must be authorized to access the server.
 
-```code
-$ tsh ls
-Node Name         Address    Labels
------------------ ---------- ---------------
-ip-192-0-2-0      ⟵ Tunnel arch=x86_64,hostname=ip-172-30-156-233
-```
+   ```code
+   $ tsh ls
+   ```
 
-<Accordion title="Problems re-joining the Node?">
-  Try creating another invite token using the `tctl tokens add` command from earlier
-  and starting your Node again.
+   You should see output similar to the following with both the `arch` and `environment` labels displayed:
 
-  If this doesn't work, delete the directory your Node uses to maintain its state,
-  `/var/lib/teleport`, and try again.
-</Accordion>
+   ```code
+   Node Name        Address        Labels                                                                                                                   
+   ---------------- -------------- ------------------------------------------------------
+   ip-192-168-13-57 ⟵ Tunnel       arch=x86_64,environment=dev,hostname=ip-192-168-13-57
+   ```
 
-## Next steps: Using labels
+## Next steps
 
-Once you have labeled your resources, you can refer to your labels when running
-`tsh` and `tctl` commands to filter the resources that the commands will query.
-For more information, see
-[Resource filtering](/docs/ver/13.x/reference/predicate-language).
+After you have labeled your resources, you can use the labels when running
+`tsh` and `tctl` commands to filter the resources that the commands return.
+For more information, see [Resource filtering](/docs/ver/13.x/reference/predicate-language).
 
-You can also use labels to limit the access that different roles have to
+You can also use labels to limit the access that users in different roles have to
+
 specific classes of resources. For more information, see
 [Teleport Role Templates](/docs/ver/13.x/access-controls/guides/role-templates).

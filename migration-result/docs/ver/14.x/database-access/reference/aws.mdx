@@ -18,8 +18,8 @@ users and permission to manage the passwords in AWS Secrets Manager.
 
 You can generate and manage the permissions with the [`teleport db configure
 bootstrap`](/docs/ver/14.x/database-access/reference/cli#teleport-db-configure-bootstrap)
-command. For example, the following command would generate and print the
-IAM policies:
+command. For example, the following command would generate and print the IAM
+policies:
 
 ```code
 $ teleport db configure bootstrap --manual
@@ -164,7 +164,7 @@ policies for each discovery type are shown below.
 </Tabs>
 
 <Note>
-  Teleport uses `rds:ModifyDBInstance` and `rds:DescribeDBClusters` to
+  Teleport uses `rds:ModifyDBInstance` and `rds:ModifyDBCluster` to
   automatically enable [IAM
   authentication](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html)
   on the RDS instance and the Aurora cluster, respectively. You can omit these
@@ -190,7 +190,6 @@ policies for each discovery type are shown below.
                 "Action": [
                     "rds:DescribeDBProxies",
                     "rds:DescribeDBProxyEndpoints",
-                    "rds:DescribeDBProxyTargets",
                     "rds:ListTagsForResource",
                 ],
                 "Resource": "*"
@@ -225,7 +224,6 @@ policies for each discovery type are shown below.
                 "Action": [
                     "rds:DescribeDBProxies",
                     "rds:DescribeDBProxyEndpoints",
-                    "rds:DescribeDBProxyTargets",
                     "rds:ListTagsForResource",
                 ],
                 "Resource": "*"

@@ -10,60 +10,73 @@ how to forward Teleport audit events to Datadog using Fluentd.
 The Teleport Event Handler is designed to communicate with Fluentd using mTLS
 to establish a secure channel. In this setup, the Event Handler sends events to Fluentd, which forwards them to Datadog using an API key to authenticate.
 
-```mermaid
-graph LR
-style e fill: #a379ff,color: #ffffff
-style f fill: #a379ff,color: #ffffff
-style c fill: #a379ff,color: #ffffff
-style g fill: #a379ff,color: #ffffff
-style i fill: #a379ff,color: #ffffff
-style e fill: #844cff,color: #ffffff
-style monitor fill:#a8afb1,stroke: #000000
-
-a(User)
-a-->e
-
-subgraph local [Local Network]
-    style local fill:#C0C0C0,stroke: #000000
-    direction LR
-    subgraph teleport [ ]
-        direction TB
-        style teleport fill:none,stroke:none
-            e(Teleport Proxy)
-        e<-->f(Teleport Auth)
-        e<-->g(Teleport Service)
-        e<-->i(Teleport Service)
-        g<-->j([Infrastructure])
-        i<-->k([Infrastructure])
-    end
-
-    subgraph monitor [Monitoring]
-        c(teleport-event-handler)
-        d(fluentd)
-    end
-    c-->d
-end
-e-->c
-d-->h(Datadog)
-```
+![Architecture of the setup shown in this guide](/assets/datadog-diagram-44983c398b.png)
 
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
-      Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see our
+      [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
+      ```
+
+      See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v13.4.16 go1.21
+
+      $ tsh version
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -72,15 +85,15 @@ d-->h(Datadog)
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -95,26 +108,36 @@ d-->h(Datadog)
 The instructions below demonstrate a local test of the Event Handler plugin on your
 workstation. You will need to adjust paths, ports, and domains for other environments.
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Step 1/6. Install the Event Handler plugin
 
@@ -124,8 +147,8 @@ from Teleport's events API, and forwards them to Fluentd.
 <Tabs>
   <Tab title="Linux">
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.2.0-linux-amd64-bin.tar.gz
-    $ tar -zxvf teleport-event-handler-v13.2.0-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.8-linux-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v13.3.8-linux-amd64-bin.tar.gz
     ```
 
     We currently only build the Event Handler plugin for amd64 machines. For ARM
@@ -134,8 +157,8 @@ from Teleport's events API, and forwards them to Fluentd.
 
   <Tab title="macOS">
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.2.0-darwin-amd64-bin.tar.gz
-    $ tar -zxvf teleport-event-handler-v13.2.0-darwin-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.8-darwin-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v13.3.8-darwin-amd64-bin.tar.gz
     ```
 
     We currently only build the event handler plugin for amd64 machines. If your
@@ -148,7 +171,7 @@ from Teleport's events API, and forwards them to Fluentd.
     Ensure that you have Docker installed and running.
 
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:13.2.0
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.8
     ```
   </Tab>
 
@@ -182,7 +205,7 @@ from Teleport's events API, and forwards them to Fluentd.
   </Tab>
 
   <Tab title="Build via Go">
-    You will need Go >= 1.20 installed.
+    You will need Go >= 1.21 installed.
 
     Run the following commands on your Universal Forwarder host:
 
@@ -201,9 +224,10 @@ from Teleport's events API, and forwards them to Fluentd.
 ## Step 2/6. Configure the plugin
 
 <Tabs>
-  <Tab title="Teleport Enterprise Cloud">
+  <Tab title="Cloud-Hosted">
     Run the `configure` command to generate a sample configuration. Replace
-    `mytenant.teleport.sh` with the DNS name of your Teleport Enterprise Cloud tenant:
+    `mytenant.teleport.sh` with the DNS name of your Teleport Team or Teleport
+    Enterprise Cloud tenant:
 
     ```code
     $ ./teleport-event-handler configure . mytenant.teleport.sh:443
@@ -227,7 +251,7 @@ from Teleport's events API, and forwards them to Fluentd.
 
     ```code
     $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
-    $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:13.2.0 configure . ${TELEPORT_CLUSTER_ADDRESS?}
+    $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.8 configure . ${TELEPORT_CLUSTER_ADDRESS?}
     ```
 
     In order to export audit events, you'll need to have the root certificate and the
@@ -246,7 +270,7 @@ from Teleport's events API, and forwards them to Fluentd.
 You'll see the following output:
 
 ```txt
-Teleport event handler 13.2.0
+Teleport event handler 13.4.16
 
 [1] mTLS Fluentd certificates generated and saved to ca.crt, ca.key, server.crt, server.key, client.crt, client.key
 [2] Generated sample teleport-event-handler role and user file teleport-event-handler-role.yaml
@@ -379,147 +403,147 @@ Next, create the role:
 $ tctl create -f teleport-event-handler-impersonator.yaml
 ```
 
-Assign the `teleport-event-handler-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `teleport-event-handler-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `teleport-event-handler-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `teleport-event-handler-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - teleport-event-handler-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - teleport-event-handler-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `teleport-event-handler-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `teleport-event-handler-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - teleport-event-handler-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - teleport-event-handler-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `teleport-event-handler-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `teleport-event-handler-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - teleport-event-handler-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - teleport-event-handler-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `teleport-event-handler-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `teleport-event-handler-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - teleport-event-handler-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - teleport-event-handler-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 ### Export an identity file for the Event Handler plugin user
 
@@ -691,7 +715,7 @@ Earlier, we generated a file called `teleport-event-handler.toml` to configure
 the Fluentd event handler. This file includes setting similar to the following:
 
 <Tabs>
-  <Tab title="Teleport Cloud">
+  <Tab title="Cloud-Hosted">
     ```toml
     storage = "./storage"
     timeout = "10s"
@@ -773,7 +797,7 @@ the Fluentd event handler. This file includes setting similar to the following:
     ```code
     $ helm install teleport-plugin-event-handler teleport/teleport-plugin-event-handler \
       --values teleport-plugin-event-handler-values.yaml \
-      --version 13.2.0
+      --version 13.3.8
     ```
   </Tab>
 </Tabs>

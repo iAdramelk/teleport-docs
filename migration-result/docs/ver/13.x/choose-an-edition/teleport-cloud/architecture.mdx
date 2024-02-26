@@ -16,9 +16,9 @@ that may target Teleport tenants by leveraging [AWS Shield](https://aws.amazon.c
 
 ## Compliance
 
-We completed our most current SOC 2 Type II audit on August 9th, 2022.
+We undergo an annual SOC 2 Type II audit of the Teleport Access Platform.
 
-The report covers:
+The audit report covers:
 
 - Teleport Open Source
 - Teleport Enterprise, self-hosted
@@ -50,13 +50,21 @@ cluster state deleted between 7 and 30 days after the lapse.
 
 ### Auth Service
 
-The Teleport [Auth Service](/docs/ver/13.x/architecture/authentication) is deployed within the AWS us-west-2 region in 4 availability zones, and can tolerate a single zone failure. AWS guarantees [99.99%](https://aws.amazon.com/compute/sla/) of monthly uptime.
+The Teleport [Auth Service](/docs/ver/13.x/architecture/authentication) is deployed in 2 AWS availability zones, and can tolerate a single zone failure. AWS guarantees [99.99%](https://aws.amazon.com/compute/sla/) of monthly uptime.
+Teleport Enterprise Cloud can run in one of the following AWS regions:
+
+- us-west-2
+- us-east-1
+- eu-central-1
+- ap-south-1
+- ap-southeast-1
+- sa-east-1
 
 ### Proxies
 
 The Teleport [Proxy Service](/docs/ver/13.x/architecture/proxy) is deployed to multiple AWS regions around the world for low-latency access to distributed infrastructure.
 
-- us-west-2 (default)
+- us-west-2
 - us-east-1
 - eu-central-1
 - ap-south-1
@@ -70,8 +78,8 @@ for its customers.
 
 Teleport Enterprise Cloud team upgrades the service with patch releases weekly and major
 releases quarterly. The team waits for the first minor release before a major
-upgrade. For example, the team will deploy 13.1.0
-instead of 13.0.0. The first minor release happens 3-4
+upgrade. For example, the team will deploy 14.1.0
+instead of 14.0.0. The first minor release happens 3-4
 weeks after a first major release.
 
 Patch releases are fully backward compatible and require no actions by the

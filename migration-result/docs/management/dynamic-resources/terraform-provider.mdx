@@ -5,10 +5,15 @@ videoBanner: YgNHD4SS8dg
 version: '15.x'
 ---
 
-This guide demonstrates how to:
+This guide demonstrates how to: Set up the Terraform provider for Teleport on
+Linux and macOS.
 
-- Set up the Terraform provider for Teleport on Linux and macOS.
-- Configure Teleport users and roles using the Terraform provider.
+For instructions on managing users and roles via Terraform, read
+the ["Managing users and roles with IaC" guide](/docs/management/dynamic-resources/user-and-role).
+
+For instructions on managing the Teleport dynamic resources as code using
+GitOps, read the guide to using the Teleport Terraform provider with [Spacelift
+and Machine ID](/docs/machine-id/deployment/spacelift).
 
 ## Prerequisites
 
@@ -17,7 +22,7 @@ This guide demonstrates how to:
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -26,11 +31,11 @@ This guide demonstrates how to:
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -39,7 +44,7 @@ This guide demonstrates how to:
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -48,11 +53,11 @@ This guide demonstrates how to:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -62,7 +67,7 @@ This guide demonstrates how to:
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -72,11 +77,11 @@ This guide demonstrates how to:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -86,7 +91,7 @@ This guide demonstrates how to:
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -95,11 +100,11 @@ This guide demonstrates how to:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -121,7 +126,7 @@ This guide demonstrates how to:
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -182,6 +187,7 @@ To prepare credentials for a local Teleport user:
            - token
            - trusted_cluster
            - user
+           - access_list
            verbs: ['list','create','read','update','delete']
    version: v7
    ---
@@ -199,7 +205,9 @@ To prepare credentials for a local Teleport user:
 4. Create the `terraform` user and role by running the following command:
 
    ```code
-   $ tctl create terraform.yaml
+   $ tctl create -f terraform.yaml
+   role 'terraform' has been created
+   user "terraform" has been created
    ```
 
    The `terraform` user can't sign in to get credentials, so you must have another user
@@ -228,36 +236,28 @@ To prepare credentials for a local Teleport user:
 7. Create the `terraform-impersonator` role by running the following command:
 
    ```code
-   $ tctl create terraform-impersonator.yaml
+   $ tctl create -f terraform-impersonator.yaml
+   role 'terraform-impersonator' has been created
    ```
 
 8. Assign the `terraform-impersonator` role to your Teleport user by running the appropriate
    commands for your authentication provider:
    <Tabs>
      <Tab title="Local User">
-       1. Retrieve your local user's configuration resource:
+       1. Retrieve your local user's roles as a comma-separated list:
 
           ```code
-          $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+          $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
           ```
 
-       2. Edit `out.yaml`, adding `terraform-impersonator` to the list of existing roles:
-
-          ```diff
-            roles:
-             - access
-             - auditor
-             - editor
-          +  - terraform-impersonator 
-          ```
-
-       3. Apply your changes:
+       2. Edit your local user to add the new role:
 
           ```code
-          $ tctl create -f out.yaml
+          $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+            --set-roles "${ROLES?},terraform-impersonator"
           ```
 
-       4. Sign out of the Teleport cluster and sign in again to assume the new role.
+       3. Sign out of the Teleport cluster and sign in again to assume the new role.
      </Tab>
 
      <Tab title="GitHub">
@@ -384,9 +384,10 @@ To prepare credentials for a local Teleport user:
 
 To prepare a Terraform configuration file:
 
-1. Create a new file called `main.tf` and open it in an editor.
+1. Create a new file called `provider.tf` and open it in an editor.
 
-2. Define an example user and role using Terraform by pasting the following content into the `main.tf` file:
+2. Use the Teleport Terraform provider and connect it to your Teleport cluster
+   by pasting the following content into the `provider.tf` file:
 
    <Tabs>
      <Tab title="Cloud-Hosted">
@@ -406,72 +407,19 @@ To prepare a Terraform configuration file:
          identity_file_path = "terraform-identity"
        }
 
-       resource "teleport_role" "terraform-test" {
+       # creates a test role, if we don't declare resources, Terraform won't try to
+       # connect to Teleport and we won't be able to validate the setup.
+       resource "teleport_role" "test" {
+         version = "v7"
          metadata = {
-           name        = "terraform-test"
-           description = "Terraform test role"
+           name        = "test"
+           description = "Dummy role to validate Terraform Provider setup"
            labels = {
-             example = "yes"
+             test = "yes"
            }
          }
 
          spec = {
-           options = {
-             forward_agent           = false
-             max_session_ttl         = "30m"
-             port_forwarding         = false
-             client_idle_timeout     = "1h"
-             disconnect_expired_cert = true
-             permit_x11_forwarding   = false
-             request_access          = "denied"
-           }
-
-           allow = {
-             logins = ["this-user-does-not-exist"]
-
-             rules = [
-               {
-                 resources = ["user", "role"]
-                 verbs     = ["list"]
-               }
-             ]
-
-             request = {
-               roles = ["example"]
-               claims_to_roles = [
-                 {
-                   claim = "example"
-                   value = "example"
-                   roles = ["example"]
-                 }
-               ]
-             }
-
-             node_labels = {
-               key    = ["example"]
-               alabel = ["with", "multiple", "values"]
-             }
-           }
-
-           deny = {
-             logins = ["anonymous"]
-           }
-         }
-       }
-
-       resource "teleport_user" "terraform-test" {
-         metadata = {
-           name        = "terraform-test"
-           description = "Test terraform user"
-           expires     = "2022-10-12T07:20:50Z"
-
-           labels = {
-             test = "true"
-           }
-         }
-
-         spec = {
-           roles = ["terraform-test"]
          }
        }
 
@@ -496,72 +444,19 @@ To prepare a Terraform configuration file:
          identity_file_path = "terraform-identity"
        }
 
-       resource "teleport_role" "terraform-test" {
+       # creates a test role, if we don't declare resources, Terraform won't try to
+       # connect to Teleport and we won't be able to validate the setup.
+       resource "teleport_role" "test" {
+         version = "v7"
          metadata = {
-           name        = "terraform-test"
-           description = "Terraform test role"
+           name        = "test"
+           description = "Dummy role to validate Terraform Provider setup"
            labels = {
-             example = "yes"
+             test = "yes"
            }
          }
 
          spec = {
-           options = {
-             forward_agent           = false
-             max_session_ttl         = "30m"
-             port_forwarding         = false
-             client_idle_timeout     = "1h"
-             disconnect_expired_cert = true
-             permit_x11_forwarding   = false
-             request_access          = "denied"
-           }
-
-           allow = {
-             logins = ["this-user-does-not-exist"]
-
-             rules = [
-               {
-                 resources = ["user", "role"]
-                 verbs     = ["list"]
-               }
-             ]
-
-             request = {
-               roles = ["example"]
-               claims_to_roles = [
-                 {
-                   claim = "example"
-                   value = "example"
-                   roles = ["example"]
-                 }
-               ]
-             }
-
-             node_labels = {
-               key    = ["example"]
-               alabel = ["with", "multiple", "values"]
-             }
-           }
-
-           deny = {
-             logins = ["anonymous"]
-           }
-         }
-       }
-
-       resource "teleport_user" "terraform-test" {
-         metadata = {
-           name        = "terraform-test"
-           description = "Test terraform user"
-           expires     = "2022-10-12T07:20:50Z"
-
-           labels = {
-             test = "true"
-           }
-         }
-
-         spec = {
-           roles = ["terraform-test"]
          }
        }
 
@@ -569,7 +464,7 @@ To prepare a Terraform configuration file:
      </Tab>
    </Tabs>
 
-## Step 3/3. Apply the configuration
+## Step 3/3. Validate the configuration
 
 To apply the configuration:
 
@@ -577,11 +472,11 @@ To apply the configuration:
 
    ```code
    $ ls
-   # main.tf  terraform-identity  terraform-impersonator.yaml  terraform.yaml
+   # provider.tf  terraform-identity  terraform-impersonator.yaml  terraform.yaml
    ```
 
-2. Initialize the working directory that contains Terraform configuration files by running the
-   following command:
+2. Initialize the working directory that contains Terraform configuration files
+   by running the following command:
 
    ```code
    $ terraform init
@@ -596,5 +491,7 @@ To apply the configuration:
 
 ## Next steps
 
+- Follow [the user and role IaC guide](/docs/management/dynamic-resources/user-and-role) to use the Terraform
+  Provider to create Teleport users and grant them roles.
 - Explore the full list of supported [Terraform provider resources](/docs/reference/terraform-provider).
 - Read more about [impersonation](/docs/access-controls/guides/impersonation).

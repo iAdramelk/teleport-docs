@@ -15,7 +15,7 @@ Please [reach out to sales](https://goteleport.com/signup/enterprise) to discuss
 
 [Reach out to sales](https://goteleport.com/signup/enterprise) to discuss pricing.
 
-### If I start with Teleport Enterprise Cloud, can I move to Teleport Enterprise or Teleport Open Source, or do I need to start again?
+### If I start with Teleport Enterprise Cloud, can I move to Teleport Enterprise or Teleport Community Edition, or do I need to start again?
 
 If you plan to use S3 and DynamoDB as storage backends, we can provide data for you to import. But you should reach out to us first. If you use a different backend, you will need to start over.
 
@@ -109,7 +109,7 @@ command and Enterprise will be in the output.
 
 ```code
 $ teleport version
-# Teleport Enterprise v15.0.0-dev go1.21
+# Teleport Enterprise v15.0.2 go1.21
 ```
 
 Teleport Community Edition clusters should use the Teleport Community Edition releases. The `teleport version`
@@ -117,7 +117,7 @@ command will only include Teleport in its output for those releases.
 
 ```code
 $ teleport version
-# Teleport v15.0.0-dev go1.21
+# Teleport v15.0.2 go1.21
 ```
 
 See the [Installation](/docs/installation) guide for details on installing to specific platforms
@@ -141,7 +141,7 @@ Find the appropriate download at [Teleport Enterprise Cloud Downloads](/docs/cho
 After downloading the tools, first log in to your cluster using `tsh`, then use `tctl` remotely:
 
 ```code
-$ tsh login --proxy=myinstance.teleport.sh
+$ tsh login --proxy=example.teleport.sh
 $ tctl status
 ```
 
@@ -159,6 +159,10 @@ $ tctl tokens add --type=node
 ### Is there a way to forward Teleport Enterprise Cloud audit events to my company's internal Security Information and Event Management (SIEM)?
 
 Yes. We recommend Teleport's [event handler plugin](/docs/management/export-audit-events/fluentd) to export Teleport Enterprise Cloud audit events.
+
+### Is it possible to store audit logs and session recordings in my own S3 bucket?
+
+Yes, you can configure [External Audit Storage](/docs/choose-an-edition/teleport-cloud/external-audit-storage).
 
 ### Is it possible to enable proxy recording mode?
 
@@ -183,14 +187,13 @@ described in [Teleport Upcoming Releases](/docs/upcoming-releases).
   during your scheduled maintenance window.
 - Teleport agents are only updated automatically if you enroll them in automatic updates.
 
-If you have Teleport agents connected to a Teleport Team or Teleport Enterprise cluster that are
-more than one major version behind, you might experience compatibility issues unless your agents
-are enrolled in automatic updates.
+If you have Teleport agents connected to a Teleport Team or Teleport Enterprise
+cluster that are more than one major version behind, you might experience
+compatibility issues unless your agents are enrolled in automatic updates. See
+the [Upgrading Overview](/docs/upgrading/overview) for more information.
 
 To get version information for your agents, see [How can I find version information on
 connected agents?](#how-can-i-find-version-information-on-connected-agents).
-For information about enrolling in automatic agent updates, see [Enroll an agent into automatic
-updates](/docs/management/operations/enroll-agent-into-automatic-updates).
 
 For more information about automatic updates and compatibility issues, contact
 [Teleport support](https://goteleport.com/support/).
@@ -198,7 +201,7 @@ For more information about automatic updates and compatibility issues, contact
 ### Are updates times configurable for Teleport Enterprise Cloud?
 
 Yes, Teleport provides a scheduled maintenance time window for updates and you can set
-the start time for the maintenance window that works best for your organization. The\
+the start time for the maintenance window that works best for your organization. The
 scheduled maintenance windows applies for all updates, including patches and agent updates
 for all Teleport Cloud accounts. Updates for your cluster won't start earlier than the
 maintenance window start time you set.
@@ -216,15 +219,19 @@ new releases.
 
 ### When are agents automatically updated?
 
-Teleport Team and Teleport Enterprise must be set to receive automatic updates
+Teleport Team and Teleport Enterprise Cloud must be set to receive automatic updates
 to use the Teleport Cloud version server for automatic agent updates. With automatic
 agent updates, agents periodically check the version server for new releases and
 update the software when new versions are found.
 
 If you enroll in automatic agent updates, Teleport agents are automatically
 updated after your Teleport cluster is updated during your scheduled maintenance
-period. For information about enrolling in automatic agent updates, see [Enroll an
-agent into automatic updates](/docs/management/operations/enroll-agent-into-automatic-updates).
+period. For more information, read one of the following guides:
+
+- [Upgrading Teleport Cloud Agents on
+  Kubernetes](/docs/upgrading/cloud-kubernetes)
+- [Upgrading Teleport Cloud Agents on
+  Linux Servers](/docs/upgrading/cloud-linux)
 
 ### How can I find version information on connected agents?
 
@@ -246,8 +253,8 @@ Below you can see sample output of `tctl get nodes --format=text`. Note the
 $ tctl get nodes --format=text
 Host     UUID                                 Public Address Labels Version
 -------- ------------------------------------ -------------- ------ ----------
-server01 46d8cad0-8967-4815-a01a-77aae62c34fe 127.0.0.1:3022        12.0.0
-server02 c33b5513-a9eb-463b-8f1b-1f209afe5b4f 127.0.0.1:3122        12.0.0
+server01 46d8cad0-8967-4815-a01a-77aae62c34fe                       15.0.2
+server02 c33b5513-a9eb-463b-8f1b-1f209afe5b4f                       15.0.2
 ```
 
 ## Architecture and networking
@@ -256,10 +263,10 @@ server02 c33b5513-a9eb-463b-8f1b-1f209afe5b4f 127.0.0.1:3122        12.0.0
 
 Teleport Enterprise Cloud allocates a different set of ports to each tenant. To see which
 ports are available for your Teleport Enterprise Cloud tenant, run a command similar to the
-following, replacing `mytenant.teleport.sh` with your tenant domain:
+following, replacing `example.teleport.sh` with your tenant domain:
 
 ```code
-$ curl https://mytenant.teleport.sh/webapi/ping | jq '.proxy'
+$ curl https://example.teleport.sh/webapi/ping | jq '.proxy'
 ```
 
 The output should resemble the following, including the unique ports assigned to
@@ -269,20 +276,20 @@ your tenant:
 {
   "kube": {
     "enabled": true,
-    "public_addr": "mytenant.teleport.sh:11107",
+    "public_addr": "example.teleport.sh:11107",
     "listen_addr": "0.0.0.0:3026"
   },
   "ssh": {
     "listen_addr": "[::]:3023",
     "tunnel_listen_addr": "0.0.0.0:3024",
-    "public_addr": "mytenant.teleport.sh:443",
-    "ssh_public_addr": "mytenant.teleport.sh:11105",
-    "ssh_tunnel_public_addr": "mytenant.teleport.sh:11106"
+    "public_addr": "example.teleport.sh:443",
+    "ssh_public_addr": "example.teleport.sh:11105",
+    "ssh_tunnel_public_addr": "example.teleport.sh:11106"
   },
   "db": {
-    "postgres_public_addr": "mytenant.teleport.sh:11109",
+    "postgres_public_addr": "example.teleport.sh:11109",
     "mysql_listen_addr": "0.0.0.0:3036",
-    "mysql_public_addr": "mytenant.teleport.sh:11108"
+    "mysql_public_addr": "example.teleport.sh:11108"
   },
   "tls_routing_enabled": true
 }
@@ -294,7 +301,7 @@ SSH Service) are routed through the Proxy Service's public web address, rather
 than through a port allocated to that service.
 
 In this case, you can see that TLS routing is enabled, and that the Proxy
-Service's public web address (`ssh.public_addr`) is `mytenant.teleport.sh:443`.
+Service's public web address (`ssh.public_addr`) is `example.teleport.sh:443`.
 
 Read more in our [TLS Routing](/docs/architecture/tls-routing) guide.
 
@@ -306,8 +313,8 @@ certificate or use a custom domain name.
 
 ### Where does Teleport Enterprise Cloud run?
 
-Teleport Enterprise Cloud is deployed within AWS, using S3 and DynamoDB for storage with AWS-managed encryption keys. All data is currently hosted in us-west-2.
-Currently there is no option to select an alternative region for storage.
+Teleport Cloud runs on Amazon Web Services (AWS). We run proxies in a variety
+of regions all over the world, and allow customers to [select the region](/docs/choose-an-edition/teleport-cloud/architecture#auth-service) where the data is stored.
 
 ### Are you using AWS-managed encryption keys, or CMKs via KMS?
 
@@ -315,8 +322,10 @@ We use AWS-managed keys. Currently there is no option to provide your own key.
 
 ### Is this Teleport's S3 bucket, or my bucket based on my AWS credentials?
 
-It's a Teleport-managed S3 bucket with AWS-managed keys.
-Currently there is no way to provide your own bucket.
+It's a Teleport-managed S3 bucket with AWS-managed keys by default.
+
+Configuring [External Audit Storage](/docs/choose-an-edition/teleport-cloud/external-audit-storage) will allow
+you to use your own S3 bucket.
 
 ### Is IPv6 Supported for connections to Teleport Enterprise Cloud?
 

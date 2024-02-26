@@ -43,14 +43,14 @@ joining the cluster.
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       ```code
       $ tctl version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
       ```
 
       See [Installation](/docs/ver/14.x/installation) for details.
@@ -60,43 +60,35 @@ joining the cluster.
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 - An AWS EC2 instance to host a Teleport process, with the Teleport binary
   installed. The host should not have an existing data dir (`/var/lib/teleport`
   by default). Remove the data directory if this instance has previously joined
@@ -108,7 +100,7 @@ The Teleport Auth Service needs permission to call `ec2:DescribeInstances` in or
 that the EC2 instances attempting to join your cluster are legitimate and
 currently running.
 
-### Step 1.1. Create the IAM policy
+### Create the IAM policy
 
 Create the following AWS IAM policy named `teleport-DescribeInstances-policy` in
 your account:
@@ -126,7 +118,7 @@ your account:
 }
 ```
 
-### Step 1.2. Attach the IAM policy
+### Attach the IAM policy
 
 If your Teleport Auth Service is running on an EC2 instance and already has an
 attached "IAM role for Amazon EC2", add the above
@@ -155,7 +147,7 @@ configured in your AWS joining token.
 Create the following `token.yaml` with an `allow` rule specifying your AWS
 account and the AWS regions in which your EC2 instances will run.
 
-```
+```yaml
 # token.yaml
 kind: token
 version: v2
@@ -239,7 +231,7 @@ have permissions to assume an IAM role in each of those accounts and call
 
 In each AWS account where your EC2 instances will be running:
 
-1. Create the `teleport-DescribeInstances-policy` from [Step 1.1](#step-11-create-the-iam-policy).
+1. Create the `teleport-DescribeInstances-policy` from [Step 1.1](#create-the-iam-policy).
 
 2. Create an IAM role `teleport-DescribeInstances-role` that can be assumed from
    the account where your Teleport Auth Service is running.
@@ -248,7 +240,7 @@ In each AWS account where your EC2 instances will be running:
    trusted entity", select "Another AWS account" and enter the AWS Account ID of
    the account where your Teleport Auth Service is running.
 
-   Attach the `teleport-DescribeInstances-policy` to the role.
+3. Attach the `teleport-DescribeInstances-policy` to the role.
 
 In the AWS account where your Teleport Auth Service is running:
 
@@ -273,8 +265,8 @@ In the AWS account where your Teleport Auth Service is running:
 }
 ```
 
-2. Attach this `teleport-AssumeRole-policy` to the IAM role your Teleport Auth
-   Service has credentials for, see [Step 1.2](#step-12-attach-the-iam-policy).
+1. Attach this `teleport-AssumeRole-policy` to the IAM role your Teleport Auth
+   Service has credentials for, see [Step 1.2](#attach-the-iam-policy).
 
 When creating the AWS joining token, include an allow rule for each foreign
 account and specify the AWS ARN for the foreign

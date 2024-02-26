@@ -6,7 +6,11 @@ version: '14.x'
 
 Dynamic database registration allows Teleport administrators to register new
 databases (or update/unregister existing ones) without having to update the
-static configuration and restarting Teleport Database Service instances.
+static configuration and restart Teleport Database Service instances.
+
+Dynamic registration also enables administrators to deploy multiple Database
+Service instances for [high availability](/docs/ver/14.x/database-access/guides/ha) by configuring Database
+Service replicas to watch for the same database resources.
 
 To enable dynamic registration, include a `resources` section in your Teleport
 Database Service configuration with a list of resource label selectors you'd like this
@@ -31,7 +35,22 @@ resources:
 - labels:
     "env": "test"
     "engine": "mysql"
+  aws:
+    # Optional AWS role that the Database Service will assume to access
+    # this database.
+    assume_role_arn: ""
+    # Optional AWS external ID that the Database Service will use to assume
+    # a role in an external AWS account.
+    external_id: ""
 ```
+
+By default, the Database Service authenticates with the database servers using
+the IAM identity assigned to the host running it or the `assume_role_arn` field
+defined in the dynamic resources.
+
+You can use `aws.assume_role_arn` to overwrite the IAM identity. If the role
+requires an external ID, use `aws.external_id`. The IAM identity assigned to
+the host must be able to assume the specified role.
 
 Next define a database resource:
 
@@ -82,30 +101,22 @@ To create a database resource, run:
 $ tctl create database.yaml
 ```
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 After the resource has been created, it will appear among the list of available
 databases (in `tsh db ls` or UI) as long as at least one Database Service
@@ -125,3 +136,13 @@ To delete a database resource, run:
 ```code
 $ tctl rm db/example
 ```
+
+Aside from `tctl`, dynamic resources can also be added by:
+
+- [AWS Discovery](/docs/ver/14.x/database-access/guides/aws-discovery)
+- [Terraform Provider](/docs/ver/14.x/management/dynamic-resources/terraform-provider)
+- [Kubernetes Operator](/docs/ver/14.x/management/dynamic-resources/teleport-operator)
+- [Teleport API](/docs/ver/14.x/api/introduction)
+
+See [Using Dynamic Resources](/docs/ver/14.x/management/dynamic-resources) to learn
+more about managing Teleport's dynamic resources in general.

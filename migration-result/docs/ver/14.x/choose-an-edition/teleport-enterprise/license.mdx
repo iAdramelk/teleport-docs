@@ -24,15 +24,24 @@ your license file.
 
 ### Download your license file
 
-Teleport provides a dedicated account site where you can download your license and
-enterprise binaries, and maintain users' access to your license.
+Teleport provides a dedicated account dashboard where you can generate your
+license and download enterprise binaries.
 
-To obtain your license file navigate to your Teleport account site and log in.
-You can start at [teleport.sh](https://teleport.sh) and enter your
-Teleport account name (e.g. my-license). After logging in
-you will see the "DOWNLOAD LICENSE KEY" button to download the license file.
+To obtain your license file, navigate to your Teleport account dashboard and log
+in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+account name (e.g. my-company). After logging in you will see a "GENERATE
+LICENSE KEY" button, which will generate a new license file and allow you to
+download it.
 
-![License File modal](/assets/license-fe80b12ff0.png)
+<Tip>
+  A new license file is produced each time you repeat this procedure.
+  It is important that you download the license file once and use the
+  same license across all of your clusters. This will ensure that your
+  subscription limits apply across all Teleport clusters and that you
+  are not double-counted.
+</Tip>
+
+![License File modal](/assets/license-23cee352ae.png)
 
 The Teleport license file contains an X.509 certificate and the corresponding
 private key in PEM format.

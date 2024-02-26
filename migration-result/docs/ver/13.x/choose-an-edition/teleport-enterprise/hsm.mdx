@@ -8,31 +8,39 @@ version: '13.x'
 This guide will show you how to set up the Teleport Auth Service to use a
 hardware security module (HSM) to store and handle private keys.
 
-This guide is intended for Teleport Enterprise users.
-
 ## Prerequisites
 
-- Teleport v13.2.0 Enterprise (self-hosted).
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Teleport v13.4.16 Enterprise (self-hosted).
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 - An HSM reachable from your Teleport auth server.
 - The PKCS#11 module for your HSM.
 
@@ -244,7 +252,7 @@ to use.
        `yubihsm-connector` is listening on and enable debug logging:
 
        ```text
-       # /etc/yubishm_pkcs11.conf
+       # /etc/yubihsm_pkcs11.conf
        connector = https://127.0.0.1:12345
        debug
        ```
@@ -339,7 +347,7 @@ route any traffic to the auth server where the HSM is currently being added.
 
 When adding a new HSM to an existing Teleport cluster, or adding a new
 HSM-connected Auth server to an HA Teleport cluster, you will need to rotate all
-Certificate Authorities in order for new certificates to by issued and
+Certificate Authorities in order for new certificates to be issued and
 trusted.
 
 `tctl status` will print a warning if CA rotation is required:
@@ -348,14 +356,14 @@ trusted.
 $ tctl status
 WARNING: One or more auth servers has a newly added or removed HSM or KMS configured. You should not route traffic to that server until a CA rotation has been completed.
 Cluster      cluster-one
-Version      13.0.0-alpha.1
+Version      13.4.16
 host CA      never updated
 user CA      never updated
 db CA        never updated
 openssh CA   never updated
 jwt CA       never updated
 saml_idp CA  never updated
-CA pin       sha256:29afff5a1c1231375525b8a9b98ea7a44a760b7e65de3ca2e04d72db39b1672b
+CA pin       sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
 CA pin       sha256:e758c8f0f6cd95116d5da8171e0ff4adfa99dab3b1f171bfe854070884955524
 ```
 

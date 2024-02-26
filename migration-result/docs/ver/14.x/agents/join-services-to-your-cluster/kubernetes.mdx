@@ -64,20 +64,14 @@ metadata:
   expires: "2050-01-01T00:00:00Z"
 spec:
   # Use the minimal set of system roles required.
-  # Common roles are:
-  # - "Node" for SSH Service
-  # - "Proxy" for Proxy Service
-  # - "Kube" for Kubernetes Service
-  # - "App" for Application Service
-  # - "Db" for Database Service
-  # - "WindowsDesktop" for Windows Desktop Service
-  # - "Discovery" for Discovery Service
   roles: [App]
 
   # set the join method allowed for this token
   join_method: kubernetes
-
+  
   kubernetes:
+    # If type is not specified, it defaults to in_cluster
+    type: in_cluster
     allow:
       # Service account names follow the format "namespace:serviceaccountname".
       - service_account: "teleport-agent:teleport-app-service"
@@ -204,7 +198,7 @@ following content:
 proxyAddr: "teleport.example.com:443"
 
 # Comma-separated list of services the `teleport-kube-agent` chart must run
-# (supported values are: kube,db,app)
+# (supported values are: kube,db,app,discovery)
 # In this guide we only deploy app access.
 # Adding more services here also requires to add role to the provision token created in step 1.
 roles: app

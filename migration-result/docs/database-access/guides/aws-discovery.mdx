@@ -24,7 +24,7 @@ discover AWS-hosted databases automatically.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -33,11 +33,11 @@ discover AWS-hosted databases automatically.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -46,7 +46,7 @@ discover AWS-hosted databases automatically.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -55,11 +55,11 @@ discover AWS-hosted databases automatically.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -69,7 +69,7 @@ discover AWS-hosted databases automatically.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -79,11 +79,11 @@ discover AWS-hosted databases automatically.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -93,7 +93,7 @@ discover AWS-hosted databases automatically.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -102,11 +102,11 @@ discover AWS-hosted databases automatically.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -278,7 +278,9 @@ or manual mode:
   IAM role that is used for `assume_role_arn`.
 </Accordion>
 
-## Step 3/3. Start the Discovery Service
+## Step 4/4. Use the Discovery Service
+
+### Start the Discovery Service
 
 Configure the Discovery Service to start automatically when the host boots up by
 creating a systemd service for it. The instructions depend on how you installed
@@ -313,8 +315,22 @@ After the Discovery Service starts, database servers matching the tags and
 regions specified in the AWS section are added to the Teleport cluster
 automatically.
 
+### List registered databases
+
 You can list them with the `tctl get db` command or check a specific database
 with `tctl get db/<database-name>`.
+
+The default name of the discovered database includes the AWS resource ID,
+endpoint and matcher types, AWS region and account ID to ensure uniqueness, for
+example `my-postgres-rds-aurora-us-east-1-123456789012`.
+
+A discovered database with the default name also has a shorter display name
+that consists only the AWS resource ID and the endpoint type, for example
+`my-postgres`, `my-postgres-reader`. Either the full name or the display name
+can be used for `tctl` and `tsh` commands.
+
+You can override the default name by applying the `TeleportDatabaseName` AWS
+tag to the AWS database resource.
 
 ## Next
 

@@ -42,9 +42,7 @@ above.
    - A transient storage S3 bucket that temporarily holds the results of Athena
      queries.
 3. Currently it is a requirement that the AWS infrastructure is hosted in the
-   same AWS region as the Teleport Auth Service for your cluster. Historically
-   this has always been us-west-2, but new clusters may be deployed to other
-   regions in the future.
+   same AWS region as the Teleport Auth Service for your cluster.
 
 ## Step 1/2. Configure RBAC
 
@@ -74,7 +72,7 @@ spec:
 External Audit Storage is available as an integration in the management panel of
 the Teleport Web UI:
 
-![Screenshot of External Audit Storage integration tile](/assets/integration-046b475dd3.png)
+![Screenshot of External Audit Storage integration tile](/assets/integration-c97c89fae1.png)
 
 With External Audit Storage enabled, your Teleport Enterprise Cloud cluster acts
 as an OpenID Connect (OIDC) identity provider to authenticate to your

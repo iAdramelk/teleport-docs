@@ -206,6 +206,14 @@ Cloud user, and manage your own version server.
 You can override this to use your own Teleport Kube Agent Updater image rather
 than a Teleport-published image.
 
+### `updater.extraArgs`
+
+| Type   | Default value | Required? |
+| ------ | ------------- | --------- |
+| `list` | `[]`          | No        |
+
+`extraArgs` contains additional arguments to pass to the updater binary.
+
 ## `roleBindingName`
 
 | Type     | Default value | Required? |
@@ -304,10 +312,8 @@ These sub-values must be configured for the agent to connect to a cluster.
 `joinParams.method` defines which join method will be used to join the Teleport cluster.
 Possible values are `token`, `iam` and `ec2`.
 
-- For `iam`, see [Joining Nodes Via AWS IAM
-  Role](/docs/ver/14.x/agents/join-services-to-your-cluster/aws-iam).
-- For `ec2`, see [Joining Nodes Via AWS IAM
-  Role](/docs/ver/14.x/agents/join-services-to-your-cluster/aws-ec2).
+- For `iam`, see [Joining Nodes Via AWS IAM Role](/docs/ver/14.x/agents/join-services-to-your-cluster/aws-iam).
+- For `ec2`, see [Joining Nodes Via AWS EC2 Identity Document](/docs/ver/14.x/agents/join-services-to-your-cluster/aws-ec2).
 - For `token` (default value), the token must be provided through `joinParams.tokenName` or
   [through an existing Kubernetes Secret](#joinTokenSecret).
 
@@ -384,6 +390,56 @@ connecting to the cluster.
 kubeClusterName: my-gke-cluster
 ```
 
+## `kubernetesDiscovery`
+
+| Type   | Required? |
+| ------ | --------- |
+| `list` | No        |
+
+`kubernetesDiscovery` is a YAML list object detailing the Kubernetes App Discovery Configuration
+
+You can specify multiple discovery configurations by adding additional list elements.
+
+`values.yaml` example:
+
+```yaml
+kubernetesDiscovery:
+- types: ["app"]
+  namespaces: [ "toronto", "porto" ]
+  labels:
+    env: staging
+- types: ["app"]
+  namespaces: [ "seattle", "oakland" ]
+  labels:
+    env: testing
+```
+
+### `kubernetesDiscovery.types`
+
+| Type   | Required? |
+| ------ | --------- |
+| `list` | Yes       |
+
+`kubernetesDiscovery.types` is a list of Teleport resource types to be created
+from the discovered Kubernetes Services. Currently only supports `app`.
+
+### `kubernetesDiscovery.namespaces`
+
+| Type   | Default        | Required? |
+| ------ | -------------- | --------- |
+| `list` | All Namespaces | No        |
+
+`kubernetesDiscovery.namespaces` is a list of Kubernetes namespaces to be scanned for resources.
+
+### `kubernetesDiscovery.labels`
+
+| Type  | Default     | Required? |
+| ----- | ----------- | --------- |
+| `map` | `{"*":"*"}` | No        |
+
+`kubernetesDiscovery.labels` is a map of labels to be matched against the Kubernetes Services.
+Only Services with matching labels will be imported to Teleport.
+
 ## `apps`
 
 | Type   | Default value | Required?                                                                            |
@@ -443,7 +499,7 @@ appResources:
 </Tip>
 
 <Note>
-  For AWS database auto-discovery to work, your Database Service pods will need to use a role which has appropriate IAM permissions as per the [database documentation](/docs/ver/14.x/database-access/guides/rds#step-36-create-an-iam-policy-for-teleport).
+  For AWS database auto-discovery to work, your Database Service pods will need to use a role which has appropriate IAM permissions as per the [database documentation](/docs/ver/14.x/database-access/guides/rds#step-36-create-iam-policies-for-teleport).
 
   After configuring a role, you can use an `eks.amazonaws.com/role-arn` annotation with the `annotations.serviceAccount` value to associate it with the service account and grant permissions:
 
@@ -812,7 +868,7 @@ existingDataVolume: my-volume
 | ------ | -------------------------------------- |
 | `bool` | `true` for \< 1.23 `false` for >= 1.23 |
 
-By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/master/examples/chart/teleport-cluster/templates/psp.yaml).
+By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/v14/examples/chart/teleport-cluster/templates/psp.yaml).
 
 PodSecurityPolicy resources (PSP) have been removed in Kubernetes 1.25
 and replaced since 1.23 by PodSecurityAdmission (PSA). If you are running on
@@ -1087,6 +1143,45 @@ highAvailability:
   podDisruptionBudget:
     minAvailable: 1
 ```
+
+## `podMonitor`
+
+`podMonitor` controls [the PodMonitor CR (from monitoring.coreos.com/v1)
+](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.PodMonitor)
+that monitors the workload (Auth and Proxy Services) deployed by the chart.
+This custom resource configures Prometheus and makes it scrape Teleport metrics.
+
+The CRD is deployed by the prometheus-operator and allows workload to
+get monitored. You need to deploy the `prometheus-operator`
+in the cluster prior to configuring the `podMonitor` section of the chart. See
+[the prometheus-operator documentation](https://prometheus-operator.dev/docs/prologue/introduction/)
+for setup instructions.
+
+### `podMonitor.enabled`
+
+| Type   | Default value |
+| ------ | ------------- |
+| `bool` | `false`       |
+
+Whether the chart should deploy a `PodMonitor` resource. This is disabled by
+default as it requires the `PodMonitor` CRD to be installed in the cluster.
+
+### `podMonitor.additionalLabels`
+
+| Type                   | Default value              |
+| ---------------------- | -------------------------- |
+| `object[string]string` | `{"prometheus":"default"}` |
+
+Additional labels to put on the created PodMonitor Resource.
+Those labels are used to be selected by a specific Prometheus instance.
+
+### `podMonitor.interval`
+
+| Type     | Default value |
+| -------- | ------------- |
+| `string` | `30s`         |
+
+`interval` is the interval between two metrics scrapes by Prometheus.
 
 ## `clusterRoleName`
 
@@ -1642,6 +1737,24 @@ annotations:
     kubernetes.io/annotation: value
 ```
 
+## `annotations.secret`
+
+| Type     | Default value |
+| -------- | ------------- |
+| `object` | `{}`          |
+
+[Kubernetes reference](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+
+Kubernetes annotations which should be applied to the `Secret` created by the chart.
+
+`values.yaml` example:
+
+```yaml
+annotations:
+  secret:
+    kubernetes.io/annotation: value
+```
+
 ## `annotations.serviceAccount`
 
 | Type     | Default value |
@@ -1846,6 +1959,19 @@ securityContext:
   readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 9807
+```
+
+To unset the security context, set it to `null` or `~`.
+
+## `podSecurityContext`
+
+[Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+to set for the main Teleport container.
+Defaults to:
+
+```yaml
+podSecurityContext:
+  fsGroup: 9807
 ```
 
 To unset the security context, set it to `null` or `~`.

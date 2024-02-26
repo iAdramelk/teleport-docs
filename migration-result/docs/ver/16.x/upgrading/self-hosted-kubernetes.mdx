@@ -63,7 +63,7 @@ running on Kubernetes.
 
    ```code
    $ helm upgrade teleport-cluster teleport/teleport-cluster \
-     --version=15.0.0-dev \
+     --version=16.0.0-dev \
      --values=values.yaml
    ```
 
@@ -98,5 +98,5 @@ Run the following commands to upgrade Teleport agents running on Kubernetes.
    ```code
    $ helm -n teleport upgrade teleport-agent teleport/teleport-kube-agent \
      --values=values.yaml \
-     --version=15.0.0-dev
+     --version=16.0.0-dev
    ```

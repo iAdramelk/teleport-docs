@@ -49,7 +49,7 @@ $ kubectl version
 # Server Version: version.Info{Major:"1", Minor:"17+"}
 ```
 
-<Accordion title="Before you begin: read security tips">
+<Accordion title="Best practices for production security">
   When running Teleport in production, we recommend that you follow the
   practices below to avoid security incidents. These practices may differ from
   the examples used in this guide, which are intended for demo environments:
@@ -178,6 +178,10 @@ $ kubectl label namespace teleport 'pod-security.kubernetes.io/enforce=baseline'
 namespace/teleport labeled
 ```
 
+If you are running a self-hosted Teleport Enterprise cluster, you  will need to
+create a secret that contains your Teleport license information before you can
+install Teleport.
+
 Before you can install Teleport in your Kubernetes cluster, you will need to
 create a secret that contains your Teleport license information.
 
@@ -190,7 +194,7 @@ account name (e.g., `my-license`). After logging in, click
 the "DOWNLOAD LICENSE KEY" button to download your
 license file.
 
-![License File Download](/assets/license-fe80b12ff0.png)
+![License File Download](/assets/license-23cee352ae.png)
 
 Create a secret from your license file. Teleport will automatically discover
 this secret as long as your file is named `license.pem`.
@@ -265,23 +269,29 @@ If you're not migrating an existing Teleport cluster, you'll need to create a
 user to be able to log into Teleport. This needs to be done on the Teleport
 auth server, so we can run the command using `kubectl`:
 
-```code
-$ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor
 
-User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
-https://teleport.example.com:443/web/invite/91cfbd08bc89122275006e48b516cc68
+    User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
+    https://teleport.example.com:443/web/invite/91cfbd08bc89122275006e48b516cc68
 
-NOTE: Make sure teleport.example.com:443 points at a Teleport proxy that users can access.
-```
+    NOTE: Make sure teleport.example.com:443 points at a Teleport proxy that users can access.
+    ```
+  </Tab>
 
-```code
-$ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor,reviewer
+  <Tab title="Commercial">
+    ```code
+    $ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor,reviewer
 
-User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
-https://teleport.example.com:443/web/invite/91cfbd08bc89122275006e48b516cc68
+    User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
+    https://teleport.example.com:443/web/invite/91cfbd08bc89122275006e48b516cc68
 
-NOTE: Make sure teleport.example.com:443 points at a Teleport proxy that users can access.
-```
+    NOTE: Make sure teleport.example.com:443 points at a Teleport proxy that users can access.
+    ```
+  </Tab>
+</Tabs>
 
 <Note>
   If you didn't set up DNS for your hostname earlier, remember to replace
@@ -324,7 +334,7 @@ NOTE: Make sure teleport.example.com:443 points at a Teleport proxy that users c
   You must configure DNS properly using the methods described above for production workloads.
 </Warning>
 
-Load the user creation link to create a password and set up 2-factor
+Load the user creation link to create a password and set up multi-factor
 authentication for the Teleport user via the web UI.
 
 ## Uninstalling the Helm chart

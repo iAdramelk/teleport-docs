@@ -33,7 +33,7 @@ generate Teleport roles using Teleport's API client library.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/16.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
       See [Installation](/docs/ver/16.x/installation) for details.
 
@@ -42,11 +42,11 @@ generate Teleport roles using Teleport's API client library.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -55,7 +55,7 @@ generate Teleport roles using Teleport's API client library.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -64,11 +64,11 @@ generate Teleport roles using Teleport's API client library.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -78,7 +78,7 @@ generate Teleport roles using Teleport's API client library.
       [Getting Started](/docs/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      16.0.0-dev.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -88,11 +88,11 @@ generate Teleport roles using Teleport's API client library.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -102,7 +102,7 @@ generate Teleport roles using Teleport's API client library.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -111,17 +111,17 @@ generate Teleport roles using Teleport's API client library.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
 </Tabs>
 
-- Go version 1.21 or above installed on your workstation. See the
+- Go version 1.22 or above installed on your workstation. See the
   [Go download page](https://go.dev/dl/). You will not need to be familiar with
   Go to complete this guide, though Go knowledge is required if you want to
   build a production-ready Teleport client application.
@@ -157,7 +157,7 @@ installed on your workstation:
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -414,29 +414,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `sync-kubernetes-rbac-impersonator` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - sync-kubernetes-rbac-impersonator 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},sync-kubernetes-rbac-impersonator"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -607,7 +598,7 @@ $ helm install teleport-agent teleport/teleport-kube-agent \
   --create-namespace \
   --namespace=teleport-agent \
   --set labels.environment=demo \
-  --version 15.0.0-dev
+  --version 16.0.0-dev
 ```
 
 After a few seconds, verify that you have deployed the Teleport Kubernetes

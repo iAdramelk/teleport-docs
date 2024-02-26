@@ -108,6 +108,14 @@ db_service:
       # When this option is set the Database Agent doesn't try to check the MySQL server version.
       server_version: 8.0.28
 
+    # Optional admin user configuration for Automatic User Provisioning.
+    admin_user:
+      # Name of the admin user.
+      name: "teleport-admin"
+      #  Optional default database the admin user logs into. See individual
+      #  guides for default value.
+      default_database: "teleport"
+
     # Optional AWS configuration for AWS hosted databases. AWS region- and
     # service-specific configurations can usually be auto-detected from the
     # endpoint.
@@ -283,11 +291,22 @@ spec:
   # Database connection endpoint.
   uri: "localhost:5432"
 
-  # Optional CA for validating the database certificate.
-  ca_cert: |
-    -----BEGIN CERTIFICATE-----
-    ...
-    -----END CERTIFICATE-----
+  # Optional TLS configuration.
+  tls:
+    # TLS verification mode. Valid options are:
+    # 'verify-full' - performs full certificate validation (default).
+    # 'verify-ca' - the same as `verify-full`, but skips the server name validation.
+    # 'insecure' - accepts any certificate provided by database (not recommended).
+    mode: verify-full
+    # Optional database DNS server name. It allows to override the DNS name on
+    # a client certificate when connecting to a database.
+    # Use only with 'verify-full' mode.
+    server_name: db.example.com
+    # Optional CA for validating the database certificate.
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
 
   # Database admin user for automatic user provisioning.
   admin_user:

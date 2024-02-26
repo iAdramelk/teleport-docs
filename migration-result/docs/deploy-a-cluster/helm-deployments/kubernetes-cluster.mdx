@@ -94,7 +94,7 @@ cluster to Teleport.
     ```
   </Accordion>
 
-- The `tsh` client tool v15.0.0-dev+ installed on your workstation.
+- The `tsh` client tool v15.0.2+ installed on your workstation.
   You can download this from our [installation page](/docs/installation).
 
 - [Kubernetes](https://kubernetes.io) >= v1.17.0
@@ -140,7 +140,8 @@ chart.
    ```code
    $ helm repo add teleport https://charts.releases.teleport.dev
    ```
-   Update the cache of charts from the remote repository:
+   Update the cache of charts from the remote repository so you can upgrade to all
+   available releases:
    ```code
    $ helm repo update
    ```
@@ -190,13 +191,13 @@ chart.
        The Teleport Auth Service reads a license file to authenticate your Teleport
        Enterprise account.
 
-       To obtain your license file, navigate to your [Teleport
-       account](https://teleport.sh) and enter your
-       account name (e.g., `my-license`). After logging in, click
-       the "DOWNLOAD LICENSE KEY" button to download your
-       license file.
+       To obtain your license file, navigate to your Teleport account dashboard and log
+       in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+       account name (e.g. my-company). After logging in you will see a "GENERATE
+       LICENSE KEY" button, which will generate a new license file and allow you to
+       download it.
 
-       ![License File Download](/assets/license-fe80b12ff0.png)
+       ![License File Download](/assets/license-23cee352ae.png)
 
        Ensure that your license is saved to your terminal's working directory at
        the path `license.pem`.
@@ -229,7 +230,7 @@ chart.
    ```code
    $ helm install teleport-cluster teleport/teleport-cluster \
      --create-namespace \
-     --version 15.0.0-dev \
+     --version 15.0.2 \
      --values teleport-cluster-values.yaml
    ```
 
@@ -300,7 +301,7 @@ Obtain the address of your load balancer by following the instructions below.
 
    ```code
    $ curl https://clusterName/webapi/ping
-   {"auth":{"type":"local","second_factor":"on","preferred_local_mfa":"webauthn","allow_passwordless":true,"allow_headless":true,"local":{"name":""},"webauthn":{"rp_id":"teleport.example.com"},"private_key_policy":"none","device_trust":{},"has_motd":false},"proxy":{"kube":{"enabled":true,"listen_addr":"0.0.0.0:3026"},"ssh":{"listen_addr":"[::]:3023","tunnel_listen_addr":"0.0.0.0:3024","web_listen_addr":"0.0.0.0:3080","public_addr":"teleport.example.com:443"},"db":{"mysql_listen_addr":"0.0.0.0:3036"},"tls_routing_enabled":false},"server_version":"15.0.0-dev","min_client_version":"12.0.0","cluster_name":"teleport.example.com","automatic_upgrades":false}
+   {"auth":{"type":"local","second_factor":"on","preferred_local_mfa":"webauthn","allow_passwordless":true,"allow_headless":true,"local":{"name":""},"webauthn":{"rp_id":"teleport.example.com"},"private_key_policy":"none","device_trust":{},"has_motd":false},"proxy":{"kube":{"enabled":true,"listen_addr":"0.0.0.0:3026"},"ssh":{"listen_addr":"[::]:3023","tunnel_listen_addr":"0.0.0.0:3024","web_listen_addr":"0.0.0.0:3080","public_addr":"teleport.example.com:443"},"db":{"mysql_listen_addr":"0.0.0.0:3036"},"tls_routing_enabled":false},"server_version":"15.0.2","min_client_version":"12.0.0","cluster_name":"teleport.example.com","automatic_upgrades":false}
    ```
 
 ## Step 2/2. Create a local user
@@ -312,6 +313,8 @@ down.
 To demonstrate how to create a local user and authenticate to Teleport in order
 to access your Kubernetes cluster, let's create a local user who has access to
 Kubernetes group `system:masters` via the Teleport role `member`.
+
+Paste the following role specification into a file called `member.yaml`:
 
 ```yaml
 kind: role
@@ -337,7 +340,8 @@ spec:
    role 'member' has been created
    ```
 
-2. Create the user and generate an invite link:
+2. Create the user and generate an invite link, replacing MYUSER
+   with the name of the local Teleport user you want to create:
 
    ```code
    $ kubectl exec -ti deployment/teleport-cluster-auth -- tctl users add myuser --roles=member

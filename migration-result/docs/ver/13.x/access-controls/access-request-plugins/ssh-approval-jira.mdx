@@ -1,5 +1,5 @@
 ---
-title: Access Requests using Jira and Teleport
+title: Run the Jira Access Request Plugin
 description: How to configure Access Request approval using Jira and Teleport
 version: '13.x'
 ---
@@ -8,23 +8,40 @@ This guide will talk through how to set up Teleport with Jira. Teleport's Jira
 integration allows you to treat Teleport access and permission requests using
 Jira tickets.
 
+<Accordion title="This integration is hosted on Teleport Cloud">
+  In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Jira integration for
+  you, and you can enroll the Jira integration from the Teleport Web UI.
+
+  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
+  screen. Select the **Management** option.
+
+  On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
+  Integration" page:
+
+  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+
+  On the "Select Integration Type" menu, click the tile for your integration. You
+  will see a page with instructions to set up the integration, as well as a form
+  that you can use to configure the integration.
+</Accordion>
+
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -33,41 +50,51 @@ Jira tickets.
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
 - Jira Server or Jira Cloud installation with an owner privileges, specifically
   to set up webhooks, issue types, and workflows
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Step 1/6. Create a user and role for access
 
@@ -111,8 +138,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -220,9 +248,9 @@ You'll need the project Jira key to configure the plugin.
 
 Create a new board for tasks in the permission management project. The board has to have at least these three columns:
 
-1. Pending
-2. Approved
-3. Denied
+- Pending
+- Approved
+- Denied
 
 Teleport's Jira plugin will create a new issue for each new permission request in the first available column on the board. When you drag the request task to the Approved column in Jira, the request will be approved. If you drag the request task to the Denied column in Jira, the request will be denied.
 
@@ -250,47 +278,77 @@ In the webhook settings page, make sure that the webhook will only send Issue Up
 
 ## Step 4/6. Install the plugin
 
-We recommend installing Teleport plugins alongside the Teleport Proxy. This is an ideal
-location as plugins have a low memory footprint, and will require both public internet access
-and Teleport Auth Service access.
-
 <Tabs>
   <Tab title="Download">
+    We currently only provide `linux-amd64` binaries. You can also compile these
+    plugins from source. You can run the plugin from a remote host or your local
+    development machine.
+
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-jira-v13.2.0-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-jira-v13.2.0-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-access-jira-v13.3.8-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-jira-v13.3.8-linux-amd64-bin.tar.gz
     $ cd teleport-access-jira
-    $ ./install
+    $ sudo ./install
+    ```
+
+    Make sure the binary is installed:
+
+    ```code
+    $ teleport-jira version
+    teleport-jira v13.3.8 git:teleport-jira-v13.3.8-fffffffff go1.21
     ```
   </Tab>
 
-  <Tab title="From Source">
-    To install from source you need `git` and `go` installed. If you do not have Go installed, visit the Go [downloads page](https://go.dev/dl/).
+  <Tab title="Docker Image">
+    We currently only provide Docker images for `linux-amd64`.
+    Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    # Checkout teleport-plugins
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-jira:13.3.8
+    ```
+
+    Make sure the plugin is installed by running the following command:
+
+    ```code
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-jira:13.3.8 version
+    teleport-jira v13.3.8 git:teleport-jira-v13.3.8-fffffffff 1.21
+    ```
+
+    For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-jira).
+  </Tab>
+
+  <Tab title="From Source">
+    To install from source you need `git` and `go` installed. If you do not have Go
+    installed, visit the Go [downloads page](https://go.dev/dl/).
+
+    ```code
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/jira
     $ make
     ```
 
-    Run `./install` from `teleport-jira` or place the executable in `/usr/bin` or `/usr/local/bin` on the server installation.
-  </Tab>
+    Move the `teleport-jira` binary into your PATH.
 
-  <Tab title="Docker">
+    Make sure the binary is installed:
+
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-jira:13.2.0
+    $ teleport-jira version
+    teleport-jira v13.3.8 git:teleport-jira-v13.3.8-fffffffff go1.21
     ```
   </Tab>
 
   <Tab title="Helm Chart">
-    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+    {/*TODO: Replace this with the following partial once we fix
+    gravitational/docs#299:
+    docs/pages/kubernetes-access/helm/includes/helm-repo-add.mdx*/}
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
     ```code
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
-    To update the cache of charts from the remote repository, run `helm repo update`:
+    Update the cache of charts from the remote repository:
 
     ```code
     $ helm repo update
@@ -387,10 +445,10 @@ plugin to Teleport.
 
 The `[jira]` section requires a few things:
 
-1. Your Jira Cloud or Jira Server URL. For Jira Cloud, it looks something like `yourcompany.atlassian.net`.
-2. Your username on Jira, i.e. [ben@goteleport.com](mailto:ben@goteleport.com)
-3. Your Jira API token that you've created above.
-4. A Jira Project key, available in Project settings.
+- Your Jira Cloud or Jira Server URL. For Jira Cloud, it looks something like `yourcompany.atlassian.net`.
+- Your username on Jira, i.e. [ben@goteleport.com](mailto:ben@goteleport.com)
+- Your Jira API token that you've created above.
+- A Jira Project key, available in Project settings.
 
 The `[http]` setting block describes how the plugin's HTTP server works. The HTTP server is responsible for listening for updates from Jira, and processing updates, like when someone drags a task from Inbox to Approved column.
 
@@ -412,7 +470,7 @@ You should be able to run the Teleport plugin now!
     ```code
     $ helm install teleport-plugin-jira teleport/teleport-plugin-jira \
       --values teleport-jira-helm.yaml \
-      --version 13.2.0
+      --version 13.3.8
     ```
   </Tab>
 </Tabs>
@@ -454,10 +512,6 @@ Save this as `teleport-jira.service`. Make sure the `teleport-jira start` comman
 
 The plugin will let anyone with access to the Jira board approve/deny requests so it's
 important to review Teleport's audit log.
-
-## Feedback
-
-If you have any issues with this plugin please create an [issue here](https://github.com/gravitational/teleport-plugins/issues/new).
 
 ## Next steps
 

@@ -1,0 +1,857 @@
+---
+title: Database Access with Vitess (MySQL protocol)
+description: How to configure Teleport database access for Vitess (MySQL protocol)
+version: '14.x'
+---
+
+Teleport can provide secure access to Vitess via the  [Teleport Database
+Service](/docs/ver/14.x/database-access/introduction). This allows for
+fine-grained access control through [Teleport's RBAC](/docs/ver/14.x/database-access/rbac).
+
+In this guide, you will:
+
+1. Configure an Vitess database (MySQL protocol) with mutual TLS authentication.
+2. Join the Vitess database to your Teleport cluster.
+3. Connect to the Vitess database via the Teleport Database Service.
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ![Teleport Database Access Vitess Self-Hosted](/assets/vitess_selfhosted-89fbbb240b.png)
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ![Teleport Database Access Vitess Cloud](/assets/vitess_cloud-714eab1738.png)
+  </Tab>
+</Tabs>
+
+<Note>
+  Accessing Vitess using the gRPC protocol is not currently supported by
+  Teleport.
+</Note>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/ver/14.x/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+
+      See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- A self-hosted Vitess instance.
+- A host, e.g., an Amazon EC2 instance, where you will run the Teleport Database
+  Service.
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.3.6
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/4. Create the Teleport Database Token
+
+The Database Service requires a valid auth token to connect to the cluster. Generate
+one by running the following command against your Teleport Auth Service and save
+it in `/tmp/token` on the node that will run the Database Service:
+
+```code
+$ tctl tokens add --type=db
+```
+
+## Step 2/4. Create a certificate/key pair
+
+Teleport uses mutual TLS authentication with self-hosted databases. These
+databases must be configured with Teleport's certificate authority to be
+able to verify client certificates. They also need a certificate/key pair that
+Teleport can verify.
+
+If you are using Teleport Cloud, your Teleport user must be allowed to
+impersonate the system role `Db` in order to be able to generate the database
+certificate.
+
+Include the following `allow` rule in in your Teleport Cloud user's role:
+
+```yaml
+allow:
+  impersonate:
+    users: ["Db"]
+    roles: ["Db"]
+```
+
+From your local workstation, create the secrets:
+
+```code
+# Export Teleport's certificate authority and generate certificate/key pair
+# for host db.example.com with a 3-month validity period.
+$ tctl auth sign --format=db --host=db.example.com --out=server --ttl=2190h
+```
+
+In this example, `db.example.com` is the hostname where the Teleport Database
+Service can reach the Vitess server.
+
+<Note>
+  We recommend using a shorter TTL, but keep mind that you'll need to update the
+  database server certificate before it expires to not lose the ability to
+  connect. Pick the TTL value that best fits your use-case.
+</Note>
+
+The command will create 3 files: `server.cas`, `server.crt` and `server.key`
+which you'll need to enable mutual TLS.
+
+## Step 3/4. Configure Vitess
+
+<Tabs>
+  <Tab title="Kubernetes operator">
+    If you are running your Vitess cluster using a [Vitess Operator for Kubernetes](https://vitess.io/docs/18.0/get-started/operator/),
+    as a first step copy the contents of files `server.cas`, `server.crt` and `server.key` into a secret containing the cluster configuration.
+
+    ```yaml
+    ---
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: example-cluster-config
+    type: Opaque
+    stringData:
+      server.cas: |
+        -----BEGIN CERTIFICATE-----
+        MIIDlDCCAnygAwIBAgIQcCge3zdTWnA7isWitaG5yzANBgkqhkiG9w0BAQsFADBk
+        ...
+        jtOP8B0/0xc=
+        -----END CERTIFICATE-----
+      server.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIDqjCCApKgAwIBAgIRAKq0OQqYIx3pbkSVpIgMooowDQYJKoZIhvcNAQELBQAw
+        ...
+        aRWuAdb7KYfHgZgC+k5jiFS9MYPbOc3qMK6KwGAU
+        -----END CERTIFICATE-----
+      server.key: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpQIBAAKCAQEAsiejNWoNPPgcjjNZvG0pA+eADXxPyiGf6Or7oiy2ZmkblC4I
+        ...
+        hr6KW+m+bBx0ABXrJVZ4dfv7ppP173vhavmSG3dvo2D5savAay6L/bE=
+        -----END RSA PRIVATE KEY-----
+    ```
+
+    Next, update the gateway configuration:
+
+    - Add a new `extraFlags` section with a new entry `mysql_auth_server_impl: clientcert`.
+    - Add a new `secureTransport` section referencing the added files.
+
+    ```yaml
+    cells:
+      - name: zone1
+        gateway:
+          extraFlags:
+            mysql_auth_server_impl: clientcert
+          secureTransport:
+            required: true
+            tls:
+              clientCACertSecret:
+                name: teleport-cluster-config
+                key: server.cas
+              certSecret:
+                name: teleport-cluster-config
+                key: server.crt
+              keySecret:
+                name: teleport-cluster-config
+                key: server.key
+    ```
+  </Tab>
+
+  <Tab title="Custom deployment">
+    If you are running your Vitess cluster using a custom deployment, you will need to update the flags for the `vtgate` service. The following flags needs to be added:
+
+    ```
+    vtgate ...                                      \
+        --mysql_server_ssl_ca=/path/to/server.cas   \
+        --mysql_server_ssl_cert=/path/to/server.crt \
+        --mysql_server_ssl_key=/path/to/server.key  \
+        --mysql_auth_server_impl=clientcert
+    ```
+
+    The files `server.cas`, `server.crt` and `server.key` must be in a location
+    accessible by the `vtgate` service.
+
+    For more details about `vtgate` and Vitess configuration, please see the
+    [documentation](https://vitess.io/docs/18.0/user-guides/configuration-basic/vtgate/).
+  </Tab>
+</Tabs>
+
+### Create a Teleport user
+
+<Tip>
+  To modify an existing user to provide access to the Database Service, see [Database Access Access Controls](/docs/ver/14.x/database-access/rbac)
+</Tip>
+
+<Tabs>
+  <Tab title="Teleport Team/Community Edition">
+    Create a local Teleport user with the built-in `access` role:
+
+    ```code
+    $ tctl users add \
+      --roles=access \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise/Enterprise Cloud">
+    Create a local Teleport user with the built-in `access` and `requester` roles:
+
+    ```code
+    $ tctl users add \
+      --roles=access,requester \
+      --db-users=\* \
+      --db-names=\* \
+      alice
+    ```
+  </Tab>
+</Tabs>
+
+| Flag         | Description                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--roles`    | List of roles to assign to the user. The builtin `access` role allows them to connect to any database server registered with Teleport.   |
+| `--db-users` | List of database usernames the user will be allowed to use when connecting to the databases. A wildcard allows any user.                 |
+| `--db-names` | List of logical databases (aka schemas) the user will be allowed to connect to within a database server. A wildcard allows any database. |
+
+<Warning>
+  Database names are only enforced for PostgreSQL and MongoDB databases.
+</Warning>
+
+For more detailed information about database access controls and how to restrict
+access see [RBAC](/docs/ver/14.x/database-access/rbac) documentation.
+
+### Configure and Start the Database Service
+
+Install and configure Teleport where you will run the Teleport Database Service:
+
+<Tabs>
+  <Tab title="Linux Server">
+    Select an edition, then follow the instructions for that edition to install Teleport.
+
+    <Tabs dropdownView dropdownCaption="Teleport Edition">
+      <Tab title="Teleport Community Edition">
+        The following command updates the repository for the package manager on the
+        local operating system and installs the provided Teleport version:
+
+        ```code
+        $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
+        ```
+      </Tab>
+
+      <Tab title="Teleport Team">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
+            $ sudo apt-get update
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum install -y yum-utils
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+          Before installing a `teleport` binary with a version besides
+          v14, read our compatibility rules to ensure that the
+          binary is compatible with Teleport Cloud.
+
+          Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+          include a major version, minor version, and patch version, separated by dots.
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are one major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Service instances and agents do not support Auth Service instances that
+            are on an older major version, and will fail to connect to older Auth Service
+            instances by default. You can override version checks by passing
+            `--skip-version-check` when starting agents and Proxy Service instances.
+        </Accordion>
+      </Tab>
+
+      <Tab title="Teleport Enterprise">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for v14. You'll need to update this
+            # file for each major release of Teleport.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v14" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            $ sudo apt-get update
+            $ sudo apt-get install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo apt-get install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v14. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum install -y yum-utils
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for v14. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for v14. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+
+            # Install teleport
+            $ sudo dnf install teleport-ent
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo dnf install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo zypper install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Tarball">
+            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+            will update after one is filled out.
+
+            ```code
+            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+
+            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+            will be slightly different:
+
+            ```code
+            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            # <checksum> <filename>
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            # Verify that the checksums match
+            $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ cd teleport-ent
+            $ sudo ./install
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+      </Tab>
+
+      <Tab title="Teleport Enterprise Cloud">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
+            $ sudo apt-get update
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum install -y yum-utils
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+        <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+          Before installing a `teleport` binary with a version besides v14,
+          read our compatibility rules to ensure that the binary is compatible with
+          Teleport Enterprise Cloud.
+
+          Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+          include a major version, minor version, and patch version, separated by dots.
+          When running multiple `teleport` binaries within a cluster, the following rules
+          apply:
+
+          - **Patch and minor** versions are always compatible, for example, any 8.0.1
+            component will work with any 8.0.3 component and any 8.1.0 component will work
+            with any 8.3.0 component.
+          - Servers support clients that are one major version behind, but do not support
+            clients that are on a newer major version. For example, an 8.x.x Proxy Service
+            instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
+            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+            You must upgrade to 7.x.x first.
+          - Proxy Service instances and agents do not support Auth Service instances that
+            are on an older major version, and will fail to connect to older Auth Service
+            instances by default. You can override version checks by passing
+            `--skip-version-check` when starting agents and Proxy Service instances.
+        </Accordion>
+      </Tab>
+    </Tabs>
+
+    (!docs/pages/includes/database-access/db-configure-start.mdx
+    dbName="example-vitess" dbProtocol="mysql"
+    databaseAddress="db.example.com:3306" !)
+  </Tab>
+
+  <Tab title="Kubernetes Cluster">
+    Teleport provides Helm charts for installing the Teleport Database Service in Kubernetes Clusters.
+
+    Set up the Teleport Helm repository.
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
+
+    ```code
+    $ helm repo add teleport https://charts.releases.teleport.dev
+    ```
+
+    Update the cache of charts from the remote repository so you can upgrade to all
+    available releases:
+
+    ```code
+    $ helm repo update
+    ```
+
+    (!docs/pages/includes/database-access/db-helm-install.mdx dbName="example-vitess"
+    dbProtocol="mysql" databaseAddress="db.example.com:3306" !)
+  </Tab>
+</Tabs>
+
+<Tip>
+  A single Teleport process can run multiple services, for example
+  multiple Database Service instances as well as other services such the
+  SSH Service or Application Service.
+</Tip>
+
+## Step 4/4. Connect
+
+Once the Database Service has joined the cluster, log in to see the available
+databases:
+
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh login --proxy=teleport.example.com --user=alice
+    $ tsh db ls
+    # Name           Description    Labels
+    # -------------- -------------- --------
+    # example-vitess Example Vitess env=dev
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ tsh login --proxy=mytenant.teleport.sh --user=alice
+    $ tsh db ls
+    # Name           Description    Labels
+    # -------------- -------------- --------
+    # example-vitess Example Vitess env=dev
+    ```
+  </Tab>
+</Tabs>
+
+Note that you will only be able to see databases your role has access to. See
+the [RBAC](/docs/ver/14.x/database-access/rbac) guide for more details.
+
+To retrieve credentials for a database and connect to it:
+
+```code
+$ tsh db connect example-vitess
+```
+
+You can optionally specify the database name and the user to use by default when
+connecting to the database instance:
+
+```code
+$ tsh db connect --db-user=root --db-name=mysql example-vitess
+```
+
+<Note>
+  The `mysql` or `mariadb` command-line client should be available in `PATH` in
+  order to be able to connect. `mariadb` is a default command-line client for
+  MySQL and MariaDB.
+</Note>
+
+To log out of the database and remove credentials:
+
+```code
+# Remove credentials for a particular database instance.
+$ tsh db logout example-vitess
+# Remove credentials for all database instances.
+$ tsh db logout
+```

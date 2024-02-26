@@ -21,20 +21,20 @@ Teleport administrators to define policies like:
   Teleport roles don't worry, we'll create example groups below.
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -43,15 +43,15 @@ Teleport administrators to define policies like:
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -61,80 +61,30 @@ Teleport administrators to define policies like:
 
 <Tabs>
   <Tab title="Teleport Enterprise (Self-Hosted)">
-    - The `tctl` and `tsh` client tools version >= 13.2.0, which you
+    - The `tctl` and `tsh` client tools version >= 13.4.16, which you
       can download by visiting your [Teleport account](https://teleport.sh).
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
   <Tab title="Teleport Cloud">
-    - The `tctl` and `tsh` client tools version >= 13.2.0.
+    - The `tctl` and `tsh` client tools version >= 14.3.6.
 
       You can download these from [Teleport Cloud Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
-
-- Configure Teleport to use SAML authentication as the default instead of the local
-  user database.
-
-  You can either edit the Teleport Auth Service configuration file or create a dynamic
-  resource.
-
-  <Tabs>
-    <Tab title="Dynamic Resources (All Editions)">
-      Use `tctl` to edit the `cluster_auth_preference` value:
-
-      ```code
-      $ tctl edit cluster_auth_preference
-      ```
-
-      Set the value of `spec.type` to `saml`:
-
-      ```yaml
-      kind: cluster_auth_preference
-      metadata:
-        ...
-        name: cluster-auth-preference
-      spec:
-        ...
-        type: saml
-        ...
-      version: v2
-      ```
-
-      After you save and exit the editor, `tctl` will update the resource:
-
-      ```text
-      cluster auth preference has been updated
-      ```
-    </Tab>
-
-    <Tab title="Static Config (Self-Hosted)">
-      Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
-
-      ```yaml
-      auth_service:
-        authentication:
-          type: saml
-      ```
-    </Tab>
-  </Tabs>
-
-  <Tip>
-    If you need to log in again before configuring your SAML provider, use the flag <nobr>`--auth=local`</nobr>.
-  </Tip>
 
 ## Step 1/4. Create & assign groups
 
@@ -247,7 +197,7 @@ Copy the URL to the metadata file for use in our Teleport configuration.
 Define an Okta SAML connector using `tctl`. Update this example command with
 the path to your metadata file, and edit the `--attributes-to-roles` values for
 custom group assignment to roles. See [tctl sso configure
-saml](/docs/ver/13.x/reference/cli#tctl-sso-configure-saml) for a full reference of
+saml](/docs/ver/13.x/reference/cli/tctl#tctl-sso-configure-saml) for a full reference of
 flags for this command:
 
 ```code
@@ -351,6 +301,55 @@ Create the connector using `tctl`:
 $ tctl create okta-connector.yaml
 ```
 
+### Enable default SAML authentication
+
+Configure Teleport to use SAML authentication as the default instead of the local
+user database.
+
+<Tabs>
+  <Tab title="Dynamic Resources (All Editions)">
+    Use `tctl` to edit the `cluster_auth_preference` value:
+
+    ```code
+    $ tctl edit cluster_auth_preference
+    ```
+
+    Set the value of `spec.type` to `saml`:
+
+    ```yaml
+    kind: cluster_auth_preference
+    metadata:
+      ...
+      name: cluster-auth-preference
+    spec:
+      ...
+      type: saml
+      ...
+    version: v2
+    ```
+
+    After you save and exit the editor, `tctl` will update the resource:
+
+    ```text
+    cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config (Self-Hosted)">
+    Update `/etc/teleport.yaml` in the `auth_service` section and restart the `teleport` daemon.
+
+    ```yaml
+    auth_service:
+      authentication:
+        type: saml
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  If you need to log in again before configuring your SAML provider, use the flag <nobr>`--auth=local`</nobr>.
+</Tip>
+
 ## Step 4/4. Create a developer Teleport role
 
 Now let's create a new role to pull in external information from Okta.
@@ -415,13 +414,13 @@ in a browser).
 Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
 must be able to:
 
-- Ensure that HTTP/TLS certificates are configured properly for both Teleport
-  proxy and the SSO provider.
-
 - Be able to see what SAML/OIDC claims and values are getting exported and passed
   by the SSO provider to Teleport.
 - Be able to see how Teleport maps the received claims to role mappings as defined
   in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
 
 If something is not working, we recommend to:
 
@@ -484,3 +483,14 @@ spec:
       'env': 'dev'
 version: v5
 ```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.

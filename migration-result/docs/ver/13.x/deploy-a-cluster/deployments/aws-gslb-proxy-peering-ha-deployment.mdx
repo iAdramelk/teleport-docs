@@ -6,10 +6,10 @@ version: '13.x'
 
 This deployment architecture features two important design decisions:
 
-1. AWS Route 53 latency-based routing is used for global server load balancing
-   ([GSLB](https://www.cloudflare.com/learning/cdn/glossary/global-server-load-balancing-gslb/)).
-   This allows for efficient distribution of traffic across resources that are globally distributed.
-2. Teleport's [Proxy Peering](/docs/ver/13.x/architecture/proxy-peering) is used to reduce the total number of tunnel connections in the Teleport cluster.
+- AWS Route 53 latency-based routing is used for global server load balancing
+  ([GSLB](https://www.cloudflare.com/learning/cdn/glossary/global-server-load-balancing-gslb/)).
+  This allows for efficient distribution of traffic across resources that are globally distributed.
+- Teleport's [Proxy Peering](/docs/ver/13.x/architecture/proxy-peering) is used to reduce the total number of tunnel connections in the Teleport cluster.
 
 This deployment architecture isn't recommended for use cases where your users or resources are
 clustered in a single region, or for Managed Service Providers needing to provide separate clusters

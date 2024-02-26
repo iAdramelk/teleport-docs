@@ -54,7 +54,7 @@ Teleport currently supports account management and session management.
 
 ## Set up PAM on a Linux Machine running Teleport
 
-<Accordion title="Before you begin: read security tips">
+<Accordion title="Best practices for production security">
   When running Teleport in production, we recommend that you follow the
   practices below to avoid security incidents. These practices may differ from
   the examples used in this guide, which are intended for demo environments:
@@ -140,31 +140,37 @@ include:
 
 ## Display a Message of the Day (MOTD) with Teleport
 
-A cluster-wide Message of the Day can be set in the `auth_service` configuration.
+<Tabs>
+  <Tab title="Self-Hosted">
+    A cluster-wide Message of the Day can be set in the `auth_service` configuration.
 
-```yaml
-auth_service:
-    message_of_the_day: "Welcome to the cluster. All activity will be logged."
-```
+    ```yaml
+    auth_service:
+        message_of_the_day: "Welcome to the cluster. All activity will be logged."
+    ```
 
-This will be shown during the `tsh login` process, and must be positively acknowledged
-before the user is allowed to log in to the cluster.
+    This will be shown during the `tsh login` process, and must be positively acknowledged
+    before the user is allowed to log in to the cluster.
 
-```code
-$ tsh login --proxy teleport.example.com
-# Welcome to the cluster. All activity will be logged.
-# Press [ENTER] to continue.
-```
+    ```code
+    $ tsh login --proxy teleport.example.com
+    # Welcome to the cluster. All activity will be logged.
+    # Press [ENTER] to continue.
+    ```
 
-Alternatively, a per-Node Message of the Day can be set using
-the traditional Unix `/etc/motd` file. The `/etc/motd` file is normally
-displayed by login(1) after a user has logged in but before the shell is run. It
-is generally used for important system-wide announcements.
+    Alternatively, a per-Node Message of the Day can be set using
+    the traditional Unix `/etc/motd` file. The `/etc/motd` file is normally
+    displayed by login(1) after a user has logged in but before the shell is run. It
+    is generally used for important system-wide announcements.
+  </Tab>
 
-You can set a per-Node Message of the Day using the traditional Unix `/etc/motd`
-file. The `/etc/motd` file is normally displayed by login(1) after a user has
-logged in but before the shell is run. It is generally used for important
-system-wide announcements.
+  <Tab title="Teleport Enterprise Cloud">
+    You can set a per-Node Message of the Day using the traditional Unix `/etc/motd`
+    file. The `/etc/motd` file is normally displayed by login(1) after a user has
+    logged in but before the shell is run. It is generally used for important
+    system-wide announcements.
+  </Tab>
+</Tabs>
 
 This feature can help you inform users that activity on the Node is being audited
 and recorded.

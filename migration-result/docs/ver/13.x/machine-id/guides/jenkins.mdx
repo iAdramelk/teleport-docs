@@ -15,79 +15,121 @@ utilize Machine ID with minimal changes.
 You will need the following tools to use Teleport with Jenkins.
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
 - `ssh` OpenSSH tool
 - Jenkins
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Architecture
 
@@ -145,20 +187,26 @@ spec:
       "group": "api"
 ```
 
-On your client machine, log in to Teleport using `tsh` before using `tctl`.
+<Tabs>
+  <Tab title="Teleport Enterprise Cloud">
+    On your client machine, log in to Teleport using `tsh` before using `tctl`.
 
-```code
-$ tctl create -f api-workers.yaml
-$ tctl bots add jenkins --roles=api-workers
-```
+    ```code
+    $ tctl create -f api-workers.yaml
+    $ tctl bots add jenkins --roles=api-workers
+    ```
+  </Tab>
 
-Connect to the Teleport Auth Server and use `tctl` to examine what roles exist on
-your system.
+  <Tab title="Self-Hosted">
+    Connect to the Teleport Auth Server and use `tctl` to examine what roles exist on
+    your system.
 
-```code
-$ tctl create -f api-workers.yaml
-$ tctl bots add jenkins --roles=api-workers
-```
+    ```code
+    $ tctl create -f api-workers.yaml
+    $ tctl bots add jenkins --roles=api-workers
+    ```
+  </Tab>
+</Tabs>
 
 Machine ID allows you to use Linux Access Control Lists (ACLs) to control
 access to certificates on disk. You will use this to limit the access Jenkins
@@ -200,35 +248,41 @@ $ sudo chmod +x /var/lib/teleport /var/lib/teleport/bot
 
 Next, you need to start Machine ID in the background of each Jenkins worker.
 
-First create a configuration file for Machine ID at `/etc/tbot.yaml`.
+<Tabs>
+  <Tab title="Teleport Cloud">
+    First create a configuration file for Machine ID at `/etc/tbot.yaml`.
 
-```yaml
-auth_server: "example.teleport.sh:443"
-onboarding:
-  join_method: "token"
-  token: "00000000000000000000000000000000"
-  ca_pins:
-  - "sha256:1111111111111111111111111111111111111111111111111111111111111111"
-storage:
-  directory: /var/lib/teleport/bot
-destinations:
-  - directory: /opt/machine-id
-```
+    ```yaml
+    auth_server: "example.teleport.sh:443"
+    onboarding:
+      join_method: "token"
+      token: "00000000000000000000000000000000"
+      ca_pins:
+      - "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    storage:
+      directory: /var/lib/teleport/bot
+    destinations:
+      - directory: /opt/machine-id
+    ```
+  </Tab>
 
-First create a configuration file for Machine ID at `/etc/tbot.yaml`.
+  <Tab title="Self-Hosted">
+    First create a configuration file for Machine ID at `/etc/tbot.yaml`.
 
-```yaml
-auth_server: "auth.example.com:3025"
-onboarding:
-  join_method: "token"
-  token: "00000000000000000000000000000000"
-  ca_pins:
-  - "sha256:1111111111111111111111111111111111111111111111111111111111111111"
-storage:
-  directory: /var/lib/teleport/bot
-destinations:
-  - directory: /opt/machine-id
-```
+    ```yaml
+    auth_server: "auth.example.com:3025"
+    onboarding:
+      join_method: "token"
+      token: "00000000000000000000000000000000"
+      ca_pins:
+      - "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    storage:
+      directory: /var/lib/teleport/bot
+    destinations:
+      - directory: /opt/machine-id
+    ```
+  </Tab>
+</Tabs>
 
 Next, create a systemd.unit file at `/etc/systemd/system/machine-id.service`.
 

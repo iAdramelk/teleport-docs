@@ -7,30 +7,22 @@ version: '14.x'
 The following `tctl` commands are used to manage the Teleport Windows Desktop
 Service.
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 Generate a join token for a Windows Desktop Service:
 

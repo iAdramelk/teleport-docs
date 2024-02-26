@@ -1,6 +1,6 @@
 ---
-title: Role-Based Access Control for Desktop Access
-description: Role-based access control (RBAC) for Teleport desktop access
+title: Role-Based Access Control for Desktops
+description: Role-based access control (RBAC) for desktops protected by Teleport.
 version: '14.x'
 ---
 
@@ -54,6 +54,10 @@ spec:
   Windows logins, and that these Windows users are properly secured.
 </Warning>
 
+For a full Teleport role reference, including information on how Teleport
+expands the `internal` and `external` traits, see the [Teleport
+Access Controls Reference](/docs/ver/14.x/access-controls/reference).
+
 ## Labeling
 
 Both `allow` and `deny` rules support `windows_desktop_labels` selectors. These
@@ -62,9 +66,9 @@ use wildcards (`"*"`) to match all desktop labels.
 
 Windows desktops acquire labels in two ways:
 
-1. Using the `host_labels` rules defined in the `windows_desktop_service` section
-   of your Teleport configuration file.
-2. Using LDAP (for desktops discovered via LDAP only)
+- Using the `host_labels` rules defined in the `windows_desktop_service` section
+  of your Teleport configuration file.
+- Using LDAP (for desktops discovered via LDAP only)
 
 ### Using `host_labels`
 
@@ -84,8 +88,8 @@ host_labels:
 
 The regular expression provided in the `match` rule above is applied to the
 desktop's name for desktops that are discovered via LDAP. Hosts that are
-statically defined (in the `hosts` or `non_ad_hosts` sections of your
-configuration) receive an auto-generated name, so host label matching applies
+statically defined (in the `hosts`, `non_ad_hosts`, or `static_hosts` sections of your configuration)
+receive an auto-generated name, so host label matching applies
 against the desktop's `addr` in these cases.
 
 #### Static hosts
@@ -211,7 +215,7 @@ This feature is disabled by default, and can be enabled by setting the
 
 ```yaml
 kind: role
-version: v6
+version: v7
 metadata:
   name: allow-user-provisioning
 spec:
@@ -242,7 +246,7 @@ To add the user to additional groups, specify the `desktop_groups` role option:
 
 ```yaml
 kind: role
-version: v6
+version: v7
 metadata:
   name: allow-user-provisioning
 spec:

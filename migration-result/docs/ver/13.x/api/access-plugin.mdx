@@ -17,8 +17,7 @@ integrates with your organization's unique workflows.
 In this guide, we will explore a number of Teleport's API client libraries by
 showing you how to write a plugin that lets you manage Access Requests via
 Google Sheets. The plugin lists new Access Requests in a Google Sheets
-spreadsheet, with links to allow or deny each request. You can write the plugin
-in 260 lines of Go code.
+spreadsheet, with links to allow or deny each request.
 
 ![The result of the plugin](/assets/google-sheets-4aec21be65.png)
 
@@ -30,20 +29,20 @@ in 260 lines of Go code.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -52,20 +51,20 @@ in 260 lines of Go code.
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Go version 1.20+ installed on your workstation. See the [Go
+- Go version 1.21+ installed on your workstation. See the [Go
   download page](https://go.dev/dl/). You do not need to be familiar with Go to
   complete this guide, though Go knowledge is required if you want to build your
   own Access Request plugin.
@@ -91,18 +90,16 @@ authenticating to the Google Sheets API:
 
 ## Step 1/7. Set up your Go project
 
-The first step is to create a project directory and initialize a Go module for
-your project:
+Download the source code for our minimal Access Request plugin:
 
 ```code
-$ mkdir teleport-sheets
-$ cd teleport-sheets
-$ go mod init teleport-sheets
-go: creating new go.mod: module teleport-sheets
+$ git clone https://github.com/gravitational/teleport
+$ cd teleport/examples/access-plugin-minimal
 ```
 
-This creates a new file in your project directory, `go.mod`, which Go's package
-management system uses to fetch your plugin's dependencies.
+For the rest of this guide, we will show you how to set up this plugin and
+explore the way the plugin uses Teleport's API to integrate Access Requests with
+a particular workflow.
 
 ## Step 2/7. Set up the Google Sheets API
 
@@ -227,8 +224,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -254,147 +252,147 @@ Create the `access-plugin-impersonator` role:
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
-Assign the `access-plugin-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `access-plugin-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - access-plugin-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - access-plugin-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `access-plugin-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `access-plugin-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `access-plugin-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `access-plugin-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `access-plugin-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `access-plugin-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 You will now be able to generate signed certificates for the `access-plugin`
 role and user.
@@ -468,147 +466,147 @@ role 'editor-requester' has been created
 Allow yourself to review requests by users with the `editor-requester` role by
 assigning yourself the `editor-reviewer` role.
 
-Assign the `editor-reviewer` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `editor-reviewer` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
+    2. Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - editor-reviewer
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - editor-reviewer 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `editor-reviewer` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `editor-reviewer` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `editor-reviewer` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `editor-reviewer` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `editor-reviewer` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `editor-reviewer` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
@@ -626,36 +624,11 @@ review the request using the Teleport plugin.
 
 ## Step 4/7. Write the Access Request plugin
 
-At this point, we have completed the preparatory steps required to run an Access
-Request plugin, including setting up your Teleport roles to support Role Access
-Requests and getting credentials for the APIs the plugin will authenticate to.
-Next, we will write the Access Request plugin.
+In this step, we will walk you through the structure of the Access Request
+plugin in `examples/access-plugin-minimal/main.go`. You can use the example here
+to write your own Access Request plugin.
 
-### Add imports
-
-Create a file called `main.go` in your project directory with the following
-content:
-
-```go
-package main
-
-import (
-	"context"
-	"errors"
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/gravitational/teleport-plugins/lib"
-	"github.com/gravitational/teleport-plugins/lib/watcherjob"
-	"github.com/gravitational/teleport/api/client"
-	"github.com/gravitational/teleport/api/types"
-	"github.com/gravitational/trace"
-	"google.golang.org/api/option"
-	sheets "google.golang.org/api/sheets/v4"
-	"google.golang.org/grpc"
-)
-```
+### Imports
 
 Here are the packages our Access Request plugin will import from Go's standard
 library:
@@ -665,52 +638,50 @@ library:
 | `context` | Includes the `context.Context` type. `context.Context` is an abstraction for controlling long-running routines, such as connections to external services, that might fail or time out. Programs can cancel contexts or assign them timeouts and metadata. |
 | `errors`  | Working with errors.                                                                                                                                                                                                                                      |
 | `fmt`     | Formatting data for printing, strings, or errors.                                                                                                                                                                                                         |
-| `time`    | Dealing with time. We will use this to define a timeout for connecting to the Auth Service.                                                                                                                                                               |
 | `strings` | Manipulating strings.                                                                                                                                                                                                                                     |
 
 The plugin imports the following third-party code:
 
-| Package                                                    | Description                                                                                                                   |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `github.com/gravitational/teleport-plugins/lib`            | Code shared between Teleport plugins, e.g., to run a background job for retrieving new events from the Teleport Auth Service. |
-| `github.com/gravitational/teleport-plugins/lib/watcherjob` | A library for writing programs that listen for audit events from the Auth Service.                                            |
-| `github.com/gravitational/teleport/api/client`             | A library for authenticating to the Auth Service's gRPC API and making requests.                                              |
-| `github.com/gravitational/teleport/api/types`              | Types used in the Auth Service API, e.g., Access Requests.                                                                    |
-| `github.com/gravitational/trace`                           | Presenting errors with more useful detail than the standard library provides.                                                 |
-| `google.golang.org/api/option`                             | Settings for configuring Google API clients.                                                                                  |
-| `google.golang.org/api/sheets/v4`                          | The Google Sheets API client library, aliased as `sheets` in our program.                                                     |
-| `google.golang.org/grpc`                                   | The gRPC client and server library.                                                                                           |
+| Package                                        | Description                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| `github.com/gravitational/teleport/api/client` | A library for authenticating to the Auth Service's gRPC API and making requests. |
+| `github.com/gravitational/teleport/api/types`  | Types used in the Auth Service API, e.g., Access Requests.                       |
+| `github.com/gravitational/trace`               | Presenting errors with more useful detail than the standard library provides.    |
+| `google.golang.org/api/option`                 | Settings for configuring Google API clients.                                     |
+| `google.golang.org/api/sheets/v4`              | The Google Sheets API client library, aliased as `sheets` in our program.        |
+| `google.golang.org/grpc`                       | The gRPC client and server library.                                              |
 
-### Make some initial declarations
+### Configuration
 
-After the `import` block, add the following declarations:
+First, we declare two constants that you need to configure for your environment:
 
 ```go
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
 const (
-	proxyAddr     string = ""
-	initTimeout          = time.Duration(30) * time.Second
-	spreadSheetID string = ""
+	proxyAddr     string = "CHANGE ME"
+	spreadSheetID string = "CHANGE ME"
 )
 
-var requestStates = map[types.RequestState]string{
-	types.RequestState_APPROVED: "APPROVED",
-	types.RequestState_DENIED:   "DENIED",
-	types.RequestState_PENDING:  "PENDING",
-	types.RequestState_NONE:     "NONE",
-}
-
-type googleSheetsPlugin struct {
-	sheetsClient   *sheets.SpreadsheetsService
-	teleportClient *client.Client
-}
 ```
 
 `proxyAddr` indicates the hostname and port of your Teleport Proxy Service or
 Teleport Enterprise Cloud tenant. Assign it to the address of your own Proxy
 Service, e.g., `mytenant.teleport.sh:443`.
-
-`initTimeout` is the maximum time we will wait to connect to the Auth Service,
-in this case, 30 seconds.
 
 Assign `spreadSheetID` to the ID of the spreadsheet you created earlier. To find
 the spreadsheet ID, visit your spreadsheet in Google Drive. The ID will be in
@@ -720,32 +691,101 @@ the URL path segment called `SPREADSHEET_ID` below:
 https://docs.google.com/spreadsheets/d/SPREADHSEET_ID/edit#gid=0
 ```
 
-Access Requests have one of four states: approved, denied, pending, and none.
-Later in the guide, we will need a way to map these states to strings that we
-can write to our Google Sheets spreadsheet. We obtain the request states from
-Teleport's `types` library and map them to strings in the `requestStates` map.
+### The `AccessRequestPlugin` type
 
-`googleSheetsPlugin` is a struct type that contains the API clients for the
-Teleport Auth Service and Google Sheets. We will explain later why we use a
-struct to organize these two clients, instead of, say, two separate variables.
+The `plugin.go` file declares types that we will use to organize our Access
+Request plugin code:
+
+```go
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+
+	sheets "google.golang.org/api/sheets/v4"
+
+	"github.com/gravitational/teleport/api/client"
+	"github.com/gravitational/teleport/api/types"
+)
+
+type AccessRequestPlugin struct {
+	TeleportClient *client.Client
+	EventHandler   interface {
+		HandleEvent(ctx context.Context, event types.Event) error
+	}
+}
+
+type googleSheetsClient struct {
+	sheetsClient *sheets.SpreadsheetsService
+}
+
+```
+
+The `AccessRequestPlugin` type represents a generic Access Request plugin, and
+you can use this type to build your own plugin. It contains a Teleport API
+client and an `EventHandler`, any Go type that implements a `HandleEvent`
+method.
+
+In our case, the type that implements `HandleEvent` is `googleSheetsClient`, a
+struct type that contains an API client for Google Sheets.
 
 ### Prepare row data
 
 Whether creating a new row of the spreadsheet or updating an existing one, we
 need a way to extract data from an Access Request in order to provide it to
-Google Sheets. Below the `googleSheetsPlugin` type declaration, add the
-following functions:
+Google Sheets. We achieve this with the `makeRowData` method:
 
 ```go
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"fmt"
+	"strings"
+
+	sheets "google.golang.org/api/sheets/v4"
+
+	"github.com/gravitational/teleport/api/types"
+)
+
 func stringPtr(s string) *string { return &s }
 
-func (g *googleSheetsPlugin) makeRowData(ar types.AccessRequest) *sheets.RowData {
-	requestState, ok := requestStates[ar.GetState()]
+var requestStates = map[types.RequestState]string{
+	types.RequestState_APPROVED: "APPROVED",
+	types.RequestState_DENIED:   "DENIED",
+	types.RequestState_PENDING:  "PENDING",
+	types.RequestState_NONE:     "NONE",
+}
 
-	// Could not find a state, but this is still a valid Access Request
-	if !ok {
-		requestState = requestStates[types.RequestState_NONE]
-	}
+func (g *googleSheetsClient) makeRowData(ar types.AccessRequest) *sheets.RowData {
+	requestState := requestStates[ar.GetState()]
 
 	viewLink := fmt.Sprintf(
 		`=HYPERLINK("%v", "%v")`,
@@ -788,6 +828,7 @@ func (g *googleSheetsPlugin) makeRowData(ar types.AccessRequest) *sheets.RowData
 		},
 	}
 }
+
 ```
 
 The `sheets.RowData` type makes extensive use of pointers to strings, so we
@@ -795,14 +836,18 @@ introduce a utility function called `stringPtr` that returns the pointer to the
 provided string. This makes it easier to assign the values of cells in the
 `sheets.RowData` using chains of function calls.
 
-`makeRowData` is a method of the `googleSheetsPlugin` type. (The `*` before
-`googleSheetsPlugin` indicates that the method receives a *pointer* to a
-`googleSheetsPlugin`.) It takes a `types.AccessRequest`, which Teleport's API
+`makeRowData` is a method of the `googleSheetsClient` type. (The `*` before
+`googleSheetsClient` indicates that the method receives a *pointer* to a
+`googleSheetsClient`.) It takes a `types.AccessRequest`, which Teleport's API
 library uses to represent the fields within an Access Request.
 
 The Google Sheets client library defines a `sheets.RowData` type that we
 include in requests to update a spreadsheet. This function converts a
 `types.AccessRequest` into a `*sheets.RowData` (another pointer).
+
+Access Requests have one of four states: approved, denied, pending, and none.
+We obtain the request states from Teleport's `types` library and map them to
+strings in the `requestStates` map.
 
 When extracting the data, we use the `types.AccessRequest.GetName()` method to
 retrieve the ID of the Access Request as a string we can include in the
@@ -812,15 +857,37 @@ Users can review an Access Request by visiting a URL within the Teleport Web UI
 that corresponds to the request's ID. `makeRowData` assembles a `=HYPERLINK`
 formula that we can insert into the spreadsheet as a link to this URL.
 
-Next, we'll add two functions that call `makeRowData`, one to create a new row
-and one to update an existing row.
-
 ### Create a row
 
-Below `makeRowData`, add the following:
+The following function submits a request to the Google Sheets API to create a
+new row based on an incoming Access Request, using the data returned by
+`makeRowData`. It returns an error if the attempt to create a row failed:
 
 ```go
-func (g *googleSheetsPlugin) createRow(ar types.AccessRequest) error {
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"github.com/gravitational/trace"
+	sheets "google.golang.org/api/sheets/v4"
+
+	"github.com/gravitational/teleport/api/types"
+)
+
+func (g *googleSheetsClient) createRow(ar types.AccessRequest) error {
 	row := g.makeRowData(ar)
 
 	req := sheets.BatchUpdateSpreadsheetRequest{
@@ -843,26 +910,18 @@ func (g *googleSheetsPlugin) createRow(ar types.AccessRequest) error {
 	}
 
 	if resp.HTTPStatusCode == 201 || resp.HTTPStatusCode == 200 {
-		fmt.Println("Successfully created a row")
-	} else {
-		fmt.Printf(
-			"Unexpected response code creating a row: %v\n",
-			resp.HTTPStatusCode,
-		)
+		return nil
 	}
 
-	return nil
-
+	return trace.Errorf("Unexpected response code creating a row: %v",
+		resp.HTTPStatusCode)
 }
+
 ```
 
-`createRow` submits a request to the Google Sheets API to create a new row based
-on an incoming Access Request, using the data returned by `makeRowData`. It
-returns an error if the attempt to create a row failed.
-
-It assembles a `sheets.BatchUpdateSpreadsheetRequest` and sends it to the Google
-Sheets API using `g.sheetsClient.BatchUpdate()`, returning errors encountered
-while sending the request.
+`createRow` assembles a `sheets.BatchUpdateSpreadsheetRequest` and sends it to
+the Google Sheets API using `g.sheetsClient.BatchUpdate()`, returning errors
+encountered while sending the request.
 
 We log unexpected HTTP status codes without returning an error since these may
 be transient server-side issues. A production Access Request plugin would handle
@@ -871,11 +930,35 @@ can retry it later.
 
 ### Update a row
 
-The code for updating a row is similar to the code for creating a new row. Add
-this function below `createRow`:
+The code for updating a row is similar to the code for creating a new row:
 
 ```go
-func (g *googleSheetsPlugin) updateRow(ar types.AccessRequest, rowNum int64) error {
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"fmt"
+
+	"github.com/gravitational/trace"
+	sheets "google.golang.org/api/sheets/v4"
+
+	"github.com/gravitational/teleport/api/types"
+)
+
+func (g *googleSheetsClient) updateRow(ar types.AccessRequest, rowNum int64) error {
 	row := g.makeRowData(ar)
 
 	req := sheets.BatchUpdateSpreadsheetRequest{
@@ -901,17 +984,15 @@ func (g *googleSheetsPlugin) updateRow(ar types.AccessRequest, rowNum int64) err
 	}
 
 	if resp.HTTPStatusCode == 201 || resp.HTTPStatusCode == 200 {
-		fmt.Println("Successfully updated a row")
-	} else {
-		fmt.Printf(
-			"Unexpected response code updating a row: %v\n",
-			resp.HTTPStatusCode,
-		)
+		return nil
 	}
-
-	return nil
-
+	return trace.Wrap(
+		fmt.Errorf(
+			"Unexpected response code updating a row: %v\n",
+			resp.HTTPStatusCode),
+	)
 }
+
 ```
 
 The only difference between `updateRow` and `createRow` is that we send a
@@ -921,10 +1002,36 @@ request to update that row with information from the provided Access Request.
 
 ### Determine where to update the spreadsheet
 
-Below `updateRow`, add this function:
+When our program receives an event that updates an Access Request, it needs a
+way to look up the row in the spreadsheet that corresponds to the Access Request
+so it can update the row:
 
 ```go
-func (g *googleSheetsPlugin) updateSpreadsheet(ar types.AccessRequest) error {
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"errors"
+
+	"github.com/gravitational/trace"
+
+	"github.com/gravitational/teleport/api/types"
+)
+
+func (g *googleSheetsClient) updateSpreadsheet(ar types.AccessRequest) error {
 	s, err := g.sheetsClient.Get(spreadSheetID).IncludeGridData(true).Do()
 	if err != nil {
 		return trace.Wrap(err)
@@ -932,7 +1039,7 @@ func (g *googleSheetsPlugin) updateSpreadsheet(ar types.AccessRequest) error {
 
 	if len(s.Sheets) != 1 {
 		return trace.Wrap(
-	        errors.New("the spreadsheet must have a single sheet"),
+			errors.New("the spreadsheet must have a single sheet"),
 		)
 	}
 
@@ -945,12 +1052,12 @@ func (g *googleSheetsPlugin) updateSpreadsheet(ar types.AccessRequest) error {
 				if err := g.updateRow(ar, int64(i)); err != nil {
 					return trace.Wrap(err)
 				}
-				fmt.Println("Updated a spreadsheet row.")
 			}
 		}
 	}
 	return nil
 }
+
 ```
 
 `updateSpreadSheet` takes a `types.AccessRequest`, gets the latest data from
@@ -961,14 +1068,37 @@ It then calls `updateRow` with the Access Request and the row's number.
 
 ### Handle incoming Access Requests
 
-Next, we will determine whether to call `updateSpreadsheet` or `createRow`
-depending on whether an incoming Access Request event is a new Access Request or
-an update to an existing one. Add the following function below
-`updateSpreadsheet`:
+The plugin calls a handler function when it receives an event. To set this up,
+we use the `Run` method of our generic `AccessRequestPlugin` type, which
+contains the main loop of the plugin:
 
 ```go
-func (g *googleSheetsPlugin) handleEvent(ctx context.Context, event types.Event) error {
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/gravitational/trace"
+
+	"github.com/gravitational/teleport/api/types"
+)
+
+func (g *googleSheetsClient) HandleEvent(ctx context.Context, event types.Event) error {
 	if event.Resource == nil {
 		return nil
 	}
@@ -976,105 +1106,111 @@ func (g *googleSheetsPlugin) handleEvent(ctx context.Context, event types.Event)
 	r := event.Resource.(types.AccessRequest)
 
 	if r.GetState() == types.RequestState_PENDING {
-		return g.createRow(r)
+		if err := g.createRow(r); err != nil {
+			return err
+		}
+		fmt.Println("Successfully created a row")
+		return nil
 	}
 
-	return g.updateSpreadsheet(r)
-}
-```
-
-`handleEvent` checks whether an Access Request is in a pending state, i.e.,
-whether the request is new. If so, we call `createRow`. If not, we call
-`updateSpreadsheet`.
-
-It is worth noting that the function takes any `types.Event`, which includes
-Access Requests but also other audit events, such as the creation of a
-certificate. We will explain in the next section why we are using this function
-signature for `handleEvent`.
-
-### Run a watcher job
-
-Now that we have a function that can handle incoming Teleport events, we will
-add a function that calls our handler function when it receives an event. Add
-the following below `handleEvent`:
-
-```go
-func (g *googleSheetsPlugin) run() error {
-	ctx := context.Background()
-	proc := lib.NewProcess(ctx)
-	watcherJob := watcherjob.NewJob(
-		g.teleportClient,
-		watcherjob.Config{
-			Watch: types.Watch{Kinds: []types.WatchKind{types.WatchKind{Kind: types.KindAccessRequest}}},
-		},
-		g.handleEvent,
-	)
-
-	proc.SpawnCriticalJob(watcherJob)
-
-	fmt.Println("Started the watcher job")
-
-	<-watcherJob.Done()
-
-	fmt.Println("The watcher job is finished")
-
+	if err := g.updateSpreadsheet(r); err != nil {
+		return err
+	}
+	fmt.Println("Successfully updated a spreadsheet row")
 	return nil
 }
+
+func (p *AccessRequestPlugin) Run() error {
+	ctx := context.Background()
+
+	watch, err := p.TeleportClient.NewWatcher(ctx, types.Watch{
+		Kinds: []types.WatchKind{
+			types.WatchKind{Kind: types.KindAccessRequest},
+		},
+	})
+
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	defer watch.Close()
+
+	fmt.Println("Starting the watcher job")
+
+	for {
+		select {
+		case e := <-watch.Events():
+			if err := p.EventHandler.HandleEvent(ctx, e); err != nil {
+				return trace.Wrap(err)
+			}
+		case <-watch.Done():
+			fmt.Println("The watcher job is finished")
+			return nil
+		}
+	}
+}
+
 ```
 
-The `run` function starts a new background routine using `lib.NewProcess(ctx)`.
-This returns an implementation of the `lib.Process` interface, which Access
-Request plugins use to run jobs independently of the main program. This function
-takes a Go *context*, an abstraction that Go libraries often use to control
-long-running routines.
+As we described above, the `AccessRequestPlugin` type's `EventHandler` field is
+assigned to an interface with a `HandleEvent` method. In this case, the
+implementation is `*googleSheetsClient.HandleEvent`. This method checks whether
+an Access Request is in a pending state, i.e., whether the request is new. If
+so, it calls `createRow`. If not, it calls `updateSpreadsheet`.
 
-Next, `run` calls `watcherjob.NewJob`. A watcher job is an implementation of a
-`lib.ServiceJob`, a task for the `lib.Process` to execute. In this case, the
-`lib.ServiceJob` listens for new events from the Teleport Auth Service and
-executes code in response.
+The Teleport API client type, `client.Client`, has a `NewWatcher` method that
+listens for new audit events from the Auth Service API via a gRPC stream. The
+second parameter of the method indicates the type of audit event to watch for,
+in this case, events having to do with Teleport Access Requests.
 
-In `watcherjob.NewJob`, we have configured the watcher job to use a Teleport
-client (which we will create in the next section), as well as to watch only for
-Access Request events.
+The result of `NewWatcher`, a `types.Watcher`, enables `Run` to respond to new
+audit events by calling the `Events` method. This returns a Go **channel**, a
+runtime abstraction that allows concurrent routines to communicate. Another
+channel, returned by `Done`, indicates when the watcher has finished.
 
-Finally, by passing the `g.handleEvent` method to `watcherjob.NewJob`, we
-instruct the watcher job to call `g.handleEvent` whenever it receives an Access
-Request. The function we pass to `watcherjob.NewJob` must have the following
-signature, which we implement in the `handleEvent` method:
-
-```go
-func (ctx context.Context, event types.Event) error
-```
-
-This is also why we define `handleEvent` as a method of `googleSheetsPlugin`,
-since it means that we can include data about our API clients in this function
-while adhering to the expected function signature (and without declaring more
-global variables).
-
-Finally, we begin the watcher job within our `lib.Process` using
-`proc.SpawnCriticalJob`, and wait for the job to terminate. We do this by
-receiving from a Go *channel*, which is a way for multiple concurrent routines
-to communicate with one another.
+In a `for` loop, the `Run` method receives from either the `Done` channel or
+`Events` channel, whichever is ready to send first. If it receives from the
+`Events` channel, it calls the `HandleEvent` method to process the event.
 
 ### Initialize the API clients
 
 Now we have all the code we need to use the Teleport and Google Sheets API
 clients to listen for Access Request events and use them to maintain a
 spreadsheet. The final step is to start our program by initializing the API
-clients.
-
-Add the following below the `run` function we defined in the last section:
+clients:
 
 ```go
+// Copyright 2023 Gravitational, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+
+	"google.golang.org/api/option"
+	sheets "google.golang.org/api/sheets/v4"
+	"google.golang.org/grpc"
+
+	"github.com/gravitational/teleport/api/client"
+)
+
 func main() {
 	ctx := context.Background()
 	svc, err := sheets.NewService(ctx, option.WithCredentialsFile("credentials.json"))
 	if err != nil {
 		panic(err)
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, initTimeout)
-	defer cancel()
 
 	creds := client.LoadIdentityFile("auth.pem")
 
@@ -1088,20 +1224,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer teleport.Close()
 
-	gs := googleSheetsPlugin{
-		sheetsClient:   sheets.NewSpreadsheetsService(svc),
-		teleportClient: teleport,
+	gs := googleSheetsClient{
+		sheetsClient: sheets.NewSpreadsheetsService(svc),
 	}
 
-	if err := gs.run(); err != nil {
+	plugin := AccessRequestPlugin{
+		TeleportClient: teleport,
+		EventHandler:   &gs,
+	}
+
+	if err := plugin.Run(); err != nil {
 		panic(err)
 	}
 }
+
 ```
 
-The `main` function, the entrypoint to our program, initializes a
-`googleSheetsPlugin` and uses it run the plugin.
+The `main` function, the entrypoint to our program, initializes an
+`AccessRequestPlugin` and `googleSheetsClient` and uses them run the plugin.
 
 The function creates a Google Sheets API client by loading the credentials file
 you downloaded earlier at the relative path `credentials.json`.
@@ -1128,13 +1270,12 @@ connection errors.
 
 ## Step 7/7. Test your plugin
 
-Now that you have written your plugin, run it to forward Access Requests from
-your Teleport cluster to Google Sheets. Execute the following commands from
-within your project directory:
+Run the plugin to forward Access Requests from your Teleport cluster to Google
+Sheets. Execute the following command from within
+`examples/access-plugin-minimal`:
 
 ```code
-$ go get
-$ go run main.go
+$ go run teleport-sheets
 ```
 
 Now that the plugin is running, create an Access Request:
@@ -1187,20 +1328,12 @@ in this guide, you can use the Teleport API to set up more sophisticated
 workflows that take full advantage of your communication and project management
 tools.
 
-### Use the common plugin base
-
-The
-[`common.BaseApp`](https://pkg.go.dev/github.com/gravitational/teleport-plugins/access/common#BaseApp)
-type makes it easier to write an Access Request plugin based on a messaging
-application like Discord or Slack, helping to ensure that your plugin implements
-a full set of features.
-
 ### Manage state
 
 While the plugin we developed in this guide is stateless, updating Access
 Request information by searching all rows of a spreadsheet, real-world Access
 Request plugins typically need to manage state. You can use the
-[`plugindata`](https://pkg.go.dev/github.com/gravitational/teleport-plugins/lib/plugindata)
+[`plugindata`](https://pkg.go.dev/github.com/gravitational/teleport/api/types#PluginData)
 package to make it easier for your Access Request plugin to do this.
 
 ### Consult the examples

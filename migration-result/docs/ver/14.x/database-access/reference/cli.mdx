@@ -13,37 +13,24 @@ the Database Service, including:
 - The `tctl` administration tool, which you use to manage `db` resources that
   represent databases known to your Teleport cluster.
 
-  Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
+  To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
 
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-
-  {/*lint ignore scopes*/}
+  For example:
 
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
 
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-
-  {/*lint ignore scopes*/}
-
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 - The `tsh` client tool, which end-users run in order to access databases in
   your cluster.
@@ -52,23 +39,29 @@ the Database Service, including:
 
 Starts Teleport Database Service.
 
-```code
-$ teleport db start \
-    --token=/path/to/token \
-    --auth-server=proxy.example.com:3080 \
-    --name=example \
-    --protocol=postgres \
-    --uri=postgres.example.com:5432
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ teleport db start \
+        --token=/path/to/token \
+        --auth-server=proxy.example.com:3080 \
+        --name=example \
+        --protocol=postgres \
+        --uri=postgres.example.com:5432
+    ```
+  </Tab>
 
-```code
-$ teleport db start \
-    --token=/path/to/token \
-    --auth-server=mytenant.teleport.sh:443 \
-    --name=example \
-    --protocol=postgres \
-    --uri=postgres.mytenant.teleport.sh:5432
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ teleport db start \
+        --token=/path/to/token \
+        --auth-server=mytenant.teleport.sh:443 \
+        --name=example \
+        --protocol=postgres \
+        --uri=postgres.mytenant.teleport.sh:5432
+    ```
+  </Tab>
+</Tabs>
 
 | Flag                        | Description                                                                                            |
 | --------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -94,27 +87,33 @@ $ teleport db start \
 
 Creates a sample Database Service configuration.
 
-```code
-$ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
-$ teleport db configure create \
-  --token=/tmp/token \
-  --proxy=proxy.example.com:3080 \
-  --name=example \
-  --protocol=postgres \
-  --uri=postgres://postgres.example.com:5432 \
-  --labels=env=prod
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
+    $ teleport db configure create \
+      --token=/tmp/token \
+      --proxy=proxy.example.com:3080 \
+      --name=example \
+      --protocol=postgres \
+      --uri=postgres://postgres.example.com:5432 \
+      --labels=env=prod
+    ```
+  </Tab>
 
-```code
-$ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
-$ teleport db configure create \
-  --token=/tmp/token \
-  --proxy=mytenant.teleport.sh:443 \
-  --name=example \
-  --protocol=postgres \
-  --uri=postgres://postgres.mytenant.teleport.sh:5432 \
-  --labels=env=prod
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
+    $ teleport db configure create \
+      --token=/tmp/token \
+      --proxy=mytenant.teleport.sh:443 \
+      --name=example \
+      --protocol=postgres \
+      --uri=postgres://postgres.mytenant.teleport.sh:5432 \
+      --labels=env=prod
+    ```
+  </Tab>
+</Tabs>
 
 | Flag                              | Description                                                                                                                               |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -306,10 +305,18 @@ $ tsh db login example
 $ tsh db login --db-user=postgres --db-name=postgres example
 ```
 
-| Flag        | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| `--db-user` | Optionally, set default database account name to connect as. |
-| `--db-name` | Optionally, set default database name to connect to.         |
+| Flag         | Description                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--db-user`  | The database user to log in as.                                                                                                |
+| `--db-name`  | The database name to log in to.                                                                                                |
+| `--db-roles` | Comma-separated list of database roles to use for auto-provisioned user. If not provided, all database roles will be assigned. |
+
+If `--db-user` or `--db-name` are required, then default settings
+are chosen from either an active database certificate obtained via a prior use
+of `tsh db login` or from the user's allowed `db_users` or `db_names`.
+
+The database user is always required.
+The database name is required for PostgreSQL, MongoDB, and Oracle databases.
 
 ## tsh db logout
 
@@ -331,6 +338,8 @@ $ tsh db connect
 $ tsh db connect example
 # Provide database user and name to connect to.
 $ tsh db connect --db-user=alice --db-name=db example
+# Select a subset of allowed database roles.
+$ tsh db connect --db-user=alice --db-name=db --db-roles reader example
 ```
 
 <Note>
@@ -338,10 +347,18 @@ $ tsh db connect --db-user=alice --db-name=db example
   available in PATH.
 </Note>
 
-| Flag        | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `--db-user` | Optionally, set database user name to connect as. |
-| `--db-name` | Optionally, set database name to connect to.      |
+| Flag         | Description                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--db-user`  | The database user to log in as.                                                                                                |
+| `--db-name`  | The database name to log in to.                                                                                                |
+| `--db-roles` | Comma-separated list of database roles to use for auto-provisioned user. If not provided, all database roles will be assigned. |
+
+If `--db-user` or `--db-name` are required, then default settings
+are chosen from either an active database certificate obtained via a prior use
+of `tsh db login` or from the user's allowed `db_users` or `db_names`.
+
+The database user is always required.
+The database name is required for PostgreSQL, MongoDB, and Oracle databases.
 
 ## tsh db env
 

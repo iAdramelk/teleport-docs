@@ -22,13 +22,13 @@ and behavior.
   In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Jamf Pro integration for
   you, and you can enroll the Jamf Pro integration from the Teleport Web UI.
 
-  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
-  screen. Select the **Management** option.
+  Visit the Teleport Web UI and click **Access Management** on the menu bar at the
+  top of the screen.
 
   On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
   Integration" page:
 
-  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+  ![Enroll an Access Request plugin](/assets/enroll-336e8c2e41.png)
 
   On the "Select Integration Type" menu, click the tile for your integration. You
   will see a page with instructions to set up the integration, as well as a form
@@ -42,30 +42,33 @@ and behavior.
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
   instructions](/docs/installation#installation-instructions) for your environment and Teleport edition.
 
 - To enroll a macOS device, you need:
-  - A signed and notarized `tsh` binary for enrollment.
+  - A signed and notarized `tsh` binary, v12.0.0 or newer.
     [Download the macOS tsh installer](/docs/installation#macos).
-  - A Teleport version newer than v12.0.0.
 - To enroll a Windows device, you need:
-  - A device that includes a TPM with 2.0 support.
-  - `tsh` installed on the device. [Download the Windows tsh installer](/docs/installation#windows-tsh-client-only).
-  - Credentials for a user with administrator privileges for the device. This is only required during enrollment.
-  - A Teleport version newer than v13.1.2.
+  - A device with TPM 2.0.
+  - A user with administrator privileges. This is only required during enrollment.
+  - `tsh` v13.1.2 or newer. [Download the Windows tsh installer](/docs/installation#windows-tsh-client-only).
+- To enroll a Linux device, you need:
+  - A device with TPM 2.0.
+  - A user with permissions to use the /dev/tpmrm0 device (typically done by
+    assigning the `tss` group to the user).
+  - `tsh` v15.0.0 or newer. [Install tsh for Linux](/docs/installation#linux).
 
 ## Step 1/4. Create a Jamf user
 

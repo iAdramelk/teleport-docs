@@ -18,7 +18,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/16.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
       See [Installation](/docs/ver/16.x/installation) for details.
 
@@ -27,11 +27,11 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -40,7 +40,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -49,11 +49,11 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -63,7 +63,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
       [Getting Started](/docs/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      16.0.0-dev.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -73,11 +73,11 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -87,7 +87,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -96,11 +96,11 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -159,7 +159,7 @@ $ ssh user@[server name].[cluster name]
 
 <Note>
   Include the port number for OpenSSH servers, by default `22`, or you can experience an error.
-  See the [OpenSSH guide](/docs/ver/16.x/server-access/guides/openssh) for more information.
+  See the [OpenSSH guide](/docs/ver/16.x/server-access/openssh) for more information.
   Example connecting to a OpenSSH server:
 
   ```code
@@ -221,7 +221,7 @@ After closing the SSH configuration window, you should see `Remote Host` menu in
 ### Using OpenSSH clients
 
 This guide makes use of `tsh config`; refer to the
-[dedicated guide](/docs/ver/16.x/server-access/guides/openssh) for additional information.
+[dedicated guide](/docs/ver/16.x/server-access/openssh) for additional information.
 
 ## Further reading
 

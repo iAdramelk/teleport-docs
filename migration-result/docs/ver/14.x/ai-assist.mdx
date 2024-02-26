@@ -12,11 +12,6 @@ This guide will help you understand how to set up and use Teleport Assist, an
 AI-powered assistant that helps you run commands, debug issues and navigate your
 infrastructure.
 
-<Accordion title="Version warning">
-  Teleport Assist is available starting from Teleport `v12.4` for Teleport
-  Community Edition.
-</Accordion>
-
 ### Architecture diagram
 
 ![Teleport Assist Architecture](/assets/architecture-diagram-9043780567.png)
@@ -29,8 +24,8 @@ infrastructure.
 
 Before you get started with Teleport Assist, make sure you have the following:
 
-- A running Teleport Community Edition cluster. For details on how to set this
-  up, see our [Getting Started](/docs/ver/14.x/index) guide.
+- A running Teleport Community Edition cluster, v12.4 or higher. For details on
+  how to set this up, see our [Getting Started](/docs/ver/14.x/index) guide.
 - **OpenAI Account**: You will need an active OpenAI account with GPT-4 API
   access as Teleport Assist relies on OpenAI services.
 
@@ -81,27 +76,29 @@ To enable Teleport Assist, you need to provide your OpenAI API key. On each
 Proxy and Auth Service host, perform the following actions:
 
 1. Open your Teleport configuration file. This is typically located at `/etc/teleport.yaml`.
+
 2. Add your OpenAI API key to the `assist` section:
 
-If the host is running the Auth Service, add the following section:
+   If the host is running the Auth Service, add the following section:
 
-```yaml
-auth_service:
- assist:
-   openai:
-     api_token_path: /etc/teleport/openai_key
-```
+   ```yaml
+   auth_service:
+     assist:
+       openai:
+         api_token_path: /etc/teleport/openai_key
+   ```
 
-If the host is running the Proxy Service, add the following section:
+   If the host is running the Proxy Service, add the following section:
 
-```yaml
-proxy_service:
-  assist:
-    openai:
-      api_token_path: /etc/teleport/openai_key
-```
+   ```yaml
+   proxy_service:
+     assist:
+       openai:
+         api_token_path: /etc/teleport/openai_key
+   ```
 
 3. Save the changes and close the file.
+
 4. Restart Teleport for the changes to take effect.
 
 Make sure that your Teleport user has the `assistant` permission. By default, users
@@ -110,7 +107,7 @@ add it to a custom role. Here is an example:
 
 ```yaml
 kind: role
-version: v6
+version: v7
 metadata:
   name: assist
 spec:

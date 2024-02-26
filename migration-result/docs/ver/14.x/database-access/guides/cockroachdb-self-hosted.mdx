@@ -4,114 +4,167 @@ description: How to configure Teleport database access with self-hosted Cockroac
 version: '14.x'
 ---
 
-This guide will help you to:
+Teleport can provide secure access to CockroachDB via the  [Teleport Database
+Service](/docs/ver/14.x/database-access/introduction). This allows for
+fine-grained access control through [Teleport's RBAC](/docs/ver/14.x/database-access/rbac).
 
-1. Install Teleport and connect it to a CockroachDB cluster.
-2. Configure mutual TLS authentication between Teleport and your CockroachDB cluster.
-3. Connect to your CockroachDB cluster via Teleport.
+In this guide, you will:
 
-![Teleport Database Access CockroachDB Self-Hosted](/assets/cockroachdb_selfhosted-dbbcf30e46.png)
+1. Configure an CockroachDB with mutual TLS authentication.
+2. Join the CockroachDB database to your Teleport cluster.
+3. Connect to the CockroachDB database via the Teleport Database Service.
 
-![Teleport Database Access CockroachDB Cloud](/assets/cockroachdb_cloud-1ca5b46ba3.png)
+<Tabs>
+  <Tab title="Self-Hosted">
+    ![Teleport Database Access CockroachDB Self-Hosted](/assets/cockroachdb_selfhosted-dbbcf30e46.png)
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    ![Teleport Database Access CockroachDB Cloud](/assets/cockroachdb_cloud-1ca5b46ba3.png)
+  </Tab>
+</Tabs>
 
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
 - CockroachDB cluster.
+
 - A host, e.g., an Amazon EC2 instance, where you will run the Teleport Database
   Service.
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+- A certificate authority to issue CockroachDB certificates for nodes in your
+  CockroachDB cluster.
+
+  <Accordion title="Why do I need my own CA?">
+    Distributed databases like CockroachDB use mTLS for node-to-node communication.
+    Teleport requires that you have your own CA to issue certificates for
+    node-to-node mTLS communication.
+
+    Teleport uses a split-CA architecture for database access. The Teleport `db` CA
+    issues server certificates and the `db_client` CA issues client certificates.
+
+    Databases are configured to trust the Teleport `db_client` CA for client
+    authentication, but not the `db` CA.
+    Additionally, Teleport only issues *ephemeral* `db_client` CA certificates.
+
+    When a CockroachDB node connects to another CockroachDB node, it must present a
+    certificate that the other node trusts for client authentication.
+    Since Teleport does not issue long-lived `db_client` certificates, the node
+    needs to have a long-lived certificate issued by another CA that its peer node
+    trusts.
+
+    The split `db` and `db_client` CA architecture was introduced as a security fix
+    in Teleport `15`.
+  </Accordion>
 
 ## Step 1/4. Set up the Teleport Database Service
 
@@ -127,47 +180,151 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
 <Tabs>
   <Tab title="Linux Server">
-    Use the appropriate commands for your environment to install your package:
+    Select an edition, then follow the instructions for that edition to install Teleport.
 
     <Tabs dropdownView dropdownCaption="Teleport Edition">
-      <Tab title="Teleport Team">
+      <Tab title="Teleport Community Edition">
+        The following command updates the repository for the package manager on the
+        local operating system and installs the provided Teleport version:
+
         ```code
-        $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+        $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
         ```
+      </Tab>
+
+      <Tab title="Teleport Team">
+        <Tabs>
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+            Add the Teleport repository to your repository list:
+
+            ```code
+            # Download Teleport's PGP public key
+            $ sudo curl https://apt.releases.teleport.dev/gpg \
+            -o /usr/share/keyrings/teleport-archive-keyring.asc
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport APT repository for cloud.
+            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
+            $ sudo apt-get update
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum install -y yum-utils
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use the dnf config manager plugin to add the teleport RPM repo
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+          </Tab>
+
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+            ```
+          </Tab>
+        </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
         <Accordion title="Is my Teleport instance compatible with Teleport Team?">
           Before installing a `teleport` binary with a version besides
-          v13, read our compatibility rules to ensure that the
+          v14, read our compatibility rules to ensure that the
           binary is compatible with Teleport Cloud.
 
+          Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+          include a major version, minor version, and patch version, separated by dots.
           When running multiple `teleport` binaries within a cluster, the following rules
           apply:
 
           - **Patch and minor** versions are always compatible, for example, any 8.0.1
             component will work with any 8.0.3 component and any 8.1.0 component will work
             with any 8.3.0 component.
-          - Servers support clients that are 1 major version behind, but do not support
+          - Servers support clients that are one major version behind, but do not support
             clients that are on a newer major version. For example, an 8.x.x Proxy Service
-            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
             This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
             You must upgrade to 7.x.x first.
-          - Proxy Services and resource services do not support Auth Services that are on
-            an older major version, and will fail to connect to older Auth Services by
-            default. This behavior can be overridden by passing `--skip-version-check`
-            when starting Proxy Services and resource services.
+          - Proxy Service instances and agents do not support Auth Service instances that
+            are on an older major version, and will fail to connect to older Auth Service
+            instances by default. You can override version checks by passing
+            `--skip-version-check` when starting agents and Proxy Service instances.
         </Accordion>
       </Tab>
 
-      <Tab title="Open Source">
-        ```code
-        $ curl https://goteleport.com/static/install.sh | bash -s 14.0.0-dev
-        ```
-      </Tab>
-
-      <Tab title="Enterprise">
+      <Tab title="Teleport Enterprise">
         <Tabs>
-          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             ```code
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
@@ -200,7 +357,32 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # First, get the major version from $VERSION_ID so this fetches the correct
             # package version.
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            $ sudo yum install -y yum-utils
             $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+            $ sudo yum install teleport-ent
+            #
+            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo yum install teleport-ent-fips
+            ```
+          </Tab>
+
+          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for v14. You'll need to update this
+            # file for each major release of Teleport.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
             $ sudo yum install teleport-ent
             #
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
@@ -220,6 +402,9 @@ Install and configure Teleport where you will run the Teleport Database Service:
             $ source /etc/os-release
             # Add the Teleport YUM repository for v14. You'll need to update this
             # file for each major release of Teleport.
+            # First, get the major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             # Use the dnf config manager plugin to add the teleport RPM repo
             $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
 
@@ -237,18 +422,40 @@ Install and configure Teleport where you will run the Teleport Database Service:
             ```
           </Tab>
 
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+            ```code
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport-zypper.repo")
+
+            # Install teleport
+            $ sudo zypper install teleport-ent
+            ```
+
+            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+            ```code
+            $ sudo zypper install teleport-ent-fips
+            ```
+          </Tab>
+
           <Tab title="Tarball">
             In the example commands below, update `$SYSTEM_ARCH` with the appropriate
             value (`amd64`, `arm64`, or `arm`). All example commands using this variable
             will update after one is filled out.
 
             ```code
-            $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
             # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
             # Verify that the checksums match
-            $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
             $ cd teleport-ent
             $ sudo ./install
             ```
@@ -257,22 +464,33 @@ Install and configure Teleport where you will run the Teleport Database Service:
             will be slightly different:
 
             ```code
-            $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
             # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
             # Verify that the checksums match
-            $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
             $ cd teleport-ent
             $ sudo ./install
             ```
           </Tab>
         </Tabs>
+
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
       </Tab>
 
-      <Tab title="Enterprise Cloud">
+      <Tab title="Teleport Enterprise Cloud">
         <Tabs>
-          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             Add the Teleport repository to your repository list:
 
             ```code
@@ -281,27 +499,39 @@ Install and configure Teleport where you will run the Teleport Database Service:
             -o /usr/share/keyrings/teleport-archive-keyring.asc
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport apt repository for cloud.
+            # Add the Teleport APT repository for cloud.
             $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
             https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
             | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
             $ sudo apt-get update
-            $ sudo apt-get install teleport-ent
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
 
-          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
             ```code
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport yum repository for cloud.
-            # First, get the major version from $VERSION_ID so this fetches the correct
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
             # package version.
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-            $ sudo yum install teleport-ent
-            #
+            $ sudo yum install -y yum-utils
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
             ```
@@ -311,57 +541,80 @@ Install and configure Teleport where you will run the Teleport Database Service:
             ```code
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport yum repository for cloud.
+            # Add the Teleport YUM repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             # Use the dnf config manager plugin to add the teleport RPM repo
-            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-            # Install teleport
-            $ sudo dnf install teleport-ent
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
             ```
           </Tab>
 
-          <Tab title="Tarball">
-            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-            will update after one is filled out.
-
+          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
             ```code
-            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-            # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            # Verify that the checksums match
-            $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            $ cd teleport-ent
-            $ sudo ./install
+            # Source variables about OS version
+            $ source /etc/os-release
+            # Add the Teleport Zypper repository for cloud.
+            # First, get the OS major version from $VERSION_ID so this fetches the correct
+            # package version.
+            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+            # Use Zypper to add the teleport RPM repo
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
         </Tabs>
 
+        ### OS repository channels
+
+        The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+        `stable/v14` anywhere in the Teleport documentation.
+
+        | Channel name     | Description                                                                  |
+        | ---------------- | ---------------------------------------------------------------------------- |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+        | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+        | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
         <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
-          Before installing a `teleport` binary with a version besides v13,
+          Before installing a `teleport` binary with a version besides v14,
           read our compatibility rules to ensure that the binary is compatible with
           Teleport Enterprise Cloud.
 
+          Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+          include a major version, minor version, and patch version, separated by dots.
           When running multiple `teleport` binaries within a cluster, the following rules
           apply:
 
           - **Patch and minor** versions are always compatible, for example, any 8.0.1
             component will work with any 8.0.3 component and any 8.1.0 component will work
             with any 8.3.0 component.
-          - Servers support clients that are 1 major version behind, but do not support
+          - Servers support clients that are one major version behind, but do not support
             clients that are on a newer major version. For example, an 8.x.x Proxy Service
-            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+            instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+            guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
             This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
             You must upgrade to 7.x.x first.
-          - Proxy Services and resource services do not support Auth Services that are on
-            an older major version, and will fail to connect to older Auth Services by
-            default. This behavior can be overridden by passing `--skip-version-check`
-            when starting Proxy Services and resource services.
+          - Proxy Service instances and agents do not support Auth Service instances that
+            are on an older major version, and will fail to connect to older Auth Service
+            instances by default. You can override version checks by passing
+            `--skip-version-check` when starting agents and Proxy Service instances.
         </Accordion>
       </Tab>
     </Tabs>
@@ -380,7 +633,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
     <Tabs>
       <Tab title="Teleport Enterprise/Enterprise Cloud">
         ```code
-        $ teleport db configure create \
+        $ sudo teleport db configure create \
            -o file \
            --token=/tmp/token \
            --proxy=teleport.example.com:443 \
@@ -393,7 +646,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
       <Tab title="Teleport Team/Community Edition">
         ```code
-        $ teleport db configure create \
+        $ sudo teleport db configure create \
            -o file \
            --token=/tmp/token \
            --proxy=mytenant.teleport.sh:443 \
@@ -438,13 +691,16 @@ Install and configure Teleport where you will run the Teleport Database Service:
   <Tab title="Kubernetes Cluster">
     Teleport provides Helm charts for installing the Teleport Database Service in Kubernetes Clusters.
 
-    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+    Set up the Teleport Helm repository.
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
     ```code
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
-    To update the cache of charts from the remote repository, run `helm repo update`:
+    Update the cache of charts from the remote repository so you can upgrade to all
+    available releases:
 
     ```code
     $ helm repo update
@@ -467,7 +723,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           --set "databases[0].uri=roach.example.com:26257" \
           --set "databases[0].protocol=cockroachdb" \
           --set "labels.env=dev" \
-          --version 14.0.0-dev
+          --version 14.3.6
         ```
       </Tab>
 
@@ -487,10 +743,19 @@ Install and configure Teleport where you will run the Teleport Database Service:
           --set "databases[0].uri=roach.example.com:26257" \
           --set "databases[0].protocol=cockroachdb" \
           --set "labels.env=dev" \
-          --version 13.2.0
+          --version 14.3.6
         ```
       </Tab>
     </Tabs>
+
+    Make sure that the Teleport agent pod is running. You should see one
+    `teleport-kube-agent` pod with a single ready container:
+
+    ```code
+    $ kubectl -n teleport-agent get pods
+    NAME                    READY   STATUS    RESTARTS   AGE
+    teleport-kube-agent-0   1/1     Running   0          32s
+    ```
   </Tab>
 </Tabs>
 
@@ -565,59 +830,162 @@ in the CockroachDB documentation for more information.
 
 ### Set up mutual TLS
 
-Teleport uses mutual TLS authentication with self-hosted databases. These
-databases must be configured with Teleport's certificate authority to be
-able to verify client certificates. They also need a certificate/key pair that
-Teleport can verify.
-
-Your Teleport Cloud user
-must be allowed to impersonate the system role `Db` in order to be able to
-generate the database certificate.
-
-Include the following `allow` rule in in your Teleport Cloud user's role:
-
-```yaml
-allow:
-  impersonate:
-    users: ["Db"]
-    roles: ["Db"]
-```
-
 To set up mutual TLS authentication, you need to make sure that:
 
 - Teleport trusts certificates presented by CockroachDB nodes.
-- CockroachDB trusts client certificates signed by Teleport.
+- CockroachDB nodes trust client certificates signed by both your CockroachDB CA
+  and your Teleport cluster's `db_client` CA.
 
-Generate the secrets by running the following `tctl` command against your
-Teleport cluster:
+CockroachDB nodes need to trust the Teleport `db_client` CA so that Teleport
+users can authenticate to your CockroachDB cluster as clients.
 
-```code
-$ tctl auth sign \
-    --format=cockroachdb \
-    --host=roach.example.com \
-    --out=/path/to/cockroach/certs/dir/ \
-    --ttl=2190h
-```
+The CockroachDB CA needs to be trusted by each CockroachDB node so that nodes
+can authenticate themselves as clients to other nodes in the CockroachDB
+cluster. This is because CockroachDB uses mTLS for node-to-node communication.
 
-The command will produce 3 files: `ca.crt` with Teleport's certificate authority
-and `node.crt` / `node.key` with the node's certificate and key. Do not rename
-them as this is how CockroachDB expects them to be named. See [Node key and certificates](https://www.cockroachlabs.com/docs/v21.1/create-security-certificates-custom-ca#node-key-and-certificates)
-for details.
+<Tabs>
+  <Tab title="Nodes serving your CockroachDB CA certs">
+    In this configuration, your CockroachDB CA will be used to issue the server cert
+    `node.crt` for each CockroachDB node.
 
-Generate the secrets for each cluster node and make sure to use the hostname
-Teleport will be using to connect to the nodes in the `--host` flag.
+    This configuration is simpler to set up, because an existing CockroachDB cluster
+    already has `node.crt` issued for each node and you only need to configure the
+    CockroachDB nodes to trust your Teleport `db_client` CA.
+    Another benefit is that your CockroachDB nodes will continue to serve the same
+    CockroachDB CA-issued cert, rather than serving a new cert signed by Teleport's
+    `db` CA, so you don't have to configure other clients to trust a new CA.
 
-<Tip>
-  You can specify multiple comma-separated addresses e.g. `--host=roach,node-1,192.168.1.1`.
-</Tip>
+    Copy your CockroachDB CA cert to `ca-client.crt` in the certs directory of
+    each CockroachDB node:
+
+    ```code
+    $ CERTS_DIR=/path/to/cockroachdb/certs/dir
+    $ cp "${CERTS_DIR}/ca.crt" "${CERTS_DIR}/ca-client.crt"
+    ```
+
+    Next, for each CockroachDB node, export Teleport's `db_client` CA using `tctl`
+    (or export it once and copy it to each node) and append the certificate to
+    `ca-client.crt`:
+
+    ```code
+    $ tctl auth export --type=db_client >> /path/to/cockroachdb/certs/dir/ca-client.crt
+    ```
+
+    Modify the Teleport Database Service to trust your CockroachDB CA:
+
+    ```yaml
+      databases:
+      - name: "example-cockroachdb"
+        protocol: "cockroachdb"
+        uri: "cockroachdb.example.com:26257"
+        static_labels:
+          "env": "example"
+        tls:
+          ca_cert_file: "undefined"
+    ```
+
+    Now the Teleport Database Service will trust certificates presented by your
+    CockroachDB.
+  </Tab>
+
+  <Tab title="Nodes serving your Teleport CA certs">
+    In this configuration, Teleport's CA will be used to issue the server cert,
+    `node.crt`, and your own custom CA will be used to issue the client certificate,
+    `client.node.crt`, for each CockroachDB node.
+
+    Teleport uses mutual TLS authentication with self-hosted databases. These
+    databases must be configured with Teleport's certificate authority to be
+    able to verify client certificates. They also need a certificate/key pair that
+    Teleport can verify.
+
+    If you are using Teleport Cloud, your Teleport user must be allowed to
+    impersonate the system role `Db` in order to be able to generate the database
+    certificate.
+
+    Include the following `allow` rule in in your Teleport Cloud user's role:
+
+    ```yaml
+    allow:
+      impersonate:
+        users: ["Db"]
+        roles: ["Db"]
+    ```
+
+    Generate secrets for a CockroachDB node using `tctl`:
+
+    ```code
+    $ tctl auth sign \
+        --format=cockroachdb \
+        --host=roach.example.com \
+        --out=/path/to/cockroachdb/certs/dir \
+        --ttl=2190h
+    ```
+
+    <Note>
+      We recommend using a shorter TTL, but keep mind that you'll need to update the
+      database server certificate before it expires to not lose the ability to
+      connect. Pick the TTL value that best fits your use-case.
+    </Note>
+
+    The command will produce 4 files:
+
+    - `ca.crt` with Teleport's `db` certificate authority
+    - `ca-client.crt` with Teleport's `db_client` certificate authority
+    - `node.crt` / `node.key` with the node's certificate and key.
+
+    <Note>
+      You can specify multiple comma-separated addresses e.g.
+      `--host=roach,node-1,192.168.1.1`.
+      However, you must include the hostname that Teleport will use to connect to the
+      database.
+    </Note>
+
+    Do not rename these files as this is how CockroachDB expects them to be named.
+    See [Node key and certificates](https://www.cockroachlabs.com/docs/v21.1/create-security-certificates-custom-ca#node-key-and-certificates)
+    for details.
+
+    Prepend your CockroachDB CA's certificate to `ca-client.crt`.
+    Now issue a client certificate for the node using your CockroachDB CA:
+
+    ```code
+    $ cockroach cert create-client node \
+      --certs-dir=/path/to/cockroachdb/certs/dir \
+      --ca-key=ca-secrets/ca-client.key
+    ```
+
+    <Accordion title="Seeing an error message about TLS key mismatch?">
+      If you see an error message like: `tls: private key does not match public key`,
+      it likely means you did not prepend your CockroachDB CA cert to `ca-client.crt`
+      earlier.
+
+      `cockroach cert create-client` expects the first certificate in `ca-client.crt`
+      (in the `--certs-dir` specified) to be the certificate signed by `--ca-key`.
+      Ensure that your CockroachDB CA certificate is the first certificate in
+      `ca-client.crt`.
+    </Accordion>
+
+    Now copy `<Var name="/path/to/cockroachdb/certs/dir" />` to the CockroachDB
+    node and repeat these steps for all of your other CockroachDB nodes.
+  </Tab>
+</Tabs>
 
 Restart your CockroachDB nodes, passing them the directory with generated secrets
 via the `--certs-dir` flag:
 
 ```code
 $ cockroach start \
-    --certs-dir=/path/to/cockroachdb/certs/dir/ \
+    --certs-dir=/path/to/cockroachdb/certs/dir \
     # other flags...
+```
+
+Alternatively, if the nodes were already started with
+`--certs-dir=<Var name="/path/to/cockroachdb/certs/dir" />`, you can send a
+`SIGHUP` signal to the `cockroach` process to reload certificates without
+restarting the node. You must send `SIGHUP` as the same user that started the
+`cockroach` process:
+
+```code
+$ pkill -SIGHUP -x cockroach
 ```
 
 ## Step 4/4. Connect
@@ -671,6 +1039,24 @@ To log out of the database and remove credentials:
 $ tsh db logout roach
 ```
 
+## Troubleshooting
+
+### Unimplemented client encoding error
+
+You may encounter the `unimplemented client encoding: "sqlascii"` error when
+connecting to your CockroachDB database if your `psql` uses SQL\_ASCII encoding.
+
+CockroachDB supports only UTF8 client encoding. To enforce the encoding, set
+the following environment variable in the shell running `tsh db connect`:
+
+```bash
+export PGCLIENTENCODING='utf-8'
+```
+
+If you are connecting the CockroachDB database with Teleport Connect, add the
+environment variable to your shell startup scripts and restart the Teleport
+Connect app.
+
 ## Next steps
 
 {/* lint ignore list-item-spacing remark-lint */}
@@ -679,14 +1065,19 @@ $ tsh db logout roach
 
 {/* lint ignore list-item-spacing remark-lint */}
 
+- Learn more about [dynamic database registration](/docs/ver/14.x/database-access/guides/dynamic-registration).
+
+{/* lint ignore list-item-spacing remark-lint */}
+
 - View the [High Availability (HA)](/docs/ver/14.x/database-access/guides/ha) guide.
 
 {/* lint ignore list-item-spacing remark-lint */}
 
-- Take a look at the YAML configuration [reference](/docs/ver/14.x/database-access/reference/configuration).
+- See the YAML configuration [reference](/docs/ver/14.x/database-access/reference/configuration) for updating dynamic resource matchers or static database definitions.
 
 {/* lint ignore list-item-spacing remark-lint */}
 
-- See the full CLI [reference](/docs/ver/14.x/database-access/reference/cli).
+- Take a look at the full CLI [reference](/docs/ver/14.x/database-access/reference/cli).
 
 - [CockroachDB client authentication](https://www.cockroachlabs.com/docs/stable/authentication.html#client-authentication)
+- [CockroachDB using split CA certificates](https://www.cockroachlabs.com/docs/stable/authentication#using-split-ca-certificates)

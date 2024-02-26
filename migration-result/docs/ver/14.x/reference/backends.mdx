@@ -11,12 +11,12 @@ For self-hosted Teleport deployments, you can configure Teleport to integrate
 with other storage types based on the nature of the stored data (size,
 read/write ratio, mutability, etc.).
 
-| Data type               | Description                                                                                                                                 | Supported storage backends                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| core cluster state      | Cluster configuration (e.g. users, roles, auth connectors) and identity (e.g. certificate authorities, registered nodes, trusted clusters). | Local directory (SQLite), etcd, AWS DynamoDB, GCP Firestore                |
-| audit events            | JSON-encoded events from the audit log (e.g. user logins, RBAC changes)                                                                     | Local directory, AWS DynamoDB, GCP Firestore                               |
-| session recordings      | Raw terminal recordings of interactive user sessions                                                                                        | Local directory, AWS S3 (and any S3-compatible product), GCP Cloud Storage |
-| teleport instance state | ID and credentials of a non-auth teleport instance (e.g. node, proxy)                                                                       | Local directory                                                            |
+| Data type               | Description                                                                                                                                 | Supported storage backends                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| core cluster state      | Cluster configuration (e.g. users, roles, auth connectors) and identity (e.g. certificate authorities, registered nodes, trusted clusters). | Local directory (SQLite), etcd, PostgreSQL, AWS DynamoDB, GCP Firestore                        |
+| audit events            | JSON-encoded events from the audit log (e.g. user logins, RBAC changes)                                                                     | Local directory, PostgreSQL, AWS DynamoDB, GCP Firestore                                       |
+| session recordings      | Raw terminal recordings of interactive user sessions                                                                                        | Local directory, AWS S3 (and any S3-compatible product), GCP Cloud Storage, Azure Blob Storage |
+| teleport instance state | ID and credentials of a non-auth teleport instance (e.g. node, proxy)                                                                       | Local directory                                                                                |
 
 <Tip>
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/14.x/architecture/nodes#cluster-state)
@@ -40,7 +40,7 @@ run in a highly available fashion.
   Teleport Team.
 </Tip>
 
-## Auth Server State
+## Auth Service State
 
 To run multiple instances of the Teleport Auth Service, you must switch to one of
 the high-availability secrets backend listed below first.
@@ -61,7 +61,7 @@ load balancing, and a 300 second idle timeout.
   `tokens`, `storage`, etc. must be the same.
 </Tip>
 
-## Proxy Server State
+## Proxy Service State
 
 The Teleport Proxy is stateless which makes running multiple instances trivial.
 
@@ -83,12 +83,21 @@ load balancing, and a 300 second idle timeout.
 If your load balancer supports HTTP health checks, configure it to hit the
 `/readyz` [diagnostics endpoint](/docs/ver/14.x/management/diagnostics/monitoring) on
 machines running Teleport. This endpoint must be enabled by using the
-`--diag-addr` flag to teleport start: `teleport start --diag-addr=127.0.0.1:3000` The
-[http://127.0.0.1:3000/readyz](http://127.0.0.1:3000/readyz) endpoint will
-reply `{"status":"ok"}` if the Teleport service is running without problems.
+`--diag-addr` flag to teleport start:
 
-We'll cover how to use `etcd`, DynamoDB, and Firestore storage back-ends to
-make Teleport highly available below.
+```code
+$ teleport start --diag-addr=0.0.0.0:3000
+```
+
+The `/readyz` endpoint will
+reply `{"status":"ok"}` if the Teleport service is running without problems.
+The endpoint must be exposed on a proxy interface for the load balancer health checks
+to succeed.  You should only do this on the proxy instances and ensure that
+port 3000 is not exposed to the public internet, just the load balancers.  For other services, continue to use
+the 127.0.0.1 local loopback interface.
+
+We'll cover how to use `etcd`, PostgreSQL, DynamoDB, and Firestore storage
+backends to make Teleport highly available below.
 
 ## Etcd
 
@@ -99,7 +108,7 @@ and user records will be stored.
 
 <Warning>
   `etcd` can only currently be used to store Teleport's internal database in a
-  highly-available way. This will allow you to have multiple auth servers in your
+  highly-available way. This will allow you to have multiple Auth Service instances in your
   cluster for an High Availability deployment, but it will not also store Teleport audit events
   for you in the same way that [DynamoDB](#dynamodb) or
   [Firestore](#firestore) will. `etcd` is not designed to handle large volumes of time series data like audit events.
@@ -115,9 +124,9 @@ To configure Teleport for using etcd as a storage backend:
   - You can use [this script provided by
     etcd](https://github.com/etcd-io/etcd/tree/master/hack/tls-setup) if you
     don't already have a TLS setup.
-- Configure all Teleport Auth servers to use etcd in the "storage" section of the config file as shown below.
-- Deploy several auth servers connected to etcd backend.
-- Deploy several Proxy Service instances that have `auth_server` pointed to the auth server to connect to.
+- Configure all Teleport Auth Service instances to use etcd in the "storage" section of the config file as shown below.
+- Deploy several Auth Service instances connected to etcd backend.
+- Deploy several Proxy Service instances that have `auth_server` pointed to the Auth Service to connect to.
 
 ```yaml
 teleport:
@@ -170,6 +179,337 @@ teleport:
      #
      # This bumps the size to 15MiB as an example:
      etcd_max_client_msg_size_bytes: 15728640
+```
+
+## PostgreSQL
+
+PostgreSQL cluster state and audit log storage is available starting from
+Teleport `13.3`.
+
+<Tip>
+  Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/14.x/architecture/nodes#cluster-state)
+  in Teleport Architecture documentation.
+</Tip>
+
+Teleport can use [PostgreSQL](https://www.postgresql.org/) as a storage backend
+to achieve high availability. You must take steps to protect access to
+PostgreSQL in this configuration because that is where Teleport secrets like
+keys and user records will be stored. The PostgreSQL backend supports two types
+of Teleport data:
+
+- Cluster state
+- Audit log events
+
+The PostgreSQL backend requires PostgreSQL 13 or later, and, for the cluster
+state only, the [`wal2json`](https://github.com/eulerto/wal2json) logical
+decoding plugin. The plugin is available in packages for all stable versions in
+the PostgreSQL [Apt](https://apt.postgresql.org/) and
+[Yum](https://yum.postgresql.org/) repositories for Debian- and RPM-based Linux
+distributions respectively, or it can be compiled following [the
+instructions](https://github.com/eulerto/wal2json#build-and-install) provided in
+its repository. The plugin is pre-installed with no extra steps to take in
+[Azure Database for
+PostgreSQL](https://azure.microsoft.com/en-us/products/postgresql).
+
+Teleport needs separate databases for the cluster state and the
+audit log, and it will attempt to create them if given permissions to do so; it
+will also set up the database schemas as needed, so we recommend giving the user
+ownership over the databases.
+
+The PostgreSQL backend for cluster state relies on the ability to use [logical
+decoding](https://www.postgresql.org/docs/current/logicaldecoding.html) to get a
+stream of changes from the database; because of that, the
+[`wal_level`](https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-WAL-LEVEL)
+parameter must be set to `logical` and
+[`max_replication_slots`](https://www.postgresql.org/docs/current/runtime-config-replication.html#GUC-MAX-REPLICATION-SLOTS)
+must be set to at least as many Teleport Auth Service instances as you'll be
+running (a higher number is recommended, to account for network conditions).
+
+The Teleport Auth Service needs to be able to create a replication slot when
+starting and when reestablishing a new connection to the PostgreSQL cluster, and
+any long-running transaction will prevent that. It's therefore only advisable to
+store the Teleport cluster state on a shared PostgreSQL cluster if the other
+workloads on the cluster only consist of short-lived transactions.
+
+`wal_level` can only be set at server start, so it should be set in
+`postgresql.conf`:
+
+```
+# the default value for wal_level is replica
+wal_level = logical
+
+# the default value for max_replication_slots is 10
+max_replication_slots = 10
+```
+
+In addition, the database user must have the `initiating replication` [role
+attribute](https://www.postgresql.org/docs/current/role-attributes.html). In the
+`psql` shell:
+
+```
+postgres=# CREATE USER new_user WITH REPLICATION;
+CREATE ROLE
+
+postgres=# ALTER ROLE existing_user WITH LOGIN REPLICATION;
+ALTER ROLE
+```
+
+Since replication permissions allow for essentially full read access over the
+entire cluster (with a physical replication connection) or to all databases that
+the user can connect to, it's recommended to prevent the user from opening
+replication connections, or from connecting to databases other than the ones
+used for Teleport, if the PostgreSQL cluster is shared between Teleport and
+other applications.
+
+For convenience, Teleport will attempt to grant itself the `initiating
+replication` role attribute, to accommodate the ability of some managed services
+(such as Azure Database for PostgreSQL) to create superuser accounts through
+their API; this should only be leveraged if the entire PostgreSQL cluster is
+dedicated to Teleport.
+
+To configure Teleport to use PostgreSQL:
+
+- Configure all Teleport Auth Service instances to use the PostgreSQL backend in the
+  `storage` section of `teleport.yaml` as shown below.
+- Deploy several Auth Service instances connected to the PostgreSQL storage backend.
+- Deploy several Proxy Service nodes.
+- Make sure that the Proxy Service instances and all Teleport agent services that
+  connect directly to the the Auth Service have the `auth_server` configuration
+  setting populated with the address of a load balancer for Auth Service
+  instances.
+
+```yaml
+teleport:
+  storage:
+    type: postgresql
+
+    # conn_string is a libpq-compatible connection string (see
+    # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING);
+    # pool_max_conns is an additional parameter that determines the maximum
+    # number of connections in the connection pool used for the cluster state
+    # database (the change feed uses an additional connection), defaulting to
+    # a value that depends on the number of available CPUs.
+    #
+    # If your certificates are not stored at the default ~/.postgresql
+    # location, you will need to specify them with the sslcert, sslkey, and
+    # sslrootcert parameters.
+    conn_string: postgresql://user_name@database-address/teleport_backend?sslmode=verify-full&pool_max_conns=20
+
+    # In certain managed environments it can be necessary or convenient to
+    # use a different user or different settings for the connection used
+    # to set up and make use of logical decoding. If specified, Teleport
+    # will use the connection string in change_feed_conn_string for that,
+    # instead of the one in conn_string. Available in Teleport 13.4 and later.
+    change_feed_conn_string: postgresql://replication_user_name@database-address/teleport_backend?sslmode=verify-full
+
+    # An audit_events_uri with a scheme of postgresql:// will use the
+    # PostgreSQL backend for audit log storage; the URI is a libpq-compatible
+    # connection string just like the cluster state conn_string, but cannot be
+    # specified as key=value pairs. It's possible to specify completely
+    # different PostgreSQL clusters for cluster state and audit log.
+    #
+    # If your certificates are not stored at the default ~/.postgresql
+    # location, you will need to specify them with the sslcert, sslkey, and
+    # sslrootcert parameters.
+    audit_events_uri:
+      - postgresql://user_name@database-address/teleport_audit?sslmode=verify-full
+```
+
+Audit log events are periodically deleted after a default retention period of
+8766 hours (one year); it's possible to select a different retention period or
+to disable the cleanup entirely, by specifying the `retention_period` or the
+`disable_cleanup` parameters in the fragment of the URI:
+
+```yaml
+storage:
+  teleport:
+    audit_events_uri:
+      - postgresql://user_name@database-address/teleport_audit?sslmode=verify-full#disable_cleanup=false&retention_period=2160h
+```
+
+### Authentication
+
+We strongly recommend using [client
+certificates](https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-CLIENT-CERTIFICATES)
+to authenticate Teleport to PostgreSQL, as well as enforcing the use of TLS and
+[verifying the server
+certificate](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBQ-SSL-CERTIFICATES)
+on the client side.
+
+You will need to update your `pg_hba.conf` file to include the following lines
+to ensure connections to Teleport use client certificates. See The
+[pg\_hba.conf](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)
+file in the PostgreSQL documentation for more details.
+
+```
+# TYPE  DATABASE        USER            CIDR-ADDRESS            METHOD
+hostssl teleport        all             ::/0                    cert
+hostssl teleport        all             0.0.0.0/0               cert
+```
+
+If the use of passwords is unavoidable, we recommend configuring them in [the
+`~/.pgpass` file](https://www.postgresql.org/docs/current/libpq-pgpass.html)
+rather than storing them in Teleport's configuration file.
+
+### Azure AD authentication
+
+If you are running Teleport on Azure, Teleport can make use of [Azure AD
+authentication](https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-azure-ad-authentication)
+to connect to an Azure Database for PostgreSQL server without having to manage
+any secrets:
+
+```yaml
+teleport:
+  storage:
+    type: postgresql
+
+    conn_string: postgresql://user_name@database-name.postgres.database.azure.com/teleport_backend?sslmode=verify-full&pool_max_conns=20
+    auth_mode: azure
+
+    audit_events_uri:
+      - postgresql://user_name@database-name.postgres.database.azure.com/teleport_audit?sslmode=verify-full#auth_mode=azure
+```
+
+When `auth_mode` is set to `azure`, Teleport will automatically fetch
+short-lived tokens from the credentials available to it, to be used as database
+passwords. The database user must be [configured to allow connections using
+Azure
+AD](https://learn.microsoft.com/azure/postgresql/flexible-server/how-to-configure-sign-in-azure-ad-authentication).
+
+Teleport will make use of the Azure AD credentials specified by [environment
+variables](https://learn.microsoft.com/azure/developer/go/azure-sdk-authentication#2-authenticate-with-azure),
+[Azure AD Workload
+Identity](https://learn.microsoft.com/azure/aks/workload-identity-overview)
+credentials, or [managed
+identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview)
+credentials.
+
+### Development
+
+If you are not ready to connect Teleport to a production instance of
+PostgreSQL, you can use the following instructions to set up a throwaway
+instance of PostgreSQL using Docker.
+
+First copy the following script to disk and run it to generate the CA, client
+certificate, and server certificate used by Teleport and PostgreSQL to
+establish a secure mutually authenticated connection:
+
+```
+#!/bin/bash
+
+# Create the certs directory.
+mkdir -p ./certs
+cd certs/
+
+# Create CA key and self-signed certificate.
+openssl genpkey -algorithm RSA -out ca.key
+openssl req -x509 -new -key ca.key -out ca.crt -subj "/CN=root"
+
+# Function to create certificates.
+create_certificate() {
+    local name="$1"
+    local dns_name="$2"
+
+    openssl genpkey \
+        -algorithm RSA \
+        -out "${name}.key"
+    openssl req -new \
+        -key "${name}.key" \
+        -out "${name}.csr" \
+        -subj "/CN=${dns_name}"
+    openssl x509 -req \
+        -in "${name}.csr" \
+        -CA ca.crt \
+        -CAkey ca.key \
+        -out "${name}.crt" \
+        -extfile <(printf "subjectAltName=DNS:${dns_name}") \
+        -CAcreateserial
+
+    chmod 0600 "${name}.key"
+}
+
+# Create client certificate with SAN.
+create_certificate "client" "teleport"
+
+# Create server certificate with SAN.
+create_certificate "server" "localhost"
+
+echo "Certificates and keys generated successfully."
+```
+
+Next, create a `Dockerfile` using the [official PostgreSQL Docker
+image](https://hub.docker.com/_/postgres) and add `wal2json` to it:
+
+```
+FROM postgres:15.0
+RUN apt-get update
+RUN apt-get install -y postgresql-15-wal2json
+```
+
+Create an `init.sql` file that will ensure the Teleport user is created upon
+startup of the container:
+
+```
+CREATE USER teleport WITH REPLICATION CREATEDB;
+```
+
+Create a `pg_hba.conf` file to enforce certificate-based authentication for
+connections to PostgreSQL:
+
+```
+# TYPE  DATABASE        USER            CIDR-ADDRESS            METHOD
+local   all             all                                     trust
+hostssl all             all             ::/0                    cert
+hostssl all             all             0.0.0.0/0               cert
+```
+
+Create a `postgresql.conf` file that configures the WAL level and certificates
+used for authentication:
+
+```
+listen_addresses = '*'
+port = 5432
+max_connections = 20
+shared_buffers = 128MB
+temp_buffers = 8MB
+work_mem = 4MB
+
+wal_level=logical
+max_replication_slots=10
+
+ssl=on
+ssl_ca_file='/certs/ca.crt'
+ssl_cert_file='/certs/server.crt'
+ssl_key_file='/certs/server.key'
+```
+
+Start the PostgreSQL container with the following command:
+
+```
+docker run --rm --name postgres \
+    -e POSTGRES_DB=db \
+    -e POSTGRES_USER=user \
+    -e POSTGRES_PASSWORD=password \
+    -v $(pwd)/data:/var/lib/postgresql/data \
+    -v $(pwd)/certs:/certs \
+    -v $(pwd)/postgresql.conf:/etc/postgresql/postgresql.conf \
+    -v $(pwd)/pg_hba.conf:/etc/postgresql/pg_hba.conf \
+    -v $(pwd)/init.sql:/docker-entrypoint-initdb.d/init.sql \
+    -p 5432:5432 \
+    $(docker build -q .) \
+    postgres \
+    -c hba_file=/etc/postgresql/pg_hba.conf \
+    -c config_file=/etc/postgresql/postgresql.conf
+```
+
+Lastly, update the storage section in `teleport.yaml` to use PostgreSQL and
+start Teleport:
+
+```yaml
+teleport:
+  storage:
+    type: postgresql
+    conn_string: "postgresql://teleport@localhost:5432/teleport_backend?sslcert=/path/to/certs/client.crt&sslkey=/path/to/certs/client.key&sslrootcert=/path/to/certs/ca.crt&sslmode=verify-full&pool_max_conns=20"
 ```
 
 ## S3
@@ -315,9 +655,9 @@ enable the Auth Service to create and configure it for you:
 
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value      | Replace with                                             |
-    | ---------------------- | -------------------------------------------------------- |
-    | `your-sessions-bucket` | Name to use for the Teleport S3 session recording bucket |
+    | Placeholder value    | Replace with                                             |
+    | -------------------- | -------------------------------------------------------- |
+    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -356,9 +696,9 @@ enable the Auth Service to create and configure it for you:
   <Tab title="Auth Service Creates a Bucket">
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value      | Replace with                                             |
-    | ---------------------- | -------------------------------------------------------- |
-    | `your-sessions-bucket` | Name to use for the Teleport S3 session recording bucket |
+    | Placeholder value    | Replace with                                             |
+    | -------------------- | -------------------------------------------------------- |
+    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -558,14 +898,14 @@ For more information, see the [AWS Documentation](https://docs.aws.amazon.com/Am
 </Tip>
 
 If you are running Teleport on AWS, you can use
-[DynamoDB](https://aws.amazon.com/dynamodb/) as a storage back-end to achieve
+[DynamoDB](https://aws.amazon.com/dynamodb/) as a storage backend to achieve
 High Availability. DynamoDB backend supports two types of Teleport data:
 
 - Cluster state
 - Audit log events
 
 Teleport uses DynamoDB and DynamoDB Streams endpoints for its storage
-back-end management.
+backend management.
 
 DynamoDB cannot store the recorded sessions. You are advised to use AWS S3 for
 that as shown above.
@@ -646,8 +986,17 @@ Service to create and configure one for you:
 
 <Tabs>
   <Tab title="Manage a Table Yourself">
-    If you choose to manage a DynamoDB table yourself, the table must have the
-    following attribute definitions:
+    If you choose to manage DynamoDB tables yourself, you must take the following
+    steps, which we will explain in more detail below:
+
+    - Create a cluster state table.
+    - Create an audit event table.
+    - Create an IAM policy and attach it to the Teleport Auth Service's IAM
+      identity.
+
+    #### Create a cluster state table
+
+    The cluster state table must have the following attribute definitions:
 
     | Name       | Type |
     | ---------- | ---- |
@@ -661,14 +1010,37 @@ Service to create and configure one for you:
     | `HashKey`  | `HASH`  |
     | `FullPath` | `RANGE` |
 
+    #### Create an audit event table
+
+    The audit event table must have the following attribute definitions:
+
+    | Name            | Type |
+    | --------------- | ---- |
+    | `SessionID`     | `S`  |
+    | `EventIndex`    | `N`  |
+    | `CreatedAtDate` | `S`  |
+    | `CreatedAt`     | `N`  |
+
+    The table must also have the following key schema elements:
+
+    | Name            | Type    |
+    | --------------- | ------- |
+    | `CreatedAtDate` | `HASH`  |
+    | `CreatedAt`     | `RANGE` |
+
+    #### Create and attach an IAM policy
+
+    Create the following IAM policy and attach it to the Teleport Auth Service's IAM
+    identity.
+
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value       | Replace with                                                                                       |
-    | ----------------------- | -------------------------------------------------------------------------------------------------- |
-    | `us-west-2`             | AWS region                                                                                         |
-    | `1234567890`            | AWS account ID                                                                                     |
-    | `teleport-helm-backend` | DynamoDB table name to use for the Teleport backend                                                |
-    | `teleport-helm-events`  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | Placeholder value     | Replace with                                                                                       |
+    | --------------------- | -------------------------------------------------------------------------------------------------- |
+    | US-WEST-2             | AWS region                                                                                         |
+    | 1234567890            | AWS account ID                                                                                     |
+    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
+    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -732,12 +1104,12 @@ Service to create and configure one for you:
   <Tab title="Auth Service Creates a Table">
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value       | Replace with                                                                                       |
-    | ----------------------- | -------------------------------------------------------------------------------------------------- |
-    | `us-west-2`             | AWS region                                                                                         |
-    | `1234567890`            | AWS account ID                                                                                     |
-    | `teleport-helm-backend` | DynamoDB table name to use for the Teleport backend                                                |
-    | `teleport-helm-events`  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | Placeholder value     | Replace with                                                                                       |
+    | --------------------- | -------------------------------------------------------------------------------------------------- |
+    | US-WEST-2             | AWS region                                                                                         |
+    | 1234567890            | AWS account ID                                                                                     |
+    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
+    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -802,13 +1174,21 @@ Service to create and configure one for you:
 
 To configure Teleport to use DynamoDB:
 
-- Configure all Teleport Auth servers to use DynamoDB back-end in the "storage"
+- Configure all Teleport Auth servers to use DynamoDB backend in the "storage"
   section of `teleport.yaml` as shown below.
 - Auth servers must be able to reach DynamoDB and DynamoDB Streams endpoints.
-- Deploy several auth servers connected to DynamoDB storage back-end.
+- Deploy up to two auth servers connected to DynamoDB storage backend.
 - Deploy several proxy nodes.
 - Make sure that all Teleport resource services have the `auth_servers` configuration setting
   populated with the addresses of your cluster's Auth Service instances.
+
+<Note>
+  AWS can throttle DynamoDB if more than two processes are reading from the same
+  stream's shard simultaneously, so you must not deploy more than two Auth Service
+  instances that read from a DynamoDB backend. For details on DynamoDB Streams,
+  read the [AWS
+  documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html).
+</Note>
 
 ```yaml
 teleport:
@@ -833,7 +1213,16 @@ teleport:
 
     # By default, Teleport stores audit events with an AWS TTL of 1 year.
     # This value can be configured as shown below. If set to 0 seconds, TTL is disabled.
-    audit_retention_period: 365d
+    retention_period: 365d
+
+    # Enables either Pay Per Request or Provisioned billing for the DynamoDB table. Set when Teleport creates the table.
+    # Possible values: "pay_per_request" and "provisioned"
+    # default: "pay_per_request"
+    billing_mode: "pay_per_request"
+
+    # continuous_backups is used to optionally enable continuous backups.
+    # default: false
+    continuous_backups: true
 ```
 
 - Replace `us-east-1` and `Example_TELEPORT_DYNAMO_TABLE_NAME`
@@ -844,7 +1233,7 @@ teleport:
   audit log in DynamoDB and the session recordings **must** be stored in an S3
   bucket, i.e. both `audit_xxx` settings must be present. If they are not set,
   Teleport will default to a local file system for the audit log, i.e.
-  `/var/lib/teleport/log` on an auth server.
+  `/var/lib/teleport/log` on an Auth Service instance.
 
 The optional `GET` parameters shown below control how Teleport interacts with a DynamoDB endpoint.
 
@@ -854,82 +1243,19 @@ The optional `GET` parameters shown below control how Teleport interacts with a 
 - `endpoint=dynamo.example.com` - connect to a custom S3 endpoint.
 - `use_fips_endpoint=true` -  [Configure DynamoDB FIPS endpoints](#configuring-aws-fips-endpoints).
 
-### DynamoDB autoscaling
-
-When setting up DynamoDB it's important to set up backups. Autoscaling is
-optional with Teleport, and it is advised to collect some production usage data
-before enabling autoscaling.
-
-Autoscaling and backup can be configured on DynamoDB directly. We also make
-setup simpler by allowing AWS DynamoDB settings to be set automatically during
-Teleport startup. The configuration is described below.
-
 **DynamoDB Continuous Backups**
+
+When setting up DynamoDB it's important to enable backups so that cluster state can be restored
+if needed from a snapshot in the past.
 
 - [AWS Blog Post - Amazon DynamoDB Continuous Backup](https://aws.amazon.com/blogs/aws/new-amazon-dynamodb-continuous-backups-and-point-in-time-recovery-pitr/)
 
-**DynamoDB Autoscaling Options**
+**DynamoDB On-Demand**
 
-- [AWS Docs - Managing Throughput Capacity Automatically with DynamoDB Auto Scaling](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/AutoScaling.html)
+For best performance it is recommended to use On-Demand mode instead of configuring capacity manually via Provisioned
+mode. This helps prevent any DynamoDB throttling due to underestimated usage or increased usage from impacting Teleport.
 
-<Note>
-  AWS can throttle DynamoDB if more than two processes are reading from the same
-  stream's shard simultaneously, so you must not deploy more than two Auth Service
-  instances that read from a DynamoDB backend. For details on DynamoDB Streams,
-  read the [AWS
-  documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html).
-</Note>
-
-```yaml
-# ...
-teleport:
-  storage:
-    type: "dynamodb"
-    [...]
-
-    # continuous_backups is used to optionally enable continuous backups.
-    # default: false
-    continuous_backups: [true|false]
-
-    # auto_scaling is used to optionally enable (and define settings for) auto scaling.
-    # default: false
-    auto_scaling:  [true|false]
-    # Minimum/maximum read capacity in units
-    read_min_capacity: int
-    read_max_capacity: int
-    read_target_value: float
-    # Minimum/maximum write capacity in units
-    write_min_capacity: int
-    write_max_capacity: int
-    write_target_value: float
-```
-
-To enable these options you will need to update the IAM Policy for Teleport.
-
-```json
-{
-    "Action": [
-        "application-autoscaling:PutScalingPolicy",
-        "application-autoscaling:RegisterScalableTarget"
-    ],
-    "Effect": "Allow",
-    "Resource": "*"
-},
-{
-    "Action": [
-        "iam:CreateServiceLinkedRole"
-    ],
-    "Condition": {
-        "StringEquals": {
-            "iam:AWSServiceName": [
-                "dynamodb.application-autoscaling.amazonaws.com"
-            ]
-        }
-    },
-    "Effect": "Allow",
-    "Resource": "*"
-}
-```
+- [AWS Docs - Amazon DynamoDB On-Demand and Pay-Per-Request](https://aws.amazon.com/blogs/aws/amazon-dynamodb-on-demand-no-capacity-planning-and-pay-per-request-pricing/)
 
 ### Configuring AWS FIPS endpoints
 
@@ -950,6 +1276,697 @@ Config option priority is applied in the following order:
   are not supported in certain regions or environments or are only supported in GovCloud.
 </Warning>
 
+## Athena
+
+The Athena audit log backend is available starting from Teleport v14.0.
+
+If you are running Teleport on AWS, you can use an
+[Athena](https://aws.amazon.com/athena/)-based audit log system that manages
+[Parquet files](https://parquet.apache.org/) stored on
+[S3](https://aws.amazon.com/s3/) as a storage backend to achieve high
+availability. The Athena backend supports only one type of Teleport data, audit
+events.
+
+The Athena audit backend is better at scale and search than DynamoDB.
+
+The Athena audit logs are eventually consistent. It may take up to one minute
+(depending on the `batchMaxInterval` setting and event load) until you can view
+events in the Teleport Web UI.
+
+### Infrastructure setup
+
+The Auth Service uses an SQS queue subscribed to an SNS topic for event
+publishing. A single Auth Service instance reads events in batches from SQS,
+converts them into Parquet format, and sends the resulting data to S3. During
+queries, the Athena engine searches for events on S3, reading metadata from a
+Glue table.
+
+You can set up the required infrastructure to support the Athena backend with
+the following Terraform script:
+
+<Accordion title="Terraform script">
+  ```
+  variable "aws_region" {
+    description = "AWS region"
+    default     = "us-west-2"
+  }
+
+  variable "sns_topic_name" {
+    description = "Name of the SNS topic used for publishing audit events"
+  }
+
+  variable "sqs_queue_name" {
+    description = "Name of the SQS queue used for subscription for audit events topic"
+  }
+
+  variable "sqs_dlq_name" {
+    description = "Name of the SQS Dead-Letter Queue used for handling unprocessable events"
+  }
+
+  variable "max_receive_count" {
+    description = "Number of times a message can be received before it is sent to the DLQ"
+    default     = 10
+  }
+
+  variable "kms_key_alias" {
+    description = "The alias of a custom KMS key"
+  }
+
+  variable "long_term_bucket_name" {
+    description = "Name of the long term storage bucket used for storing audit events"
+  }
+
+  variable "transient_bucket_name" {
+    description = "Name of the transient storage bucket used for storing query results and large events payloads"
+  }
+
+  variable "database_name" {
+    description = "Name of Glue database"
+  }
+
+  variable "table_name" {
+    description = "Name of Glue table"
+  }
+
+  variable "workgroup" {
+    description = "Name of Athena workgroup"
+  }
+
+  variable "workgroup_max_scanned_bytes_per_query" {
+    description = "Limit per query of max scanned bytes"
+    default     = 1073741824 # 1GB
+  }
+
+  # search_event_limiter variables allows to configured rate limit on top of
+  # search events API to prevent increasing costs in case of aggressive use of API.
+  # In current version Athena Audit logger is not prepared for polling of API.
+  # Burst=20, time=1m and amount=5, means that you can do 20 requests without any
+  # throtling, next requests will be thottled, and tokens will be filled to
+  # rate limit bucket at amount 5 every 1m.
+  variable "search_event_limiter_burst" {
+    description = "Number of tokens available for rate limit used on top of search event API"
+    default     = 20
+  }
+
+  variable "search_event_limiter_time" {
+    description = "Duration between the addition of tokens to the bucket for rate limit used on top of search event API"
+    default     = "1m"
+  }
+
+  variable "search_event_limiter_amount" {
+    description = "Number of tokens added to the bucket during specific interval for rate limit used on top of search event API"
+    default     = 5
+  }
+
+  provider "aws" {
+    region = var.aws_region
+  }
+
+  data "aws_caller_identity" "current" {}
+
+  resource "aws_kms_key" "audit_key" {
+    description         = "KMS key for Athena audit log"
+    enable_key_rotation = true
+  }
+
+  resource "aws_kms_key_policy" "audit_key_policy" {
+    key_id = aws_kms_key.audit_key.id
+    policy = jsonencode({
+      Statement = [
+        {
+          Action = [
+            "kms:*"
+          ]
+          Effect = "Allow"
+          Principal = {
+            AWS = data.aws_caller_identity.current.account_id
+          }
+          Resource = "*"
+          Sid      = "Default Policy"
+        },
+        {
+          Action = [
+            "kms:GenerateDataKey",
+            "kms:Decrypt"
+          ]
+          Effect = "Allow"
+          Principal = {
+            Service = "sns.amazonaws.com"
+          }
+          Resource = "*"
+          Sid      = "SnsUsage"
+          Condition = {
+            StringEquals = {
+              "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+            }
+            ArnLike = {
+              "aws:SourceArn" : aws_sns_topic.audit_topic.arn
+            }
+          }
+        },
+      ]
+      Version = "2012-10-17"
+    })
+  }
+
+  resource "aws_kms_alias" "audit_key_alias" {
+    name          = "alias/${var.kms_key_alias}"
+    target_key_id = aws_kms_key.audit_key.key_id
+  }
+
+  resource "aws_sns_topic" "audit_topic" {
+    name              = var.sns_topic_name
+    kms_master_key_id = aws_kms_key.audit_key.arn
+  }
+
+  resource "aws_sqs_queue" "audit_queue_dlq" {
+    name                              = var.sqs_dlq_name
+    kms_master_key_id                 = aws_kms_key.audit_key.arn
+    kms_data_key_reuse_period_seconds = 300
+    message_retention_seconds         = 604800 // 7 days which is three days longer than default 4 of sqs queue
+  }
+
+  resource "aws_sqs_queue" "audit_queue" {
+    name                              = var.sqs_queue_name
+    kms_master_key_id                 = aws_kms_key.audit_key.arn
+    kms_data_key_reuse_period_seconds = 300
+
+    redrive_policy = jsonencode({
+      deadLetterTargetArn = aws_sqs_queue.audit_queue_dlq.arn
+      maxReceiveCount     = var.max_receive_count
+    })
+  }
+
+  resource "aws_sns_topic_subscription" "audit_sqs_target" {
+    topic_arn            = aws_sns_topic.audit_topic.arn
+    protocol             = "sqs"
+    endpoint             = aws_sqs_queue.audit_queue.arn
+    raw_message_delivery = true
+  }
+
+  data "aws_iam_policy_document" "audit_policy" {
+    statement {
+      actions = [
+        "SQS:SendMessage",
+      ]
+      effect = "Allow"
+      principals {
+        type        = "Service"
+        identifiers = ["sns.amazonaws.com"]
+      }
+      resources = [aws_sqs_queue.audit_queue.arn]
+      condition {
+        test     = "ArnEquals"
+        variable = "aws:SourceArn"
+        values   = [aws_sns_topic.audit_topic.arn]
+      }
+    }
+  }
+
+  resource "aws_sqs_queue_policy" "audit_policy" {
+    queue_url = aws_sqs_queue.audit_queue.url
+    policy    = data.aws_iam_policy_document.audit_policy.json
+  }
+
+  resource "aws_s3_bucket" "long_term_storage" {
+    bucket        = var.long_term_bucket_name
+    force_destroy = true
+    # On production we recommend enabling object lock to provide deletion protection.
+    object_lock_enabled = false
+  }
+
+  resource "aws_s3_bucket_server_side_encryption_configuration" "long_term_storage" {
+    bucket = aws_s3_bucket.long_term_storage.id
+    rule {
+      apply_server_side_encryption_by_default {
+        kms_master_key_id = aws_kms_key.audit_key.arn
+        sse_algorithm     = "aws:kms"
+      }
+      bucket_key_enabled = true
+    }
+  }
+
+  resource "aws_s3_bucket_ownership_controls" "long_term_storage" {
+    bucket = aws_s3_bucket.long_term_storage.id
+    rule {
+      object_ownership = "BucketOwnerEnforced"
+    }
+  }
+
+  resource "aws_s3_bucket_versioning" "long_term_storage" {
+    bucket = aws_s3_bucket.long_term_storage.id
+    versioning_configuration {
+      status = "Enabled"
+    }
+  }
+
+  resource "aws_s3_bucket_public_access_block" "long_term_storage" {
+    bucket                  = aws_s3_bucket.long_term_storage.id
+    block_public_acls       = true
+    block_public_policy     = true
+    ignore_public_acls      = true
+    restrict_public_buckets = true
+  }
+
+  resource "aws_s3_bucket" "transient_storage" {
+    bucket        = var.transient_bucket_name
+    force_destroy = true
+    # On production we recommend enabling lifecycle configuration to clean transient data.
+  }
+
+  resource "aws_s3_bucket_server_side_encryption_configuration" "transient_storage" {
+    bucket = aws_s3_bucket.transient_storage.id
+    rule {
+      apply_server_side_encryption_by_default {
+        kms_master_key_id = aws_kms_key.audit_key.arn
+        sse_algorithm     = "aws:kms"
+      }
+      bucket_key_enabled = true
+    }
+  }
+
+  resource "aws_s3_bucket_ownership_controls" "transient_storage" {
+    bucket = aws_s3_bucket.transient_storage.id
+    rule {
+      object_ownership = "BucketOwnerEnforced"
+    }
+  }
+
+  resource "aws_s3_bucket_versioning" "transient_storage" {
+    bucket = aws_s3_bucket.transient_storage.id
+    versioning_configuration {
+      status = "Enabled"
+    }
+  }
+
+  resource "aws_s3_bucket_public_access_block" "transient_storage" {
+    bucket                  = aws_s3_bucket.transient_storage.id
+    block_public_acls       = true
+    block_public_policy     = true
+    ignore_public_acls      = true
+    restrict_public_buckets = true
+  }
+
+  resource "aws_glue_catalog_database" "audit_db" {
+    name = var.database_name
+  }
+
+  resource "aws_glue_catalog_table" "audit_table" {
+    name          = var.table_name
+    database_name = aws_glue_catalog_database.audit_db.name
+    table_type    = "EXTERNAL_TABLE"
+    parameters = {
+      "EXTERNAL"                            = "TRUE",
+      "projection.enabled"                  = "true",
+      "projection.event_date.type"          = "date",
+      "projection.event_date.format"        = "yyyy-MM-dd",
+      "projection.event_date.interval"      = "1",
+      "projection.event_date.interval.unit" = "DAYS",
+      "projection.event_date.range"         = "NOW-4YEARS,NOW",
+      "storage.location.template"           = format("s3://%s/events/$${event_date}/", aws_s3_bucket.long_term_storage.bucket)
+      "classification"                      = "parquet"
+      "classification"                      = "parquet",
+      "parquet.compression"                 = "SNAPPY",
+    }
+    storage_descriptor {
+      location      = format("s3://%s", aws_s3_bucket.long_term_storage.bucket)
+      input_format  = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
+      output_format = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
+      ser_de_info {
+        name                  = "example"
+        parameters            = { "serialization.format" = "1" }
+        serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+      }
+      columns {
+        name = "uid"
+        type = "string"
+      }
+      columns {
+        name = "session_id"
+        type = "string"
+      }
+      columns {
+        name = "event_type"
+        type = "string"
+      }
+      columns {
+        name = "event_time"
+        type = "timestamp"
+      }
+      columns {
+        name = "event_data"
+        type = "string"
+      }
+      columns {
+        name = "user"
+        type = "string"
+      }
+    }
+    partition_keys {
+      name = "event_date"
+      type = "date"
+    }
+  }
+
+  resource "aws_athena_workgroup" "workgroup" {
+    name          = var.workgroup
+    force_destroy = true
+    configuration {
+      bytes_scanned_cutoff_per_query = var.workgroup_max_scanned_bytes_per_query
+      engine_version {
+        selected_engine_version = "Athena engine version 3"
+      }
+      result_configuration {
+        output_location = format("s3://%s/results", aws_s3_bucket.transient_storage.bucket)
+        encryption_configuration {
+          encryption_option = "SSE_KMS"
+          kms_key_arn       = aws_kms_key.audit_key.arn
+        }
+      }
+    }
+  }
+
+
+  output "athena_url" {
+    value = format("athena://%s.%s?%s",
+      aws_glue_catalog_database.audit_db.name,
+      aws_glue_catalog_table.audit_table.name,
+      join("&", [
+        format("topicArn=%s", aws_sns_topic.audit_topic.arn),
+        format("largeEventsS3=s3://%s/large_payloads", aws_s3_bucket.transient_storage.bucket),
+        format("locationS3=s3://%s/events", aws_s3_bucket.long_term_storage.bucket),
+        format("workgroup=%s", aws_athena_workgroup.workgroup.name),
+        format("queueURL=%s", aws_sqs_queue.audit_queue.url),
+        format("queryResultsS3=s3://%s/query_results", aws_s3_bucket.transient_storage.bucket),
+        format("limiterBurst=%d", var.search_event_limiter_burst),
+        format("limiterRefillAmount=%s", var.search_event_limiter_amount),
+        format("limiterRefillTime=%s", var.search_event_limiter_time),
+      ])
+    )
+  }
+
+  ```
+</Accordion>
+
+### Configuring the Athena audit log backend
+
+To configure Teleport to use Athena:
+
+- Make sure you are using **Teleport version 14.0.0** or newer.
+- Prepare infrastructure
+- Specify an Athena URL inside the `audit_events_uri` array in your Teleport
+  configuration file:
+
+```yaml
+teleport:
+  storage:
+    # This setting configures Teleport to keep a copy of the audit log in Athena
+    # and a copy on a local filesystem, and also to output the events to stdout.
+    audit_events_uri:
+      # More details about the full Athena URL are shown below.
+      - 'athena://database.table?params'
+      - 'file:///var/lib/teleport/audit/events'
+      - 'stdout://'
+```
+
+Here is an example of an Amazon Athena URL within the `audit_events_uri` configuration field:
+
+```
+athena://db.table?topicArn=arn:aws:sns:region:account_id:topic_name&largeEventsS3=s3://transient/large_payloads&locationS3=s3://long-term/events&workgroup=workgroup&queueURL=https://sqs.region.amazonaws.com/account_id/queue_name&queryResultsS3=s3://transient/query_results
+```
+
+The URL hostname consist of `database.table`, which points to the Glue database
+and a table which will be used by the Athena audit logger.
+
+Other parameters are specified as query parameters within the Athena URL.
+
+The following parameters are required:
+
+| Parameter name   | Example value                                            | Description                                            |
+| ---------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| `topicArn`       | `arn:aws:sns:region:account_id:topic_name`               | ARN of SNS topic where events are published            |
+| `locationS3`     | `s3://long-term/events`                                  | S3 bucket used for long-term storage                   |
+| `largeEventsS3`  | `s3://transient/large_payloads`                          | S3 bucket used for transient storage for large events  |
+| `queueURL`       | `https://sqs.region.amazonaws.com/account_id/queue_name` | SQS URL used for a subscription to an SNS topic        |
+| `workgroup`      | `workgroup_name`                                         | Athena workgroup used for queries                      |
+| `queryResultsS3` | `s3://transient/results`                                 | S3 bucket used for transient storage for query results |
+
+The following parameters are optional:
+
+| Parameter name     | Example value | Description                                                                                           |
+| ------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `region`           | `us-east-1`   | AWS region. If empty, defaults to one from the AuditConfig or ambient AWS credentials                 |
+| `batchMaxItems`    | `20000`       | defines the maximum number of events allowed for a single Parquet file (default 20000)                |
+| `batchMaxInterval` | `1m`          | defines the maximum interval used to buffer incoming data before creating a Parquet file (default 1m) |
+
+### Authenticating to AWS
+
+The Teleport Auth Service must be able to read AWS credentials in order to
+authenticate to Athena.
+
+Grant the Teleport Auth Service access to credentials that it can use to authenticate to
+AWS. If you are running the Teleport Auth Service on an EC2 instance, you should use the EC2
+Instance Metadata Service method. Otherwise, you must use environment variables:
+
+<Tabs>
+  <Tab title="Instance Metadata Service">
+    Teleport will detect when it is running on an EC2 instance and use the Instance
+    Metadata Service to fetch credentials.
+
+    The EC2 instance should be configured to use an EC2 instance profile. For more
+    information, see: [Using Instance Profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html).
+  </Tab>
+
+  <Tab title="Environment Variables">
+    Teleport's built-in AWS client reads credentials from the following environment
+    variables:
+
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+    - `AWS_DEFAULT_REGION`
+
+    When you start the Teleport Auth Service, the service reads environment variables from a
+    file at the path `/etc/default/teleport`. Obtain these credentials from your
+    organization. Ensure that `/etc/default/teleport` has the following content,
+    replacing the values of each variable:
+
+    ```text
+    AWS_ACCESS_KEY_ID=00000000000000000000
+    AWS_SECRET_ACCESS_KEY=0000000000000000000000000000000000000000
+    AWS_DEFAULT_REGION=<YOUR_REGION>
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Have multiple sources of AWS credentials?">
+  Teleport's AWS client loads credentials from different sources in the following
+  order:
+
+  - Environment Variables
+  - Shared credentials file
+  - Shared configuration file (Teleport always enables shared configuration)
+  - EC2 Instance Metadata (credentials only)
+
+  While you can provide AWS credentials via a shared credentials file or shared
+  configuration file, you will need to run the Teleport Auth Service with the `AWS_PROFILE`
+  environment variable assigned to the name of your profile of choice.
+
+  If you have a specific use case that the instructions above do not account for,
+  consult the documentation for the [AWS SDK for
+  Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/) for a detailed
+  description of credential loading behavior.
+</Accordion>
+
+The IAM role that the Teleport Auth Service authenticates as must have the
+policies specified in the next section.
+
+### IAM policies
+
+Make sure that the IAM role assigned to Teleport is configured with sufficient
+access to Athena. Below you can find the IAM permissions that the Auth Service
+requires to use Athena Audit logs as an audit event backend.
+
+You'll need to replace these values in the policy example below:
+
+| Placeholder value | Replace with                                             |
+| ----------------- | -------------------------------------------------------- |
+| `eu-central-1`    | AWS region                                               |
+| `1234567890`      | AWS account ID                                           |
+| `audit-long-term` | S3 bucket used for long-term storage                     |
+| `audit-transient` | S3 bucket used for transient storage                     |
+| `audit-sqs`       | SNS topic name                                           |
+| `audit-sns`       | SQS name                                                 |
+| `kms_id`          | KMS key ID used for server-side encryption of SNS/SQS/S3 |
+| `audit_db`        | Glue database used for audit logs                        |
+| `audit_table`     | Glue table used for audit logs                           |
+| `audit_workgroup` | Athena workgroup used for audit logs                     |
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:ListBucketMultipartUploads",
+                "s3:GetBucketLocation",
+                "s3:ListBucketVersions",
+                "s3:ListBucket"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::audit-transient",
+                "arn:aws:s3:::audit-long-term"
+            ],
+            "Sid": "AllowListingMultipartUploads"
+        },
+        {
+            "Action": [
+                "s3:PutObject",
+                "s3:ListMultipartUploadParts",
+                "s3:GetObjectVersion",
+                "s3:GetObject",
+                "s3:DeleteObjectVersion",
+                "s3:DeleteObject",
+                "s3:AbortMultipartUpload"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::audit-transient/results/*",
+                "arn:aws:s3:::audit-transient/large_payloads/*",
+                "arn:aws:s3:::audit-long-term/events/*"
+            ],
+            "Sid": "AllowMultipartAndObjectAccess"
+        },
+        {
+            "Action": "sns:Publish",
+            "Effect": "Allow",
+            "Resource": "arn:aws:sns:eu-central-1:1234567890:audit-sqs",
+            "Sid": "AllowPublishSNS"
+        },
+        {
+            "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:sqs:eu-central-1:1234567890:audit-sns",
+            "Sid": "AllowReceiveSQS"
+        },
+        {
+            "Action": [
+                "glue:GetTable",
+                "athena:StartQueryExecution",
+                "athena:GetQueryResults",
+                "athena:GetQueryExecution"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:glue:eu-central-1:1234567890:table/audit_db/audit_table",
+                "arn:aws:glue:eu-central-1:1234567890:database/audit_db",
+                "arn:aws:glue:eu-central-1:1234567890:catalog",
+                "arn:aws:athena:eu-central-1:1234567890:workgroup/audit_workgroup"
+            ],
+            "Sid": "AllowAthenaQuery"
+        },
+        {
+            "Action": [
+                "kms:GenerateDataKey",
+                "kms:Decrypt"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:kms:eu-central-1:1234567890:key/kms_id",
+            "Sid": "AllowAthenaKMSUsage"
+        }
+    ]
+}
+```
+
+### Migration from Dynamo to the Athena audit logs backend
+
+<Tip>
+  Migration is only needed if you used Amazon DynamoDB for audit logs and you
+  want to keep old data.
+</Tip>
+
+Migration consist of following steps:
+
+1. Set up Athena infrastructure
+2. Dual write to both DynamoDB and Athena, and query from DynamoDB
+3. Migrate old data from DynamoDB to Athena
+4. Dual write to both DynamoDB and Athena, and query from Athena
+5. Disable writing to DynamoDB
+
+In the Teleport storage configuration, `audit_events_uri` accepts multiple
+URLs. Those URLs are used to configure connections to the different audit
+loggers. If more than 1 is used, then events are written to each audit system,
+and queries are executed from first one.
+
+<Tip>
+  If anything goes wrong during migration steps 1-4, roll back to the Amazon
+  DynamoDB solution by making sure its URL is the first value in the
+  `audit_events_uri` field and removing the Athena URL.
+</Tip>
+
+Each of these steps is explained in more detail below.
+
+#### Dual write to both DynamoDB and Athena, and query from DynamoDB
+
+The second step of migration requires setting the following configuration:
+
+```yaml
+teleport:
+  storage:
+    audit_events_uri:
+    - 'dynamodb://events_table_name'
+    - 'athena://db.table?otherQueryParams'
+```
+
+When an Auth Service instance is restarted, you should verify that Parquet files
+are stored in the S3 bucket specified using the `locationS3` parameter.
+
+#### Migrate old data from DynamoDB to Athena
+
+This step requires using the client machine to export data from Amazon DynamoDB
+and publish it to the Athena logger. We recommend using, for example, an EC2
+instance with a disk size at least 2x bigger than the table size in Amazon
+DynamoDB.
+
+Instructions for how to use the migration tool can be found
+[on GitHub](https://github.com/gravitational/teleport/blob/master/examples/dynamoathenamigration/README.md).
+
+You should set `exportTime` to the time when dual writing began.
+
+We recommend running your first migration with the `-dry-run` flag because it
+validates the exported data. If no errors are reported, proceed to a real
+migration without the `-dry-run` flag.
+
+#### Dual write to both DynamoDB and Athena, and query from Athena
+
+Change the order of the `audit_events_uri` values in your Teleport
+configuration file:
+
+```yaml
+teleport:
+  storage:
+    audit_events_uri:
+    - 'athena://db.table?otherQueryParams'
+    - 'dynamodb://events_table_name'
+```
+
+When the Auth Service is restarted, you should verify that events are visible
+on the Audit Logs page.
+
+#### Disable writing to DynamoDB
+
+Disabling writing to DynamoDB means that you won't be able to roll back to
+DynamoDB without losing data. Dual writing to both Athena and DynamoDB does not
+have a significant performance impact, and it's recommended to keep dual
+writing for some time, even if your system already executes queries from
+Athena.
+
+To disable writing to DynamoDB, remove the DynamoDB URL from the
+`audit_events_uri` array.
+
 ## GCS
 
 <Tip>
@@ -959,7 +1976,7 @@ Config option priority is applied in the following order:
 
 Google Cloud Storage (GCS) can be used as storage for recorded
 sessions. GCS cannot store the audit log or the cluster state. Below is an
-example of how to configure a Teleport auth server to store the recorded
+example of how to configure a Teleport Auth Service to store the recorded
 sessions in a GCS bucket.
 
 ```yaml
@@ -999,7 +2016,7 @@ Replace the following variables in the above example with your own values:
 </Tip>
 
 If you are running Teleport on GCP, you can use
-[Firestore](https://cloud.google.com/firestore/) as a storage back-end to achieve
+[Firestore](https://cloud.google.com/firestore/) as a storage backend to achieve
 high availability. Firestore backend supports two types of Teleport data:
 
 - Cluster state
@@ -1009,9 +2026,9 @@ Firestore cannot store the recorded sessions. You are advised to use Google
 Cloud Storage (GCS) for that as shown above. To configure Teleport to use
 Firestore:
 
-- Configure all Teleport Auth servers to use Firestore back-end in the "storage"
+- Configure all Teleport Auth servers to use Firestore backend in the "storage"
   section of `teleport.yaml` as shown below.
-- Deploy several auth servers connected to Firestore storage back-end.
+- Deploy several auth servers connected to Firestore storage backend.
 - Deploy several proxy nodes.
 - Make sure that all Teleport resource services have the `auth_servers`
   configuration setting populated with the addresses of your cluster's Auth
@@ -1053,7 +2070,73 @@ teleport:
 - Audit log settings above are optional. If specified, Teleport will store the audit log in Firestore
   and the session recordings **must** be stored in a GCS bucket, i.e. both `audit_xxx` settings must
   be present. If they are not set, Teleport will default to a local filesystem for the audit log, i.e.
-  `/var/lib/teleport/log` on an auth server.
+  `/var/lib/teleport/log` on an Auth Service instance.
+
+## Azure Blob Storage
+
+Azure Blob Storage for session storage is available starting from Teleport
+`13.3`.
+
+<Tip>
+  Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/14.x/architecture/nodes#cluster-state)
+  in Teleport Architecture documentation.
+</Tip>
+
+Azure Blob Storage can be used as storage for recorded sessions. Azure Blob
+Storage cannot store the audit log or the cluster state. Below is an example of
+how to configure a Teleport Auth Service instance to store the recorded sessions in an
+Azure Blob Storage storage account.
+
+```yaml
+teleport:
+  storage:
+    audit_sessions_uri: azblob://account-name.core.blob.windows.net
+```
+
+Teleport makes use of two containers in the account, whose names default to
+`inprogress` and `session`, but they can be configured with parameters in the
+fragment of the URI.
+
+```yaml
+teleport:
+  storage:
+    audit_sessions_uri: azblob://account-name.core.blob.windows.net#session_container=session_container_name&inprogress_container=inprogress_container_name
+```
+
+### Permissions
+
+Teleport needs the following permissions on the `inprogress` container:
+
+- `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read`
+- `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write`
+- `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete` (only on the `inprogress` container)
+
+In addition, Teleport will check if the containers exist at startup, and it will
+attempt to create them if they can't be confirmed to exist; giving Teleport
+`Microsoft.Storage/storageAccounts/blobServices/containers/read` will allow for
+checking and `Microsoft.Storage/storageAccounts/blobServices/containers/write`
+will allow for creating them.
+
+It's highly recommended to set up a [time-based retention
+policy](https://learn.microsoft.com/azure/storage/blobs/immutable-time-based-retention-policy-overview)
+for the `session` container, as well as a [lifecycle management
+policy](https://learn.microsoft.com/azure/storage/blobs/lifecycle-management-overview),
+so that recordings are kept in an immutable state for a given period, then
+deleted. Teleport will not delete recordings automatically.
+
+With a time-based retention policy in place, it's safe to give Teleport the
+"Blob Storage Data Contributor" role scoped to the containers, instead of having
+to define a custom role for it.
+
+### Authentication
+
+Teleport will make use of the Azure AD credentials specified by [environment
+variables](https://learn.microsoft.com/azure/developer/go/azure-sdk-authentication#2-authenticate-with-azure),
+[Azure AD Workload
+Identity](https://learn.microsoft.com/azure/aks/workload-identity-overview)
+credentials, or [managed
+identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview)
+credentials.
 
 ## SQLite
 
@@ -1104,4 +2187,13 @@ teleport:
     type: sqlite
     sync: NORMAL
     journal: WAL
+```
+
+The SQLite backend and other required data will be written to the Teleport data directory.
+By default, Teleport's data directory is `/var/lib/teleport`. To modify
+the location set the `data_dir` value within the Teleport configuration file.
+
+```yaml
+teleport:
+  data_dir: /var/lib/teleport_data
 ```

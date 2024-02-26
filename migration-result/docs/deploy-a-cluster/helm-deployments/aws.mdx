@@ -103,7 +103,8 @@ Allow Helm to install charts that are hosted in the Teleport Helm repository:
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
-Update the cache of charts from the remote repository:
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
 
 ```code
 $ helm repo update
@@ -180,12 +181,12 @@ Service to create and configure one for you:
 
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value       | Replace with                                                                                       |
-    | ----------------------- | -------------------------------------------------------------------------------------------------- |
-    | `us-west-2`             | AWS region                                                                                         |
-    | `1234567890`            | AWS account ID                                                                                     |
-    | `teleport-helm-backend` | DynamoDB table name to use for the Teleport backend                                                |
-    | `teleport-helm-events`  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | Placeholder value     | Replace with                                                                                       |
+    | --------------------- | -------------------------------------------------------------------------------------------------- |
+    | US-WEST-2             | AWS region                                                                                         |
+    | 1234567890            | AWS account ID                                                                                     |
+    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
+    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -249,12 +250,12 @@ Service to create and configure one for you:
   <Tab title="Auth Service Creates a Table">
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value  | Replace with                                                                                       |
-    | ------------------ | -------------------------------------------------------------------------------------------------- |
-    | `us-west-2`        | AWS region                                                                                         |
-    | `1234567890`       | AWS account ID                                                                                     |
-    | `teleport-backend` | DynamoDB table name to use for the Teleport backend                                                |
-    | `teleport-events`  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | Placeholder value     | Replace with                                                                                       |
+    | --------------------- | -------------------------------------------------------------------------------------------------- |
+    | US-WEST-2             | AWS region                                                                                         |
+    | 1234567890            | AWS account ID                                                                                     |
+    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
+    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -282,8 +283,8 @@ Service to create and configure one for you:
                     "dynamodb:UpdateContinuousBackups"
                 ],
                 "Resource": [
-                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-backend",
-                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-backend/stream/*"
+                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-helm-backend",
+                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-helm-backend/stream/*"
                 ]
             },
             {
@@ -305,8 +306,8 @@ Service to create and configure one for you:
                     "dynamodb:UpdateContinuousBackups"
                 ],
                 "Resource": [
-                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-events",
-                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-events/index/*"
+                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-helm-events",
+                    "arn:aws:dynamodb:us-west-2:1234567890:table/teleport-helm-events/index/*"
                 ]
             }
         ]
@@ -333,9 +334,9 @@ enable the Auth Service to create and configure it for you:
 
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value      | Replace with                                             |
-    | ---------------------- | -------------------------------------------------------- |
-    | `your-sessions-bucket` | Name to use for the Teleport S3 session recording bucket |
+    | Placeholder value    | Replace with                                             |
+    | -------------------- | -------------------------------------------------------- |
+    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -374,9 +375,9 @@ enable the Auth Service to create and configure it for you:
   <Tab title="Auth Service Creates a Bucket">
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value      | Replace with                                             |
-    | ---------------------- | -------------------------------------------------------- |
-    | `your-sessions-bucket` | Name to use for the Teleport S3 session recording bucket |
+    | Placeholder value    | Replace with                                             |
+    | -------------------- | -------------------------------------------------------- |
+    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -504,9 +505,9 @@ Once you have chosen an approach based on the details above, select the correct 
 
     You'll need to replace these values in the policy example below:
 
-    | Placeholder value       | Replace with                                                         |
-    | ----------------------- | -------------------------------------------------------------------- |
-    | `Z0159221358P96JYAUAA4` | Route 53 hosted zone ID for the domain hosting your Teleport cluster |
+    | Placeholder value     | Replace with                                                         |
+    | --------------------- | -------------------------------------------------------------------- |
+    | Z0159221358P96JYAUAA4 | Route 53 hosted zone ID for the domain hosting your Teleport cluster |
 
     ```json
     {
@@ -541,6 +542,7 @@ Once you have chosen an approach based on the details above, select the correct 
     --create-namespace \
     --namespace cert-manager \
     --set installCRDs=true \
+    --set global.leaderElection.namespace=cert-manager \
     --set extraArgs="{--issuer-ambient-credentials}" # required to automount ambient AWS credentials when using an Issuer
     ```
 
@@ -548,12 +550,12 @@ Once you have chosen an approach based on the details above, select the correct 
 
     You'll need to replace these values in the `Issuer` example below:
 
-    | Placeholder value       | Replace with                                                         |
-    | ----------------------- | -------------------------------------------------------------------- |
-    | `email@address.com`     | An email address to receive communications from Let's Encrypt        |
-    | `example.com`           | The name of the Route 53 domain hosting your Teleport cluster        |
-    | `us-east-1`             | AWS region where the cluster is running                              |
-    | `Z0159221358P96JYAUAA4` | Route 53 hosted zone ID for the domain hosting your Teleport cluster |
+    | Placeholder value     | Replace with                                                         |
+    | --------------------- | -------------------------------------------------------------------- |
+    | EMAIL\@ADDRESS.COM    | An email address to receive communications from Let's Encrypt        |
+    | EXAMPLE.COM           | The name of the Route 53 domain hosting your Teleport cluster        |
+    | US-WEST-2             | AWS region where the cluster is running                              |
+    | Z0159221358P96JYAUAA4 | Route 53 hosted zone ID for the domain hosting your Teleport cluster |
 
     ```yaml
     cat << EOF > aws-issuer.yaml
@@ -564,18 +566,18 @@ Once you have chosen an approach based on the details above, select the correct 
       namespace: teleport
     spec:
       acme:
-        email: email@address.com                                # Change this
+        email: email@address.com
         server: https://acme-v02.api.letsencrypt.org/directory
         privateKeySecretRef:
           name: letsencrypt-production
         solvers:
         - selector:
             dnsZones:
-              - "example.com"                                  # Change this
+              - "example.com"
           dns01:
             route53:
-              region: us-east-1                                # Change this
-              hostedZoneID: Z0159221358P96JYAUAA4              # Change this
+              region: us-west-2
+              hostedZoneID: Z0159221358P96JYAUAA4
     EOF
     ```
 
@@ -619,7 +621,7 @@ Once you have chosen an approach based on the details above, select the correct 
     the ACM certificate ARN to use, the port it should be served on and other ALB configuration
     parameters.
 
-    Replace `arn:aws:acm:us-east-1:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece`
+    Replace ARN:AWS:ACM:US-WEST-2:1234567890:CERTIFICATE/12345678-43C7-4DD1-A2F6-C495B91EBECE
     with your actual ACM certificate ARN.
   </Tab>
 
@@ -652,13 +654,13 @@ Once you have chosen an approach based on the details above, select the correct 
     The Teleport Auth Service reads a license file to authenticate your Teleport
     Enterprise account.
 
-    To obtain your license file, navigate to your [Teleport
-    account](https://teleport.sh) and enter your
-    account name (e.g., `my-license`). After logging in, click
-    the "DOWNLOAD LICENSE KEY" button to download your
-    license file.
+    To obtain your license file, navigate to your Teleport account dashboard and log
+    in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+    account name (e.g. my-company). After logging in you will see a "GENERATE
+    LICENSE KEY" button, which will generate a new license file and allow you to
+    download it.
 
-    ![License File Download](/assets/license-fe80b12ff0.png)
+    ![License File Download](/assets/license-23cee352ae.png)
 
     Create a secret from your license file. Teleport will automatically discover
     this secret as long as your file is named `license.pem`.
@@ -681,11 +683,11 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
         clusterName: teleport.example.com                 # Name of your cluster. Use the FQDN you intend to configure in DNS below.
         proxyListenerMode: multiplex
         aws:
-          region: us-west-2                               # AWS region
-          backendTable: teleport-helm-backend             # DynamoDB table to use for the Teleport backend
+          region: us-west-2                # AWS region
+          backendTable: teleport-helm-backend # DynamoDB table to use for the Teleport backend
           auditLogTable: teleport-helm-events             # DynamoDB table to use for the Teleport audit log (must be different to the backend table)
           auditLogMirrorOnStdout: false                   # Whether to mirror audit log entries to stdout in JSON format (useful for external log collectors)
-          sessionRecordingBucket: teleport-helm-sessions  # S3 bucket to use for Teleport session recordings
+          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings
           backups: true                                   # Whether or not to turn on DynamoDB backups
           dynamoAutoScaling: false                        # Whether Teleport should configure DynamoDB's autoscaling.
         highAvailability:
@@ -717,11 +719,11 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
         service:
           type: ClusterIP
         aws:
-          region: us-west-2                               # AWS region
-          backendTable: teleport-helm-backend             # DynamoDB table to use for the Teleport backend
+          region: us-west-2                # AWS region
+          backendTable: teleport-helm-backend # DynamoDB table to use for the Teleport backend
           auditLogTable: teleport-helm-events             # DynamoDB table to use for the Teleport audit log (must be different to the backend table)
           auditLogMirrorOnStdout: false                   # Whether to mirror audit log entries to stdout in JSON format (useful for external log collectors)
-          sessionRecordingBucket: teleport-helm-sessions  # S3 bucket to use for Teleport session recordings
+          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings
           backups: true                                   # Whether or not to turn on DynamoDB backups
           dynamoAutoScaling: false                        # Whether Teleport should configure DynamoDB's autoscaling.
         highAvailability:
@@ -739,7 +741,7 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
             alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
             alb.ingress.kubernetes.io/success-codes: 200,301,302
             # Replace with your AWS certificate ARN
-            alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece"
+            alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-west-2:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece"
         # If you are running Kubernetes 1.23 or above, disable PodSecurityPolicies
         podSecurityPolicy:
           enabled: false
@@ -771,11 +773,11 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
         clusterName: teleport.example.com                 # Name of your cluster. Use the FQDN you intend to configure in DNS below.
         proxyListenerMode: multiplex
         aws:
-          region: us-west-2                               # AWS region
-          backendTable: teleport-helm-backend             # DynamoDB table to use for the Teleport backend
+          region: us-west-2                # AWS region
+          backendTable: teleport-helm-backend # DynamoDB table to use for the Teleport backend
           auditLogTable: teleport-helm-events             # DynamoDB table to use for the Teleport audit log (must be different to the backend table)
           auditLogMirrorOnStdout: false                   # Whether to mirror audit log entries to stdout in JSON format (useful for external log collectors)
-          sessionRecordingBucket: teleport-helm-sessions  # S3 bucket to use for Teleport session recordings
+          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings
           backups: true                                   # Whether or not to turn on DynamoDB backups
           dynamoAutoScaling: false                        # Whether Teleport should configure DynamoDB's autoscaling.
         highAvailability:
@@ -808,11 +810,11 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
         service:
           type: ClusterIP
         aws:
-          region: us-west-2                               # AWS region
-          backendTable: teleport-helm-backend             # DynamoDB table to use for the Teleport backend
+          region: us-west-2                # AWS region
+          backendTable: teleport-helm-backend # DynamoDB table to use for the Teleport backend
           auditLogTable: teleport-helm-events             # DynamoDB table to use for the Teleport audit log (must be different to the backend table)
           auditLogMirrorOnStdout: false                   # Whether to mirror audit log entries to stdout in JSON format (useful for external log collectors)
-          sessionRecordingBucket: teleport-helm-sessions  # S3 bucket to use for Teleport session recordings
+          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings
           backups: true                                   # Whether or not to turn on DynamoDB backups
           dynamoAutoScaling: false                        # Whether Teleport should configure DynamoDB's autoscaling.
         highAvailability:
@@ -831,7 +833,7 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
             alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
             alb.ingress.kubernetes.io/success-codes: 200,301,302
             # Replace with your AWS certificate ARN
-            alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece"
+            alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-west-2:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece"
         # If you are running Kubernetes 1.23 or above, disable PodSecurityPolicies
         podSecurityPolicy:
           enabled: false
@@ -1075,7 +1077,7 @@ so we can run the command using `kubectl`:
   </Tab>
 </Tabs>
 
-Load the user creation link to create a password and set up 2-factor authentication for the Teleport user via the web UI.
+Load the user creation link to create a password and set up multi-factor authentication for the Teleport user via the web UI.
 
 ### High Availability
 
@@ -1089,13 +1091,13 @@ To make changes to your Teleport cluster after deployment, you can use `helm upg
 Helm defaults to using the latest version of the chart available in the repo, which will also correspond to the latest
 version of Teleport. You can make sure that the repo is up to date by running `helm repo update`.
 
-Here's an example where we set the chart to use 3 replicas:
+Here's an example where we set the chart to use 2 replicas:
 
 Edit your `aws-values.yaml` file from above and make the appropriate changes:
 
 ```yaml
 highAvailability:
-  replicaCount: 3
+  replicaCount: 2
 ```
 
 Upgrade the deployment with the values from your `aws-values.yaml` file using this command:
@@ -1109,33 +1111,6 @@ $ helm upgrade release-name teleport/teleport-cluster \
 <Note>
   To change `chartMode`, `clusterName`, or any `aws` settings, you must first uninstall the existing chart and then install a new version with the appropriate values.
 </Note>
-
-### Autoscaling
-
-In order to reduce DynamoDB costs you might want to enable DynamoDB autoscaling.
-This step is usually done after a successful Teleport deployment, once you have gathered some data
-about Teleport's DynamoDB usage and know what regular usage looks like and how autoscaling should be tuned.
-You must know the desired read/write minimum, maximum and target capacity for your DynamoDB instance in order to enable autoscaling.
-
-You can delegate your autoscaling configuration to Teleport or manage it by creating an AWS Application Auto Scaling policy.
-The following steps will set up Teleport-configured DynamoDB autoscaling.
-
-You must grant autoscaling configuration rights to Teleport, as documented in
-[the DynamoDB autoscaling section](/docs/reference/backends#dynamodb-autoscaling).
-
-Set the following fields in your existing `aws-values.yaml` file and replace the numeric values with yours:
-
-```yaml
-aws:
-  # [...] already present values under `aws`
-  dynamoAutoScaling: true
-  readMinCapacity: 5     # integer
-  readMaxCapacity: 100   # integer
-  readTargetValue: 50.0  # float
-  writeMinCapacity: 5    # integer
-  writeMaxCapacity: 100  # integer
-  writeTargetValue: 50.0 # float
-```
 
 Then perform a cluster upgrade with the new values:
 

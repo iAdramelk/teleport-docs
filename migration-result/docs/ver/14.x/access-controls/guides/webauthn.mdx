@@ -17,100 +17,116 @@ UI).
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
 - WebAuthn hardware device, such as YubiKey or SoloKey
 - A Web browser with [WebAuthn support](https://developers.yubico.com/WebAuthn/WebAuthn_Browser_Support/)
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 ## Step 1/3. Enable WebAuthn support
 
@@ -254,54 +270,62 @@ $ tsh mfa add
   fallback to a weaker second factor, like OTP, using `tsh mfa add --mfa-mode=otp`.
 
   See the possible `--mfa-mode` values in the [Teleport CLI
-  Reference](/docs/ver/14.x/reference/cli#tsh-global-flags) page.
+  Reference](/docs/ver/14.x/reference/cli/tsh#tsh-global-flags) page.
 </Tip>
 
 ## Step 3/3. Log in using WebAuthn
 
 Once a WebAuthn device is registered, the user will be prompted for it on login:
 
-```code
-$ tsh login --proxy=example.com
-# Enter password for Teleport user codingllama:
-# Tap any security key or enter a code from a OTP device:
-# > Profile URL:        https://example.com
-#   Logged in as:       codingllama
-#   Cluster:            example.com
-#   Roles:              access, editor
-#   Logins:             codingllama
-#   Kubernetes:         enabled
-#   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
-#   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-```
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    $ tsh login --proxy=example.com
+    # Enter password for Teleport user codingllama:
+    # Tap any security key or enter a code from a OTP device:
+    # > Profile URL:        https://example.com
+    #   Logged in as:       codingllama
+    #   Cluster:            example.com
+    #   Roles:              access, editor
+    #   Logins:             codingllama
+    #   Kubernetes:         enabled
+    #   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
+    #   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
+    ```
+  </Tab>
 
-```code
-$ tsh login --proxy=example.com
-# Enter password for Teleport user codingllama:
-# Tap any security key or enter a code from a OTP device:
-# > Profile URL:        https://example.com
-#   Logged in as:       codingllama
-#   Cluster:            example.com
-#   Roles:              access, editor, reviewer
-#   Logins:             codingllama
-#   Kubernetes:         enabled
-#   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
-#   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-```
+  <Tab title="Teleport Enterprise">
+    ```code
+    $ tsh login --proxy=example.com
+    # Enter password for Teleport user codingllama:
+    # Tap any security key or enter a code from a OTP device:
+    # > Profile URL:        https://example.com
+    #   Logged in as:       codingllama
+    #   Cluster:            example.com
+    #   Roles:              access, editor, reviewer
+    #   Logins:             codingllama
+    #   Kubernetes:         enabled
+    #   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
+    #   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
+    ```
+  </Tab>
 
-```code
-$ tsh login --proxy=mytenant.teleport.sh
-# Enter password for Teleport user codingllama:
-# Tap any security key or enter a code from a OTP device:
-# > Profile URL:        https://mytenant.teleport.sh
-#   Logged in as:       codingllama
-#   Cluster:            mytenant.teleport.sh
-#   Roles:              access, editor, reviewer
-#   Logins:             codingllama
-#   Kubernetes:         enabled
-#   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
-#   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ tsh login --proxy=mytenant.teleport.sh
+    # Enter password for Teleport user codingllama:
+    # Tap any security key or enter a code from a OTP device:
+    # > Profile URL:        https://mytenant.teleport.sh
+    #   Logged in as:       codingllama
+    #   Cluster:            mytenant.teleport.sh
+    #   Roles:              access, editor, reviewer
+    #   Logins:             codingllama
+    #   Kubernetes:         enabled
+    #   Valid until:        2021-10-04 23:32:29 -0700 PDT [valid for 12h0m0s]
+    #   Extensions:         permit-agent-forwarding, permit-port-forwarding, permit-pty
+    ```
+  </Tab>
+</Tabs>
 
 <Note>
   WebAuthn for logging in to Teleport is only required for [local users](/docs/ver/14.x/reference/authentication#local-no-authentication-connector).
@@ -310,7 +334,7 @@ $ tsh login --proxy=mytenant.teleport.sh
 
 ## U2F
 
-Starting with Teleport v10, WebAuthn replaces U2F. If you haven't configured U2F
+WebAuthn has replaced U2F in Teleport from previous versions. If you haven't configured U2F
 before, no further action is necessary—any U2F devices are automatically
 supported.
 
@@ -342,26 +366,51 @@ auth_service:
 The migrated WebAuthn configuration is:
 
 <Tabs>
-  <Tab title="Static Config">
-    ```yaml
-    # snippet from /etc/teleport.yaml:
-    auth_service:
-      authentication:
-        type: local
-        second_factor: on # changed from "u2f"
-        u2f:
-          # Keep the app_id to avoid re-registering U2F devices.
-          app_id: https://example.com
-        webauthn:
-          # rp_id is the public domain of the Teleport Proxy Service.
-          # It's similar to the U2F app_id, but without "https://" or port number.
-          rp_id: example.com
-          attestation_allowed_cas:
-          - "/path/to/u2f_attestation_ca.pem"
-    ```
+  <Tab title="Self-Hosted">
+    <Tabs>
+      <Tab title="Static Config">
+        ```yaml
+        # snippet from /etc/teleport.yaml:
+        auth_service:
+          authentication:
+            type: local
+            second_factor: on # changed from "u2f"
+            u2f:
+              # Keep the app_id to avoid re-registering U2F devices.
+              app_id: https://example.com
+            webauthn:
+              # rp_id is the public domain of the Teleport Proxy Service.
+              # It's similar to the U2F app_id, but without "https://" or port number.
+              rp_id: example.com
+              attestation_allowed_cas:
+              - "/path/to/u2f_attestation_ca.pem"
+        ```
+      </Tab>
+
+      <Tab title="Dynamic resources">
+        ```yaml
+        kind: cluster_auth_preference
+        version: v2
+        metadata:
+          name: cluster-auth-preference
+        spec:
+          type: local
+          second_factor: "on" # changed from "u2f"
+          u2f:
+            # Keep the app_id to avoid re-registering U2F devices.
+            app_id: https://example.com
+          webauthn:
+            # rp_id is the public domain of the Teleport Proxy Service.
+            # It's similar to the U2F app_id, but without "https://" or port number.
+            rp_id: example.com
+            attestation_allowed_cas:
+            - "/path/to/u2f_attestation_ca.pem"
+        ```
+      </Tab>
+    </Tabs>
   </Tab>
 
-  <Tab title="Dynamic resources">
+  <Tab title="Teleport Enterprise Cloud">
     ```yaml
     kind: cluster_auth_preference
     version: v2
@@ -382,25 +431,6 @@ The migrated WebAuthn configuration is:
     ```
   </Tab>
 </Tabs>
-
-```yaml
-kind: cluster_auth_preference
-version: v2
-metadata:
-  name: cluster-auth-preference
-spec:
-  type: local
-  second_factor: "on" # changed from "u2f"
-  u2f:
-    # Keep the app_id to avoid re-registering U2F devices.
-    app_id: https://example.com
-  webauthn:
-    # rp_id is the public domain of the Teleport Proxy Service.
-    # It's similar to the U2F app_id, but without "https://" or port number.
-    rp_id: example.com
-    attestation_allowed_cas:
-    - "/path/to/u2f_attestation_ca.pem"
-```
 
 ## Next steps
 

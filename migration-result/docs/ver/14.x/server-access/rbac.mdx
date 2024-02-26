@@ -15,12 +15,6 @@ emergency.*
 For a more general description of Teleport roles and examples see our [Access Controls guides](/docs/ver/14.x/access-controls/introduction), as
 this section focuses on configuring RBAC for servers connected to Teleport.
 
-<Tip>
-  Teleport's RBAC system does not extend to OpenSSH servers, as it is not possible
-  to apply labels to servers running `sshd`. You must enable access to these
-  servers via the Teleport SSH Service instead.
-</Tip>
-
 ## Role configuration
 
 Teleport's "role" resource provides the following instruments for restricting
@@ -91,8 +85,8 @@ spec:
 ```
 
 The `{{internal.logins}}` variable applies to local users
-and works with Teleport Trusted Clusters. Trusted Clusters allow
-connecting via a root Teleport cluster to resources connected to other Teleport clusters.
+and works with Teleport trusted clusters. Trusted clusters allow
+connecting from a root Teleport cluster to resources connected to other Teleport clusters.
 Those Teleport clusters, identified as leaf clusters, allow the connection
 by trusting the root Teleport cluster.
 
@@ -115,6 +109,10 @@ spec:
   allow:
     logins: ["{{internal.logins}}"]
 ```
+
+For full details on how variable expansion works in Teleport roles, see the
+[Teleport Access Controls
+Reference](/docs/ver/14.x/access-controls/reference).
 
 ## Server role options
 
@@ -174,10 +172,12 @@ spec:
       # Optional: Session recording mode for SSH sessions.
       # If not set, the value set on default will be used.
       ssh: best_effort|strict
+    # Require an additional MFA tap to start new sessions.
+    # Optional: the default is false.
+    require_session_mfa: true
     # Enterprise-only: when enabled, the source IP that was used to log in is embedded in the user
     # certificates, preventing a compromised certificate from being used on another
     # network. The default is false.
-    # Note: Source IP pinning is currently in Preview mode.
     pin_source_ip: true
     # Specify a list of names and associated values to be included in user SSH keys.
     # The key type can only be "ssh" and the mode can only be "extension".

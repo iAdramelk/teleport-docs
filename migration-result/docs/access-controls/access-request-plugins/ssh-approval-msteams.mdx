@@ -10,24 +10,7 @@ Access Requests. Users can then approve and deny Access Requests by following th
 message link, making it easier to implement security best practices without
 compromising productivity.
 
-```mermaid
-flowchart LR
-subgraph teleport["Teleport cluster"]
-  direction LR
-  auth["Auth Service"]
-  proxy["Proxy Service"]
-end
-api[Microsoft Teams API]
-
-subgraph private["Private network"]
-  subgraph plugin[Microsoft Teams plugin]
-    id["Teleport identity file"]
-  end 
-  plugin<-- "Listen for Access Requests\n(via reverse tunnel)"-->proxy
-end 
-proxy<-- Forward gRPC traffic -->auth
-plugin-- "Microsoft Teams messages" -->api
-```
+![The Microsoft Teams Access Request plugin](/assets/msteams-c50df8bb2f.png)
 
 ## Prerequisites
 
@@ -36,20 +19,25 @@ plugin-- "Microsoft Teams messages" -->api
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
   instructions](/docs/installation#installation-instructions) for your environment and Teleport edition.
+
+**Recommended:** Configure Machine ID to provide short-lived Teleport
+credentials to the plugin. Before following this guide, follow a Machine ID
+[deployment guide](/docs/machine-id/deployment) to run the `tbot` binary on
+your infrastructure.
 
 - A Microsoft Teams License (Microsoft 365 Business).
 - Azure console access in the organization/directory holding the Microsoft Teams
@@ -74,7 +62,7 @@ For example:
 $ tsh login --proxy=teleport.example.com --user=email@example.com
 $ tctl status
 # Cluster  teleport.example.com
-# Version  15.0.0-dev
+# Version  15.0.2
 # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
 ```
 
@@ -133,29 +121,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - editor-reviewer 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},editor-reviewer"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -297,8 +276,8 @@ to generate an application archive to upload later in this guide.
     development machine.
 
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-msteams-v13.3.7-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-msteams-v13.3.7-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-access-msteams-v15.0.2-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-msteams-v15.0.2-linux-amd64-bin.tar.gz
     $ cd teleport-access-msteams
     $ sudo ./install
     ```
@@ -307,7 +286,7 @@ to generate an application archive to upload later in this guide.
 
     ```code
     $ teleport-msteams version
-    teleport-msteams v13.3.7 git:teleport-msteams-v13.3.7-fffffffff go1.21
+    teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-fffffffff go1.21
     ```
   </Tab>
 
@@ -316,14 +295,14 @@ to generate an application archive to upload later in this guide.
     Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-msteams:13.3.7
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2
     ```
 
     Make sure the plugin is installed by running the following command:
 
     ```code
-    $ docker run public.ecr.aws/gravitational/teleport-plugin-msteams:13.3.7 version
-    teleport-msteams v13.3.7 git:teleport-msteams-v13.3.7-api/14.0.0-gd1e081e 1.21
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2 version
+    teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-api/14.0.0-gd1e081e 1.21
     ```
 
     For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-msteams).
@@ -345,7 +324,7 @@ to generate an application archive to upload later in this guide.
 
     ```code
     $ teleport-msteams version
-    teleport-msteams v13.3.7 git:teleport-msteams-v13.3.7-fffffffff go1.21
+    teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-fffffffff go1.21
     ```
   </Tab>
 
@@ -438,34 +417,30 @@ Create the `access-plugin-impersonator` role:
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
+If you are providing identity files to the plugin with Machine ID, assign the
+`access-plugin` role to the Machine ID bot user. Otherwise, assign this role to
+the user you plan to use to generate credentials for the `access-plugin` role
+and user:
+
 Assign the `access-plugin-impersonator` role to your Teleport user by running the appropriate
 commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - access-plugin-impersonator 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},access-plugin-impersonator"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -585,65 +560,114 @@ role and user.
 
 ## Step 4/9. Export the access plugin identity
 
-Like all Teleport users, `access-plugin` needs signed credentials in
-order to connect to your Teleport cluster. You will use the `tctl auth sign`
-command to request these credentials for your plugin.
-
-The following `tctl auth sign` command impersonates the `access-plugin` user,
-generates signed credentials, and writes an identity file to the local
-directory:
-
-```code
-$ tctl auth sign --user=access-plugin --out=auth.pem
-```
-
-The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
-
-The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
-uses the SSH credentials to connect to the Proxy Service, which establishes a
-reverse tunnel connection to the Auth Service. The plugin uses this reverse
-tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
-endpoint.
-
-You will refer to this file later when configuring the plugin.
-
-<Note>
-  By default, `tctl auth sign` produces certificates with a relatively short
-  lifetime. For production deployments, we suggest using [Machine
-  ID](/docs/machine-id/introduction) to programmatically issue and renew
-  certificates for your plugin. See our Machine ID [getting started
-  guide](/docs/machine-id/getting-started) to learn more.
-
-  Note that you cannot issue certificates that are valid longer than your existing credentials.
-  For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
-  valid for at least 1000 hours. This means your user must have a role allowing
-  a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
-  when logging in:
-
-  ```code
-  $ tsh login --proxy=teleport.example.com --ttl=60060
-  ```
-</Note>
+Give the plugin access to a Teleport identity file. We recommend using Machine
+ID for this in order to produce short-lived identity files that are less
+dangerous if exfiltrated, though in demo deployments, you can generate
+longer-lived identity files with `tctl`:
 
 <Tabs>
-  <Tab title="Virtual Machine">
-    The rest of this guide assumes that you have placed any files generated by this
-    command into `/var/lib/teleport/plugins/msteams` for later reference when
-    configuring the plugin:
+  <Tab title="Machine ID">
+    Configure `tbot` with an output that will produce the credentials needed by
+    the plugin. As the plugin will be accessing the Teleport API, the correct
+    output type to use is `identity`.
 
-    ```code
-    # create a data directory to hold certificate files for the plugin.
-    $ sudo mkdir -p /var/lib/teleport/plugins/msteams
-    $ sudo mv auth.* /var/lib/teleport/plugins/msteams
+    For this guide, the `directory` destination will be used. This will write these
+    credentials to a specified directory on disk. Ensure that this directory can
+    be written to by the Linux user that `tbot` runs as, and that it can be read by
+    the Linux user that the plugin will run as.
+
+    Modify your `tbot` configuration to add an `identity` output.
+
+    If running `tbot` on a Linux server, use the `directory` output to write
+    identity files to the `/opt/machine-id` directory:
+
+    ```yaml
+    outputs:
+    - type: identity
+      destination:
+        type: directory
+        # For this guide, /opt/machine-id is used as the destination directory.
+        # You may wish to customize this. Multiple outputs cannot share the same
+        # destination.
+        path: /opt/machine-id
     ```
+
+    If running `tbot` on Kubernetes, write the identity file to Kubernetes secret
+    instead:
+
+    ```yaml
+    outputs:
+      - type: identity
+        destination:
+          type: kubernetes_secret
+          name: teleport-plugin-msteams-identity
+    ```
+
+    If operating `tbot` as a background service, restart it. If running `tbot` in
+    one-shot mode, execute it now.
+
+    You should now see an `identity` file under `/opt/machine-id` or a Kubernetes
+    secret named `teleport-plugin-msteams-identity`. This contains the private key and signed
+    certificates needed by the plugin to authenticate with the Teleport Auth
+    Service.
   </Tab>
 
-  <Tab title="Kubernetes">
-    Create a Kubernetes secret that contains the Teleport identity file:
+  <Tab title="Long-lived identity files">
+    Like all Teleport users, `access-plugin` needs signed credentials in order to
+    connect to your Teleport cluster. You will use the `tctl auth sign` command to
+    request these credentials.
+
+    The following `tctl auth sign` command impersonates the `access-plugin` user,
+    generates signed credentials, and writes an identity file to the local
+    directory:
 
     ```code
-    $ kubectl -n teleport create secret generic --from-file=auth.pem teleport-plugin-msteams-identity
+    $ tctl auth sign --user=access-plugin --out=identity
     ```
+
+    The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+
+    The identity file, `identity`, includes both TLS and SSH credentials. The
+    plugin uses the SSH credentials to connect to the Proxy Service, which
+    establishes a reverse tunnel connection to the Auth Service. The plugin
+    uses this reverse tunnel, along with your TLS credentials, to connect to the
+    Auth Service's gRPC endpoint.
+
+    <Accordion title="Certificate Lifetime">
+      By default, `tctl auth sign` produces certificates with a relatively short
+      lifetime. For production deployments, we suggest using [Machine
+      ID](/docs/machine-id/introduction) to programmatically issue and renew
+      certificates for your plugin. See our Machine ID [getting started
+      guide](/docs/machine-id/getting-started) to learn more.
+
+      Note that you cannot issue certificates that are valid longer than your existing credentials.
+      For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+      valid for at least 1000 hours. This means your user must have a role allowing
+      a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
+      when logging in:
+
+      ```code
+      $ tsh login --proxy=teleport.example.com --ttl=60060
+      ```
+    </Accordion>
+
+    If you are running the plugin on a Linux server, create a data directory
+    to hold certificate files for the plugin:
+
+    ```code
+    $ sudo mkdir -p /var/lib/teleport/api-credentials
+    $ sudo mv identity /var/lib/teleport/plugins/api-credentials
+    ```
+
+    If you are running the plugin on Kubernetes, Create a Kubernetes secret
+    that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-msteams-identity
+    ```
+
+    Once the Teleport credentials expire, you will need to renew them by running the
+    `tctl auth sign` command again.
   </Tab>
 </Tabs>
 
@@ -776,7 +800,8 @@ you are deploying the plugin on a virtual machine or Kubernetes:
     # Credentials generated with `tctl auth sign`.
     #
     # When using --format=file:
-    # identity = "/var/lib/teleport/plugins/msteams/auth_id"    # Identity file
+    # identity = "/var/lib/teleport/plugins/msteams/identity"   # Identity file
+    # refresh_identity = true                                   # Refresh identity file periodically
     #
     # When using --format=tls:
     # client_key = "/var/lib/teleport/plugins/msteams/auth.key" # Teleport TLS secret key
@@ -784,6 +809,7 @@ you are deploying the plugin on a virtual machine or Kubernetes:
     # root_cas = "/var/lib/teleport/plugins/msteams/auth.cas"   # Teleport CA certs
     addr = "localhost:3025"
     identity = "identity"
+    refresh_identity = true
 
     [msapi]
     # MS API IDs. Please, check the documentation.
@@ -846,6 +872,7 @@ you are deploying the plugin on a virtual machine or Kubernetes:
     teleport:
       address: "teleport.example.com:443"
       identitySecretName: teleport-plugin-msteams-identity
+      identitySecretPath: identity
 
     msTeams:
       appID: "APP_ID"
@@ -901,8 +928,26 @@ cluster.
 
     **`identitySecretName`**: Fill in the `identitySecretName` field with the name
     of the Kubernetes secret you created earlier.
+
+    **`identitySecretPath`**: Fill in the `identitySecretPath` field with the path
+    of the identity file within the Kubernetes secret. If you have followed the
+    instructions above, this will be `identity`.
   </Tab>
 </Tabs>
+
+If you are providing credentials to the plugin using a `tbot` binary that runs
+on a Linux server, make sure the value of `identity` is the same as the path of
+the identity file you configured `tbot` to generate, `/opt/machine-id/identity`.
+
+Configure the plugin to periodically reload the identity file, ensuring that it
+does not attempt to connect to the Teleport Auth Service with expired
+credentials.
+
+Add the following to the `teleport` section of the configuration:
+
+```toml
+refresh_identity = true
+```
 
 #### `[msapi]`/`msTeams`
 
@@ -1025,7 +1070,8 @@ The final configuration file should resemble the following:
     # Credentials generated with `tctl auth sign`.
     #
     # When using --format=file:
-    # identity = "/var/lib/teleport/plugins/msteams/auth_id"    # Identity file
+    # identity = "/var/lib/teleport/plugins/msteams/identity"   # Identity file
+    # refresh_identity = true                                   # Refresh identity file periodically
     #
     # When using --format=tls:
     # client_key = "/var/lib/teleport/plugins/msteams/auth.key" # Teleport TLS secret key
@@ -1033,6 +1079,7 @@ The final configuration file should resemble the following:
     # root_cas = "/var/lib/teleport/plugins/msteams/auth.cas"   # Teleport CA certs
     addr = "localhost:3025"
     identity = "identity"
+    refresh_identity = true
 
     [msapi]
     # MS API IDs. Please, check the documentation.
@@ -1072,6 +1119,7 @@ The final configuration file should resemble the following:
     teleport:
       address: "teleport.example.com:443"
       identitySecretName: teleport-plugin-msteams-identity
+      identitySecretPath: identity
 
     msTeams:
       appID: "APP_ID"
@@ -1142,7 +1190,7 @@ $ teleport-msteams validate <email of your teams account>
 If everything works fine, the log output should look like this:
 
 ```text
-teleport-msteams v13.3.7 go1.21
+teleport-msteams v15.0.2 go1.21
 
  - Checking application xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx status...
  - Application found in the team app store (internal ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
@@ -1174,7 +1222,7 @@ plugin and test the workflow.
     ```code
     $ teleport-msteams start -d
     DEBU   DEBUG logging enabled msteams/main.go:120
-    INFO   Starting Teleport MS Teams Plugin 13.3.7: msteams/app.go:74
+    INFO   Starting Teleport MS Teams Plugin 15.0.2: msteams/app.go:74
     DEBU   Attempting GET teleport.example.com:443/webapi/find webclient/webclient.go:129
     DEBU   Checking Teleport server version msteams/app.go:242
     INFO   MS Teams app found in org app store id:292e2881-38ab-7777-8aa7-cefed1404a63 name:TeleBot msteams/app.go:179
@@ -1190,7 +1238,7 @@ plugin and test the workflow.
     Run the plugin:
 
     ```code
-    $ docker run -v <path-to-config>:/etc/teleport-msteams.toml public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.0-dev start
+    $ docker run -v <path-to-config>:/etc/teleport-msteams.toml public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2 start
     ```
   </Tab>
 

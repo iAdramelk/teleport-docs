@@ -18,13 +18,13 @@ webhook run by the plugin, which modifies the Access Request in Teleport.
   In Teleport Team and Teleport Enterprise Cloud, Teleport manages the Mattermost integration for
   you, and you can enroll the Mattermost integration from the Teleport Web UI.
 
-  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
-  screen. Select the **Management** option.
+  Visit the Teleport Web UI and click **Access Management** on the menu bar at the
+  top of the screen.
 
   On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
   Integration" page:
 
-  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+  ![Enroll an Access Request plugin](/assets/enroll-336e8c2e41.png)
 
   On the "Select Integration Type" menu, click the tile for your integration. You
   will see a page with instructions to set up the integration, as well as a form
@@ -38,16 +38,16 @@ webhook run by the plugin, which modifies the Access Request in Teleport.
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/ver/16.x/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v16.0.0-dev go1.22
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v16.0.0-dev go1.22
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -88,7 +88,7 @@ your infrastructure.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -148,29 +148,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - editor-reviewer 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},editor-reviewer"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -422,7 +413,7 @@ tenant).
 
     ```code
     $ teleport-jira version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.21
+    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.22
     ```
   </Tab>
 
@@ -438,7 +429,7 @@ tenant).
 
     ```code
     $ docker run public.ecr.aws/gravitational/teleport-plugin-jira:13.3.7 version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-api/14.0.0-gd1e081e 1.21
+    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-api/14.0.0-gd1e081e 1.22
     ```
 
     For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-jira).
@@ -460,7 +451,7 @@ tenant).
 
     ```code
     $ teleport-jira version
-    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.21
+    teleport-jira v13.3.7 git:teleport-jira-v13.3.7-fffffffff go1.22
     ```
   </Tab>
 

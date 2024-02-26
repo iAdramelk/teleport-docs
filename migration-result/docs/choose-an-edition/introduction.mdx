@@ -45,70 +45,81 @@ repository](https://github.com/gravitational/teleport).
 
 ## Comparing editions
 
-### Access controls
+### Access Controls
 
-|                                                                           | Open Source | Enterprise                                     | Cloud                                          | Team             |
-| ------------------------------------------------------------------------- | ----------- | ---------------------------------------------- | ---------------------------------------------- | ---------------- |
-| [Access Requests](/docs/access-controls/guides/dual-authz)                | Limited     | ✔                                              | ✔                                              | ✖                |
-| [Single Sign-On](/docs/access-controls/sso)                               | GitHub      | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Teleport |
-| [Role-Based Access Control](/docs/access-controls/guides/role-templates)  | ✔           | ✔                                              | ✔                                              | ✔                |
-| [Moderated Sessions](/docs/access-controls/guides/moderated-sessions)     | ✖           | ✔                                              | ✔                                              | ✖                |
-| [Device Trust](/docs/access-controls/device-trust/guide)                  | ✖           | ✔                                              | ✔                                              | ✖                |
-| [Dual Authorization](/docs/access-controls/guides/dual-authz)             | ✖           | ✔                                              | ✔                                              | ✖                |
-| [Hardware Key Support](/docs/access-controls/guides/hardware-key-support) | ✖           | ✔                                              | ✔                                              | ✖                |
-
-### Infrastructure access
-
-|                                                                                  | Open Source | Enterprise | Cloud | Team |
-| -------------------------------------------------------------------------------- | ----------- | ---------- | ----- | ---- |
-| [Application Access](/docs/application-access/getting-started)                   | ✔           | ✔          | ✔     | ✔    |
-| [Server Access](/docs/server-access/getting-started)                             | ✔           | ✔          | ✔     | ✔    |
-| [Database Access](/docs/database-access/getting-started)                         | ✔           | ✔          | ✔     | ✔    |
-| [Desktop Access](/docs/desktop-access/introduction)                              | ✔           | ✔          | ✔     | ✔    |
-| [Kubernetes Access](/docs/kubernetes-access/getting-started)                     | ✔           | ✔          | ✔     | ✔    |
-| [Machine ID](/docs/machine-id/getting-started)                                   | ✔           | ✔          | ✔     | ✔    |
-| Agentless Integration with [OpenSSH Servers](/docs/server-access/guides/openssh) | ✔           | ✔          | ✔     | ✔    |
+|                                                                           | Community Edition | Enterprise                                     | Cloud                                          | Team             |
+| ------------------------------------------------------------------------- | ----------------- | ---------------------------------------------- | ---------------------------------------------- | ---------------- |
+| [Dual Authorization](/docs/access-controls/guides/dual-authz)             | ✖                 | ✔                                              | ✔                                              | ✖                |
+| [Hardware Key Support](/docs/access-controls/guides/hardware-key-support) | ✖                 | ✔                                              | ✔                                              | ✖                |
+| [Moderated Sessions](/docs/access-controls/guides/moderated-sessions)     | ✖                 | ✔                                              | ✔                                              | ✖                |
+| [Role-Based Access Control](/docs/access-controls/guides/role-templates)  | ✔                 | ✔                                              | ✔                                              | ✔                |
+| [Single Sign-On](/docs/access-controls/sso)                               | GitHub            | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Google Workspace, OIDC, SAML, Teleport | GitHub, Teleport |
 
 ### Audit logging and session recording
 
-|                                                                                | Open Source | Enterprise | Cloud | Team |
-| ------------------------------------------------------------------------------ | ----------- | ---------- | ----- | ---- |
-| [Structured Audit Logs](/docs/reference/audit)                                 | ✔           | ✔          | ✔     | ✔    |
-| [Session Recording with Playback](/docs/architecture/session-recording)        | ✔           | ✔          | ✔     | ✔    |
-| [Recording Proxy Mode](/docs/server-access/guides/recording-proxy-mode)        | ✔           | ✔          | ✖     | ✖    |
-| [Enhanced Session Recording](/docs/server-access/guides/bpf-session-recording) | ✔           | ✔          | ✔     | ✔    |
+|                                                                                | Community Edition | Enterprise | Cloud | Team |
+| ------------------------------------------------------------------------------ | ----------------- | ---------- | ----- | ---- |
+| [Enhanced Session Recording](/docs/server-access/guides/bpf-session-recording) | ✔                 | ✔          | ✔     | ✔    |
+| [Recording Proxy Mode](/docs/server-access/guides/recording-proxy-mode)        | ✔                 | ✔          | ✖     | ✖    |
+| [Session Recording with Playback](/docs/architecture/session-recording)        | ✔                 | ✔          | ✔     | ✔    |
+| [Structured Audit Logs](/docs/reference/audit)                                 | ✔                 | ✔          | ✔     | ✔    |
 
 ### Compliance
 
-|                                                                        | Open Source | Enterprise | Cloud | Team    |
-| ---------------------------------------------------------------------- | ----------- | ---------- | ----- | ------- |
-| [FedRAMP Control](/docs/access-controls/compliance-frameworks/fedramp) | ✖           | ✔          | ✖     | ✖       |
-| PCI DSS Features                                                       | Limited     | ✔          | ✔     | Limited |
-| SOC 2 Features                                                         | Limited     | ✔          | ✔     | Limited |
-| FIPS-compliant binaries available for FedRAMP High                     | ✖           | ✔          | ✖     | ✖       |
-| IP-Based Restrictions                                                  | ✖           | ✔          | ✔     | ✖       |
+|                                                                        | Community Edition | Enterprise | Cloud | Team    |
+| ---------------------------------------------------------------------- | ----------------- | ---------- | ----- | ------- |
+| [FedRAMP Control](/docs/access-controls/compliance-frameworks/fedramp) | ✖                 | ✔          | ✖     | ✖       |
+| FIPS-compliant binaries available for FedRAMP High                     | ✖                 | ✔          | ✖     | ✖       |
+| IP-Based Restrictions                                                  | ✖                 | ✔          | ✔     | ✖       |
+| PCI DSS Features                                                       | Limited           | ✔          | ✔     | Limited |
+| SOC 2 Features                                                         | Limited           | ✔          | ✔     | Limited |
 
-### Operations
+### Identity Governance & Security
 
-|                                                                                                            | Open Source                                                                                        | Enterprise                                                                                        | Cloud                                                                                                         | Team                                                                                                          |
-| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Auth and Proxy Service Management                                                                          | Self-hosted                                                                                        | Self-hosted                                                                                       | Fully managed                                                                                                 | Fully managed                                                                                                 |
-| Proxy Service domain name                                                                                  | Custom                                                                                             | Custom                                                                                            | A subdomain of `teleport.sh`                                                                                  | A subdomain of `teleport.sh`                                                                                  |
-| Version support                                                                                            | All supported releases available to install and download.                                          | All supported releases available to install and download.                                         | Deploys last stable release with 2-3 week lag for stability.                                                  | Deploys last stable release with 2-3 week lag for stability.                                                  |
-| [Backend support](/docs/reference/backends)                                                                | Any S3-compatible storage for session records, many managed backends for custom audit log storage. | Any S3-compatible storage for session records, many managed backends for custom audit log storage | All data is stored in DynamoDB and S3 with server-side encryption.                                            | All data is stored in DynamoDB and S3 with server-side encryption.                                            |
-| Data storage location                                                                                      | Can store data anywhere in the world, on most managed cloud backends                               | Can store data anywhere in the world, on most managed cloud backends                              | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. | Data is stored in `us-west-2`, with Proxy Service instances deployed across the world for low-latency access. |
-| [Hardware Security Module support](/docs/choose-an-edition/teleport-enterprise/hsm) for encryption at rest | ✖                                                                                                  | ✔                                                                                                 | ✖                                                                                                             | ✖                                                                                                             |
+*Available as an add-on to Teleport Enterprise*
 
-### Support
+|                                                                                  | Community Edition | Enterprise | Cloud | Team |
+| -------------------------------------------------------------------------------- | ----------------- | ---------- | ----- | ---- |
+| Access Monitoring & Response                                                     | ✖                 | ✔          | ✔     | ✖    |
+| [Access Lists & Access Reviews](/docs/access-controls/access-lists)              | ✖                 | ✔          | ✔     | ✖    |
+| [Device Trust](/docs/access-controls/device-trust/guide)                         | ✖                 | ✔          | ✔     | ✖    |
+| [Endpoint Management: Jamf](/docs/access-controls/device-trust/jamf-integration) | ✖                 | ✔          | ✔     | ✖    |
+| [JIT Access Requests](/docs/access-controls/guides/dual-authz)                   | Limited           | ✔          | ✔     | ✖    |
+| Session & Identity Locks                                                         | ✖                 | ✔          | ✔     | ✖    |
 
-|         | Open Source | Enterprise                                          | Cloud                                               | Team      |
-| ------- | ----------- | --------------------------------------------------- | --------------------------------------------------- | --------- |
-| Support | Community   | 24x7 support with premium SLAs and account managers | 24x7 support with premium SLAs and account managers | Community |
+### Infrastructure access
+
+|                                                                                   | Community Edition | Enterprise | Cloud | Team |
+| --------------------------------------------------------------------------------- | ----------------- | ---------- | ----- | ---- |
+| Agentless Integration with [OpenSSH Servers](/docs/server-access/openssh/openssh) | ✔                 | ✔          | ✔     | ✔    |
+| [Application Access](/docs/application-access/getting-started)                    | ✔                 | ✔          | ✔     | ✔    |
+| [Database Access](/docs/database-access/getting-started)                          | ✔                 | ✔          | ✔     | ✔    |
+| [Desktop Access](/docs/desktop-access/introduction)                               | ✔                 | ✔          | ✔     | ✔    |
+| [Kubernetes Access](/docs/kubernetes-access/getting-started)                      | ✔                 | ✔          | ✔     | ✔    |
+| [Machine ID](/docs/machine-id/getting-started)                                    | ✔                 | ✔          | ✔     | ✔    |
+| [Server Access](/docs/server-access/getting-started)                              | ✔                 | ✔          | ✔     | ✔    |
 
 ### Licensing and usage management
 
-|                                                  | Open Source | Enterprise | Cloud      | Team       |
-| ------------------------------------------------ | ----------- | ---------- | ---------- | ---------- |
-| Annual or multi-year contracts, volume discounts | ✖           | ✔          | ✔          | ✖          |
-| License                                          | Apache 2    | Commercial | Commercial | Commercial |
-| Anonymized Usage Tracking                        | Opt-in      | ✔          | ✔          | ✔          |
+|                                                  | Community Edition | Enterprise | Cloud      | Team       |
+| ------------------------------------------------ | ----------------- | ---------- | ---------- | ---------- |
+| Annual or multi-year contracts, volume discounts | ✖                 | ✔          | ✔          | ✖          |
+| Anonymized Usage Tracking                        | Opt-in            | ✔          | ✔          | ✔          |
+| License                                          | Apache 2          | Commercial | Commercial | Commercial |
+
+### Operations
+
+|                                                                                                            | Community Edition                                                                                  | Enterprise                                                                                        | Cloud                                                                                                                                                                                       | Team                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Auth Service and Proxy Service Management                                                                  | Self-hosted                                                                                        | Self-hosted                                                                                       | Fully managed                                                                                                                                                                               | Fully managed                                                                                                                  |
+| [Backend support](/docs/reference/backends)                                                                | Any S3-compatible storage for session records, many managed backends for custom audit log storage. | Any S3-compatible storage for session records, many managed backends for custom audit log storage | All data is stored in DynamoDB and S3 with server-side encryption.                                                                                                                          | All data is stored in DynamoDB and S3 with server-side encryption.                                                             |
+| Data storage location                                                                                      | Can store data anywhere in the world, on most managed cloud backends                               | Can store data anywhere in the world, on most managed cloud backends                              | Data is stored in Teleport's AWS infrastructure with audit logs/sessions optionally in customer AWS accounts. Proxy Service instances are deployed across the world for low-latency access. | Data is stored in Teleport's AWS infrastructure. Proxy Service instances are deployed across the world for low-latency access. |
+| [Hardware Security Module support](/docs/choose-an-edition/teleport-enterprise/hsm) for encryption at rest | ✖                                                                                                  | ✔                                                                                                 | ✖                                                                                                                                                                                           | ✖                                                                                                                              |
+| Proxy Service domain name                                                                                  | Custom                                                                                             | Custom                                                                                            | A subdomain of `teleport.sh`                                                                                                                                                                | A subdomain of `teleport.sh`                                                                                                   |
+| Version support                                                                                            | All supported releases available to install and download.                                          | All supported releases available to install and download.                                         | Deploys last stable release with 2-3 week lag for stability.                                                                                                                                | Deploys last stable release with 2-3 week lag for stability.                                                                   |
+
+### Support
+
+|         | Community Edition | Enterprise                                          | Cloud                                               | Team      |
+| ------- | ----------------- | --------------------------------------------------- | --------------------------------------------------- | --------- |
+| Support | Community         | 24x7 support with premium SLAs and account managers | 24x7 support with premium SLAs and account managers | Community |

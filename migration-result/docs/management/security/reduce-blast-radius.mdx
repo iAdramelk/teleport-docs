@@ -21,7 +21,7 @@ Teleport encourages users to practice defense in depth so that every component o
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -55,8 +55,6 @@ To do so, make the following changes depending on your environment:
     ```code
     $ tctl get cap > cap.yaml
     ```
-
-    If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
 
     In `cap.yaml`, ensure that the value of `spec.second_factor` is `otp`,
     `webauthn`, or `on`:

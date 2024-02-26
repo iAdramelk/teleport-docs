@@ -14,6 +14,25 @@ Teleport administrators to define policies like:
 - Developers must never SSH into production servers.
 - Members of the HR group can view audit logs but not production environments.
 
+<Accordion title="Automated SSO connection with Okta integration">
+  In Teleport Team, Teleport Enterprise Cloud and Self-Hosted Teleport Enterprise,
+  Teleport can automatically configure an SSO connector for you when as part of
+  [enrolling the hosted Okta integration](/docs).
+
+  You can enroll the Okta integration from the Teleport Web UI.
+
+  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
+  screen. Select the **Management** option.
+
+  On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
+  Integration" page:
+
+  ![Enroll an Access Request plugin](/assets/enroll-336e8c2e41.png)
+
+  On the "Select Integration Type" menu, click the Okta tile. Teleport will then
+  guide you through configuring the Okta integration.
+</Accordion>
+
 ## Prerequisites
 
 - An Okta account with admin access. Your account must include users and at
@@ -25,16 +44,16 @@ Teleport administrators to define policies like:
   For information about the differences between Teleport editions, see [Comparing
   editions](/docs/choose-an-edition/introduction#comparing-editions).
 
-- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+- The Enterprise `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
   You can verify the tools you have installed by running the following commands:
 
   ```code
   $ tctl version
-  # Teleport Enterprise v15.0.0-dev go1.21
+  # Teleport Enterprise v15.0.2 go1.21
 
   $ tsh version
-  # Teleport v15.0.0-dev go1.21
+  # Teleport v15.0.2 go1.21
   ```
 
   You can download these tools by following the appropriate [Installation
@@ -45,27 +64,27 @@ Teleport administrators to define policies like:
 
 <Tabs>
   <Tab title="Teleport Enterprise (Self-Hosted)">
-    - The `tctl` and `tsh` client tools version >= 15.0.0-dev, which you
+    - The `tctl` and `tsh` client tools version >= 15.0.2, which you
       can download by visiting your [Teleport account](https://teleport.sh).
       ```code
       $ tctl version
-      # Teleport Enterprise v15.0.0-dev go1.21
+      # Teleport Enterprise v15.0.2 go1.21
 
       $ tsh version
-      # Teleport v15.0.0-dev go1.21
+      # Teleport v15.0.2 go1.21
       ```
   </Tab>
 
   <Tab title="Teleport Cloud">
-    - The `tctl` and `tsh` client tools version >= 13.4.3.
+    - The `tctl` and `tsh` client tools version >= 14.3.6.
 
       You can download these from [Teleport Cloud Downloads](/docs/choose-an-edition/teleport-cloud/downloads).
       ```code
       $ tctl version
-      # Teleport Enterprise v13.4.3 go1.21
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.4.3 go1.21
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>

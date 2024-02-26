@@ -16,14 +16,20 @@ databases:
 
 In it, we have the following Teleport components:
 
-- [Teleport Proxy](/docs/ver/13.x/architecture/proxy). A stateless service
-  that performs a function of an authentication gateway, serves the Web UI, and
-  accepts database (and other) client connections.
+<Tabs>
+  <Tab title="Self-Hosted">
+    - [Teleport Proxy](/docs/ver/13.x/architecture/proxy). A stateless service
+      that performs a function of an authentication gateway, serves the Web UI, and
+      accepts database (and other) client connections.
+  </Tab>
 
-- [Teleport Proxy](/docs/ver/13.x/architecture/proxy). A stateless service that performs
-  a function of an authentication gateway, serves the Web UI, and accepts
-  database (and other) client connections. This service is accessible at your
-  Teleport Cloud tenant URL, e.g., `mytenant.teleport.sh`.
+  <Tab title="Teleport Enterprise Cloud">
+    - [Teleport Proxy](/docs/ver/13.x/architecture/proxy). A stateless service that performs
+      a function of an authentication gateway, serves the Web UI, and accepts
+      database (and other) client connections. This service is accessible at your
+      Teleport Cloud tenant URL, e.g., `mytenant.teleport.sh`.
+  </Tab>
+</Tabs>
 
 - [Teleport Auth Service](/docs/ver/13.x/architecture/authentication). Serves as
   cluster's certificate authority, handles user authentication/authorization

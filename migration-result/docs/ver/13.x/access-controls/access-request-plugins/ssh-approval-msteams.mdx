@@ -10,42 +10,25 @@ Access Requests. Users can then approve and deny Access Requests by following th
 message link, making it easier to implement security best practices without
 compromising productivity.
 
-```mermaid
-flowchart LR
-subgraph teleport["Teleport cluster"]
-  direction LR
-  auth["Auth Service"]
-  proxy["Proxy Service"]
-end
-api[Microsoft Teams API]
-
-subgraph private["Private network"]
-  subgraph plugin[Microsoft Teams plugin]
-    id["Teleport identity file"]
-  end 
-  plugin<-- "Listen for Access Requests\n(via reverse tunnel)"-->proxy
-end 
-proxy<-- Forward gRPC traffic -->auth
-plugin-- "Microsoft Teams messages" -->api
-```
+![The Microsoft Teams Access Request plugin](/assets/msteams-c50df8bb2f.png)
 
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
@@ -54,52 +37,63 @@ plugin-- "Microsoft Teams messages" -->api
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
 - A Microsoft Teams License (Microsoft 365 Business).
-- Azure console access in the organization/directory holding the Microsoft Teams License.
-- An Azure resource group in the same directory. This will  host resources for the the Microsoft Teams Access Request plugin.
-  You should have enough permissions to create and edit Azure Bot Services in this resource group.
-- Someone with Global Admin rights on the Azure Active Directory that will
-  grant permissions to the plugin.
+- Azure console access in the organization/directory holding the Microsoft Teams
+  License.
+- An Azure resource group in the same directory. This will  host resources for
+  the the Microsoft Teams Access Request plugin. You should have enough
+  permissions to create and edit Azure Bot Services in this resource group.
+- Someone with Global Admin rights on the Azure Active Directory that will grant
+  permissions to the plugin.
 - Someone with the `Teams administrator` role that can approve installation
   requests for Microsoft Teams Apps.
+- Either an Azure virtual machine or Kubernetes cluster where you will run the
+  Teleport Microsoft Teams plugin.
 
-Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-remotely:
+Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+so you can execute commands with the `tctl` admin tool:
 
-```code
-$ tsh login --proxy=teleport.example.com --user=email@example.com
-$ tctl status
-# Cluster  teleport.example.com
-# Version  13.2.0
-# CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh login --proxy=teleport.example.com --user=email@example.com
+    $ tctl status
+    # Cluster  teleport.example.com
+    # Version  13.4.16
+    # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+    ```
 
-You can run subsequent `tctl` commands in this guide on your local machine.
+    You can run subsequent `tctl` commands in this guide on your local machine.
 
-For full privileges, you can also run `tctl` commands on your Auth Service host.
+    For full privileges, you can also run `tctl` commands on your Teleport Auth
+    Service host.
+  </Tab>
 
-```code
-$ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-$ tctl status
-# Cluster  myinstance.teleport.sh
-# Version  13.2.0
-# CA pin   sha256:sha-hash-here
-```
+  <Tab title="Teleport Cloud">
+    ```code
+    $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+    $ tctl status
+    # Cluster  myinstance.teleport.sh
+    # Version  14.3.6
+    # CA pin   sha256:sha-hash-here
+    ```
 
-You must run subsequent `tctl` commands in this guide on your local machine.
+    You must run subsequent `tctl` commands in this guide on your local machine.
+  </Tab>
+</Tabs>
 
 ## Step 1/9. Define RBAC resources
 
@@ -146,147 +140,147 @@ role 'editor-requester' has been created
 Allow yourself to review requests by users with the `editor-requester` role by
 assigning yourself the `editor-reviewer` role.
 
-Assign the `editor-reviewer` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `editor-reviewer` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
+    2. Edit `out.yaml`, adding `editor-reviewer` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - editor-reviewer
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - editor-reviewer 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `editor-reviewer` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `editor-reviewer` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `editor-reviewer` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `editor-reviewer` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `editor-reviewer` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `editor-reviewer` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - editor-reviewer
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - editor-reviewer
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
@@ -304,51 +298,87 @@ review the request using the Teleport plugin.
 
 ## Step 2/9. Install the Teleport Microsoft Teams plugin
 
-We currently only provide `linux-amd64` binaries. You can also compile these
-plugins from source. You can run the plugin from a remote host or your local
-development machine.
-
-<Tip>
-  We recommend installing Teleport plugins on the same host as the Teleport
-  Proxy Service. This is an ideal location as plugins have a low memory footprint
-  and will require access to both the public internet and the Teleport Auth Service.
-</Tip>
+Install the Microsoft Teams plugin on your workstation. If you are deploying the
+plugin on Kubernetes, you will still need to install the plugin locally in order
+to generate an application archive to upload later in this guide.
 
 <Tabs>
   <Tab title="Download">
+    We currently only provide `linux-amd64` binaries. You can also compile these
+    plugins from source. You can run the plugin from a remote host or your local
+    development machine.
+
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-msteams-v13.2.0-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-msteams-v13.2.0-linux-amd64-bin.tar.gz
-    $ ./teleport-access-msteams/install
+    $ curl -L -O https://get.gravitational.com/teleport-access-msteams-v13.3.8-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-msteams-v13.3.8-linux-amd64-bin.tar.gz
+    $ cd teleport-access-msteams
+    $ sudo ./install
+    ```
+
+    Make sure the binary is installed:
+
+    ```code
+    $ teleport-msteams version
+    teleport-msteams v13.3.8 git:teleport-msteams-v13.3.8-fffffffff go1.21
     ```
   </Tab>
 
-  <Tab title="From Source">
-    To install from source you need `git` and `go` >= 1.20
-    installed.
+  <Tab title="Docker Image">
+    We currently only provide Docker images for `linux-amd64`.
+    Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    # Check out the teleport-plugins repository
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-msteams:13.3.8
+    ```
+
+    Make sure the plugin is installed by running the following command:
+
+    ```code
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-msteams:13.3.8 version
+    teleport-msteams v13.3.8 git:teleport-msteams-v13.3.8-fffffffff 1.21
+    ```
+
+    For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-msteams).
+  </Tab>
+
+  <Tab title="From Source">
+    To install from source you need `git` and `go` installed. If you do not have Go
+    installed, visit the Go [downloads page](https://go.dev/dl/).
+
+    ```code
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/msteams
     $ make
     ```
 
-    Place the `teleport-msteams` binary into an appropriate location
-    within the system's `PATH`, e.g., `/usr/local/bin`:
+    Move the `teleport-msteams` binary into your PATH.
+
+    Make sure the binary is installed:
 
     ```code
-    $ mv ./build/teleport-msteams /usr/local/bin
+    $ teleport-msteams version
+    teleport-msteams v13.3.8 git:teleport-msteams-v13.3.8-fffffffff go1.21
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    {/*TODO: Replace this with the following partial once we fix
+    gravitational/docs#299:
+    docs/pages/kubernetes-access/helm/includes/helm-repo-add.mdx*/}
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
+
+    ```code
+    $ helm repo add teleport https://charts.releases.teleport.dev
+    ```
+
+    Update the cache of charts from the remote repository:
+
+    ```code
+    $ helm repo update
     ```
   </Tab>
 </Tabs>
-
-Make sure the binary is installed:
-
-```code
-$ teleport-msteams version
-teleport-msteams v13.2.0 git:teleport-msteams-v13.2.0-fffffffff go1.20
-```
 
 ## Step 3/9. Create a user and role for the plugin
 
@@ -392,8 +422,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -419,147 +450,147 @@ Create the `access-plugin-impersonator` role:
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
-Assign the `access-plugin-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+Assign the `access-plugin-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - access-plugin-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - access-plugin-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `access-plugin-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `access-plugin-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `access-plugin-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `access-plugin-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `access-plugin-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `access-plugin-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 You will now be able to generate signed certificates for the `access-plugin`
 role and user.
@@ -606,15 +637,27 @@ You will refer to this file later when configuring the plugin.
   ```
 </Note>
 
-The rest of this guide assumes that you have placed any files generated by this
-command into `/var/lib/teleport/plugins/msteams` for later reference when
-configuring the plugin:
+<Tabs>
+  <Tab title="Virtual Machine">
+    The rest of this guide assumes that you have placed any files generated by this
+    command into `/var/lib/teleport/plugins/msteams` for later reference when
+    configuring the plugin:
 
-```code
-# create a data directory to hold certificate files for the plugin.
-$ sudo mkdir -p /var/lib/teleport/plugins/msteams
-$ sudo mv auth.* /var/lib/teleport/plugins/msteams
-```
+    ```code
+    # create a data directory to hold certificate files for the plugin.
+    $ sudo mkdir -p /var/lib/teleport/plugins/msteams
+    $ sudo mv auth.* /var/lib/teleport/plugins/msteams
+    ```
+  </Tab>
+
+  <Tab title="Kubernetes">
+    Create a Kubernetes secret that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=auth.pem teleport-plugin-msteams-identity
+    ```
+  </Tab>
+</Tabs>
 
 ## Step 5/9. Register an Azure Bot
 
@@ -650,7 +693,7 @@ The result should be as follows:
 ### Obtain information about your Microsoft App
 
 On the bot's "Configuration" tab, copy and keep in a safe place the values of
-"Microsoft App ID" and "App Tenant ID".  Those two UUIDs will be used in the
+"Microsoft App ID" and "App Tenant ID". Those two UUIDs will be used in the
 plugin configuration.
 
 Click the "Manage" link next to "Microsoft App ID". This will open the app management view.
@@ -701,78 +744,139 @@ credentials and generate the Teams App package that will be used to install the
 Microsoft Teams App. You will also configure the plugin to notify
 the right Microsoft Teams users when it receives an Access Request update.
 
-### Generate a config file and assets
+### Generate a configuration file and assets
 
-The Teleport Microsoft Teams plugin uses a config file in TOML format.  The `configure`
-subcommand generates the directory `/var/lib/teleport/plugins/msteams/assets`
-containing the TOML configuration file and an `app.zip` file that will be used
-later to add the Teams App into the organization catalog.
+Generate a configuration file for the plugin. The instructions depend on whether
+you are deploying the plugin on a virtual machine or Kubernetes:
 
-```code
-$ export AZURE_APPID="your-appid"
-$ export AZURE_TENANTID="your-tenantid"
-$ export AZURE_APPSECRET="your-appsecret"
-$ teleport-msteams configure /var/lib/teleport/plugins/msteams/assets --appID "$AZURE_APPID" --tenantID "$AZURE_TENANTID" --appSecret "$AZURE_APPSECRET"
-```
+<Tabs>
+  <Tab title="Virtual Machine">
+    The Teleport Microsoft Teams plugin uses a config file in TOML format.  The
+    `configure` subcommand generates the directory
+    `/var/lib/teleport/plugins/msteams/assets` containing the TOML configuration
+    file and an `app.zip` file that will be used later to add the Teams App into the
+    organization catalog.
 
-This should result in a config file like the one below:
+    Run the following command on your virtual machine:
 
-```toml
-# Example Microsoft Teams plugin configuration TOML file
+    ```code
+    $ export AZURE_APPID="your-appid"
+    $ export AZURE_TENANTID="your-tenantid"
+    $ export AZURE_APPSECRET="your-appsecret"
+    $ teleport-msteams configure /var/lib/teleport/plugins/msteams/assets --appID "$AZURE_APPID" --tenantID "$AZURE_TENANTID" --appSecret "$AZURE_APPSECRET"
+    ```
 
-# If true, channels and users existence is checked on plugin start. When a
-# user is checked, the app is installed for the user if it was not
-# already. Installation can take up to 10 seconds per user. It is
-# advised to enable preloading unless you are sure all users already got
-# the app installed to avoid possible timeouts when treating an access request.
-preload = true
+    This should result in a config file like the one below:
 
-[teleport]
-# Teleport Auth/Proxy Server address.
-# addr = "example.com:3025"
-#
-# Should be port 3025 for Auth Server and 3080 or 443 for Proxy.
-# For Teleport Cloud, should be in the form "your-account.teleport.sh:443".
+    ```toml
+    # Example Microsoft Teams plugin configuration TOML file
 
-# Credentials generated with `tctl auth sign`.
-#
-# When using --format=file:
-# identity = "/var/lib/teleport/plugins/msteams/auth_id"    # Identity file
-#
-# When using --format=tls:
-# client_key = "/var/lib/teleport/plugins/msteams/auth.key" # Teleport TLS secret key
-# client_crt = "/var/lib/teleport/plugins/msteams/auth.crt" # Teleport TLS certificate
-# root_cas = "/var/lib/teleport/plugins/msteams/auth.cas"   # Teleport CA certs
-addr = "localhost:3025"
-identity = "identity"
+    # If true, channels and users existence is checked on plugin start. When a
+    # user is checked, the app is installed for the user if it was not
+    # already. Installation can take up to 10 seconds per user. It is
+    # advised to enable preloading unless you are sure all users already got
+    # the app installed to avoid possible timeouts when treating an access request.
+    preload = true
 
-[msapi]
-# MS API IDs. Please, check the documentation.
-app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-# Either contains the app secret or the path of a file containing the secret
-app_secret = "XXXXXXXXXXXXXXXXXXXXXX"
-tenant_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-teams_app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    [teleport]
+    # Teleport Auth/Proxy Server address.
+    # addr = "example.com:3025"
+    #
+    # Should be port 3025 for Auth Server and 3080 or 443 for Proxy.
+    # For Teleport Cloud, should be in the form "your-account.teleport.sh:443".
 
-[role_to_recipients]
-# Map roles to recipients.
-#
-# Provide msteams user email/id or channel URL recipients for access requests for specific roles.
-# role.suggested_reviewers will automatically be treated as additional email recipients.
-# "*" must be provided to match non-specified roles.
-#
-# "dev" = "devs-msteams-channel"
-# "*" = ["admin@email.com", "admin-msteams-channel"]
-"*" = ["foo@example.com"]
+    # Credentials generated with `tctl auth sign`.
+    #
+    # When using --format=file:
+    # identity = "/var/lib/teleport/plugins/msteams/auth_id"    # Identity file
+    #
+    # When using --format=tls:
+    # client_key = "/var/lib/teleport/plugins/msteams/auth.key" # Teleport TLS secret key
+    # client_crt = "/var/lib/teleport/plugins/msteams/auth.crt" # Teleport TLS certificate
+    # root_cas = "/var/lib/teleport/plugins/msteams/auth.cas"   # Teleport CA certs
+    addr = "localhost:3025"
+    identity = "identity"
 
-[log]
-output = "stderr" # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/msteams.log"
-severity = "INFO" # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
+    [msapi]
+    # MS API IDs. Please, check the documentation.
+    app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    # Either contains the app secret or the path of a file containing the secret
+    app_secret = "XXXXXXXXXXXXXXXXXXXXXX"
+    tenant_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    teams_app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
-```
+    [role_to_recipients]
+    # Map roles to recipients.
+    #
+    # Provide msteams user email/id or channel URL recipients for access requests for specific roles.
+    # role.suggested_reviewers will automatically be treated as additional email recipients.
+    # "*" must be provided to match non-specified roles.
+    #
+    # "dev" = "devs-msteams-channel"
+    # "*" = ["admin@email.com", "admin-msteams-channel"]
+    "*" = ["foo@example.com"]
 
-Copy the `/var/lib/teleport/plugins/msteams/assets/app.zip` file to your local
-computer. You will have to upload it to Microsoft Teams later.
+    [log]
+    output = "stderr" # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/msteams.log"
+    severity = "INFO" # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
+
+    ```
+
+    Copy the `/var/lib/teleport/plugins/msteams/assets/app.zip` file to your local
+    computer. You will have to upload it to Microsoft Teams later.
+
+    On the host where you will run the Microsoft Teams plugin, move the file
+    `/var/lib/teleport/plugins/msteams/assets/teleport-msteams.toml` to
+    `/etc/teleport-msteams.toml`. You can then edit the copy located in `/etc/`.
+  </Tab>
+
+  <Tab title="Kubernetes">
+    Run the following command on your local machine:
+
+    ```code
+    $ export AZURE_APPID="your-appid"
+    $ export AZURE_TENANTID="your-tenantid"
+    $ export AZURE_APPSECRET="your-appsecret"
+    $ teleport-msteams configure /var/lib/teleport/plugins/msteams/assets --appID "$AZURE_APPID" --tenantID "$AZURE_TENANTID" --appSecret "$AZURE_APPSECRET"
+    ```
+
+    This command generates an application archive at
+    `/var/lib/teleport/plugins/msteams/assets/app.zip`. You will upload it to
+    Microsoft Teams later in this guide.
+
+    Create a file on your workstation called `teleport-msteams-helm.yaml` with the
+    following content:
+
+    ```yaml
+    # Default values for slack.
+    # This is a YAML-formatted file.
+    # Declare variables to be passed into your templates.
+
+    #
+    # Plugin specific options
+    #
+    teleport:
+      address: "teleport.example.com:443"
+      identitySecretName: teleport-plugin-msteams-identity
+
+    msTeams:
+      appID: "APP_ID"
+      tenantID: "TENANT_ID"
+      teamsAppID: "TEAMS_APP_ID"
+
+    roleToRecipients:
+      "*": "TELEPORT_USERNAME"
+      "editor": "TELEPORT_USERNAME"
+
+    log:
+      output: stdout
+      severity: INFO
+
+    ```
+
+    You will edit this file in the next section.
+  </Tab>
+</Tabs>
 
 <Warning>
   The `configure` command is not idempotent. It generates a new Microsoft Teams
@@ -780,18 +884,17 @@ computer. You will have to upload it to Microsoft Teams later.
   a TOML configuration generated by two different executions.
 </Warning>
 
-### Edit the config file
+### Edit the configuration file
 
-Copy the file `/var/lib/teleport/plugins/msteams/assets/teleport-msteams.toml`
-to `/etc/teleport-msteams.toml`. You can then edit the copy located in `/etc/`.
+Edit the configuration file according to the instructions below.
 
-**`[teleport]`**
+#### `[teleport]`
 
 The Microsoft Teams plugin uses this section to connect to your Teleport
 cluster.
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
     or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
     `mytenant.teleport.sh:443`).
@@ -813,22 +916,52 @@ cluster.
   </Tab>
 </Tabs>
 
-**`[role_to_recipients]`**
+#### `[msapi]`/`msTeams`
 
-The `role_to_recipients` map configure the users and channels that the
+<Tabs>
+  <Tab title="Executable or Docker">
+    Make sure the `app_id`, `app_secret`, `tenant_id`, and `teams_app_id` fields are
+    filled in with the correct information, which you obtained earlier in this
+    guide.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Make sure the `appID`, `tenantID`, and `teamsAppID` fields are filled in with
+    the correct information, which you obtained earlier in this guide.
+  </Tab>
+</Tabs>
+
+#### `[role_to_recipients]`
+
+The `role_to_recipients` map (`roleToRecipients` for Helm users) configure the users and channels that the
 Microsoft Teams plugin will notify when a user requests access to a specific role. When
 the Microsoft Teams plugin receives an Access Request from the Auth Service, it will
 look up the role being requested and identify the Microsoft Teams users and channels to
 notify.
 
-Here is an example of a `role_to_recipients` map:
+<Tabs>
+  <Tab title="Executable or Docker">
+    Here is an example of a `role_to_recipients` map:
 
-```toml
-[role_to_recipients]
-"*" = "alice@example.com"
-"dev" = ["alice@example.com", "bob@example.com"]
-"dba" = "https://teams.microsoft.com/l/channel/19%3somerandomid%40thread.tacv2/ChannelName?groupId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&tenantId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+    ```toml
+    [role_to_recipients]
+    "*" = "alice@example.com"
+    "dev" = ["alice@example.com", "bob@example.com"]
+    "dba" = "https://teams.microsoft.com/l/channel/19%3somerandomid%40thread.tacv2/ChannelName?groupId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&tenantId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Here is an example of a `role_to_recipients` map:
+
+    ```toml
+    roleToRecipients:
+      "*": "alice@example.com"
+      "dev": ["alice@example.com", "bob@example.com"]
+      "dba": "https://teams.microsoft.com/l/channel/19%3somerandomid%40thread.tacv2/ChannelName?groupId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&tenantId=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    ```
+  </Tab>
+</Tabs>
 
 In the `role_to_recipients` map, each key is the name of a Teleport role. Each
 value configures the Teams user (or users) to notify. The value can be a single
@@ -862,11 +995,112 @@ by adding the following to your `role_to_recipients` config (replace
 `TELEPORT_USERNAME` with the email of the user you assigned the `editor-reviewer`
 role earlier):
 
-```toml
-[role_to_recipients]
-"*" = "TELEPORT_USERNAME"
-"editor" = "TELEPORT_USERNAME"
-```
+<Tabs>
+  <Tab title="Executable or Docker">
+    ```toml
+    [role_to_recipients]
+    "*" = "TELEPORT_USERNAME"
+    "editor" = "TELEPORT_USERNAME"
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    ```toml
+    roleToRecipients:
+      "*": "TELEPORT_USERNAME"
+      "editor": "TELEPORT_USERNAME"
+    ```
+  </Tab>
+</Tabs>
+
+The final configuration file should resemble the following:
+
+<Tabs>
+  <Tab title="Executable or Docker">
+    ```toml
+    # Example Microsoft Teams plugin configuration TOML file
+
+    # If true, channels and users existence is checked on plugin start. When a
+    # user is checked, the app is installed for the user if it was not
+    # already. Installation can take up to 10 seconds per user. It is
+    # advised to enable preloading unless you are sure all users already got
+    # the app installed to avoid possible timeouts when treating an access request.
+    preload = true
+
+    [teleport]
+    # Teleport Auth/Proxy Server address.
+    # addr = "example.com:3025"
+    #
+    # Should be port 3025 for Auth Server and 3080 or 443 for Proxy.
+    # For Teleport Cloud, should be in the form "your-account.teleport.sh:443".
+
+    # Credentials generated with `tctl auth sign`.
+    #
+    # When using --format=file:
+    # identity = "/var/lib/teleport/plugins/msteams/auth_id"    # Identity file
+    #
+    # When using --format=tls:
+    # client_key = "/var/lib/teleport/plugins/msteams/auth.key" # Teleport TLS secret key
+    # client_crt = "/var/lib/teleport/plugins/msteams/auth.crt" # Teleport TLS certificate
+    # root_cas = "/var/lib/teleport/plugins/msteams/auth.cas"   # Teleport CA certs
+    addr = "localhost:3025"
+    identity = "identity"
+
+    [msapi]
+    # MS API IDs. Please, check the documentation.
+    app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    # Either contains the app secret or the path of a file containing the secret
+    app_secret = "XXXXXXXXXXXXXXXXXXXXXX"
+    tenant_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    teams_app_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+    [role_to_recipients]
+    # Map roles to recipients.
+    #
+    # Provide msteams user email/id or channel URL recipients for access requests for specific roles.
+    # role.suggested_reviewers will automatically be treated as additional email recipients.
+    # "*" must be provided to match non-specified roles.
+    #
+    # "dev" = "devs-msteams-channel"
+    # "*" = ["admin@email.com", "admin-msteams-channel"]
+    "*" = ["foo@example.com"]
+
+    [log]
+    output = "stderr" # Logger output. Could be "stdout", "stderr" or "/var/lib/teleport/msteams.log"
+    severity = "INFO" # Logger severity. Could be "INFO", "ERROR", "DEBUG" or "WARN".
+
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    ```yaml
+    # Default values for slack.
+    # This is a YAML-formatted file.
+    # Declare variables to be passed into your templates.
+
+    #
+    # Plugin specific options
+    #
+    teleport:
+      address: "teleport.example.com:443"
+      identitySecretName: teleport-plugin-msteams-identity
+
+    msTeams:
+      appID: "APP_ID"
+      tenantID: "TENANT_ID"
+      teamsAppID: "TEAMS_APP_ID"
+
+    roleToRecipients:
+      "*": "TELEPORT_USERNAME"
+      "editor": "TELEPORT_USERNAME"
+
+    log:
+      output: stdout
+      severity: INFO
+
+    ```
+  </Tab>
+</Tabs>
 
 ## Step 7/9. Add and configure the Teams App
 
@@ -920,7 +1154,7 @@ $ teleport-msteams validate <email of your teams account>
 If everything works fine, the log output should look like this:
 
 ```text
-teleport-msteams v13.2.0 go1.20
+teleport-msteams v13.3.8 go1.21
 
  - Checking application xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx status...
  - Application found in the team app store (internal ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
@@ -940,23 +1174,60 @@ The plugin should exit and you should have received two messages through Microso
 
 ### Start the MS Teams Plugin
 
-After you configured and validated the MS Teams plugin, run the following command to start it.
-The `-d` flag will provide debug information to ensure that the plugin can
-connect to MS Teams and your Teleport cluster:
+After you configured and validated the MS Teams plugin, you can now run the
+plugin and test the workflow.
 
-```code
-$ teleport-msteams start -d
-DEBU   DEBUG logging enabled msteams/main.go:120
-INFO   Starting Teleport MS Teams Plugin 13.2.0: msteams/app.go:74
-DEBU   Attempting GET teleport.example.com:443/webapi/find webclient/webclient.go:129
-DEBU   Checking Teleport server version msteams/app.go:242
-INFO   MS Teams app found in org app store id:292e2881-38ab-7777-8aa7-cefed1404a63 name:TeleBot msteams/app.go:179
-INFO   Preloading recipient data... msteams/app.go:185
-INFO   Recipient found, chat found chat_id:19:a8c06deb-aa2b-4db5-9c78-96e48f625aef_a36aec2e-f11c-4219-b79a-19UUUU57de70@unq.gbl.spaces kind:user recipient:jeff@example.com msteams/app.go:195
-INFO   Recipient data preloaded and cached. msteams/app.go:198
-DEBU   Watcher connected watcherjob/watcherjob.go:121
-INFO   Plugin is ready msteams/app.go:227
-```
+<Tabs>
+  <Tab title="Executable">
+    Run the following command to start the Teleport MS Teams plugin.  The `-d` flag
+    will provide debug information to ensure that the plugin can connect to MS Teams
+    and your Teleport cluster:
+
+    ```code
+    $ teleport-msteams start -d
+    DEBU   DEBUG logging enabled msteams/main.go:120
+    INFO   Starting Teleport MS Teams Plugin 13.3.8: msteams/app.go:74
+    DEBU   Attempting GET teleport.example.com:443/webapi/find webclient/webclient.go:129
+    DEBU   Checking Teleport server version msteams/app.go:242
+    INFO   MS Teams app found in org app store id:292e2881-38ab-7777-8aa7-cefed1404a63 name:TeleBot msteams/app.go:179
+    INFO   Preloading recipient data... msteams/app.go:185
+    INFO   Recipient found, chat found chat_id:19:a8c06deb-aa2b-4db5-9c78-96e48f625aef_a36aec2e-f11c-4219-b79a-19UUUU57de70@unq.gbl.spaces kind:user recipient:jeff@example.com msteams/app.go:195
+    INFO   Recipient data preloaded and cached. msteams/app.go:198
+    DEBU   Watcher connected watcherjob/watcherjob.go:121
+    INFO   Plugin is ready msteams/app.go:227
+    ```
+  </Tab>
+
+  <Tab title="Docker">
+    Run the plugin:
+
+    ```code
+    $ docker run -v <path-to-config>:/etc/teleport-msteams.toml public.ecr.aws/gravitational/teleport-plugin-msteams:13.4.16 start
+    ```
+  </Tab>
+
+  <Tab title="Helm Chart">
+    Install the plugin:
+
+    ```code
+    $ helm upgrade --install teleport-plugin-msteams teleport/teleport-plugin-msteams --values teleport-msteams-helm.yaml
+    ```
+
+    To inspect the plugin's logs, use the following command:
+
+    ```code
+    $ kubectl logs deploy/teleport-plugin-msteams
+    ```
+
+    Debug logs can be enabled by setting `log.severity` to `DEBUG` in
+    `teleport-msteams-helm.yaml` and executing the `helm upgrade ...` command
+    above again. Then you can restart the plugin with the following command:
+
+    ```code
+    $ kubectl rollout restart deployment teleport-plugin-msteams
+    ```
+  </Tab>
+</Tabs>
 
 ### Create an Access Request
 
@@ -1033,11 +1304,13 @@ to reflect its new status.
   reviewing the right requests.
 
   When auditing Access Request reviews, check for events with the type `Access
-  Request Reviewed` in the Teleport Web UI and `access_request.review` if reviewing the audit log on the
-  Auth Service host.
+  Request Reviewed` in the Teleport Web UI.
 </Note>
 
 ## Step 9/9. Set up systemd
+
+This section is only relevant if you are running the Teleport Microsoft Teams
+plugin on a virtual machine.
 
 In production, we recommend starting the Teleport plugin daemon via an init
 system like systemd.  Here's the recommended Teleport plugin service unit file
@@ -1078,7 +1351,3 @@ $ sudo systemctl start teleport-msteams
   Requests](/docs/ver/13.x/access-controls/access-requests/resource-requests) and [Role Access
   Requests](/docs/ver/13.x/access-controls/access-requests/role-requests) so you can get the most out
   of your Access Request plugins.
-
-## Feedback
-
-If you have any issues with this plugin, please create a GitHub issue in our [`gravitational/teleport-plugins`](https://github.com/gravitational/teleport-plugins/issues/new) repo.

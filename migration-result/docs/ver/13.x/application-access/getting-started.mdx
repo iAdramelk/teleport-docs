@@ -5,147 +5,206 @@ videoBanner: 5Uwhp3IQMHY
 version: '13.x'
 ---
 
-Let's connect to Grafana using Teleport in three steps:
+This tutorial demonstrates how to configure secure access to an application
+through Teleport. The tutorial uses Grafana as a sample application because
+it's straightforward to install and run in a Docker container or Kubernetes cluster
+with no additional configuration required. If you want to configure access
+for a different web application, you can use this tutorial as a
+general guide for what to do.
 
-- Launch Grafana in a Docker container or Kubernetes cluster.
-- Install the Teleport Application Service and configure it to proxy Grafana.
-- Access Grafana through Teleport.
+At a high level, configuring access for applications involves the following steps:
 
-![Teleport Application Access Grafana Self-Hosted](/assets/grafana_selfhosted-c95f05a96d.png)
-
-![Teleport Application Access Grafana Cloud](/assets/grafana_cloud-375fd02fa8.png)
+- Verify your environment meets the prerequisites.
+- Verify you can launch the application in a Docker container, Kubernetes cluster, or
+  using another method.
+- Generate a short-lived invitation token for the application to join the Teleport cluster.
+- Install and configure Teleport on the application host.
+- Add a user to verify access to the application.
 
 ## Prerequisites
 
+For this tutorial, verify your environment meets the following requirements:
+
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
-- A host where you will run the Teleport Application Service.
-
-<Tabs>
-  <Tab title="Docker">
-    - A Docker installation, which we will use to launch Grafana in a container.
-      Alternatively, if you have another web application you'd like to protect with
-      Teleport, you can use that instead.
-  </Tab>
-
-  <Tab title="Kubernetes Cluster">
-    - [Kubernetes](https://kubernetes.io) >= v1.17.0
-    - [Helm](https://helm.sh) >= 3.4.2
-
-      Verify that Helm and Kubernetes are installed and up to date.
-
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
       ```code
-      $ helm version
-      # version.BuildInfo{Version:"v3.4.2"}
-
-      $ kubectl version
-      # Client Version: version.Info{Major:"1", Minor:"17+"}
-      # Server Version: version.Info{Major:"1", Minor:"17+"}
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
       ```
 
-    - Administrative rights to deploy within a cluster.
-  </Tab>
-</Tabs>
+      You can run subsequent `tctl` commands in this guide on your local machine.
 
-<Tip>
-  {/*lint ignore messaging*/}
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
 
-  If you have not yet deployed the Auth Service and Proxy Service, you should
-  follow one of our [getting started guides](/docs/ver/13.x/index) or try our
-  Teleport Application Access [interactive learning track](https://play.instruqt.com/teleport/invite/rgvuva4gzkon).
-</Tip>
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
 
-<Note>
-  Teleport assigns a subdomain to each application you have configured for Application
-  Access (e.g., `grafana.teleport.example.com`), so you will need to ensure that a
-  DNS A (or CNAME for services that only provide a hostname) record exists for each
-  application-specific subdomain so clients can access your applications via Teleport.
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
+- A host where you will run the Teleport Application Service.
+- A Docker container or Kubernetes cluster to launch Grafana.
 
-  You should create either a separate DNS record for each subdomain, or a single
-  record with a wildcard subdomain such as `*.teleport.example.com`. This way, your
-  certificate authority (e.g., Let's Encrypt) can issue a certificate for each
-  subdomain, enabling clients to verify your Teleport hosts regardless of the
-  application they are accessing.
+### Subdomains and applications
 
-  Teleport Cloud will automatically provide a subdomain and signed TLS certificate
-  for your application under your tenant address.
-</Note>
+Teleport assigns a subdomain to each application you configure for Application
+Access. For example, if you enroll Grafana as a resource, Teleport assigns the resource
+to the `grafana.teleport.example.com` subdomain.
 
-## Step 1/4. Generate a token
+If you host the Teleport cluster on your own network, you should update your DNS
+configuration to account for application subdomains.
+You can update DNS in one of two ways:
 
-A join token is required to authorize a Teleport Application Service instance to
-join the cluster. Generate a short-lived join token and save it, for example,
-in `/tmp/token`:
+- Create a single DNS address (A) or canonical name (CNAME) record using wildcard substitution for the subdomain name.
+  For example, create a DNS record with the name `*.teleport.example.com`.
+- Create a separate DNS address (A) record for each application subdomain.
+
+Modifying DNS ensures that the certificate authority—for example, Let's Encrypt—can issue a
+certificate for each subdomain and that clients can verify Teleport hosts regardless of the
+application they are accessing.
+
+If you use the Teleport cloud platform, no DNS updates are needed because your Teleport
+cluster automatically provides the subdomains and signed TLS certificates for your
+applications under your tenant address.
+
+### Rights and permissions
+
+This tutorial assumes that you have administrative rights for the Teleport cluster
+and for the local computer, Docker container, or Kubernetes configuration where the
+application runs.
+
+The permissions used in this tutorial are intended for demonstration purposes.
+Before running Teleport in a production environment, you should verify that you're
+following best practices to avoid security incidents.
+
+<Accordion title="Best practices for production security">
+  When running Teleport in production, we recommend that you follow the
+  practices below to avoid security incidents. These practices may differ from
+  the examples used in this guide, which are intended for demo environments:
+
+  - Avoid using `sudo` in production environments unless it's necessary.
+  - Create new, non-root, users and use test instances for experimenting with Teleport.
+  - Run Teleport's services as a non-root user unless required. Only the SSH
+    Service requires root access. Note that you will need root permissions (or
+    the `CAP_NET_BIND_SERVICE` capability) to make Teleport listen on a port
+    numbered \< `1024` (e.g. `443`).
+  - Follow the "Principle of Least Privilege" (PoLP). Don't give users
+    permissive roles when giving them more restrictive roles will do instead.
+    For example, don't assign users the built-in `access,editor` roles, which give
+    them permissions to access and edit all cluster resources. Instead, define
+    RBAC roles with the minimum required permissions for each user and configure
+    Access Requests for elevated permissions.
+  - When joining a Teleport resource service (e.g., the Database Service or
+    Application Service) to a cluster, save the invitation token to a file.
+    Otherwise, the token will be visible when examining the `teleport` command
+    that started the agent, e.g., via the `history` command on a compromised
+    system.
+</Accordion>
+
+## Step 1/5. Generate a token
+
+An invitation token is required to authorize a Teleport Application Service instance to
+join the cluster. Generate a short-lived join token and save it on the host where
+you will run the Teleport Application Service. For example, you can generate the
+invitation token by running the following command on a server where the Teleport Auth
+Service runs:
 
 ```code
 $ tctl tokens add \
@@ -154,278 +213,508 @@ $ tctl tokens add \
     --app-uri=http://localhost:3000
 ```
 
+Copy the output from this command and save the token in a separate file so it can be
+passed to the Teleport Application Service.
+
+## Step 2/5. Start Grafana
+
+You can start Grafana in a Docker container or Kubernetes cluster by running the
+appropriate steps.
+
 <Tabs>
   <Tab title="Docker">
-    ## Step 2/4. Start Grafana
+    To start Grafana in a Docker container:
 
-    We've picked Grafana for this tutorial since it's very easy to run with zero
-    configuration required. If you have another web application you'd like to
-    expose, skip over to **Step 3**.
+    1. Open a terminal on a computer where Docker is installed.
 
-    Grafana can be launched in a Docker container with a single command:
+    2. Start Grafana by running the following command:
+
+       ```code
+       $ docker run --detach --name grafana --publish 3000:3000 grafana/grafana
+       ```
+
+    3. Edit the `/etc/grafana/grafana.ini` file in the container to use the
+       address for your Teleport cluster.
+
+       Under the `[server]` section, uncomment the `domain` key and set the value
+       to the address for your Teleport cluster. For example:
+
+       ```code
+       # The public facing domain name used to access grafana from a browser
+       domain = teleport.example.com
+       ```
+
+       If you can't edit this file in the container, you can use the `sed` command to edit the file.
+       For example:
+
+       ```code
+       $ docker exec --user 0 grafana sed -i \
+         's/;domain = localhost/domain = teleport.example.com/g' \
+         /etc/grafana/grafana.ini
+       ```
+  </Tab>
+
+  <Tab title="Kubernetes cluster">
+    If you install Grafana with the following `helm` instructions, it is available
+    at `http://example-grafana.example-grafana.svc.cluster.local` within the
+    Kubernetes cluster.
 
     ```code
-    $ docker run -d --name grafana -p 3000:3000 grafana/grafana
+    $ helm repo add grafana https://grafana.github.io/helm-charts
+    $ helm repo update
+    $ helm install example-grafana grafana/grafana \
+        --create-namespace \
+        --namespace example-grafana
     ```
+  </Tab>
+</Tabs>
 
-    Next, we need to edit `/etc/grafana/grafana.ini` in the container. Under
-    `[server]`, uncomment the `domain` key and set the value to your Teleport
-    cluster domain, (e.g., `teleport.example.com`). Since there is no text editor
-    installed in the container, we can do this with `sed`:
+## Step 3/5. Install and configure Teleport
 
-    ```code
-    $ docker exec -u 0 grafana sed -i 's/;domain = localhost/domain = teleport.example.com/g' /etc/grafana/grafana.ini
-    ```
+<Tabs>
+  <Tab title="Docker">
+    Select a Teleport edition, then follow the [Installation](/docs/ver/13.x/installation) instructions
+    for your environment.
 
-    Replace `teleport.example.com` with your Teleport cluster domain.
+    To install on Linux:
 
-    ## Step 3/4. Install and configure Teleport
+    1. Use the appropriate commands for your environment to install your package:
+           <Tabs dropdownView dropdownCaption="Teleport Edition">
+             <Tab title="Teleport Community Edition">
+               ```code
+               $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
+               ```
+             </Tab>
 
-    <Accordion title="Before you begin: read security tips">
-      When running Teleport in production, we recommend that you follow the
-      practices below to avoid security incidents. These practices may differ from
-      the examples used in this guide, which are intended for demo environments:
+             <Tab title="Teleport Team">
+               <Tabs>
+                 <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+                   Add the Teleport repository to your repository list:
 
-      - Avoid using `sudo` in production environments unless it's necessary.
-      - Create new, non-root, users and use test instances for experimenting with Teleport.
-      - Run Teleport's services as a non-root user unless required. Only the SSH
-        Service requires root access. Note that you will need root permissions (or
-        the `CAP_NET_BIND_SERVICE` capability) to make Teleport listen on a port
-        numbered \< `1024` (e.g. `443`).
-      - Follow the "Principle of Least Privilege" (PoLP). Don't give users
-        permissive roles when giving them more restrictive roles will do instead.
-        For example, don't assign users the built-in `access,editor` roles, which give
-        them permissions to access and edit all cluster resources. Instead, define
-        RBAC roles with the minimum required permissions for each user and configure
-        Access Requests for elevated permissions.
-      - When joining a Teleport resource service (e.g., the Database Service or
-        Application Service) to a cluster, save the invitation token to a file.
-        Otherwise, the token will be visible when examining the `teleport` command
-        that started the agent, e.g., via the `history` command on a compromised
-        system.
-    </Accordion>
+                   ```code
+                   # Download Teleport's PGP public key
+                   $ sudo curl https://apt.releases.teleport.dev/gpg \
+                   -o /usr/share/keyrings/teleport-archive-keyring.asc
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport APT repository for cloud.
+                   $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+                   https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+                   | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
-    ### Configure and Start Teleport
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
 
-    Install Teleport on the host where you will run the Teleport Application Service. See our [Installation](/docs/ver/13.x/installation) page for options besides Linux servers.
+                   # Update the repo and install Teleport and the Teleport updater
+                   $ sudo apt-get update
+                   $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+                   ```
+                 </Tab>
 
-    Use the appropriate commands for your environment to install your package:
+                 <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   $ sudo yum install -y yum-utils
+                   $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-    <Tabs dropdownView dropdownCaption="Teleport Edition">
-      <Tab title="Open Source">
-        ```code
-        $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
-        ```
-      </Tab>
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
 
-      <Tab title="Enterprise">
-        <Tabs>
-          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-            ```code
-            # Download Teleport's PGP public key
-            $ sudo curl https://apt.releases.teleport.dev/gpg \
-            -o /usr/share/keyrings/teleport-archive-keyring.asc
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport APT repository for v13. You'll need to update this
-            # file for each major release of Teleport.
-            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
-            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+                   # Install Teleport and the Teleport updater
+                   $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
-            $ sudo apt-get update
-            $ sudo apt-get install teleport-ent
-            ```
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
+                 </Tab>
 
-            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+                 <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use the dnf config manager plugin to add the teleport RPM repo
+                   $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-            ```code
-            $ sudo apt-get install teleport-ent-fips
-            ```
-          </Tab>
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
 
-          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-            ```code
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport YUM repository for v13. You'll need to update this
-            # file for each major release of Teleport.
-            # First, get the major version from $VERSION_ID so this fetches the correct
-            # package version.
-            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
-            $ sudo yum install teleport-ent
-            #
-            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-            ```
+                   # Install Teleport and the Teleport updater
+                   $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
-            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
+                 </Tab>
 
-            ```code
-            $ sudo yum install teleport-ent-fips
-            ```
-          </Tab>
+                 <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport Zypper repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use Zypper to add the teleport RPM repo
+                   $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport YUM repository for v13. You'll need to update this
-            # file for each major release of Teleport.
-            # Use the dnf config manager plugin to add the teleport RPM repo
-            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
 
-            # Install teleport
-            $ sudo dnf install teleport-ent
+                   # Install Teleport and the Teleport updater
+                   $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+                   ```
+                 </Tab>
+               </Tabs>
 
-            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-            ```
+               ### OS repository channels
 
-            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+               The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+               `stable/v13` anywhere in the Teleport documentation.
 
-            ```code
-            $ sudo dnf install teleport-ent-fips
-            ```
-          </Tab>
+               | Channel name     | Description                                                                  |
+               | ---------------- | ---------------------------------------------------------------------------- |
+               | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+               | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+               | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
-          <Tab title="Tarball">
-            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-            will update after one is filled out.
+               <Accordion title="Is my Teleport instance compatible with Teleport Team?">
+                 Before installing a `teleport` binary with a version besides
+                 v14, read our compatibility rules to ensure that the
+                 binary is compatible with Teleport Cloud.
 
-            ```code
-            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-            # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-            # Verify that the checksums match
-            $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz
-            $ cd teleport-ent
-            $ sudo ./install
-            ```
+                 When running multiple `teleport` binaries within a cluster, the following rules
+                 apply:
 
-            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
-            will be slightly different:
+                 - **Patch and minor** versions are always compatible, for example, any 8.0.1
+                   component will work with any 8.0.3 component and any 8.1.0 component will work
+                   with any 8.3.0 component.
+                 - Servers support clients that are 1 major version behind, but do not support
+                   clients that are on a newer major version. For example, an 8.x.x Proxy Service
+                   is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+                   guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+                   This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+                   You must upgrade to 7.x.x first.
+                 - Proxy Services and resource services do not support Auth Services that are on
+                   an older major version, and will fail to connect to older Auth Services by
+                   default. This behavior can be overridden by passing `--skip-version-check`
+                   when starting Proxy Services and resource services.
+               </Accordion>
+             </Tab>
 
-            ```code
-            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
-            # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-            # Verify that the checksums match
-            $ tar -xvf teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-            $ cd teleport-ent
-            $ sudo ./install
-            ```
-          </Tab>
-        </Tabs>
-      </Tab>
+             <Tab title="Teleport Enterprise">
+               <Tabs>
+                 <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+                   ```code
+                   # Download Teleport's PGP public key
+                   $ sudo curl https://apt.releases.teleport.dev/gpg \
+                   -o /usr/share/keyrings/teleport-archive-keyring.asc
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport APT repository for v13. You'll need to update this
+                   # file for each major release of Teleport.
+                   $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+                   https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v13" \
+                   | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
-      <Tab title="Cloud">
-        <Tabs>
-          <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
-            Add the Teleport repository to your repository list:
+                   $ sudo apt-get update
+                   $ sudo apt-get install teleport-ent
+                   ```
 
-            ```code
-            # Download Teleport's PGP public key
-            $ sudo curl https://apt.releases.teleport.dev/gpg \
-            -o /usr/share/keyrings/teleport-archive-keyring.asc
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport apt repository for cloud.
-            $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
-            | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+                   For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            $ sudo apt-get update
-            $ sudo apt-get install teleport-ent
-            ```
-          </Tab>
+                   ```code
+                   $ sudo apt-get install teleport-ent-fips
+                   ```
+                 </Tab>
 
-          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-            ```code
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport yum repository for cloud.
-            # First, get the major version from $VERSION_ID so this fetches the correct
-            # package version.
-            $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-            $ sudo yum install teleport-ent
-            #
-            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-            ```
-          </Tab>
+                 <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for v13. You'll need to update this
+                   # file for each major release of Teleport.
+                   # First, get the major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   $ sudo yum install -y yum-utils
+                   $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
+                   $ sudo yum install teleport-ent
+                   #
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
 
-          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
-            # Source variables about OS version
-            $ source /etc/os-release
-            # Add the Teleport yum repository for cloud.
-            # Use the dnf config manager plugin to add the teleport RPM repo
-            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+                   For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            # Install teleport
-            $ sudo dnf install teleport-ent
+                   ```code
+                   $ sudo yum install teleport-ent-fips
+                   ```
+                 </Tab>
 
-            # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
-            # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
-            ```
-          </Tab>
+                 <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport Zypper repository for v13. You'll need to update this
+                   # file for each major release of Teleport.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use zypper to add the teleport RPM repo
+                   $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+                   $ sudo yum install teleport-ent
+                   #
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
 
-          <Tab title="Tarball">
-            In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-            will update after one is filled out.
+                   For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
-            $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-            # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            # Verify that the checksums match
-            $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-            $ cd teleport-ent
-            $ sudo ./install
-            ```
-          </Tab>
-        </Tabs>
+                   ```code
+                   $ sudo yum install teleport-ent-fips
+                   ```
+                 </Tab>
 
-        <Accordion title="Is my Teleport instance compatible with Teleport Cloud?">
-          Before installing a `teleport` binary with a version besides v13,
-          read our compatibility rules to ensure that the binary is compatible with
-          Teleport Cloud.
+                 <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for v13. You'll need to update this
+                   # file for each major release of Teleport.
+                   # First, get the major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use the dnf config manager plugin to add the teleport RPM repo
+                   $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport.repo")"
 
-          When running multiple `teleport` binaries within a cluster, the following rules
-          apply:
+                   # Install teleport
+                   $ sudo dnf install teleport-ent
 
-          - **Patch and minor** versions are always compatible, for example, any 8.0.1
-            component will work with any 8.0.3 component and any 8.1.0 component will work
-            with any 8.3.0 component.
-          - Servers support clients that are 1 major version behind, but do not support
-            clients that are on a newer major version. For example, an 8.x.x Proxy Service
-            is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-            guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
-            This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
-            You must upgrade to 7.x.x first.
-          - Proxy Services and resource services do not support Auth Services that are on
-            an older major version, and will fail to connect to older Auth Services by
-            default. This behavior can be overridden by passing `--skip-version-check`
-            when starting Proxy Services and resource services.
-        </Accordion>
-      </Tab>
-    </Tabs>
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
 
-    Create the Teleport Application Service configuration at `/etc/teleport.yaml`.
-    Replace TELEPORT.EXAMPLE.COM with your Teleport Proxy Service
-    address (`teleport.example.com`) or Teleport Cloud tenant (e.g. `mytenant.teleport.sh`).
+                   For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+                   ```code
+                   $ sudo dnf install teleport-ent-fips
+                   ```
+                 </Tab>
+
+                 <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport Zypper repository.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use Zypper to add the teleport RPM repo
+                   $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v13/teleport-zypper.repo")
+
+                   # Install teleport
+                   $ sudo zypper install teleport-ent
+                   ```
+
+                   For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+                   ```code
+                   $ sudo zypper install teleport-ent-fips
+                   ```
+                 </Tab>
+
+                 <Tab title="Tarball">
+                   In the example commands below, update `$SYSTEM_ARCH` with the appropriate
+                   value (`amd64`, `arm64`, or `arm`). All example commands using this variable
+                   will update after one is filled out.
+
+                   ```code
+                   $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+                   # <checksum> <filename>
+                   $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+                   $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+                   # Verify that the checksums match
+                   $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
+                   $ cd teleport-ent
+                   $ sudo ./install
+                   ```
+
+                   For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
+                   will be slightly different:
+
+                   ```code
+                   $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+                   # <checksum> <filename>
+                   $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+                   $ shasum -a 256 teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+                   # Verify that the checksums match
+                   $ tar -xvf teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+                   $ cd teleport-ent
+                   $ sudo ./install
+                   ```
+                 </Tab>
+               </Tabs>
+
+               ### OS repository channels
+
+               The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+               `stable/v13` anywhere in the Teleport documentation.
+
+               | Channel name     | Description                                                                  |
+               | ---------------- | ---------------------------------------------------------------------------- |
+               | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+               | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+               | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+             </Tab>
+
+             <Tab title="Teleport Enterprise Cloud">
+               <Tabs>
+                 <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+                   Add the Teleport repository to your repository list:
+
+                   ```code
+                   # Download Teleport's PGP public key
+                   $ sudo curl https://apt.releases.teleport.dev/gpg \
+                   -o /usr/share/keyrings/teleport-archive-keyring.asc
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport APT repository for cloud.
+                   $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+                   https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+                   | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+                   # Update the repo and install Teleport and the Teleport updater
+                   $ sudo apt-get update
+                   $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+                   ```
+                 </Tab>
+
+                 <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   $ sudo yum install -y yum-utils
+                   $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+                   # Install Teleport and the Teleport updater
+                   $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
+                 </Tab>
+
+                 <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport YUM repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use the dnf config manager plugin to add the teleport RPM repo
+                   $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+                   # Install Teleport and the Teleport updater
+                   $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+                   # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+                   # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+                   ```
+                 </Tab>
+
+                 <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+                   ```code
+                   # Source variables about OS version
+                   $ source /etc/os-release
+                   # Add the Teleport Zypper repository for cloud.
+                   # First, get the OS major version from $VERSION_ID so this fetches the correct
+                   # package version.
+                   $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+                   # Use Zypper to add the teleport RPM repo
+                   $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+                   # Provide your Teleport domain to query the latest compatible Teleport version
+                   $ export TELEPORT_DOMAIN=example.teleport.com
+                   $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+                   # Install Teleport and the Teleport updater
+                   $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+                   ```
+                 </Tab>
+               </Tabs>
+
+               ### OS repository channels
+
+               The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+               `stable/v13` anywhere in the Teleport documentation.
+
+               | Channel name     | Description                                                                  |
+               | ---------------- | ---------------------------------------------------------------------------- |
+               | `stable/<major>` | Receives releases for the specified major release line, i.e. `v13`           |
+               | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+               | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
+               <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
+                 Before installing a `teleport` binary with a version besides v14,
+                 read our compatibility rules to ensure that the binary is compatible with
+                 Teleport Enterprise Cloud.
+
+                 When running multiple `teleport` binaries within a cluster, the following rules
+                 apply:
+
+                 - **Patch and minor** versions are always compatible, for example, any 8.0.1
+                   component will work with any 8.0.3 component and any 8.1.0 component will work
+                   with any 8.3.0 component.
+                 - Servers support clients that are 1 major version behind, but do not support
+                   clients that are on a newer major version. For example, an 8.x.x Proxy Service
+                   is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
+                   guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+                   This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
+                   You must upgrade to 7.x.x first.
+                 - Proxy Services and resource services do not support Auth Services that are on
+                   an older major version, and will fail to connect to older Auth Services by
+                   default. This behavior can be overridden by passing `--skip-version-check`
+                   when starting Proxy Services and resource services.
+               </Accordion>
+             </Tab>
+           </Tabs>
+
+    2. Create the configuration file for Grafana at `/etc/app_config.yaml`
+       with a command similar to the following:
 
     ```code
     $ sudo teleport configure \
-      -o file \
+      --output= file \
       --proxy=teleport.example.com:443 \
       --token=/tmp/token \
       --roles=app \
@@ -433,11 +722,12 @@ $ tctl tokens add \
       --app-uri=http://localhost:3000
     ```
 
-    Make sure to update `--app-name` and `--app-uri` accordingly if you're using your
-    own web application.
-
-    The `--token` flag points to the file on the Application Service host where we
-    stored the token that we generated earlier.
+    - Set the `--proxy` command-line option to the address for your Teleport cluster
+      (for example, `teleport.example.com` or `mytenant.teleport.sh`).
+    - Set the `--token` command-line option to the file location on the Application
+      Service host where you saved the invitation token that you generated earlier.
+    - Change the `--app-name` and `--app-uri` command-line options if you're configuring
+      access to a different web application.
 
     Configure the Teleport Application Service to start automatically when the host boots up by
     creating a systemd service for it. The instructions depend on how you installed
@@ -470,24 +760,6 @@ $ tctl tokens add \
   </Tab>
 
   <Tab title="Kubernetes cluster">
-    ## Step 2/4. Start Grafana
-
-    We've picked Grafana for this tutorial since it's very easy to run with zero
-    configuration required. If you have another web application you'd like to
-    expose, skip over to **Step 3**. Install Grafana with these helm instructions
-    and it will be available at `http://example-grafana.example-grafana.svc.cluster.local`
-    within the Kubernetes cluster.
-
-    ```code
-    $ helm repo add grafana https://grafana.github.io/helm-charts
-    $ helm repo update
-    $ helm install example-grafana grafana/grafana \
-        --create-namespace \
-        --namespace example-grafana
-    ```
-
-    ## Step 3/4. Install and configure Teleport
-
     To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
     ```code
@@ -500,11 +772,8 @@ $ tctl tokens add \
     $ helm repo update
     ```
 
-    Install the Teleport Kubernetes Service into your Kubernetes Cluster
-    with the Teleport Application Service configuration.
-    Replace TELEPORT.EXAMPLE.COM with
-    your Teleport Proxy Service address (`teleport.example.com`) or your
-    Teleport Enterprise Cloud tenant (e.g. `mytenant.teleport.sh`):
+    Install the `teleport-kube-agent` Helm chart into your Kubernetes cluster to proxy Grafana
+    with a command similar to the following:
 
     ```code
     $ JOIN_TOKEN=$(cat /tmp/token)
@@ -517,64 +786,60 @@ $ tctl tokens add \
       --set "apps[0].name=grafana" \
       --set "apps[0].uri=http://example-grafana.example-grafana.svc.cluster.local" \
       --set "labels.env=dev" \
-      --version 13.2.0
+      --version 13.4.16
     ```
 
-    Install the Teleport Kubernetes Service into your Kubernetes Cluster
-    with the Teleport Application Service configuration.
-    Replace TELEPORT.EXAMPLE.COM with
-    your Teleport Enterprise Cloud tenant address (`mytenant.teleport.sh`)
+    - Set `proxyAddr` to the address for your Teleport cluster (for example,
+      `teleport.example.com` or `mytenant.teleport.sh`).
+    - Set `-authToken` to the invitation token that you previously generated.
+    - Change `apps[0].name` and `apps[0].uri` if you're configuring access to a different
+      web application.
+
+    Make sure that the Teleport agent pod is running. You should see one
+    `teleport-kube-agent` pod with a single ready container:
 
     ```code
-    $ JOIN_TOKEN=$(cat /tmp/token)
-    $ helm install teleport-kube-agent teleport/teleport-kube-agent \
-      --create-namespace \
-      --namespace teleport-agent \
-      --set roles=app \
-      --set proxyAddr=teleport.example.com:443 \
-      --set authToken=${JOIN_TOKEN?} \
-      --set "apps[0].name=grafana" \
-      --set "apps[0].uri=http://example-grafana.example-grafana.svc.cluster.local" \
-      --set "labels.env=dev" \
-      --version 13.2.0
+    $ kubectl -n teleport-agent get pods
+    NAME                    READY   STATUS    RESTARTS   AGE
+    teleport-kube-agent-0   1/1     Running   0          32s
     ```
-
-    Make sure to update `apps[0].name` and `apps[0].uri` accordingly if you're using
-    your own web application.
   </Tab>
 </Tabs>
 
-### Create a user
+## Step 4/5. Create a user
 
-Next, let's create a user to access the application we've just connected.
-Teleport has a built-in role called `access` that allows users to access
-cluster resources. Create a local user assigned this role:
+Now that you have enrolled the application as a resource protected by Teleport,
+you can create a user to test access to the application.
+Teleport has a built-in role called `access` that allows users to access cluster resources.
+
+To assign to the `access` role to a new local user named `alice`, run the following command:
 
 ```code
 $ tctl users add --roles=access alice
 ```
 
-The command will output a signup link. Use it to choose a password and set up a
-second factor. After that, it will take you to the Teleport Web UI.
+The command prompts you to provide a password and set up a second factor for authentication.
+After that, it will take you to the Teleport Web UI.
 
-## Step 4/4. Access the application
+## Step 5/5. Access the application
 
 There are a couple of ways to access the proxied application.
 
-Log in to the Teleport Web UI at your Proxy Service address. All available
-applications are displayed on the Applications tab. Click Launch on the Grafana
-application tile to access it.
+Log in to the Teleport Web UI at your Proxy Service address.
+All available applications are displayed on the Applications tab.
+Click Launch on the Grafana application tile to access it.
 
-Alternatively call the application directly with its name as the sub-domain,
-e.g. `https://grafana.teleport.example.com` or `https://grafana.mytenant.teleport.sh`
-for a Teleport Cloud tenant. You will need to log in if you weren't already authenticated.
+Alternatively call the application directly with its name as the subdomain, for example,
+`https://grafana.teleport.example.com` or `https://grafana.mytenant.teleport.sh`
+for a Teleport Cloud tenant.
+You are prompted to log in if you haven't already been authenticated.
 
 ## Next steps
 
-Dive deeper into protecting applications with Teleport:
+Learn more about protecting applications with Teleport in the following topics:
 
-- Learn in more detail about [connecting applications](/docs/ver/13.x/application-access/guides/connecting-apps).
-- Learn about integrating with [JWT tokens](/docs/ver/13.x/application-access/jwt/introduction) for auth.
-- Learn how to use application access with [RESTful APIs](/docs/ver/13.x/application-access/guides/api-access).
-- See full configuration and CLI [reference](/docs/ver/13.x/application-access/reference).
-- Read about how Let's Encrypt uses the [ACME protocol](https://letsencrypt.org/how-it-works/).
+- [Connecting applications](/docs/ver/13.x/application-access/guides/connecting-apps).
+- Integrating with [JWT tokens](/docs/ver/13.x/application-access/jwt/introduction).
+- Accessing applications with [RESTful APIs](/docs/ver/13.x/application-access/guides/api-access).
+- Setting configuration options AND running CLI commands in the [Application Access reference](/docs/ver/13.x/application-access/reference).
+- Using the Let's Encrypt [ACME protocol](https://letsencrypt.org/how-it-works/).

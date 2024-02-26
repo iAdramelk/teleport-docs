@@ -1,12 +1,9 @@
 ---
 title: Resource Access Requests
 description: Teleport allows users to request access to specific resources from the CLI or UI. Requests can be escalated via ChatOps or anywhere else via our flexible Authorization Workflow API.
+tocDepth: 3
 version: '14.x'
 ---
-
-<Tip>
-  Resource Access Requests are currently in Preview.
-</Tip>
 
 With Teleport Resource Access Requests, users can request access to specific
 resources without needing to know anything about the roles or RBAC controls used
@@ -15,7 +12,7 @@ The Access Request API makes it easy to dynamically approve or deny these
 requests.
 
 Just-in-time Access Requests are a feature of Teleport Enterprise.
-Open-source Teleport users can get a preview of how Access Requests work by
+Teleport Community Edition users can get a preview of how Access Requests work by
 requesting a role via the Teleport CLI. Full Access Request functionality,
 including Resource Access Requests and an intuitive and searchable UI are
 available in Teleport Enterprise.
@@ -23,20 +20,20 @@ available in Teleport Enterprise.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 
@@ -45,53 +42,35 @@ available in Teleport Enterprise.
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
-
-<Warning>
-  All `teleport` instances in the cluster must be running Teleport `v10.0.0` or
-  greater in order for Resource Access Requests to be properly enforced.
-  Older versions of `teleport` will only do RBAC checks based on roles and will
-  not respect resource restrictions.
-  It is not recommended to enable Resource Access Requests by setting any
-  `search_as_roles` until all `teleport` instances in your cluster have been
-  upgraded to version 10.
-</Warning>
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 ## Step 1/8. Create the requester role
 
@@ -192,8 +171,43 @@ To request access to these resources, run
     --reason <request reason>
 ```
 
-You can search for resources of kind `node`, `kube_cluster`, `pod`, `db`, `app`, and
-`windows_desktop`. Advanced filters and queries are supported. See our
+You can search for resources of kind `node`, `kube_cluster`, `db`, `app`, and
+`windows_desktop`. Teleport also supports searching and requesting access to
+resources within Kubernetes clusters.
+
+<Accordion title="List of supported Kubernetes resources">
+  Teleport supports searching and requesting access to the following Kubernetes resources:
+
+  <Tip>
+    Requesting access to a Kubernetes namespace allows you to access all resources
+    in that namespace, including the supported Kubernetes resources listed below.
+    However, it prevents you from access any resources belonging to another namespace.
+  </Tip>
+
+  - `pod`
+  - `secret`
+  - `configmap`
+  - `namespace`
+  - `service`
+  - `serviceaccount`
+  - `kube_node`
+  - `persistentvolume`
+  - `persistentvolumeclaim`
+  - `deployment`
+  - `replicaset`
+  - `statefulset`
+  - `daemonset`
+  - `clusterrole`
+  - `kube_role`
+  - `clusterrolebinding`
+  - `rolebinding`
+  - `cronjob`
+  - `job`
+  - `certificatesigningrequest`
+  - `ingress`
+</Accordion>
+
+Advanced filters and queries are supported. See our
 [filtering reference](/docs/ver/14.x/reference/cli#resource-filtering) for more information.
 
 Try narrowing your search to a specific resource you want to access.
@@ -379,6 +393,10 @@ To restrict access to a particular resource using a role similar to the ones
 below, edit one of the user's roles so the `search_as_roles` field includes the
 role you have created.
 
+For full details on how to use Teleport roles to configure RBAC, see the
+[Teleport Access Controls
+Reference](/docs/ver/14.x/access-controls/reference).
+
 #### `node`
 
 You can restrict access to searching `node` resources by assigning values to the
@@ -420,15 +438,15 @@ spec:
     kubernetes_labels:
       'env': 'staging'
     kubernetes_resources:
-      - kind: pod
-        namespace: "*"
-        name: "*"
+      - kind: 'pod'
+        namespace: '*'
+        name: '*'
   deny: {}
 ```
 
-#### `pod`
+#### Kubernetes resources
 
-You can restrict access to `pod` resources by assigning values to the
+You can restrict access to Kubernetes resources by assigning values to the
 `kubernetes_resources` field in the `spec.allow` or `spec.deny` fields.
 
 The following role allows access to Kubernetes pods with the name `nginx` in any
@@ -455,93 +473,26 @@ spec:
   deny: {}
 ```
 
-##### Access Requests for pods
-
-Teleport users can request access to a Kubernetes pod by running the following
-command:
-
-```code
-$ tsh request create pod-id
-```
-
-Replace `pod-id` with the name of a pod in the following format:
-
-```
-/TELEPORT_CLUSTER/pod/KUBE_CLUSTER/NAMESPACE/POD_NAME
-```
-
-For example, to request access to a pod called `nginx-1` in the `development`
-namespace, run the following command:
-
-```code
-$ tsh request create --resources /teleport.example.com/pod/mycluster/development/nginx-1
-```
-
-For the `NAMESPACE` and `POD_NAME` values, you can match ranges of characters by
-supplying a wildcard (`*`) or regular expression. Regular expressions must begin
-with `^` and end with `$`.
-
-For example, to create a request to access all pods in all namespaces that match
-the regular expression `/^nginx-[a-z0-9-]+$/`, run the following command:
-
-```code
-$ tsh request create --resources /teleport.example.com/pod/mycluster/*/^nginx-[a-z0-9-]+$
-```
-
-If a user has no access to a Kubernetes cluster, they can search the list of pods
-in the cluster by running the following command:
-
-```code
-$ tsh request search --kind=pod --kube-cluster=kube-cluster \
-[--kube-namespace=namespace|--all-kube-namespaces]
-Name               Namespace Labels    Resource ID
------------------  --------- --------- ----------------------------------------------------------
-nginx-deployment-0 default   app=nginx /teleport.example.com/pod/local/default/nginx-deployment-0
-nginx-deployment-1 default   app=nginx /teleport.example.com/pod/local/default/nginx-deployment-1
-
-To request access to these resources, run
-> tsh request create --resource /teleport.example.com/pod/local/default/nginx-deployment-0 --resource /teleport.example.com/pod/local/default/nginx-deployment-1 \
-    --reason <request reason>
-```
-
-The list returned includes the name of the pod, the namespace it is in, its labels,
-and the resource ID. Pods included in the list are those that match the
-`kubernetes_resources` field in the user's `search_as_roles`. The user can then:
-
-- Request access to the pods by running the command provided by the `tsh request
-  search` command.
-- Edit the command to request access to a subset of the pods.
-- Use a custom request with wildcards or regular expressions.
-
-`tsh request search --kind=pod` works even if the user has no permissions to interact
-with the desired Kubernetes cluster, but the user's `search_as_roles` values
-must allow access to the cluster. If the user is unsure of the name of the cluster,
-they can run the following command to search it:
-
-```code
-$ tsh request search --kind=kube_cluster
-Name  Hostname Labels Resource ID
------ -------- ------ ----------------------------------------
-local                 /teleport.example.com/kube_cluster/local
-
-```
-
-##### Preventing unintended access
+##### Preventing unintended access to Kubernetes resources
 
 If you are setting up a Teleport role to enable just-in-time access to a
-specific Kubernetes pod, you should set the role's `kubernetes_groups` and
+specific Kubernetes resources, you should set the role's `kubernetes_groups` and
 `kubernetes_users` to a role that has no access to Kubernetes resource beside
-the target pod.
+the Kubernetes resources that Teleport is able to restrict access for.
 
 This is because, if a user requests access to a Kubernetes pod, and the request
 is approved, the Teleport Kubernetes Service will use the `kubernetes_groups`
 and `kubernetes_users` fields in the role to add impersonation headers to the user's
-requests to a Kubernetes API server.
+requests to a Kubernetes API server. Under these conditions, Teleport will be able
+to restrict access to all Kubernetes resources kinds mentioned above except for
+the desired `pod`. Teleport is also able to restrict access to namespaced-scoped
+custom resources but not cluster-scoped custom resources - CRDs resources that
+are cluster-scoped will be accessible to the user if the principals in the
+`kubernetes_users` and `kubernetes_groups` fields have access to them.
 
-If the values of `kubernetes_users` and `kubernetes_groups` map to Kubernetes
-users and groups with access to additional resources, the user will be able to
-send requests that interact with those resources, e.g., `Secret`s and
-`ConfigMap`s, depending on the privileges of the Kubernetes users and groups.
+Requesting access to a Kubernetes Namespace allows you to access all resources
+in that namespace but you won't be able to access any other supported resources
+in the cluster.
 
 #### `db`
 
@@ -610,47 +561,132 @@ spec:
     windows_desktop_logins: ["{{internal.windows_logins}}"]
 ```
 
-### Allow reviewers to see the hostnames of SSH Nodes
+### Request access to Kubernetes resources
 
-It is possible for a reviewer to view Resource Access Requests for SSH Nodes to
-which that reviewer does not have access.
-In this case, the reviewer will not be able to view the hostname of the requested node
-and they will only see the node's UUID.
+Teleport users can request access to a Kubernetes resources by running the following
+command:
 
-To give the reviewer permission to view the Node hostname, use the
-`allow.review_requests.preview_as_roles` field in the reviewer's role, e.g.:
-
-```
-kind: role
-spec:
-  allow:
-    review_requests:
-      preview_as_roles: [access]
+```code
+$ tsh request create resource-id
 ```
 
-This can often be set to the same value as `allow.review_requests.roles`.
-When any of the `preview_as_roles` set for the reviewer would allow access to
-the requested node, the hostname will be displayed in the Review Request page of
-the Teleport Web UI.
+#### Namespace-scoped resources
+
+For Kubernetes namespaced resources, the `resource-id` is in the following format:
+
+```
+/TELEPORT_CLUSTER/NAMESPACED_KIND/KUBE_CLUSTER/NAMESPACE/RESOURCE_NAME
+```
+
+Teleport supports the following namespaced resources: `pod`, `secret`, `configmap`,
+`service`, `serviceaccount`, `persistentvolumeclaim`, `deployment`, `replicaset`,
+`statefulset`, `daemonset`, `kube_role`, `rolebinding`, `cronjob`, `job`,
+`ingress`.
+
+For example, to request access to a pod called `nginx-1` in the `development`
+namespace, run the following command:
+
+```code
+$ tsh request create --resources /teleport.example.com/pod/mycluster/development/nginx-1
+```
+
+For the `NAMESPACE` and `RESOURCE_NAME` values, you can match ranges of characters by
+supplying a wildcard (`*`) or regular expression. Regular expressions must begin
+with `^` and end with `$`.
+
+For example, to create a request to access all pods in all namespaces that match
+the regular expression `/^nginx-[a-z0-9-]+$/`, run the following command:
+
+```code
+$ tsh request create --resources /teleport.example.com/pod/mycluster/*/^nginx-[a-z0-9-]+$
+```
+
+#### Cluster-scoped resources
+
+For Kubernetes cluster-scoped resources, the `resource-id` is in the following format:
+
+```
+/TELEPORT_CLUSTER/CLUSTER_WIDE_KIND/KUBE_CLUSTER/RESOURCE_NAME
+```
+
+Teleport supports the following cluster-wide resources: `namespace`, `kube_node`,
+`clusterrole`, `clusterrolebinding`, `persistentvolume`, `certificatesigningrequest`.
+
+For example, to request access to a namespace called `prod`, run the following command:
+
+```code
+$ tsh request create --resources /teleport.example.com/namespace/mycluster/prod
+```
+
+For the `RESOURCE_NAME` value, you can match ranges of characters by
+supplying a wildcard (`*`) or regular expression. Regular expressions must begin
+with `^` and end with `$`.
+
+For example, to create a request to access all namespaces prefixed with `dev` match
+the regular expression `/^dev-[a-z0-9-]+$/`, run the following command:
+
+```code
+$ tsh request create --resources /teleport.example.com/namespace/mycluster/^dev-[a-z0-9-]+$
+```
+
+#### Search for Kubernetes resources
+
+If a user has no access to a Kubernetes cluster, they can search the list of resources
+in the cluster by running the following command:
+
+```code
+$ tsh request search --kind=<kind> --kube-cluster=kube-cluster \
+[--kube-namespace=namespace|--all-kube-namespaces]
+Name               Namespace Labels    Resource ID
+-----------------  --------- --------- ----------------------------------------------------------
+nginx-deployment-0 default   app=nginx /teleport.example.com/pod/local/default/nginx-deployment-0
+nginx-deployment-1 default   app=nginx /teleport.example.com/pod/local/default/nginx-deployment-1
+
+To request access to these resources, run
+> tsh request create --resource /teleport.example.com/pod/local/default/nginx-deployment-0 --resource /teleport.example.com/pod/local/default/nginx-deployment-1 \
+    --reason <request reason>
+```
+
+The list returned includes the name of the resource, the namespace it is in if
+applicable, its labels, and the resource ID.
+Resources included in the list are those that match the `kubernetes_resources`
+field in the user's `search_as_roles`. The user can then:
+
+- Request access to the resources by running the command provided by the `tsh request
+  search` command.
+- Edit the command to request access to a subset of the resources.
+- Use a custom request with wildcards or regular expressions.
+
+`tsh request search --kind=<kind>` works even if the user has no permissions to interact
+with the desired Kubernetes cluster, but the user's `search_as_roles` values
+must allow access to the cluster. If the user is unsure of the name of the cluster,
+they can run the following command to search it:
+
+```code
+$ tsh request search --kind=kube_cluster
+Name  Hostname Labels Resource ID
+----- -------- ------ ----------------------------------------
+local                 /teleport.example.com/kube_cluster/local
+
+```
 
 ### Integrating with an external tool
 
 With Teleport's Access Request plugins, users can manage Access Requests from
 within your organization's existing messaging and project management solutions.
 
-| Integration     | Type          | Setup Instructions                                                                                   |
-| --------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Slack           | Messaging     | [Set up Slack](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-slack)             |
-| Mattermost      | Messaging     | [Set up Mattermost](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
-| Microsoft Teams | Messaging     | [Set up Microsoft Teams](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-msteams) |
-| Jira            | Project Board | [Set up Jira](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-jira)               |
-| PagerDuty       | Schedule      | [Set up PagerDuty](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
-| Email           | Messaging     | [Set up email](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-email)             |
-| Discord         | Messaging     | [Set up Discord](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| Integration     | Type                | Setup Instructions                                                                                   |
+| --------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Slack           | Messaging           | [Set up Slack](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-slack)             |
+| Mattermost      | Messaging           | [Set up Mattermost](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
+| Microsoft Teams | Messaging           | [Set up Microsoft Teams](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-msteams) |
+| Jira            | Project Board       | [Set up Jira](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-jira)               |
+| PagerDuty       | Schedule            | [Set up PagerDuty](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
+| Email           | Messaging           | [Set up email](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-email)             |
+| Discord         | Messaging           | [Set up Discord](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| OpsGenie        | Incident Management | [Set up OpsGenie](/docs/ver/14.x/access-controls/access-request-plugins/opsgenie)                    |
+| ServiceNow      | Workflow            | [Set up ServiceNow](/docs/ver/14.x/access-controls/access-request-plugins/servicenow)                |
 
-### Using TTLs with Access Requests
+## Next Steps
 
-`tsh request create` supports flags to control TTLs for the request and
-elevated access. See the [CLI
-Reference](/docs/ver/14.x/reference/cli#tsh-request-create) for more
-details.
+- Learn more about [Access Lists](/docs/ver/14.x/access-controls/access-lists)

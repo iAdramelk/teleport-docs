@@ -9,7 +9,7 @@ runs in a remote Kubernetes cluster to provide access to resources in your
 infrastructure.
 
 You can [browse the source on
-GitHub](https://github.com/gravitational/teleport/tree/branch/v15/examples/chart/teleport-kube-agent).
+GitHub](https://github.com/gravitational/teleport/tree/branch/v16/examples/chart/teleport-kube-agent).
 
 This reference details available values for the `teleport-kube-agent` chart.
 
@@ -804,7 +804,7 @@ and want for a new agent to reuse the volume.
 `podSecurityPolicy.enabled` controls if the chart should deploy a Kubernetes
 PodSecurityPolicy.
 
-By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/15/examples/chart/teleport-cluster/templates/psp.yaml).
+By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/16/examples/chart/teleport-cluster/templates/psp.yaml).
 
 PodSecurityPolicy resources (PSP) have been removed in Kubernetes 1.25
 and replaced since 1.23 by PodSecurityAdmission (PSA). If you are running on
@@ -1058,7 +1058,7 @@ You can override this to use your own Teleport image rather than a Teleport-publ
   to pull the image.
 
   For this reason, it is strongly discouraged to set a custom image when
-  using automatic updates. Teleport Cloud uses automatic upgrades by default.
+  using automatic updates. Teleport Cloud uses automatic updates by default.
 </Warning>
 
 Since version 13, hardened distroless images are used by default.
@@ -1088,7 +1088,7 @@ Teleport-published image.
   to pull the image.
 
   For this reason, it is strongly discouraged to set a custom image when
-  using automatic updates. Teleport Cloud uses automatic upgrades by default.
+  using automatic updates. Teleport Cloud uses automatic updates by default.
 </Warning>
 
 Since version 13, hardened distroless images are used by default.
@@ -1679,26 +1679,30 @@ for more details.
 
 ## `initSecurityContext`
 
-| Type     | Default                                                                                                                                 |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807}` |
+| Type     | Default                                                                                                                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807,"seccompProfile":{"type":"RuntimeDefault"}}` |
 
 `initSecurityContext` sets the init container security context for any
 pods created by the chart.
 See [the Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container)
 for more details.
 
+The default value is compatible with [the restricted PSS](https://kubernetes.io/docs/concepts/security/pod-security-standards/).
+
 To unset the security context, set it to `null` or `~`.
 
 ## `securityContext`
 
-| Type     | Default                                                                                                                                 |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807}` |
+| Type     | Default                                                                                                                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `object` | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":9807,"seccompProfile":{"type":"RuntimeDefault"}}` |
 
 `securityContext` sets the container security context for any pods created by the chart.
 See [the Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container)
 for more details.
+
+The default value is compatible with [the restricted PSS](https://kubernetes.io/docs/concepts/security/pod-security-standards/).
 
 To unset the security context, set it to `null` or `~`.
 

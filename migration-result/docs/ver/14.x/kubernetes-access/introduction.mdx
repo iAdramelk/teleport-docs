@@ -9,20 +9,19 @@ Teleport provides secure access to Kubernetes clusters:
 - Users can access Kubernetes clusters with Single Sign-On (SSO) providers like
   Okta and switch between clusters without logging in twice.
 - Operators can implement granular role-based access controls, including
-  limiting access to specific Kubernetes clusters or even specific pods within a
-  namespace.
+  limiting access to specific Kubernetes clusters or even specific resources within a
+  cluster.
 - Organizations can achieve compliance by recording `kubectl` sessions.
+
+The guides in this section show you how to protect Kubernetes clusters with
+Teleport. For instructions on self-hosting Teleport Community Edition or
+Teleport Enterprise on Kubernetes, see the [Kubernetes Deployment
+Guides](/docs/ver/14.x/deploy-a-cluster/helm-deployments).
 
 Here is an example of using Teleport to access a Kubernetes cluster, execute
 commands, and view your `kubectl`  activity in Teleport's audit log:
 
-<video muted playsInline controls>
-  <source src="/assets/k8-access-1eb005aa44.mp4" type="video/mp4" />
-
-  <source src="/assets/k8-access-ae91078c72.webm" type="video/webm" />
-
-  Your browser does not support the video tag.
-</video>
+![Kubernetes access architecture](/assets/architecture-diagram-75347fc20e.png)
 
 ## Get started
 

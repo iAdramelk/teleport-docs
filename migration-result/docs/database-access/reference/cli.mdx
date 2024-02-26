@@ -23,7 +23,7 @@ the Database Service, including:
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
 
@@ -305,10 +305,11 @@ $ tsh db login example
 $ tsh db login --db-user=postgres --db-name=postgres example
 ```
 
-| Flag        | Description                     |
-| ----------- | ------------------------------- |
-| `--db-user` | The database user to log in as. |
-| `--db-name` | The database name to log in to. |
+| Flag         | Description                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--db-user`  | The database user to log in as.                                                                                                |
+| `--db-name`  | The database name to log in to.                                                                                                |
+| `--db-roles` | Comma-separated list of database roles to use for auto-provisioned user. If not provided, all database roles will be assigned. |
 
 If `--db-user` or `--db-name` are required, then default settings
 are chosen from either an active database certificate obtained via a prior use
@@ -337,6 +338,8 @@ $ tsh db connect
 $ tsh db connect example
 # Provide database user and name to connect to.
 $ tsh db connect --db-user=alice --db-name=db example
+# Select a subset of allowed database roles.
+$ tsh db connect --db-user=alice --db-name=db --db-roles reader example
 ```
 
 <Note>
@@ -344,10 +347,11 @@ $ tsh db connect --db-user=alice --db-name=db example
   available in PATH.
 </Note>
 
-| Flag        | Description                     |
-| ----------- | ------------------------------- |
-| `--db-user` | The database user to log in as. |
-| `--db-name` | The database name to log in to. |
+| Flag         | Description                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--db-user`  | The database user to log in as.                                                                                                |
+| `--db-name`  | The database name to log in to.                                                                                                |
+| `--db-roles` | Comma-separated list of database roles to use for auto-provisioned user. If not provided, all database roles will be assigned. |
 
 If `--db-user` or `--db-name` are required, then default settings
 are chosen from either an active database certificate obtained via a prior use

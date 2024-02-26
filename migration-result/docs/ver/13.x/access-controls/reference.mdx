@@ -35,19 +35,25 @@ To manage cluster roles, a Teleport administrator can use the Web UI or the
 command line using [tctl resource commands](/docs/ver/13.x/reference/resources).
 To see the list of roles in a Teleport cluster, an administrator can execute:
 
-```code
-# Log in to your cluster with tsh so you can use tctl from your local machine.
-# You can also run tctl on your Auth Service host without running "tsh login"
-# first.
-$ tsh login --user=myuser --proxy=teleport.example.com
-$ tctl get roles
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    # Log in to your cluster with tsh so you can use tctl from your local machine.
+    # You can also run tctl on your Auth Service host without running "tsh login"
+    # first.
+    $ tsh login --user=myuser --proxy=teleport.example.com
+    $ tctl get roles
+    ```
+  </Tab>
 
-```code
-# Log in to your cluster with tsh so you can use tctl.
-$ tsh login --user=myuser --proxy=mytenant.teleport.sh
-$ tctl get roles
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    # Log in to your cluster with tsh so you can use tctl.
+    $ tsh login --user=myuser --proxy=mytenant.teleport.sh
+    $ tctl get roles
+    ```
+  </Tab>
+</Tabs>
 
 <Warning>
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
@@ -157,7 +163,7 @@ spec:
     # Controls whether this role supports auto provisioning of SSH users.
     # Options: drop (remove user on session end), keep (keep users at session end)
     #          and off (disable host user creation)
-    create_host_user_mode: drop    create_host_user: true
+    create_host_user_mode: drop
     # Controls whether this role requires automatic database user provisioning.
     create_db_user: true
     # Specifies role specific options for identity provider access.
@@ -239,7 +245,7 @@ spec:
     db_names: ['{{external.db_names}}']
     db_roles: ['{{external.db_roles}}']
     db_labels:
-      'env': '{{regexp.replace(external.access["env"], "^(staging)$", "$1")}}'
+      'env': '{{regexp.replace(external.env, "^(staging)$", "$1")}}'
 
     # app_labels: a user with this role will be allowed to connect to
     # applications with labels matching below.
@@ -331,6 +337,12 @@ spec:
         - approve: 2
           deny: 1
 
+      # max_duration specifies the maximum duration for which a user can request
+      # access to a role. The duration can be specified in seconds (s), minutes
+      # (m), hours (h), or days (d), e.g. 4d, 10h, 30m, 60s.
+      # The maximum duration is 7 days.
+      max_duration: 7d
+
       # the `claims_to_roles` mapping works the same as it does in
       # the OIDC connector, with the added benefit that the roles being mapped to
       # can also be matchers.
@@ -407,7 +419,9 @@ spec:
     # access_plugin_data - allows modifying Access Request plugin data
     #
     # session            - session playback records
-    # ssh_session        - an active SSH session
+    # session_tracker    - an active session
+    # ssh_session        - allows seeing active sessions page
+    # instance           - a Teleport instance
     # event              - structured audit logging event
     #
     #
@@ -739,8 +753,39 @@ allow:
     - resources:
         - token
       verbs: [list, create, read, update, delete]
-
 ```
+
+### Allowing access to token resources
+
+If you configure a role that allows tokens to be created, users assigned to the
+role can create tokens to provision any type of Teleport resource.
+For example, you might create a role with the following configuration to enable assigned
+users to enroll servers:
+
+```yaml
+kind: role
+version: v7
+metadata:
+  name: enroll-servers
+spec:
+  allow:
+    node_labels:
+      'env': 'us-lab'
+    rules:
+      - resources: [token]
+        verbs: [list, create, read, update, delete]
+  deny: {}
+```
+
+With these permissions, users assigned to the role can generate tokens to enroll\
+a server, application, or database, establish a trust relationship between a root
+cluster and a new Teleport Proxy Service, or add a new leaf cluster.
+
+Because the token resource isn't scoped to a specific context, such as a node or
+trusted cluster, you should consider any role that provides token permissions to be
+an administrative role. In particular, you should avoid configuring `allow` rules
+that grant `create` and `update` permissions on `token` resources to prevent
+unexpected changes to the configuration or state of your cluster.
 
 ## RBAC for sessions
 
@@ -789,18 +834,18 @@ metadata:
 spec:
   allow:
     rules:
-    # Teleport allows shared session access by default, so for our restrictions
-    # to work we first allow access to ssh_sessions...
-    - resources: [ssh_session]
+    # Teleport allows session access to the user's sessions
+    # and sessions they can join by default. This allows seeing any sessions.
+    - resources: [session_tracker]
       verbs: ['*']
   deny:
     rules:
     # ... and then limit that access via a deny rule.
     # Deny rules take precedence over allow rules, so the resulting role allows
     # users to create SSH sessions but to only view their own sessions.
-    - resources: [ssh_session]
+    - resources: [session_tracker]
       verbs: [list, read, update, delete]
-      where: '!contains(ssh_session.participants, user.metadata.name)'
+      where: '!contains(session_tracker.participants, user.metadata.name)'
 ```
 
 ## Second Factor - U2F
@@ -812,12 +857,12 @@ have a cluster using the legacy U2F support.
 
 Here is an explanation of the fields used in the `where` and `filter` conditions within this guide.
 
-| Field                      | Description                                       |
-| -------------------------- | ------------------------------------------------- |
-| `user.spec.roles`          | The list of roles assigned to a user              |
-| `session.participants`     | The list of participants from a session recording |
-| `ssh_session.participants` | The list of participants from an SSH session      |
-| `user.metadata.name`       | The user's name                                   |
+| Field                          | Description                                       |
+| ------------------------------ | ------------------------------------------------- |
+| `user.spec.roles`              | The list of roles assigned to a user              |
+| `session.participants`         | The list of participants from a session recording |
+| `session_tracker.participants` | The list of participants from an SSH session      |
+| `user.metadata.name`           | The user's name                                   |
 
 Check out our [predicate language](/docs/ver/13.x/reference/predicate-language#scoping-allowdeny-rules-in-role-resources)
 guide for a more in depth explanation of the language.

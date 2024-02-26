@@ -25,31 +25,7 @@ There are two ways to configure a Teleport cluster:
 This approach makes it possible to incrementally adjust your Teleport
 configuration without restarting Teleport instances.
 
-```mermaid
-flowchart LR
-subgraph backend["Cluster state backend"]
-  direction LR
-  resources["Dynamic resources"]
-end 
-
-subgraph cluster[Teleport cluster]
-  subgraph auth[Auth Service]
-    conf1["Static config"]
-  end 
-  subgraph proxy[Proxy Service]
-    conf2["Static config"]
-  end 
-end
-
-auth-->backend
-subgraph clients["API clients"]
-  terraform["Terraform Provider"]
-  operator["Kubernetes Operator"]
-  tctl
-end
-terraform & operator & tctl-->proxy
-proxy-.->auth
-```
+![Architecture of dynamic resources](/assets/dynamic-resources-d3220cce21.png)
 
 A cluster is composed of different objects (i.e., resources) and there are three
 common operations that can be performed on them: `get` , `create` , and `remove`
@@ -84,6 +60,10 @@ to manipulate cluster resources stored on the Auth Service backend. The design
 of Teleport's configuration interface makes it well suited for
 infrastructure-as-code and GitOps approaches.
 
+For more information on Teleport roles, including the `internal.logins`
+trait we use in these example roles, see the [Teleport Access
+Controls Reference](/docs/ver/14.x/access-controls/reference).
+
 ### YAML documents with `tctl`
 
 You can define resources as YAML documents and apply them using the `tctl`
@@ -92,7 +72,7 @@ servers with the label `env:test`:
 
 ```yaml
 kind: role
-version: v6
+version: v7
 metadata:
   name: developer
 spec:
@@ -104,7 +84,7 @@ spec:
 
 Since `tctl` works from the local filesystem, you can write commands that apply
 all configuration documents in a directory tree. See the [CLI
-reference](/docs/ver/14.x/reference/cli#tctl) for more information on `tctl`.
+reference](/docs/ver/14.x/reference/cli/tctl) for more information on `tctl`.
 
 ### Teleport Terraform provider
 
@@ -112,7 +92,7 @@ Teleport's Terraform provider lets you manage your Teleport resources within the
 same infrastructure-as-code source as the rest of your infrastructure. There is
 a Terraform resource for each Teleport configuration resource. For example:
 
-```text
+```hcl
 resource "teleport_role" "developer" {
   metadata = {
     name = "developer"
@@ -131,7 +111,8 @@ resource "teleport_role" "developer" {
 }
 ```
 
-[Get started with the Terraform provider](/docs/ver/14.x/management/dynamic-resources/terraform-provider).
+[Get started with the Terraform
+provider](/docs/ver/14.x/management/dynamic-resources/terraform-provider).
 
 ### Teleport Kubernetes Operator
 
@@ -199,18 +180,19 @@ static configuration file:
 
 #### `cluster_networking_config`
 
-| Dynamic resource field         | Static configuration field                 |
-| ------------------------------ | ------------------------------------------ |
-| `spec.client_idle_timeout`     | `auth_service.client_idle_timeout`         |
-| `spec.keep_alive_interval`     | `auth_service.keep_alive_interval`         |
-| `spec.keep_alive_count_max`    | `auth_service.keep_alive_count_max`        |
-| `spec.session_control_timeout` | `auth_service.session_control_timeout`     |
-| `spec.idle_timeout_message`    | `auth_service.client_idle_timeout_message` |
-| `spec.web_idle_timeout`        | `auth_service.web_idle_timeout`            |
-| `spec.proxy_listener_mode`     | `auth_service.proxy_listener_mode`         |
-| `spec.routing_strategy`        | `auth_service.routing_strategy`            |
-| `spec.tunnel_strategy`         | `auth_service.tunnel_strategy`             |
-| `spec.proxy_ping_interval`     | `auth_service.proxy_ping_interval`         |
+| Dynamic resource field          | Static configuration field                 |
+| ------------------------------- | ------------------------------------------ |
+| `spec.client_idle_timeout`      | `auth_service.client_idle_timeout`         |
+| `spec.keep_alive_interval`      | `auth_service.keep_alive_interval`         |
+| `spec.keep_alive_count_max`     | `auth_service.keep_alive_count_max`        |
+| `spec.session_control_timeout`  | `auth_service.session_control_timeout`     |
+| `spec.idle_timeout_message`     | `auth_service.client_idle_timeout_message` |
+| `spec.web_idle_timeout`         | `auth_service.web_idle_timeout`            |
+| `spec.proxy_listener_mode`      | `auth_service.proxy_listener_mode`         |
+| `spec.routing_strategy`         | `auth_service.routing_strategy`            |
+| `spec.tunnel_strategy`          | `auth_service.tunnel_strategy`             |
+| `spec.proxy_ping_interval`      | `auth_service.proxy_ping_interval`         |
+| `spec.case_insensitive_routing` | `auth_service.case_insensitive_routing`    |
 
 #### `ui_config`
 

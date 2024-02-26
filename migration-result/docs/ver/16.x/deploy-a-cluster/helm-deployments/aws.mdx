@@ -542,6 +542,7 @@ Once you have chosen an approach based on the details above, select the correct 
     --create-namespace \
     --namespace cert-manager \
     --set installCRDs=true \
+    --set global.leaderElection.namespace=cert-manager \
     --set extraArgs="{--issuer-ambient-credentials}" # required to automount ambient AWS credentials when using an Issuer
     ```
 
@@ -653,11 +654,11 @@ Once you have chosen an approach based on the details above, select the correct 
     The Teleport Auth Service reads a license file to authenticate your Teleport
     Enterprise account.
 
-    To obtain your license file, navigate to your [Teleport
-    account](https://teleport.sh) and enter your
-    account name (e.g., `my-license`). After logging in, click
-    the "DOWNLOAD LICENSE KEY" button to download your
-    license file.
+    To obtain your license file, navigate to your Teleport account dashboard and log
+    in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+    account name (e.g. my-company). After logging in you will see a "GENERATE
+    LICENSE KEY" button, which will generate a new license file and allow you to
+    download it.
 
     ![License File Download](/assets/license-23cee352ae.png)
 
@@ -813,7 +814,7 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
           backendTable: teleport-helm-backend # DynamoDB table to use for the Teleport backend
           auditLogTable: teleport-helm-events             # DynamoDB table to use for the Teleport audit log (must be different to the backend table)
           auditLogMirrorOnStdout: false                   # Whether to mirror audit log entries to stdout in JSON format (useful for external log collectors)
-          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings 
+          sessionRecordingBucket: your-sessions-bucket  # S3 bucket to use for Teleport session recordings
           backups: true                                   # Whether or not to turn on DynamoDB backups
           dynamoAutoScaling: false                        # Whether Teleport should configure DynamoDB's autoscaling.
         highAvailability:
@@ -1090,13 +1091,13 @@ To make changes to your Teleport cluster after deployment, you can use `helm upg
 Helm defaults to using the latest version of the chart available in the repo, which will also correspond to the latest
 version of Teleport. You can make sure that the repo is up to date by running `helm repo update`.
 
-Here's an example where we set the chart to use 3 replicas:
+Here's an example where we set the chart to use 2 replicas:
 
 Edit your `aws-values.yaml` file from above and make the appropriate changes:
 
 ```yaml
 highAvailability:
-  replicaCount: 3
+  replicaCount: 2
 ```
 
 Upgrade the deployment with the values from your `aws-values.yaml` file using this command:
@@ -1110,33 +1111,6 @@ $ helm upgrade release-name teleport/teleport-cluster \
 <Note>
   To change `chartMode`, `clusterName`, or any `aws` settings, you must first uninstall the existing chart and then install a new version with the appropriate values.
 </Note>
-
-### Autoscaling
-
-In order to reduce DynamoDB costs you might want to enable DynamoDB autoscaling.
-This step is usually done after a successful Teleport deployment, once you have gathered some data
-about Teleport's DynamoDB usage and know what regular usage looks like and how autoscaling should be tuned.
-You must know the desired read/write minimum, maximum and target capacity for your DynamoDB instance in order to enable autoscaling.
-
-You can delegate your autoscaling configuration to Teleport or manage it by creating an AWS Application Auto Scaling policy.
-The following steps will set up Teleport-configured DynamoDB autoscaling.
-
-You must grant autoscaling configuration rights to Teleport, as documented in
-[the DynamoDB autoscaling section](/docs/ver/16.x/reference/backends#dynamodb-autoscaling).
-
-Set the following fields in your existing `aws-values.yaml` file and replace the numeric values with yours:
-
-```yaml
-aws:
-  # [...] already present values under `aws`
-  dynamoAutoScaling: true
-  readMinCapacity: 5     # integer
-  readMaxCapacity: 100   # integer
-  readTargetValue: 50.0  # float
-  writeMinCapacity: 5    # integer
-  writeMaxCapacity: 100  # integer
-  writeTargetValue: 50.0 # float
-```
 
 Then perform a cluster upgrade with the new values:
 

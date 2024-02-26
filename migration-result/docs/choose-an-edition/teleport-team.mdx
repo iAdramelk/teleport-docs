@@ -17,25 +17,7 @@ After you start a [free trial](https://goteleport.com/signup) of Teleport Team,
 you can set up role-based access control (RBAC), enable single sign-on with GitHub
 or the Teleport identity provider, and prevent unauthorized use of organization resources.
 
-```mermaid
-flowchart LR
-subgraph team["Teleport Team cluster"]
-  direction LR
-  proxy["Teleport Proxy Service"]
-  auth["Teleport Auth Service"]
-  proxy<-.->auth
-end
-
-web["Teleport Web UI"]
-tsh["tsh client"]
-
-subgraph private["Private network"]
-  service["Teleport Services"]
-end 
-
-service-- Reverse tunnels -->proxy
-web & tsh--Client traffic-->proxy
-```
+![Teleport Team architecture diagram](/assets/team-diagram-5386bab7be.png)
 
 <Tip>
   For a detailed comparison of Teleport's editions, including how Teleport Team
@@ -83,10 +65,10 @@ To spin up a new server using Docker:
    as a resource in your Teleport Team cluster:
 
    ```code
-   $ docker run --interactive --tty ubuntu:22.10 /bin/bash
+   $ docker run --interactive --tty ubuntu:22.04 /bin/bash
    ```
 
-   This command starts a new shell session in the `ubuntu:22.10` container.
+   This command starts a new shell session in the `ubuntu:22.04` container.
 
 3. Run the following command to install `curl` and `telnet` from the package management repository:
 
@@ -102,33 +84,36 @@ To spin up a new server using Docker:
 
 To install the Teleport SSH Service on your server:
 
-1. Open a browser and go to the address for your Teleport Team cluster. For example, if your
-   Teleport Team account is `mytenant`, open `https://mytenant.teleport.sh`.
+1. Open a browser and go to the address for your Teleport Team cluster. For
+   example, if your Teleport Team account is `example`, open
+   `https://example.teleport.sh`.
 
 2. Sign in with the account credentials you used to activate your Teleport Team account.
 
    The first time you sign in, you are prompted to add your first resource:
 
-   ![Add your first resource](/assets/add-my-first-resource@2x-239d908158.png)
+   ![Add your first resource](/assets/add-my-first-resource@2x-4342d42558.png)
 
-3. Click **Add my first resource** to open **Enroll New Resource**.
+3. Click **Add my first resource**, and you will see the option to enroll
+   resources in your Teleport cluster.
 
-4. Type *server* in the search box to filter the list of resources.
+4. Type *server* in the search box to filter the list of resources:
 
-   ![Select resource type](/assets/choose-resource@2x-e0b1d4cb7e.png)
+   ![Select resource type](/assets/choose-resource@2x-84d9c4e112.png)
 
 5. Click *Ubuntu 14.04+* to register the server in the Docker container.
 
-   After you select *Ubuntu 14.04+* as the resource type, the script to install and
-   configure the Teleport service is displayed. For example:
+   After you select *Ubuntu 14.04+* as the resource type, the Web UI prompts you
+   for your multi-factor authentication device, then displays a script to
+   install and configure the Teleport SSH Service. For example:
 
-   ![Configure resource](/assets/paste-script@2x-0b28e03cd9.png)
+   ![Configure resource](/assets/paste-script@2x-4408dbfb8f.png)
 
-   The Teleport installation script uses `sudo`, which is not installed on your
-   Docker container. Before copying the command to run the installation script, you
-   need to alias `sudo` in the container terminal shell session.
+6. The Teleport installation script uses `sudo`, which is not installed on your
+   Docker container. Before copying the command to run the installation script,
+   you need to alias `sudo` in the container terminal shell session.
 
-6. In the terminal with the container shell session, alias `sudo` by running
+   In the terminal with the container shell session, alias `sudo` by running
    the following command:
 
    ```code
@@ -141,17 +126,18 @@ To install the Teleport SSH Service on your server:
    Leave the script running in the shell. After Teleport is installed on the server,
    you'll see a message in the Web UI that your new Teleport instance was successfully detected:
 
-   ![Connected successfully](/assets/successfully-connected@2x-56f5ff8ca4.png)
+   ![Connected successfully](/assets/successfully-connected@2x-326f829b63.png)
 
    To continue, click **Next**.
 
 8. Confirm that you want to authenticate as the `root` user and click **Next**:
 
-   ![Choose your user](/assets/set-up-access@2x-71e027aeb3.png)
+   ![Choose your user](/assets/set-up-access@2x-f15c502945.png)
 
-9. Click **Test Connection** to verify access to the server.
+9. Respond to the MFA prompt again, then click **Test Connection** to verify
+   access to the server.
 
-   ![Start session](/assets/test-connection@2x-1182bd3e8c.png)
+   ![Start session](/assets/test-connection@2x-aba8982b9a.png)
 
 ## Step 3/5. Start a session
 
@@ -170,7 +156,8 @@ To start a session on the server you just added to Teleport Team:
 
 2. Execute some commands in your terminal.
 
-3. Enter the `exit` command to end the remote interactive session and close the browser tab.
+3. Enter the `exit` command to end the remote interactive session. Close the
+   browser tab.
 
 4. In the last step of **Enroll New Resource**, click **Finish**.
 
@@ -184,14 +171,15 @@ back later to investigate issues.
 
 To play back a session in the Teleport Web UI:
 
-1. Set the dropdown menu on the upper left of the screen to **Management**.
+1. Click the **Access Management** tab at the top of the window.
 
-2. Under Activity, click **Session Recordings**.
+2. In the sidebar, under **Activity**, click **Session Recordings**.
 
-   You will see the recording for your interactive session from the previous step listed.
-   For example:
+   You will see the recording for your interactive session from the previous
+   step listed.  For example:
 
-   ![Session recordings](/assets/session-recordings@2x-cb38decb3f.png)
+   ![Session
+   recordings](/assets/session-recordings@2x-dfd89fab33.png)
 
 3. Click **Play** to see a full recording of your session.
 
@@ -205,16 +193,16 @@ To access the server using commands in a terminal:
    of your cluster and the name of your Teleport user:
 
    ```code
-   $ tsh login --proxy=mytenant.teleport.sh --user=username
+   $ tsh login --proxy=example.teleport.sh --user=username
    ```
 
    When prompted, authenticate using your password, authenticator app, or hardware key.
    The command displays information about your Teleport Team cluster and account. For example:
 
    ```code
-   > Profile URL:      https://mytenant.teleport.sh:443
+   > Profile URL:      https://example.teleport.sh:443
      Logged in as:       admin@teleport.example.com
-     Cluster:            mytenant.teleport.sh
+     Cluster:            example.teleport.sh
      Roles:              access, auditor, editor
      Logins:             root
      Kubernetes:         enabled
@@ -232,8 +220,8 @@ To access the server using commands in a terminal:
 
    ```code
    Node Name    Address    Labels
-   ------------ ---------- ----------------------------------------------------------------------------------------
-   node-name ⟵ Tunnel   hostname=node-name
+   ------------ ---------  ----------------------------------------------------------------------------------------
+   b6c1072b5af5 ⟵ Tunnel  hostname=b6c1072b5af5
    ```
 
 4. Access your server as the `root` user:

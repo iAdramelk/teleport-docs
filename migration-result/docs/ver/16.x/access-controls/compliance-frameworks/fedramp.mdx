@@ -40,14 +40,14 @@ your operating environment and package manager or from compressed archive (tarba
 For example, you can download and install from the compressed archive by running the following commands:
 
 ```code
-$ curl https://get.gravitational.com/teleport-ent-15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+$ curl https://cdn.teleport.dev/teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
 <checksum> <filename>
-$ curl -O https://cdn.teleport.dev/teleport-ent-15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+$ curl -O https://cdn.teleport.dev/teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
 
 # Verify that the checksums match
-$ shasum -a 256 teleport-ent-15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+$ shasum -a 256 teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
 
-$ tar -xvf teleport-ent-15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+$ tar -xvf teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
 $ cd teleport-ent
 $ sudo ./install
 ```
@@ -59,7 +59,7 @@ the `X:boringcrypto` library is listed. For example:
 
 ```code
 $ teleport version
-Teleport Enterprise 15.0.0-dev api/14.0.0-gd1e081e 1.21 X:boringcrypto
+Teleport Enterprise 16.0.0-dev api/14.0.0-gd1e081e 1.22 X:boringcrypto
 ```
 
 If your Teleport cluster runs on AWS, the cluster can run in US-East or US-West regions for services
@@ -137,7 +137,7 @@ proxy_service:
 
 ## Configure service unit file
 
-Download the `systemd` service unit file from the [examples directory](https://github.com/gravitational/teleport/tree/branch/v15/examples/systemd/fips)
+Download the `systemd` service unit file from the [examples directory](https://github.com/gravitational/teleport/tree/branch/v16/examples/systemd/fips)
 on GitHub and save it as `/etc/systemd/system/teleport.service` on both servers.
 
 ```code
@@ -162,6 +162,20 @@ When using `teleport start --fips`, Teleport will start in FIPS mode.
   always happen.
 - Running commands like `ps aux` can be useful to note that Teleport is running
   in FIPS mode.
+
+## Deploy a Teleport Cluster in FIPS mode with Helm
+
+Set the following values in your cluster-values.yaml configuration:
+
+```
+enterpriseImage: public.ecr.aws/gravitational/teleport-ent-fips-distroless
+authentication:
+  localAuth: false
+
+```
+
+As of Teleport version 15, versionOverride and extraArgs no longer need to be set
+in the values file to enable FIPS mode.
 
 ## Default cryptographic algorithms
 

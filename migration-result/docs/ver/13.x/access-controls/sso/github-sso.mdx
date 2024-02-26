@@ -11,85 +11,132 @@ Teleport.
 
 ## Prerequisites
 
-- A GitHub organization with at least one team. This
-  organization must not have external SSO set up, or Teleport will refuse to
-  create the GitHub authentication connector.This organization can be hosted from either
-  GitHub Cloud or GitHub Enterprise Server.
+- A GitHub organization with at least one team.
+
+  In Teleport Community Edition and Teleport Team, this organization must not
+  have external SSO set up, or Teleport will refuse to create the GitHub
+  authentication connector.
+
+  In Teleport Enterprise and Enterprise Cloud, organization can be hosted from
+  either GitHub Cloud or GitHub Enterprise Server.
+
 - Teleport role with access to maintaining `github` resources for using `tctl`
   from the Desktop. This is available in the default `editor` role.
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Step 1/3. Create a GitHub OAuth app
 
@@ -100,8 +147,8 @@ App's "Authentication callback URL" is the following:
 https://PROXY_ADDRESS/v1/webapi/github/
 ```
 
-`PROXY_ADDRESS` must be the public
-address of the Teleport Proxy Serviceyour Teleport Cloud tenant address.
+Replace `PROXY_ADDRESS` with be the public address of the Teleport Proxy Service
+or your Teleport Cloud workspace URL (e.g., `example.teleport.sh`).
 
 The app must have the `read:org` scope in order to be able to read org and team
 membership details.
@@ -115,69 +162,89 @@ Create a client secret to use along with the client ID in the next step:
 
 ## Step 2/3. Create a GitHub authentication connector
 
-Define a GitHub authentication connector using `tctl`. Update this example
-command with:
+In this section, you will define a GitHub authentication connector using `tctl`.
+
+On your workstation, create a file called `client-secret.txt` consisting only of
+your client secret.
+
+Update this example command with:
 
 - Your OAuth app's client ID and client secret created during the previous step.
 - The roles you want to map from your GitHub organization to Teleport roles.
   Roles are defined in the **Repository roles** section of your organization's
   settings.
 
-See [tctl sso configure github](/docs/ver/13.x/reference/cli#tctl-sso-configure-github)
+See [tctl sso configure github](/docs/ver/13.x/reference/cli/tctl#tctl-sso-configure-github)
 for a full reference of flags for this command:
 
 ```code
 $ tctl sso configure github \
---id=GITHUB-CLIENT-ID\
---secret=GITHUB-CLIENT-SECRET \
---teams-to-roles=ORG-NAME,GITHUB-TEAM,access,editor \
+--id=GITHUB-CLIENT-ID \
+--teams-to-roles=ORG-NAME,github-team,access,editor \
+--secret=$(cat client-secret.txt) \
 > github.yaml
 ```
 
+<Tip>
+  GitHub organizations and teams should be referred to by their slug, not display name.
+  To create the slug, GitHub replaces special characters in the name string, changes all words to lowercase,
+  and replaces spaces with a `-` separator. For example, `My TEam Näme` would become `my-team-name`.
+  You can confirm the slug in GitHub Web application URLs or via the GitHub API.
+  Example: navigate to the team `My Team` in the GitHub web application.
+  The URL `https://github.com/orgs/org-name/teams/my-team`
+  shows the slug is `my-team`.
+</Tip>
+
 The contents of `github.yaml` should resemble the following:
 
-```yaml
-kind: github
-metadata:
-  name: github
-spec:
-  api_endpoint_url: ""
-  client_id: <client-id>
-  client_secret: <client-secret>
-  display: GitHub
-  endpoint_url: ""
-  redirect_url: https://<proxy-address>/v1/webapi/github/callback
-  teams_to_logins: null
-  teams_to_roles:
-    - organization: ORG-NAME
-      roles:
-        - access
-        - editor
-      team: GITHUB-TEAM
-version: v3
-```
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```yaml
+    kind: github
+    metadata:
+      name: github
+    spec:
+      api_endpoint_url: ""
+      client_id: <client-id>
+      client_secret: <client-secret>
+      display: GitHub
+      endpoint_url: ""
+      redirect_url: https://<proxy-address>/v1/webapi/github/callback
+      teams_to_logins: null
+      teams_to_roles:
+        - organization: org-name
+          roles:
+            - access
+            - editor
+          team: github-team
+    version: v3
+    ```
+  </Tab>
 
-```yaml
-kind: github
-metadata:
-  name: github
-spec:
-  api_endpoint_url: ""
-  client_id: <client-id>
-  client_secret: <client-secret>
-  display: GitHub
-  endpoint_url: ""
-  redirect_url: https://<proxy-address>/v1/webapi/github/callback
-  teams_to_logins: null
-  teams_to_roles:
-    - organization: ORG-NAME
-      roles:
-        - access
-        - editor
-        - reviewer
-      team: GITHUB-TEAM
-version: v3
-```
+  <Tab title="Commercial">
+    ```yaml
+    kind: github
+    metadata:
+      name: github
+    spec:
+      api_endpoint_url: https://api.github.com
+      client_id: <client-id>
+      client_secret: <client-secret>
+      display: GitHub
+      endpoint_url: https://github.com
+      redirect_url: https://<proxy-address>/v1/webapi/github/callback
+      teams_to_logins: null
+      teams_to_roles:
+        - organization: org-name
+          roles:
+            - access
+            - editor
+            - reviewer
+          team: github-team
+    version: v3
+    ```
+  </Tab>
+</Tabs>
 
 <Accordion title="Mapping multiple roles">
   You can add multiple instances of the `--teams-to-roles` flag or edit the connector
@@ -185,27 +252,27 @@ version: v3
 
   ```code
   $  tctl sso configure github \
-  --id=GITHUB-CLIENT-ID\
-  --secret=GITHUB-CLIENT-SECRET \
-  --teams-to-roles=ORG-NAME,GITHUB-TEAM,access,editor \
-  --teams-to-roles="ORG-NAME,administrators,admins \
-  --teams-to-roles="DIFFERENT-ORG,developers,dev \
+  --id=GITHUB-CLIENT-ID \
+  --teams-to-roles=ORG-NAME,github-team,access,editor \
+  --teams-to-roles="org-name,administrators,admins \
+  --teams-to-roles="different-org,developers,dev \
+  --secret=$(cat client-secret.txt) \
   > github.yaml
   ```
 
   ```yaml
   spec.
     teams_to_roles:
-      - organization: ORG-NAME
+      - organization: org-name
         roles:
           - access
           - editor
-        team: GITHUB-TEAM
-      - organization: ORG-NAME
+        team: github-team
+      - organization: org-name
         roles:
           - admins
         team: administrators
-      - organization: DIFFERENT-ORG
+      - organization: different-org
         roles:
           - devs
         team: developers
@@ -213,12 +280,24 @@ version: v3
 </Accordion>
 
 <Accordion title="Self-hosting GitHub Enterprise?">
-  For self-hosted GitHub Enterprise servers, add `spec.endpoint_url` pointing to your server instance:
+  For self-hosted GitHub Enterprise servers, you can specify the server
+  instance endpoints with the `--endpoint-url`, `--api-endpoint-url` parameters:
+
+  ```code
+  $ tctl sso configure github \
+  --id=GITHUB-CLIENT-ID \
+  --teams-to-roles=ORG-NAME,github-team,access,editor \
+  --secret=$(cat client-secret.txt) \
+  --endpoint-url=https://github-enterprise-server-address
+  --api-endpoint-url=https://api-github-enterprise-server-address
+  > github.yaml
+  ```
 
   ```yaml
   ...
   spec:
     ...
+    api_endpoint_url: https://<api-github-enterprise-server-address>
     endpoint_url: https://<github-enterprise-server-address>
     ...
   ```
@@ -300,21 +379,27 @@ Here is an example role configuration snippet using the trait variable:
 You can now log in with Teleport using GitHub SSO. Run the following to log out
 of Teleport and log in again using GitHub SSO.
 
-```code
-$ tsh logout
-# Logged out all users from all proxies.
-$ tsh login --proxy=tele.example.com --auth=github
-If browser window does not open automatically, open it by clicking on the link:
- http://127.0.0.1:56334/6bf976e6-a4be-4898-94eb-8a7b01af2158
-```
+<Tabs>
+  <Tab title="Self-Hosted">
+    ```code
+    $ tsh logout
+    # Logged out all users from all proxies.
+    $ tsh login --proxy=tele.example.com --auth=github
+    If browser window does not open automatically, open it by clicking on the link:
+     http://127.0.0.1:56334/6bf976e6-a4be-4898-94eb-8a7b01af2158
+    ```
+  </Tab>
 
-```code
-$ tsh logout
-# Logged out all users from all proxies.
-$ tsh login --proxy=mytenant.teleport.sh --auth=github
-If browser window does not open automatically, open it by clicking on the link:
- http://127.0.0.1:56334/6bf976e6-a4be-4898-94eb-8a7b01af2158
-```
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    $ tsh logout
+    # Logged out all users from all proxies.
+    $ tsh login --proxy=mytenant.teleport.sh --auth=github
+    If browser window does not open automatically, open it by clicking on the link:
+     http://127.0.0.1:56334/6bf976e6-a4be-4898-94eb-8a7b01af2158
+    ```
+  </Tab>
+</Tabs>
 
 You can also log to the web UI using GitHub by clicking **Other sign-in options** at the login screen.
 
@@ -332,45 +417,53 @@ After logging in successfully, you will see the following:
 
 You will receive the details of your user session within the CLI:
 
-```code
-> Profile URL:        https://tele.example.com:443
-  Logged in as:       jeff
-  Cluster:            tele.example.com
-  Roles:              access
-  Logins:             jeff, ubuntu, debian
-  Kubernetes:         enabled
-  Kubernetes users:   dev
-  Kubernetes groups:  developer
-  Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
-  Extensions:         permit-port-forwarding, permit-pty, private-key-policy
-```
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    ```code
+    > Profile URL:        https://tele.example.com:443
+      Logged in as:       jeff
+      Cluster:            tele.example.com
+      Roles:              access
+      Logins:             jeff, ubuntu, debian
+      Kubernetes:         enabled
+      Kubernetes users:   dev
+      Kubernetes groups:  developer
+      Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
+      Extensions:         permit-port-forwarding, permit-pty, private-key-policy
+    ```
+  </Tab>
 
-```code
-> Profile URL:        https://tele.example.com:443
-  Logged in as:       jeff
-  Cluster:            tele.example.com
-  Roles:              access, requester
-  Logins:             jeff, ubuntu, debian
-  Kubernetes:         enabled
-  Kubernetes users:   dev
-  Kubernetes groups:  developer
-  Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
-  Extensions:         permit-port-forwarding, permit-pty, private-key-policy
-```
+  <Tab title="Teleport Enterprise">
+    ```code
+    > Profile URL:        https://tele.example.com:443
+      Logged in as:       jeff
+      Cluster:            tele.example.com
+      Roles:              access, requester
+      Logins:             jeff, ubuntu, debian
+      Kubernetes:         enabled
+      Kubernetes users:   dev
+      Kubernetes groups:  developer
+      Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
+      Extensions:         permit-port-forwarding, permit-pty, private-key-policy
+    ```
+  </Tab>
 
-```code
-> Profile URL:        https://mytenant.teleport.sh:443
-  Logged in as:       jeff
-  Cluster:            mytenant.teleport.sh
-  Roles:              access, requester
-  Logins:             jeff, ubuntu, debian
-  Kubernetes:         enabled
-  Kubernetes users:   dev
-  Kubernetes groups:  developer
-  Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
-  Extensions:         permit-port-forwarding, permit-pty, private-key-policy
+  <Tab title="Teleport Enterprise Cloud">
+    ```code
+    > Profile URL:        https://mytenant.teleport.sh:443
+      Logged in as:       jeff
+      Cluster:            mytenant.teleport.sh
+      Roles:              access, requester
+      Logins:             jeff, ubuntu, debian
+      Kubernetes:         enabled
+      Kubernetes users:   dev
+      Kubernetes groups:  developer
+      Valid until:        2023-03-08 17:13:50 -0600 CST [valid for 7h51m0s]
+      Extensions:         permit-port-forwarding, permit-pty, private-key-policy
 
-```
+    ```
+  </Tab>
+</Tabs>
 
 ## Step 4/4. Configure authentication preference
 
@@ -399,7 +492,8 @@ spec:
 version: v2
 ```
 
-For `rp_id`, use the public address of your Teleport Proxy ServiceTeleport Cloud tenant.
+For `rp_id`, use the public address of your Teleport Proxy Service or Teleport
+Cloud workspace.
 
 When you save and close the temporary file, `tctl` will update the resource:
 
@@ -426,13 +520,13 @@ After logging out of `tsh`, you can log back in without specifying
 Troubleshooting SSO configuration can be challenging. Usually a Teleport administrator
 must be able to:
 
-- Ensure that HTTP/TLS certificates are configured properly for both Teleport
-  proxy and the SSO provider.
-
 - Be able to see what SAML/OIDC claims and values are getting exported and passed
   by the SSO provider to Teleport.
 - Be able to see how Teleport maps the received claims to role mappings as defined
   in the connector.
+- For self-hosted Teleport Enterprise clusters, ensure that HTTP/TLS
+  certificates are configured properly for both the Teleport Proxy Service and
+  the SSO provider.
 
 If something is not working, we recommend to:
 
@@ -494,4 +588,38 @@ spec:
     node_labels:
       'env': 'dev'
 version: v5
+```
+
+### Single sign-on fails with OIDC
+
+When encountering the error message **"Failed to verify JWT: oidc: unable to verify JWT signature: no matching keys"**, it typically indicates a discrepancy between the algorithm used to sign the JWT token and the algorithm(s) supported by the JSON Web Key Set (JWKS). Specifically, the token might be signed with one algorithm, e.g., HS256, while the JWKS only lists keys for a different algorithm. e.g., RS256. This issue predominantly arises when using identity providers that offer extremely low-level functionality.
+
+Here are some things to check:
+
+- Verify the JWT header specifies the correct signing algorithm. This should match one of the algorithms listed in the keys section of the JWKS endpoint response.
+- Ensure the JWKS endpoint is returning all relevant public keys. Sometimes key rotation can cause valid keys to be omitted.
+
+To resolve the issue, align the JWT algorithm header with a supported algorithm in the JWKS. Rotate keys if necessary. Verify the JWKS only publishes the active public keys. With proper configuration, the signature should validate successfully.
+
+### Teams Not Mapping to Roles
+
+If you are not seeing teams mapping to roles as expected confirm you
+are using the slug of the organizations and teams in the connector.
+To create the slug, GitHub replaces special characters in the name string,
+changes all words to lowercase, and replaces spaces with a `-` separator.
+For example, "My TEam Näme" would become `my-team-name`.
+The GitHub Web application URLs and GitHub API can provide the slug.
+
+Example: navigate to the team `My Team` in the GitHub web application.
+The URL `https://github.com/orgs/org-name/teams/my-team`
+shows the slug is `my-team`. Update the teams to roles mapping.
+
+```yaml
+  teams_to_roles:
+    - organization: my-org
+      roles:
+        - access
+        - editor
+        - reviewer
+      team: my-team
 ```

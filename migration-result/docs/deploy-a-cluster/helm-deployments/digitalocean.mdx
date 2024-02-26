@@ -47,7 +47,8 @@ Allow Helm to install charts that are hosted in the Teleport Helm repository:
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
-Update the cache of charts from the remote repository:
+Update the cache of charts from the remote repository so you can upgrade to all
+available releases:
 
 ```code
 $ helm repo update
@@ -67,7 +68,7 @@ chart:
       --set clusterName=$CLUSTERNAME \
       --set acme=true \
       --set acmeEmail=$EMAIL_ADDR \
-      --version 15.0.0-dev
+      --version 15.0.2
     NAME: teleport-cluster
     LAST DEPLOYED: Tue Oct 26 17:01:21 2021
     NAMESPACE: teleport-cluster
@@ -91,13 +92,13 @@ chart:
     The Teleport Auth Service reads a license file to authenticate your Teleport
     Enterprise account.
 
-    To obtain your license file, navigate to your [Teleport
-    account](https://teleport.sh) and enter your
-    account name (e.g., `my-license`). After logging in, click
-    the "DOWNLOAD LICENSE KEY" button to download your
-    license file.
+    To obtain your license file, navigate to your Teleport account dashboard and log
+    in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+    account name (e.g. my-company). After logging in you will see a "GENERATE
+    LICENSE KEY" button, which will generate a new license file and allow you to
+    download it.
 
-    ![License File Download](/assets/license-fe80b12ff0.png)
+    ![License File Download](/assets/license-23cee352ae.png)
 
     Create a secret called "license" in the namespace you created:
 
@@ -116,7 +117,7 @@ chart:
       --set acme=true \
       --set acmeEmail=$EMAIL_ADDR \
       --set enterprise=true \
-      --version 15.0.0-dev
+      --version 15.0.2
     NAME: teleport-cluster
     LAST DEPLOYED: Tue Oct 26 17:01:21 2021
     NAMESPACE: teleport-cluster
@@ -176,7 +177,7 @@ Copy the link shown after executing the above command and open the link in a web
 
 ![Set up user](/assets/setup-user-2de78912de.png)
 
-After you complete the registration process by setting up a password and enrolling in two-factor authentication, you will be logged in to Teleport Web UI.
+After you complete the registration process by setting up a password and enrolling in multi-factor authentication, you will be logged in to Teleport Web UI.
 
 In this step, we created a user **tadmin** with roles `access, edit`. These are the default roles available in Teleport. However, to allow this user to access the Kubernetes cluster, we will need to assign **tadmin** a role authorized to access the Kubernetes cluster. So first, let's create a role named **member** with the Kubernetes privilege `system:master`.
 

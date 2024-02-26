@@ -9,19 +9,19 @@ There are two components of the audit log:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    1. **Cluster Events:** Teleport logs events like successful user logins along
-       with metadata like remote IP address, time, and the session ID.
-    2. **Recorded Sessions:** Every SSH, desktop, or Kubernetes shell session is recorded and
-       can be replayed later. By default, the recording is done by Teleport Nodes,
-       but can be configured to be done by the proxy.
+    - **Cluster Events:** Teleport logs events like successful user logins along
+      with metadata like remote IP address, time, and the session ID.
+    - **Recorded Sessions:** Every SSH, desktop, or Kubernetes shell session is recorded and
+      can be replayed later. By default, the recording is done by Teleport Nodes,
+      but can be configured to be done by the proxy.
   </Tab>
 
   <Tab title="Cloud-Hosted">
-    1. **Cluster Events:** Teleport logs events like successful user logins along
-       with metadata like remote IP address, time, and the session ID.
-    2. **Recorded Sessions:** Every SSH, desktop, or Kubernetes shell session is recorded and
-       can be replayed later. Teleport Cloud manages the storage of session
-       recording data.
+    - **Cluster Events:** Teleport logs events like successful user logins along
+      with metadata like remote IP address, time, and the session ID.
+    - **Recorded Sessions:** Every SSH, desktop, or Kubernetes shell session is recorded and
+      can be replayed later. Teleport Cloud manages the storage of session
+      recording data.
   </Tab>
 </Tabs>
 
@@ -41,12 +41,12 @@ There are two components of the audit log:
     the event file approximately once every 24 hours, but never deletes captured events.
 
     For High Availability configurations, users can refer to our
-    [DynamoDB](/docs/ver/14.x/reference/backends#dynamodb) or [Firestore](/docs/ver/14.x/reference/backends#firestore)
-    chapters for information on how to configure the SSH events and recorded
-    sessions to be stored on network storage. When these backends are in use, audit
-    events will eventually expire and be removed from the log. The default retention
-    period is 1 year, but this can be overridden using the `audit_retention_period`
-    configuration parameter.
+    [Athena](/docs/ver/14.x/reference/backends#athena), [DynamoDB](/docs/ver/14.x/reference/backends#dynamodb) or
+    [Firestore](/docs/ver/14.x/reference/backends#firestore) chapters for information on how to
+    configure the SSH events and recorded sessions to be stored on network storage.
+    When these backends are in use, audit events will eventually expire and be
+    removed from the log. The default retention period is 1 year, but this can be
+    overridden using the `retention_period` configuration parameter.
 
     It is even possible to store audit logs in multiple places at the same time. For
     more information on how to configure the audit log, refer to the `storage`
@@ -139,7 +139,7 @@ Below are some possible types of audit events.
 | user.login               | A user logged into web UI or via tsh. The following fields will be logged: `{"user": "alice@example.com", "method": "local"}` .                                     |
 | app.session.start        | A user accessed an application                                                                                                                                      |
 | app.session.chunk        | A record of activity during an app session                                                                                                                          |
-| join\_token.created      | A new join token has been created. Adds the following fields: `{"roles": ["Node", "Db"], "join_method": "token"}`                                                   |
+| join\_token.create       | A new join token has been created. Adds the following fields: `{"roles": ["Node", "Db"], "join_method": "token"}`                                                   |
 
 ## Recorded sessions
 
@@ -155,7 +155,7 @@ For desktop sessions the recording includes the contents of the screen.
     The recorded sessions are stored as raw bytes in the `sessions` directory under
     `log`. Each session is a protobuf-encoded stream of binary data.
 
-    You can replay recorded sessions using the [`tsh play`](/docs/ver/14.x/reference/cli#tsh-play)
+    You can replay recorded sessions using the [`tsh play`](/docs/ver/14.x/reference/cli/tsh#tsh-play)
     command or the Web UI.
 
     For example, replay a session via CLI:
@@ -175,8 +175,8 @@ For desktop sessions the recording includes the contents of the screen.
     Teleport Team and Teleport Enterprise Cloud automatically store recorded
     sessions.
 
-    You can replay recorded sessions using the [`tsh play`](/docs/ver/14.x/reference/cli#tsh-play) command or the Web
-    UI.
+    You can replay recorded sessions using the [`tsh play`](/docs/ver/14.x/reference/cli/tsh#tsh-play)
+    command or the Web UI.
 
     For example, replay a session via CLI:
 

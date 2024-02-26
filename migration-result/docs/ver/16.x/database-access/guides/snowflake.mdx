@@ -31,7 +31,7 @@ In this guide, you will:
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/16.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
       See [Installation](/docs/ver/16.x/installation) for details.
 
@@ -40,11 +40,11 @@ In this guide, you will:
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -53,7 +53,7 @@ In this guide, you will:
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -62,11 +62,11 @@ In this guide, you will:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -76,7 +76,7 @@ In this guide, you will:
       [Getting Started](/docs/ver/16.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      16.0.0-dev.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -86,11 +86,11 @@ In this guide, you will:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v16.0.0-dev go1.22
+    Proxy version: 16.0.0-dev
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -100,7 +100,7 @@ In this guide, you will:
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
@@ -109,11 +109,11 @@ In this guide, you will:
 
     ```code
     $ tctl version
-    # Teleport Enterprise v14.3.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
     $ tsh version
-    # Teleport v14.3.3 go1.21
-    Proxy version: 14.3.3
+    # Teleport v14.3.6 go1.22
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -136,7 +136,7 @@ In this guide, you will:
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  16.0.0-dev
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -166,7 +166,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
         local operating system and installs the provided Teleport version:
 
         ```code
-        $ curl https://goteleport.com/static/install.sh | bash -s 15.0.0-dev
+        $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
         ```
       </Tab>
 
@@ -186,9 +186,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
             https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
             | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
             $ sudo apt-get update
-            $ sudo apt-get install teleport-ent=14.3.3
-            $ sudo apt-get install teleport-ent-updater
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
 
@@ -202,9 +206,14 @@ Install and configure Teleport where you will run the Teleport Database Service:
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             $ sudo yum install -y yum-utils
             $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-            $ sudo yum install teleport-ent-14.3.3
-            $ sudo yum install teleport-ent-updater
-            #
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
             ```
@@ -221,9 +230,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # Use the dnf config manager plugin to add the teleport RPM repo
             $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-            # Install teleport
-            $ sudo dnf install teleport-ent-14.3.3
-            $ sudo dnf install teleport-ent-updater
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -241,9 +253,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # Use Zypper to add the teleport RPM repo
             $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-            # Install teleport
-            $ sudo zypper install teleport-ent=14.3.3
-            $ sudo zypper install teleport-ent-updater
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
         </Tabs>
@@ -251,11 +266,11 @@ Install and configure Teleport where you will run the Teleport Database Service:
         ### OS repository channels
 
         The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-        `stable/v15` anywhere in the Teleport documentation.
+        `stable/v16` anywhere in the Teleport documentation.
 
         | Channel name     | Description                                                                  |
         | ---------------- | ---------------------------------------------------------------------------- |
-        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
         | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
         | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
@@ -294,10 +309,10 @@ Install and configure Teleport where you will run the Teleport Database Service:
             -o /usr/share/keyrings/teleport-archive-keyring.asc
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport APT repository for v15. You'll need to update this
+            # Add the Teleport APT repository for v16. You'll need to update this
             # file for each major release of Teleport.
             $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
-            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v15" \
+            https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/v16" \
             | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
             $ sudo apt-get update
@@ -315,13 +330,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
             ```code
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport YUM repository for v15. You'll need to update this
+            # Add the Teleport YUM repository for v16. You'll need to update this
             # file for each major release of Teleport.
             # First, get the major version from $VERSION_ID so this fetches the correct
             # package version.
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             $ sudo yum install -y yum-utils
-            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+            $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
             $ sudo yum install teleport-ent
             #
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
@@ -339,7 +354,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
             ```code
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport Zypper repository for v15. You'll need to update this
+            # Add the Teleport Zypper repository for v16. You'll need to update this
             # file for each major release of Teleport.
             # First, get the OS major version from $VERSION_ID so this fetches the correct
             # package version.
@@ -363,13 +378,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
             ```code
             # Source variables about OS version
             $ source /etc/os-release
-            # Add the Teleport YUM repository for v15. You'll need to update this
+            # Add the Teleport YUM repository for v16. You'll need to update this
             # file for each major release of Teleport.
             # First, get the major version from $VERSION_ID so this fetches the correct
             # package version.
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             # Use the dnf config manager plugin to add the teleport RPM repo
-            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport.repo")"
+            $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport.repo")"
 
             # Install teleport
             $ sudo dnf install teleport-ent
@@ -394,7 +409,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # package version.
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             # Use Zypper to add the teleport RPM repo
-            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v15/teleport-zypper.repo")
+            $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v16/teleport-zypper.repo")
 
             # Install teleport
             $ sudo zypper install teleport-ent
@@ -413,12 +428,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             will update after one is filled out.
 
             ```code
-            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+            $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
             # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
             # Verify that the checksums match
-            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+            $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
             $ cd teleport-ent
             $ sudo ./install
             ```
@@ -427,12 +442,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             will be slightly different:
 
             ```code
-            $ curl https://get.gravitational.com/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+            $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
             # <checksum> <filename>
-            $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-            $ shasum -a 256 teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ shasum -a 256 teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
             # Verify that the checksums match
-            $ tar -xvf teleport-ent-v15.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+            $ tar -xvf teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
             $ cd teleport-ent
             $ sudo ./install
             ```
@@ -442,11 +457,11 @@ Install and configure Teleport where you will run the Teleport Database Service:
         ### OS repository channels
 
         The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-        `stable/v15` anywhere in the Teleport documentation.
+        `stable/v16` anywhere in the Teleport documentation.
 
         | Channel name     | Description                                                                  |
         | ---------------- | ---------------------------------------------------------------------------- |
-        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
         | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
         | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
       </Tab>
@@ -467,9 +482,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
             https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
             | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Update the repo and install Teleport and the Teleport updater
             $ sudo apt-get update
-            $ sudo apt-get install teleport-ent=14.3.3
-            $ sudo apt-get install teleport-ent-updater
+            $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
 
@@ -483,9 +502,14 @@ Install and configure Teleport where you will run the Teleport Database Service:
             $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
             $ sudo yum install -y yum-utils
             $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
-            $ sudo yum install teleport-ent-14.3.3
-            $ sudo yum install teleport-ent-updater
-            #
+
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
             ```
@@ -502,9 +526,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # Use the dnf config manager plugin to add the teleport RPM repo
             $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-            # Install teleport
-            $ sudo dnf install teleport-ent-14.3.3
-            $ sudo dnf install teleport-ent-updater
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
             # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
             # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
@@ -522,9 +549,12 @@ Install and configure Teleport where you will run the Teleport Database Service:
             # Use Zypper to add the teleport RPM repo
             $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
 
-            # Install teleport
-            $ sudo zypper install teleport-ent=14.3.3
-            $ sudo zypper install teleport-ent-updater
+            # Provide your Teleport domain to query the latest compatible Teleport version
+            $ export TELEPORT_DOMAIN=example.teleport.com
+            $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+            # Install Teleport and the Teleport updater
+            $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
             ```
           </Tab>
         </Tabs>
@@ -532,11 +562,11 @@ Install and configure Teleport where you will run the Teleport Database Service:
         ### OS repository channels
 
         The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
-        `stable/v15` anywhere in the Teleport documentation.
+        `stable/v16` anywhere in the Teleport documentation.
 
         | Channel name     | Description                                                                  |
         | ---------------- | ---------------------------------------------------------------------------- |
-        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v15`           |
+        | `stable/<major>` | Receives releases for the specified major release line, i.e. `v16`           |
         | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
         | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
@@ -671,7 +701,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           --set "databases[0].uri=abc12345.snowflakecomputing.com" \
           --set "databases[0].protocol=snowflake" \
           --set "labels.env=dev" \
-          --version 15.0.0-dev
+          --version 16.0.0-dev
         ```
       </Tab>
 
@@ -691,7 +721,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           --set "databases[0].uri=abc12345.snowflakecomputing.com" \
           --set "databases[0].protocol=snowflake" \
           --set "labels.env=dev" \
-          --version 14.3.3
+          --version 14.3.6
         ```
       </Tab>
     </Tabs>

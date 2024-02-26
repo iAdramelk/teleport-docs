@@ -10,7 +10,7 @@ to Microsoft Windows desktops for local Windows users.
 
 Passwordless access for local users is limited to 5 desktops in Teleport Community Edition.
 
-If you have more than 5 desktops registered under `non_ad_hosts`, Teleport
+If you have more than 5 desktops registered under `static_hosts` with `ad: false`, Teleport
 Community Edition will not allow connections to any of them.
 
 Teleport Enterprise users can have unlimited number of desktops.
@@ -24,7 +24,7 @@ To complete the steps in this guide, verify your environment meets the following
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -33,11 +33,11 @@ To complete the steps in this guide, verify your environment meets the following
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -46,7 +46,7 @@ To complete the steps in this guide, verify your environment meets the following
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -55,11 +55,11 @@ To complete the steps in this guide, verify your environment meets the following
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -69,7 +69,7 @@ To complete the steps in this guide, verify your environment meets the following
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -79,11 +79,11 @@ To complete the steps in this guide, verify your environment meets the following
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -93,7 +93,7 @@ To complete the steps in this guide, verify your environment meets the following
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -102,11 +102,11 @@ To complete the steps in this guide, verify your environment meets the following
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -127,7 +127,7 @@ To complete the steps in this guide, verify your environment meets the following
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -146,13 +146,31 @@ To prepare a Windows computer:
 
 1. Open a Command Prompt (`cmd.exe`) window on the Windows computer you want to enroll.
 
+{/*lint ignore ordered-list-marker-value*/}
+
 2. Export the Teleport user certificate authority by running the following command using your Teleport cluster address:
 
    ```code
    $ curl -o teleport.cer https://teleport.example.com/webapi/auth/export?type=windows
    ```
 
-3. Download the Teleport Windows Auth [setup program](https://cdn.teleport.dev/teleport-windows-auth-setup-v15.0.0-dev-amd64.exe).
+<Tabs>
+  <Tab title="Teleport Community Edition/Teleport Enterprise">
+    3. Download the Teleport Windows Auth setup program:
+
+    ```code
+    $ curl -o teleport-windows-auth-setup-v15.0.2-amd64.exe https://cdn.teleport.dev/teleport-windows-auth-setup-v15.0.2-amd64.exe
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team/Teleport Enterprise Cloud">
+    3. Download the Teleport Windows Auth setup program:
+
+    ```code
+    $ curl -o teleport-windows-auth-setup-v14.3.6-amd64.exe https://cdn.teleport.dev/teleport-windows-auth-setup-v14.3.6-amd64.exe
+    ```
+  </Tab>
+</Tabs>
 
 4. Double-click the executable you downloaded to run the Teleport Windows Auth Setup program
    interactively and select the Teleport certificate that you exported when prompted.
@@ -162,6 +180,9 @@ To prepare a Windows computer:
    - Enables Windows to trust the Teleport certificate authority.
    - Installs the required dynamic link library (DLL) for Teleport to use.
    - Disables Network Level Authentication (NLA) for remote desktop services.
+   - Enables RemoteFX compression, if using Teleport version 15 or newer.
+
+{/*lint ignore ordered-list-marker-value*/}
 
 5. Restart the computer.
 
@@ -224,8 +245,10 @@ To configure the Windows Desktop Service:
      auth_token: /tmp/token
    windows_desktop_service:
      enabled: yes
-     non_ad_hosts:
-     - 192.0.2.156
+     static_hosts:
+     - name: host1
+       ad: false
+       addr: 192.0.2.156
 
    auth_service:
      enabled: no
@@ -238,7 +261,7 @@ To configure the Windows Desktop Service:
    In this file:
 
    - Set the `proxy_server` to the address of your Teleport cluster.
-   - List the Windows IP addresses or host names under `non_ad_hosts`.
+   - List the Windows desktops under `static_hosts`.
 
    Teleport can't automatically discover Windows desktops without Active Directory.
    Therefore, you must specify the Windows IP addresses or host names that you want to
@@ -250,7 +273,26 @@ To configure the Windows Desktop Service:
 
 6. (Optional) Add labels for the Windows Desktop Service to the configuration file.
 
-   You can attach labels to Windows computers by matching to their hostnames.
+   You can add labels to Windows computers using the `labels` section of the host config. For example, the following
+   adds the `datacenter: dc1` label:
+
+   ```diff
+   version: v3
+   teleport:
+     nodename: windows.teleport.example.com
+     proxy_server: teleport.example.com:443
+     auth_token: /tmp/token
+   windows_desktop_service:
+     enabled: yes
+     static_hosts:
+     - name: host1
+       ad: false
+       addr: 192.0.2.156
+   +   labels:
+   +     datacenter: dc1
+   ```
+
+   Alternatively, you can attach labels to Windows computers by matching to their hostnames.
    For example, the following adds the `cloud: ec2` label to computers that have
    host names ending with `.us-east-2.compute.internal`:
 
@@ -261,9 +303,11 @@ To configure the Windows Desktop Service:
      proxy_server: teleport-proxy.example.com:443
    windows_desktop_service:
      enabled: yes
-     non_ad_hosts:
-   -    - 192.0.2.156
-   +    - ip-192-0-2-156.us-east-2.compute.internal
+     static_hosts:
+      - name: host1
+        ad: false
+   -    addr: 192.0.2.156
+   +    addr: ip-192-0-2-156.us-east-2.compute.internal
    + host_labels:
    +    - match: '.*\.us-east-2.compute.internal'
    +      labels:
@@ -343,29 +387,20 @@ To configure a role for desktop access:
    commands for your authentication provider:
    <Tabs>
      <Tab title="Local User">
-       1. Retrieve your local user's configuration resource:
+       1. Retrieve your local user's roles as a comma-separated list:
 
           ```code
-          $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+          $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
           ```
 
-       2. Edit `out.yaml`, adding `windows-desktop-admins` to the list of existing roles:
-
-          ```diff
-            roles:
-             - access
-             - auditor
-             - editor
-          +  - windows-desktop-admins 
-          ```
-
-       3. Apply your changes:
+       2. Edit your local user to add the new role:
 
           ```code
-          $ tctl create -f out.yaml
+          $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+            --set-roles "${ROLES?},windows-desktop-admins"
           ```
 
-       4. Sign out of the Teleport cluster and sign in again to assume the new role.
+       3. Sign out of the Teleport cluster and sign in again to assume the new role.
      </Tab>
 
      <Tab title="GitHub">

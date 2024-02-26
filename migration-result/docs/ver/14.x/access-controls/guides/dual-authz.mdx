@@ -28,20 +28,20 @@ The steps below describe how to use Teleport with Mattermost. You can also
 - Mattermost installed.
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 
@@ -50,15 +50,15 @@ The steps below describe how to use Teleport with Mattermost. You can also
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -69,30 +69,22 @@ The steps below describe how to use Teleport with Mattermost. You can also
   ```
 </Tip>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 ## Step 1/3. Set up a Teleport bot
 
@@ -156,8 +148,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise deployment and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -183,176 +176,179 @@ Create the `access-plugin-impersonator` role:
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
-Assign the `access-plugin-impersonator` role to your Teleport user by running the following
-commands, depending on whether you authenticate as a local Teleport user or via
-the `github`, `saml`, or `oidc` authentication connectors:
+If you are providing identity files to the plugin with Machine ID, assign the
+`access-plugin` role to the Machine ID bot user. Otherwise, assign this role to
+the user you plan to use to generate credentials for the `access-plugin` role
+and user:
+
+Assign the `access-plugin-impersonator` role to your Teleport user by running the appropriate
+commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    Retrieve your local user's configuration resource:
+    1. Retrieve your local user's configuration resource:
 
-    ```code
-    $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-    ```
+       ```code
+       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       ```
 
-    Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
+    2. Edit `out.yaml`, adding `access-plugin-impersonator` to the list of existing roles:
 
-    ```diff
-      roles:
-       - access
-       - auditor
-       - editor
-    +  - access-plugin-impersonator
-    ```
+       ```diff
+         roles:
+          - access
+          - auditor
+          - editor
+       +  - access-plugin-impersonator 
+       ```
 
-    Apply your changes:
+    3. Apply your changes:
 
-    ```code
-    $ tctl create -f out.yaml
-    ```
+       ```code
+       $ tctl create -f out.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
-    Retrieve your `github`  configuration resource:
+    1. Retrieve your `github` authentication connector:
 
-    ```code
-    $ tctl get github/github --with-secrets > github.yaml
-    ```
+       ```code
+       $ tctl get github/github --with-secrets > github.yaml
+       ```
 
-    Edit `github.yaml`, adding `access-plugin-impersonator` to the
-    `teams_to_roles` section. The team you will map to this role will depend on how
-    you have designed your organization's RBAC, but it should be the smallest team
-    possible within your organization. This team must also include your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+       github.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `github.yaml`, adding `access-plugin-impersonator` to the `teams_to_roles` section.
 
-    ```diff
-      teams_to_roles:
-        - organization: octocats
-          team: admins
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The team you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the team must include your user account and
+       should be the smallest team possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f github.yaml
-    ```
+       ```diff
+         teams_to_roles:
+           - organization: octocats
+             team: admins
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f github.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="SAML">
-    Retrieve your `saml`  configuration resource:
+    1. Retrieve your `saml`  configuration resource:
 
-    ```code
-    $ tctl get --with-secrets saml/mysaml > saml.yaml
-    ```
+       ```code
+       $ tctl get --with-secrets saml/mysaml > saml.yaml
+       ```
 
-    Edit `saml.yaml`, adding `access-plugin-impersonator` to the
-    `attributes_to_roles` section. The attribute you will map to this role will
-    depend on how you have designed your organization's RBAC, but it should be the
-    smallest group possible within your organization. This group must also include
-    your user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+       saml.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `saml.yaml`, adding `access-plugin-impersonator` to the `attributes_to_roles` section.
 
-    ```diff
-      attributes_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The attribute you should map to this role depends on how you have designed your
+       organization's role-based access controls (RBAC). However, the group must include your
+       user account and should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f saml.yaml
-    ```
+       ```diff
+         attributes_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f saml.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="OIDC">
-    Retrieve your `oidc`  configuration resource:
+    1. Retrieve your `oidc`  configuration resource:
 
-    ```code
-    $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-    ```
+       ```code
+       $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+       ```
 
-    Edit `oidc.yaml`, adding `access-plugin-impersonator` to the
-    `claims_to_roles` section. The claim you will map to this role will depend on
-    how you have designed your organization's RBAC, but it should be the smallest
-    group possible within your organization. This group must also include your
-    user.
+       Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+       to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+       oidc.yaml file immediately after updating the resource.
 
-    Here is an example:
+    2. Edit `oidc.yaml`, adding `access-plugin-impersonator` to the `claims_to_roles` section.
 
-    ```diff
-      claims_to_roles:
-        - name: "groups"
-          value: "my-group"
-          roles:
-            - access
-    +       - access-plugin-impersonator
-    ```
+       The claim you should map to this role depends on how you have designed your organization's
+       role-based access controls (RBAC). However, the group must include your user account and
+       should be the smallest group possible within your organization.
 
-    Apply your changes:
+       Here is an example:
 
-    ```code
-    $ tctl create -f oidc.yaml
-    ```
+       ```diff
+         claims_to_roles:
+           - name: "groups"
+             value: "my-group"
+             roles:
+               - access
+       +       - access-plugin-impersonator
+       ```
 
-    <Warning>
-      Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-      `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-      so take precautions when creating this file and remove it after updating the resource.
-    </Warning>
+    3. Apply your changes:
+
+       ```code
+       $ tctl create -f oidc.yaml
+       ```
+
+    4. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 </Tabs>
-
-Log out of your Teleport cluster and log in again to assume the new role.
 
 You will now be able to generate signed certificates for the `access-plugin`
 role and user.
 
 ### Export the access-plugin identity files
 
-Like all Teleport users, `access-plugin` needs signed credentials in
-order to connect to your Teleport cluster. You will use the `tctl auth sign`
-command to request these credentials for your plugin.
+Like all Teleport users, `access-plugin` needs signed credentials in order to
+connect to your Teleport cluster. You will use the `tctl auth sign` command to
+request these credentials.
 
 The following `tctl auth sign` command impersonates the `access-plugin` user,
 generates signed credentials, and writes an identity file to the local
 directory:
 
 ```code
-$ tctl auth sign --user=access-plugin --out=auth.pem
+$ tctl auth sign --user=access-plugin --out=identity
 ```
 
 The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
 
-The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
-uses the SSH credentials to connect to the Proxy Service, which establishes a
-reverse tunnel connection to the Auth Service. The plugin uses this reverse
-tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
-endpoint.
+The identity file, `identity`, includes both TLS and SSH credentials. The
+plugin uses the SSH credentials to connect to the Proxy Service, which
+establishes a reverse tunnel connection to the Auth Service. The plugin
+uses this reverse tunnel, along with your TLS credentials, to connect to the
+Auth Service's gRPC endpoint.
 
-You will refer to this file later when configuring the plugin.
-
-<Note>
+<Accordion title="Certificate Lifetime">
   By default, `tctl auth sign` produces certificates with a relatively short
   lifetime. For production deployments, we suggest using [Machine
   ID](/docs/ver/14.x/machine-id/introduction) to programmatically issue and renew
@@ -362,13 +358,31 @@ You will refer to this file later when configuring the plugin.
   Note that you cannot issue certificates that are valid longer than your existing credentials.
   For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
   valid for at least 1000 hours. This means your user must have a role allowing
-  a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
+  a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
   when logging in:
 
   ```code
-  $ tsh login --proxy=teleport.example.com --ttl=1001h
+  $ tsh login --proxy=teleport.example.com --ttl=60060
   ```
-</Note>
+</Accordion>
+
+If you are running the plugin on a Linux server, create a data directory
+to hold certificate files for the plugin:
+
+```code
+$ sudo mkdir -p /var/lib/teleport/api-credentials
+$ sudo mv identity /var/lib/teleport/plugins/api-credentials
+```
+
+If you are running the plugin on Kubernetes, Create a Kubernetes secret
+that contains the Teleport identity file:
+
+```code
+$ kubectl -n teleport create secret generic --from-file=identity plugin-identity
+```
+
+Once the Teleport credentials expire, you will need to renew them by running the
+`tctl auth sign` command again.
 
 We'll reference the exported file(s) later when configuring the plugin.
 
@@ -377,15 +391,15 @@ We'll reference the exported file(s) later when configuring the plugin.
 <Tabs>
   <Tab title="Download">
     ```code
-    $ curl -L https://get.gravitational.com/teleport-access-mattermost-v14.0.0-dev-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-mattermost-v14.0.0-dev-linux-amd64-bin.tar.gz
+    $ curl -L https://get.gravitational.com/teleport-access-mattermost-v14.3.3-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-mattermost-v14.3.3-linux-amd64-bin.tar.gz
     $ cd teleport-access-mattermost
     $ ./install
     ```
   </Tab>
 
   <Tab title="From Source">
-    To install from source you need `git` and `go >= 1.20` installed.
+    To install from source you need `git` and `go >= 1.21` installed.
 
     ```code
     # Checkout teleport-plugins
@@ -406,7 +420,8 @@ Update the config with the Teleport address, Mattermost URL, and a bot token:
 # example mattermost configuration TOML file
 [teleport]
 auth_server = "myinstance.teleport.sh:443"                   # Teleport Cloud proxy HTTPS address
-identity = "/var/lib/teleport/plugins/mattermost/auth.pem"   # Identity file path
+identity = "/var/lib/teleport/plugins/mattermost/identity"   # Identity file path
+refresh_identity = true                                      # Refresh identity file on a periodic basis.
 
 [mattermost]
 url = "https://mattermost.example.com" # Mattermost Server URL
@@ -531,12 +546,9 @@ Bob can also assume granted Access Request roles using Web UI:
 
 ![Teleport Assume](/assets/teleport-7-bob-assume-147c22598b.png)
 
-{/* TODO: This H2 will show up in the table of contents when this section is invisible.
-We need a way to hide invisible H2s from the TOC. */}
-
 ## Troubleshooting
 
-### Cert errors in self-hosted deployments
+### Certificate errors in self-hosted deployments
 
 You may be getting certificate errors if Teleport's Auth Service is missing an address in the server certificate:
 

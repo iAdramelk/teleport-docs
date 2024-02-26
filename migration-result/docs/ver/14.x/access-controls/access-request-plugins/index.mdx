@@ -12,24 +12,45 @@ configuration.
 With Teleport's Access Request plugins, users can manage Access Requests from
 within your organization's existing messaging and project management solutions.
 
-## Plugin guides
-
-| Integration     | Type          | Setup Instructions                                                                                   |
-| --------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Slack           | Messaging     | [Set up Slack](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-slack)             |
-| Mattermost      | Messaging     | [Set up Mattermost](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
-| Microsoft Teams | Messaging     | [Set up Microsoft Teams](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-msteams) |
-| Jira            | Project Board | [Set up Jira](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-jira)               |
-| PagerDuty       | Schedule      | [Set up PagerDuty](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
-| Email           | Messaging     | [Set up email](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-email)             |
-| Discord         | Messaging     | [Set up Discord](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-discord)         |
-
-## Architecture
-
 Access Request plugins are self-contained programs that connect to the Teleport
 Auth Service's gRPC API to listen for audit events relating to new or updated
 Access Requests. After processing an Access Request event, Access Request plugins
 interact with a third-party API (e.g., the Slack or PagerDuty APIs).
+
+## Enrolling Access Request plugins in Teleport Cloud
+
+In Teleport Team and Teleport Enterprise Cloud, Teleport manages Access Request plugins for
+you, and you can enroll Access Request plugins from the Teleport Web UI.
+
+Visit the Teleport Web UI and find the dropdown menu on the upper left of the
+screen. Select the **Management** option.
+
+On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
+Integration" page:
+
+![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+
+On the "Select Integration Type" menu, click the tile for your integration. You
+will see a page with instructions to set up the integration, as well as a form
+that you can use to configure the integration.
+
+The following Access Request plugins are hosted on Teleport Cloud:
+
+- Discord
+- Jira
+- Mattermost
+- Opsgenie
+- PagerDuty
+- ServiceNow
+- Slack
+
+## Self-hosting Access Request plugins
+
+You can host Teleport Access Request plugins yourself. Self-hosted Access
+Request plugins are the only way to manage Access Requests through a third-party
+communication platform if you are self-hosting Teleport. If you use Teleport
+Team or Teleport Enterprise Cloud, you can run self-hosted Access Request
+plugins for more control over configuration and architecture.
 
 Access Request plugins can run within private networks that are isolated from
 the Teleport Auth Service. To access the Auth Service API, they connect to the
@@ -40,6 +61,21 @@ You can run multiple instances of an Access Request plugin for high availability
 by deploying each instance in a separate availability zone. There is no need for
 additional configuration or load balancing, as plugins avoid creating duplicate
 requests to their third-party APIs.
+
+Learn how to deploy and configure a plugin for your organization's communication
+workflows by reading our setup guides:
+
+| Integration     | Type                | Setup Instructions                                                                                   |
+| --------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Slack           | Messaging           | [Set up Slack](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-slack)             |
+| Mattermost      | Messaging           | [Set up Mattermost](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
+| Microsoft Teams | Messaging           | [Set up Microsoft Teams](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-msteams) |
+| Jira            | Project Board       | [Set up Jira](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-jira)               |
+| PagerDuty       | Schedule            | [Set up PagerDuty](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
+| Email           | Messaging           | [Set up email](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-email)             |
+| Discord         | Messaging           | [Set up Discord](/docs/ver/14.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| OpsGenie        | Incident Management | [Set up OpsGenie](/docs/ver/14.x/access-controls/access-request-plugins/opsgenie)                    |
+| ServiceNow      | Workflow            | [Set up ServiceNow](/docs/ver/14.x/access-controls/access-request-plugins/servicenow)                |
 
 To read more about the architecture of an Access Request plugin, and start
 writing your own, read our [Access Request plugin development

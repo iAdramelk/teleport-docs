@@ -12,10 +12,8 @@ configuration options available when using the GitHub join method.
 
 You can read step-by-step guides on using Machine ID and GitHub Actions:
 
-- [Using Machine ID with GitHub Actions](/docs/ver/14.x/machine-id/guides/github-actions): How to
+- [Using Machine ID with GitHub Actions](/docs/ver/14.x/machine-id/deployment/github-actions): How to
   use Machine ID to SSH into Teleport nodes from GitHub Actions.
-- [Using Machine ID with GitHub Actions and Kubernetes](/docs/ver/14.x/machine-id/guides/github-actions-kubernetes):
-  How to use Machine ID to access Kubernetes clusters from GitHub Actions.
 
 ## GitHub join token
 
@@ -36,8 +34,8 @@ metadata:
   # token, this name should be specified.
   name: github-token
 spec:
-  # For Machine ID and GitHub joining, roles will always be `Bot` and
-  # join_method will always be `github`.
+  # For Machine ID and GitHub joining, roles will always be "Bot" and
+  # join_method will always be "github".
   roles: [Bot]
   join_method: github
 
@@ -51,6 +49,18 @@ spec:
     # using github.com, this option should be omitted. If you are using GHES,
     # this value should be configured to the hostname of your GHES instance.
     enterprise_server_host: ghes.example.com
+
+    # enterprise_slug allows the slug of a GitHub Enterprise organisation to be
+    # included in the expected issuer of the OIDC tokens. This is for
+    # compatibility with the include_enterprise_slug option in GHE.
+    #
+    # This field should be set to the slug of your Github Enterprise organization if this is enabled. If
+    # this is not enabled, then this field must be left empty. This field cannot
+    # be specified if `enterprise_server_host` is specified.
+    #
+    # See https://docs.github.com/en/enterprise-cloud@latest/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#customizing-the-issuer-value-for-an-enterprise
+    # for more information about customized issuer values.
+    enterprise_slug: slug
 
     # allow is an array of rule configurations for what GitHub Actions workflows
     # should be allowed to join. All options configured within one allow entry

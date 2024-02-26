@@ -10,7 +10,7 @@ See the [Teleport HA Architecture page](/docs/ver/16.x/deploy-a-cluster/high-ava
 for more details.
 
 You can
-[browse the source on GitHub](https://github.com/gravitational/teleport/tree/branch/v15/examples/chart/teleport-cluster).
+[browse the source on GitHub](https://github.com/gravitational/teleport/tree/branch/v16/examples/chart/teleport-cluster).
 
 The `teleport-cluster` chart runs three Teleport services, split into two sets of pods:
 
@@ -399,7 +399,7 @@ By default no devices are forbidden.
 | -------- | ------------- | --------- | ---------------------------------- |
 | `string` | `nil`         | no        | `auth_service.proxy_listener_mode` |
 
-`proxyListenerMode` controls proxy TLS routing used by Teleport. Possible values are `multiplex`.
+`proxyListenerMode` controls proxy TLS routing used by Teleport. Possible values are `multiplex`, `separate`.
 
 `values.yaml` example:
 
@@ -822,7 +822,7 @@ acmeURI: https://acme-staging-v02.api.letsencrypt.org/directory
 | ------ | ------------------------------------------------------ |
 | `bool` | `true` for 1.22 and lower, `false` for 1.23 and higher |
 
-By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/v15/examples/chart/teleport-cluster/templates/psp.yaml).
+By default, Teleport charts used to install a [`podSecurityPolicy`](https://github.com/gravitational/teleport/blob/branch/v16/examples/chart/teleport-cluster/templates/psp.yaml).
 
 PodSecurityPolicy resource has been removed in Kubernetes 1.25
 and replaced since 1.23 by PodSecurityAdmission. If you are running on
@@ -1034,7 +1034,8 @@ is not supported with multiple replicas.
 ### For proxy pods
 
 Proxy pods need to be provided a certificate to be replicated (via either
-`tls.existingSecretName` or `highAvailability.certManager`).
+`tls.existingSecretName` or `highAvailability.certManager`) or be exposed
+via an ingress (`ingress.enabled`).
 If proxy pods are replicable, they will default to 2 replicas,
 even if `highAvailability.replicaCount` is 1. To force a single proxy replica,
 set `proxy.highAvailability.replicaCount: 1`.

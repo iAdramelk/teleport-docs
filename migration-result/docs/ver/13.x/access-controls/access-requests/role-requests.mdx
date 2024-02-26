@@ -12,85 +12,79 @@ via ChatOps or anywhere else via our flexible Authorization Workflow API.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
-    - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
+      Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-
-      ```code
-      $ tctl version
-      # Teleport v13.2.0 go1.20
-
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
-
-      See [Installation](/docs/ver/13.x/installation) for details.
-  </Tab>
-
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
-      [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
-
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## RBAC Setup
 
 In this example, we will define three roles:
 
-1. `contractor`: users with this role can request elevated access to the `dba` role
-2. `dba`: this role grants access to databases
-3. `approver`: users with this role can approve requests for access to the `dba` role
+- `contractor`: users with this role can request elevated access to the `dba` role
+- `dba`: this role grants access to databases
+- `approver`: users with this role can approve requests for access to the `dba` role
 
 **Contractor Role**
 
@@ -144,7 +138,7 @@ spec:
 
 <Warning>
   Roles containing a `review_requests` rule can only be used in Teleport
-  Enterprise. In OSS Teleport, Access Requests must be approved by an admin
+  Enterprise. In Teleport Community Edition, Access Requests must be approved by an admin
   running `tctl` on the Auth Server.
 </Warning>
 
@@ -228,15 +222,16 @@ to the original set of roles.
 With Teleport's Access Request plugins, users can manage Access Requests from
 within your organization's existing messaging and project management solutions.
 
-| Integration     | Type          | Setup Instructions                                                                                   |
-| --------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Slack           | Messaging     | [Set up Slack](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-slack)             |
-| Mattermost      | Messaging     | [Set up Mattermost](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
-| Microsoft Teams | Messaging     | [Set up Microsoft Teams](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-msteams) |
-| Jira            | Project Board | [Set up Jira](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-jira)               |
-| PagerDuty       | Schedule      | [Set up PagerDuty](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
-| Email           | Messaging     | [Set up email](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-email)             |
-| Discord         | Messaging     | [Set up Discord](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| Integration     | Type                | Setup Instructions                                                                                   |
+| --------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Slack           | Messaging           | [Set up Slack](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-slack)             |
+| Mattermost      | Messaging           | [Set up Mattermost](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-mattermost)   |
+| Microsoft Teams | Messaging           | [Set up Microsoft Teams](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-msteams) |
+| Jira            | Project Board       | [Set up Jira](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-jira)               |
+| PagerDuty       | Schedule            | [Set up PagerDuty](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-pagerduty)     |
+| Email           | Messaging           | [Set up email](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-email)             |
+| Discord         | Messaging           | [Set up Discord](/docs/ver/13.x/access-controls/access-request-plugins/ssh-approval-discord)         |
+| OpsGenie        | Incident Management | [Set up OpsGenie](/docs/ver/13.x/access-controls/access-request-plugins/opsgenie)                    |
 
 ### Advanced RBAC
 
@@ -294,5 +289,36 @@ spec:
 Users can also create Access Requests with the `tsh request create` command.
 `tsh request create` supports flags to control TTLs for the request and
 elevated access. See the [CLI
-Reference](/docs/ver/13.x/reference/cli#tsh-request-create) for more
+Reference](/docs/ver/13.x/reference/cli/tsh#tsh-request-create) for more
 details.
+
+### Max duration for Access Requests
+
+By default, Teleport will allow users to request access to a role until the
+current session expires. This can be overridden by setting the `max_duration`
+when requesting access to a role. The `max_duration` option allows users to
+extend their access up to 7 days. The `max_duration` can be set in the Web UI
+or via the `--max-duration` flag when using the `tsh` CLI.
+
+To enable the `max_duration` feature, the `max_duration` option must be set in
+a user's role definition:
+
+```yaml
+kind: role
+version: v5
+metadata:
+  name: contractor
+spec:
+  allow:
+    request:
+      # Allow access to role `dba` for up to 4 days.
+      roles: ['dba']
+      max_duration: 4d
+```
+
+Max duration extends access to a role for the specified duration, but each
+session is still limited by the `max_session_ttl` option in the role definition.
+For example, if the `max_session_ttl` is set to 1 hour, the user will be able
+to request access to the role for up to 4 days, but each session will expire
+after 1 hour. The user will need to assume the role again to continue using it.
+If the `max_session_ttl` is not set, the session will expire after 12 hours.

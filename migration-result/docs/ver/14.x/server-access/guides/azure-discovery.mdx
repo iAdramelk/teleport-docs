@@ -1,5 +1,5 @@
 ---
-title: Automatically Discover Azure Virtual Machines (Preview)
+title: Automatically Discover Azure Virtual Machines 
 description: How to configure Teleport to automatically enroll Azure virtual machines.
 version: '14.x'
 ---
@@ -12,71 +12,95 @@ start it and join the cluster.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
@@ -85,32 +109,24 @@ start it and join the cluster.
 - Azure virtual machines to join the Teleport cluster, running
   Ubuntu/Debian/RHEL if making use of the default Teleport install script. (For
   other Linux distributions, you can install Teleport manually.)
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
-
-## Step 1/5. Create an Azure invite token
+## Step 1/6. Create an Azure invite token
 
 When discovering Azure virtual machines, Teleport makes use of Azure invite tokens for
 authenticating joining SSH Service instances.
@@ -147,7 +163,7 @@ Add the token to the Teleport cluster with:
 $ tctl create -f token.yaml
 ```
 
-## Step 2/5. Configure IAM permissions for Teleport
+## Step 2/6. Configure IAM permissions for Teleport
 
 The Teleport Discovery Service needs Azure IAM permissions to discover and register Azure virtual machines.
 
@@ -229,8 +245,13 @@ resources:
 
 ### Create a custom role
 
-Teleport requires `Microsoft.Compute/virtualMachines/read` permissions for discovery and
-`Microsoft.Compute/virtualMachines/runCommand/action` permissions for installation.
+Teleport requires the following permissions to discover and enroll Azure VMs:
+
+- `Microsoft.Compute/virtualMachines/read`
+- `Microsoft.Compute/virtualMachines/runCommand/action`
+- `Microsoft.Compute/virtualMachines/runCommands/write`
+- `Microsoft.Compute/virtualMachines/runCommands/read`
+- `Microsoft.Compute/virtualMachines/runCommands/delete`
 
 Here is a sample role definition allowing Teleport to read and run commands on Azure
 virtual machines:
@@ -246,8 +267,11 @@ virtual machines:
         "permissions": [
             {
                 "actions": [
-                    "Microsoft.Compute/virtualMachines/read`",
-                    "Microsoft.Compute/virtualMachines/runCommand/action"
+                    "Microsoft.Compute/virtualMachines/read",
+                    "Microsoft.Compute/virtualMachines/runCommand/action",
+                    "Microsoft.Compute/virtualMachines/runCommands/write",
+                    "Microsoft.Compute/virtualMachines/runCommands/read",
+                    "Microsoft.Compute/virtualMachines/runCommands/delete"
                 ],
                 "notActions": [],
                 "dataActions": [],
@@ -294,7 +318,292 @@ service principal as a member.
   for more information about Azure scopes and creating role assignments.
 </Note>
 
-## Step 3/5. Install the Teleport Discovery Service
+## Step 3/6. Set up managed identities for discovered nodes
+
+Every Azure VM to be discovered must have a managed identity assigned to it
+with at least the `Microsoft.Compute/virtualMachines/read` permission.
+
+<Tabs>
+  <Tab title="Manually create identity">
+    ### Create a custom role
+
+    Enter the name of your Azure resource group in the Azure Portal search box and
+    visit the page for that resource group. On the left navigation sidebar, click
+    the **Access control (IAM)** tab. In the row of buttons at the top of the
+    **Access control (IAM)** panel, click **Add > Add custom role**.
+
+    In the **Custom role name** field, enter `teleport-read-vm`.
+
+    ![Create custom
+    role](/assets/create-custom-role-80673cb59e.png)
+
+    Click the **Permissions** tab, then within the **Permissions** view, click
+    **+Add permissions**.
+
+    Enter `Microsoft.Compute/virtualMachines/read` in the search box. Click the
+    **Microsoft Compute** box, then enable **Read: Get Virtual Machine**. Click
+    **Add**.
+
+    ![Add virtual machine read
+    permission](/assets/read-permission-8b77bd11e1.png)
+
+    Click **Review + create**, then **Create**.
+
+    ### Create an Azure managed identity
+
+    Visit the [Managed
+    Identities](https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.ManagedIdentity%2FuserAssignedIdentities)
+    view in Azure Portal.
+
+    Click **Create**.
+
+    Under **Subscription**, **Resource group**, and **Region**, choose the ones that
+    your VM belongs to.
+
+    In the **Name** field, enter `teleport-azure`.
+
+    ![Creating an Azure managed
+    identity](/assets/create-identity-167fb0ea67.png)
+
+    Click **Review + create**, then **Create**.
+
+    Once creation finishes, click **Go to resource**. On the page for the new
+    identity, copy the value for the **Client ID** so you can use it later in this
+    guide.
+
+    ### Assign the `teleport-read-vm` role to the `teleport-azure` identity
+
+    Enter the name of your Azure resource group in the Azure Portal search box and
+    visit the page for that resource group. On the left navigation sidebar, click
+    the **Access control (IAM)** tab. In the row of buttons at the top of the
+    **Access control (IAM)** panel, click **Add > Add role assignment**.
+
+    Within the **Add role assignment** screen, click **teleport-read-vm**.
+
+    ![Add a role
+    assignment](/assets/add-role-assignment-16bce33185.png)
+
+    Scroll to the bottom of the screen and click **Next**.
+
+    Within the **Members** tab, in the **Assign access to** field, choose **Managed
+    identity**. Click **Select members**.
+
+    On the right sidebar, find the **Managed identity** dropdown menu and select
+    **User-assigned managed identity**. Choose the `teleport-azure` identity you
+    created earlier.
+
+    ![Select managed
+    identities](/assets/select-managed-identities-9c59b79a30.png)
+
+    Click **Select**, then **Review + assign**.
+
+    Verify that your **Role** is `teleport-read-vm`, the **Scope** matches your
+    chosen resource group, and the **Members** field includes the `teleport-azure`
+    managed identity you created earlier.
+
+    Click **Review + assign** again.
+
+    ### Attach an identity to your Azure VM
+
+    In the [Virtual machines
+    view](https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.Compute%2FVirtualMachines)
+    of Azure Portal, click on the name of the VM you are using to host the Teleport
+    Application Service.
+
+    On the right side panel, click the **Identity** tab, then within the
+    **Identity** view, click the **User assigned** tab. Click **+Add**, then select
+    the `teleport-azure` identity. Click **Add**.
+
+    ![Add an identity to a
+    VM](/assets/vm-identity-10249ef9e9.png)
+
+    Navigate back to **Identity** tab in the page for your Azure VM. You should see
+    the new identity listed in the **User assigned** sub-tab:
+
+    ![Verifying that you added the
+    identity](/assets/verify-id-c4c401ff9b.png)
+
+    <Warning>
+      As part of authentication, Teleport will be able to do anything allowed by the
+      identity. If you use a managed identity other than the one created in this
+      guide, we strongly recommend limiting its permissions and scope.
+    </Warning>
+  </Tab>
+
+  <Tab title="ARM Template">
+    Create a file named `teleport-create-identity.json` and copy the following into
+    it:
+
+    ```json
+    {
+      "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+      "contentVersion": "1.0.0.0",
+      "metadata": {
+        "_generator": {
+          "name": "bicep",
+          "version": "0.5.6.12127",
+          "templateHash": "2227781763411200690"
+        }
+      },
+      "parameters": {
+        "roleName": {
+          "type": "string",
+          "defaultValue": "teleport-read-vm",
+          "metadata": {
+            "description": "Friendly name of the role definition"
+          }
+        },
+        "identityName": {
+          "type": "string",
+          "defaultValue": "teleport-azure",
+          "metadata": {
+            "description": "Name of the managed identity"
+          }
+        }
+      },
+      "variables": {
+        "roleDefName": "[guid(resourceGroup().id, string('Microsoft.Compute/virtualMachines/read'))]"
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Authorization/roleDefinitions",
+          "apiVersion": "2022-04-01",
+          "name": "[variables('roleDefName')]",
+          "properties": {
+            "roleName": "[parameters('roleName')]",
+            "description": "A role to allow reading information about Virtual Machines, to be used for Teleport.",
+            "type": "customRole",
+            "permissions": [
+              {
+                "actions": [
+                  "Microsoft.Compute/virtualMachines/read"
+                ],
+                "notActions": []
+              }
+            ],
+            "assignableScopes": [
+              "[resourceGroup().id]"
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+          "name": "[parameters('identityName')]",
+          "apiVersion": "2018-11-30",
+          "location": "[resourceGroup().location]"
+        }
+      ],
+      "outputs": {
+        "principalID": {
+          "type": "string",
+          "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))).principalId]"
+        },
+        "clientID": {
+          "type": "string",
+          "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))).clientId]"
+        },
+        "roleName": {
+          "type": "string",
+          "value": "[variables('roleDefName')]"
+        }
+      }
+    }
+    ```
+
+    Then run the following commands to create the custom role and managed identity:
+
+    ```code
+    $ DEPLOY_OUTPUT=$(az deployment group create \
+    --resource-group <your-resource-group> \
+    --template-file teleport-create-identity.json)
+    $ PRINCIPAL_ID=$(echo $DEPLOY_OUTPUT | jq -r '.properties.outputs.principalID.value')
+    $ CLIENT_ID=$(echo $DEPLOY_OUTPUT | jq -r '.properties.outputs.principalID.value')
+    $ ROLE_NAME=$(echo $DEPLOY_OUTPUT | jq -r '.properties.outputs.roleName.value')
+    ```
+
+    <Accordion title="Getting a &#x22;command not found&#x22; error?">
+      This command requires `jq` to be installed on your workstation, which you can do
+      via the [`jq` download page](https://stedolan.github.io/jq/download/).
+    </Accordion>
+
+    Next, create another file named `teleport-assign-identity.json` and copy the
+    following into it:
+
+    ```json
+    {
+      "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+      "contentVersion": "1.0.0.0",
+      "metadata": {
+        "_generator": {
+          "name": "bicep",
+          "version": "0.5.6.12127",
+          "templateHash": "2227781763411200690"
+        }
+      },
+      "parameters": {
+        "identityName": {
+          "type": "string",
+          "defaultValue": "teleport-azure"
+        },
+        "principalId": {
+          "type": "string"
+        },
+        "roleName": {
+          "type": "string"
+        },
+        "vmNames": {
+          "type": "array"
+        }
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Authorization/roleAssignments",
+          "apiVersion": "2022-04-01",
+          "name": "[guid(resourceGroup().id)]",
+          "properties": {
+            "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', parameters('roleName'))]",
+            "principalId": "[parameters('principalId')]"
+          }
+        },
+        {
+          "apiVersion": "2018-06-01",
+          "type": "Microsoft.Compute/virtualMachines",
+          "name": "[parameters('vmNames')[copyIndex('vmcopy')]]",
+          "location": "[resourceGroup().location]",
+          "identity": {
+            "type": "userAssigned",
+            "userAssignedIdentities": {
+              "[resourceID('Microsoft.ManagedIdentity/userAssignedIdentities/',parameters('identityName'))]": {}
+            }
+          },
+          "copy": {
+            "name": "vmcopy",
+            "count": "[length(parameters('vmNames'))]"
+          }
+        }
+      ]
+    }
+    ```
+
+    Run the following command to assign your custom role to your managed identity
+    and assign the identity to your virtual machines:
+
+    ```code
+    $ az deployment group create \
+    --resource-group <your-resource-group> \
+    --template-file teleport-assign-identity.json \
+    -- parameters principalId="$PRINCIPAL_ID" roleName="$ROLE_NAME" \
+    vmNames='<list-of-vm-names>'
+    ```
+
+    Use the value of `CLIENT_ID` in Step 3.
+  </Tab>
+</Tabs>
+
+If the VMs to be discovered have more than one managed identity assigned to
+them, save the client ID of the identity you just created for step 5.
+
+## Step 4/6. Install the Teleport Discovery Service
 
 <Tip>
   If you plan on running the Discovery Service on a host that is already running
@@ -303,47 +612,151 @@ service principal as a member.
 
 Install Teleport on the virtual machine that will run the Discovery Service:
 
-Use the appropriate commands for your environment to install your package:
+Select an edition, then follow the instructions for that edition to install Teleport.
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
-  <Tab title="Teleport Team">
+  <Tab title="Teleport Community Edition">
+    The following command updates the repository for the package manager on the
+    local operating system and installs the provided Teleport version:
+
     ```code
-    $ curl https://goteleport.com/static/install.sh | bash -s 13.2.0
+    $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
     ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    <Tabs>
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
+        Add the Teleport repository to your repository list:
+
+        ```code
+        # Download Teleport's PGP public key
+        $ sudo curl https://apt.releases.teleport.dev/gpg \
+        -o /usr/share/keyrings/teleport-archive-keyring.asc
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport APT repository for cloud.
+        $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+        https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
+        | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Update the repo and install Teleport and the Teleport updater
+        $ sudo apt-get update
+        $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum install -y yum-utils
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use the dnf config manager plugin to add the teleport RPM repo
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+      </Tab>
+
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+        ```
+      </Tab>
+    </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v14` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
 
     <Accordion title="Is my Teleport instance compatible with Teleport Team?">
       Before installing a `teleport` binary with a version besides
-      v13, read our compatibility rules to ensure that the
+      v14, read our compatibility rules to ensure that the
       binary is compatible with Teleport Cloud.
 
+      Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+      include a major version, minor version, and patch version, separated by dots.
       When running multiple `teleport` binaries within a cluster, the following rules
       apply:
 
       - **Patch and minor** versions are always compatible, for example, any 8.0.1
         component will work with any 8.0.3 component and any 8.1.0 component will work
         with any 8.3.0 component.
-      - Servers support clients that are 1 major version behind, but do not support
+      - Servers support clients that are one major version behind, but do not support
         clients that are on a newer major version. For example, an 8.x.x Proxy Service
-        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
         This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
         You must upgrade to 7.x.x first.
-      - Proxy Services and resource services do not support Auth Services that are on
-        an older major version, and will fail to connect to older Auth Services by
-        default. This behavior can be overridden by passing `--skip-version-check`
-        when starting Proxy Services and resource services.
+      - Proxy Service instances and agents do not support Auth Service instances that
+        are on an older major version, and will fail to connect to older Auth Service
+        instances by default. You can override version checks by passing
+        `--skip-version-check` when starting agents and Proxy Service instances.
     </Accordion>
   </Tab>
 
-  <Tab title="Open Source">
-    ```code
-    $ curl https://goteleport.com/static/install.sh | bash -s 14.0.0-dev
-    ```
-  </Tab>
-
-  <Tab title="Enterprise">
+  <Tab title="Teleport Enterprise">
     <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         ```code
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
@@ -376,7 +789,32 @@ Use the appropriate commands for your environment to install your package:
         # First, get the major version from $VERSION_ID so this fetches the correct
         # package version.
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        $ sudo yum install -y yum-utils
         $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
+        $ sudo yum install teleport-ent
+        #
+        # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
+        # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo yum install teleport-ent-fips
+        ```
+      </Tab>
+
+      <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for v14. You'll need to update this
+        # file for each major release of Teleport.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
         $ sudo yum install teleport-ent
         #
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
@@ -396,6 +834,9 @@ Use the appropriate commands for your environment to install your package:
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
         # file for each major release of Teleport.
+        # First, get the major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         # Use the dnf config manager plugin to add the teleport RPM repo
         $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport.repo")"
 
@@ -413,18 +854,40 @@ Use the appropriate commands for your environment to install your package:
         ```
       </Tab>
 
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
+        ```code
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/v14/teleport-zypper.repo")
+
+        # Install teleport
+        $ sudo zypper install teleport-ent
+        ```
+
+        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
+
+        ```code
+        $ sudo zypper install teleport-ent-fips
+        ```
+      </Tab>
+
       <Tab title="Tarball">
         In the example commands below, update `$SYSTEM_ARCH` with the appropriate
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
         ```code
-        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
+        $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
         # Verify that the checksums match
-        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
+        $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
         $ cd teleport-ent
         $ sudo ./install
         ```
@@ -433,22 +896,33 @@ Use the appropriate commands for your environment to install your package:
         will be slightly different:
 
         ```code
-        $ curl https://get.gravitational.com/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
+        $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ shasum -a 256 teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
         # Verify that the checksums match
-        $ tar -xvf teleport-ent-v14.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
+        $ tar -xvf teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
         $ cd teleport-ent
         $ sudo ./install
         ```
       </Tab>
     </Tabs>
+
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v14` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
   </Tab>
 
-  <Tab title="Enterprise Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     <Tabs>
-      <Tab title="Debian 8+/Ubuntu 16.04+ (apt)">
+      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
         ```code
@@ -457,27 +931,39 @@ Use the appropriate commands for your environment to install your package:
         -o /usr/share/keyrings/teleport-archive-keyring.asc
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport apt repository for cloud.
+        # Add the Teleport APT repository for cloud.
         $ echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
         https://apt.releases.teleport.dev/${ID?} ${VERSION_CODENAME?} stable/cloud" \
         | sudo tee /etc/apt/sources.list.d/teleport.list > /dev/null
 
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Update the repo and install Teleport and the Teleport updater
         $ sudo apt-get update
-        $ sudo apt-get install teleport-ent
+        $ sudo apt-get install "teleport-ent=$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
 
-      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
+      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
         ```code
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
-        # First, get the major version from $VERSION_ID so this fetches the correct
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
         # package version.
         $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
-        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
-        $ sudo yum install teleport-ent
-        #
+        $ sudo yum install -y yum-utils
+        $ sudo yum-config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo yum install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
+
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
         ```
@@ -487,62 +973,85 @@ Use the appropriate commands for your environment to install your package:
         ```code
         # Source variables about OS version
         $ source /etc/os-release
-        # Add the Teleport yum repository for cloud.
+        # Add the Teleport YUM repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
         # Use the dnf config manager plugin to add the teleport RPM repo
-        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport.repo")"
+        $ sudo dnf config-manager --add-repo "$(rpm --eval "https://yum.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-yum.repo")"
 
-        # Install teleport
-        $ sudo dnf install teleport-ent
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo dnf install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
 
         # Tip: Add /usr/local/bin to path used by sudo (so 'sudo tctl users add' will work as per the docs)
         # echo "Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" > /etc/sudoers.d/secure_path
         ```
       </Tab>
 
-      <Tab title="Tarball">
-        In the example commands below, update `$SYSTEM_ARCH` with the appropriate
-        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
-        will update after one is filled out.
-
+      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
         ```code
-        $ curl https://get.gravitational.com/teleport-ent-v13.2.0-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
-        # <checksum> <filename>
-        $ curl -O https://cdn.teleport.dev/teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ shasum -a 256 teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        # Verify that the checksums match
-        $ tar -xvf teleport-ent-v13.2.0-linux-amd64-bin.tar.gz
-        $ cd teleport-ent
-        $ sudo ./install
+        # Source variables about OS version
+        $ source /etc/os-release
+        # Add the Teleport Zypper repository for cloud.
+        # First, get the OS major version from $VERSION_ID so this fetches the correct
+        # package version.
+        $ VERSION_ID=$(echo $VERSION_ID | grep -Eo "^[0-9]+")
+        # Use Zypper to add the teleport RPM repo
+        $ sudo zypper addrepo --refresh --repo $(rpm --eval "https://zypper.releases.teleport.dev/$ID/$VERSION_ID/Teleport/%{_arch}/stable/cloud/teleport-zypper.repo")
+
+        # Provide your Teleport domain to query the latest compatible Teleport version
+        $ export TELEPORT_DOMAIN=example.teleport.com
+        $ export TELEPORT_VERSION="$(curl https://$TELEPORT_DOMAIN/v1/webapi/automaticupgrades/channel/default/version | sed 's/v//')"
+
+        # Install Teleport and the Teleport updater
+        $ sudo zypper install "teleport-ent-$TELEPORT_VERSION" teleport-ent-updater
         ```
       </Tab>
     </Tabs>
 
+    ### OS repository channels
+
+    The following channels are available for APT, YUM, and Zypper repos. They may be used in place of
+    `stable/v14` anywhere in the Teleport documentation.
+
+    | Channel name     | Description                                                                  |
+    | ---------------- | ---------------------------------------------------------------------------- |
+    | `stable/<major>` | Receives releases for the specified major release line, i.e. `v14`           |
+    | `stable/cloud`   | Rolling channel that receives releases compatible with current Cloud version |
+    | `stable/rolling` | Rolling channel that receives all published Teleport releases                |
+
     <Accordion title="Is my Teleport instance compatible with Teleport Enterprise Cloud?">
-      Before installing a `teleport` binary with a version besides v13,
+      Before installing a `teleport` binary with a version besides v14,
       read our compatibility rules to ensure that the binary is compatible with
       Teleport Enterprise Cloud.
 
+      Teleport uses [Semantic Versioning](https://semver.org/). Version numbers
+      include a major version, minor version, and patch version, separated by dots.
       When running multiple `teleport` binaries within a cluster, the following rules
       apply:
 
       - **Patch and minor** versions are always compatible, for example, any 8.0.1
         component will work with any 8.0.3 component and any 8.1.0 component will work
         with any 8.3.0 component.
-      - Servers support clients that are 1 major version behind, but do not support
+      - Servers support clients that are one major version behind, but do not support
         clients that are on a newer major version. For example, an 8.x.x Proxy Service
-        is compatible with 7.x.x resource services and 7.x.x `tsh`, but we don't
-        guarantee that a 9.x.x resource service will work with an 8.x.x Proxy Service.
+        instance is compatible with 7.x.x agents and 7.x.x `tsh`, but we don't
+        guarantee that a 9.x.x agent will work with an 8.x.x Proxy Service instance.
         This also means you must not attempt to upgrade from 6.x.x straight to 8.x.x.
         You must upgrade to 7.x.x first.
-      - Proxy Services and resource services do not support Auth Services that are on
-        an older major version, and will fail to connect to older Auth Services by
-        default. This behavior can be overridden by passing `--skip-version-check`
-        when starting Proxy Services and resource services.
+      - Proxy Service instances and agents do not support Auth Service instances that
+        are on an older major version, and will fail to connect to older Auth Service
+        instances by default. You can override version checks by passing
+        `--skip-version-check` when starting agents and Proxy Service instances.
     </Accordion>
   </Tab>
 </Tabs>
 
-## Step 4/5. Configure Teleport to discover Azure instances
+## Step 5/6. Configure Teleport to discover Azure instances
 
 If you are running the Discovery Service on its own host, the service requires a
 valid invite token to connect to the cluster. Generate one by running the
@@ -576,11 +1085,17 @@ discovery_service:
   enabled: "yes"
   azure:
     - types: ["vm"]
-      subscriptions: []
-      resource_groups: []
-      regions: []
+      subscriptions: ["<subscription>"]
+      resource_groups: ["<resource-group>"]
+      regions: ["<region>"]
       tags:
         "env": "prod" # Match virtual machines where tag:env=prod
+      install:
+        azure:
+          # Optional: If the VMs to discover have more than one managed
+          # identity assigned to them, set the client ID here to the client
+          # ID of the identity created in step 3.
+          client_id: "<client-id>"
 ```
 
 - Edit the `teleport.auth_servers` key to match your Auth Service or Proxy Service's URI
@@ -589,7 +1104,7 @@ discovery_service:
   specifically the regions and tags you want to associate with the Discovery
   Service.
 
-## Step 5/5. \[Optional] Customize the default installer script
+## Step 6/6. \[Optional] Customize the default installer script
 
 To customize the default installer script, execute the following command on
 your workstation:
@@ -639,7 +1154,7 @@ The `installer` resource has the following templating options:
   Has format `<channel>/<version>` e.g. stable/v14. See [installation](/docs/ver/14.x/installation#linux) for more details.
 - `{{ .AutomaticUpgrades }}`: indicates whether Automatic Upgrades are enabled or disabled.
   Its value is either `true` or `false`. See
-  [self-hosted automatic agent updates](/docs/ver/14.x/management/operations/self-hosted-automatic-agent-updates)
+  [self-hosted automatic agent updates](/docs/ver/14.x/upgrading/self-hosted-automatic-agent-updates)
   for more information.
 - `{{ .TeleportPackage }}`: the Teleport package to use.
   Its value is either `teleport-ent` or `teleport` depending on whether the
@@ -664,8 +1179,8 @@ with the following contents:
 
 ```sh
 echo teleport.example.com
-echo Teleport-14.0.0-dev
-echo Repository Channel: stable/v14.0.0-dev
+echo Teleport-14.3.6
+echo Repository Channel: stable/v14.3.6
 ```
 
 The default installer will take the following actions:
@@ -674,6 +1189,9 @@ The default installer will take the following actions:
 - Install Teleport via `apt` or `yum`.
 - Generate the Teleport config file and write it to `/etc/teleport.yaml`.
 - Enable and start the Teleport service.
+
+If `client_id` is set in the Discovery Service config, custom installers will
+also have the `{{ .AzureClientID }}` templating option.
 
 ## Troubleshooting
 
@@ -686,6 +1204,17 @@ the Teleport Discovery Service.
 Refer to [Azure SDK Authorization](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization)
 for more information.
 
+### Teleport reports no error but VM does not join
+
+Check your Discovery Service config and make sure that the VM you want to
+discover matches. In debug mode, Teleport will log the Subscription IDs and
+names of VMs it discovers.
+
+The Azure run command API does not report the output of commands,
+so Teleport has no way of knowing if a command succeeded or failed. Run command
+logs can be found on the targeted VM at
+`/var/log/azure/run-command-handler/handler.log`.
+
 ## Next steps
 
 - Read [Joining Nodes via Azure Managed Identity](/docs/ver/14.x/agents/join-services-to-your-cluster/azure)
@@ -693,4 +1222,4 @@ for more information.
 - Full documentation on Azure discovery configuration can be found through the [
   config file reference documentation](/docs/ver/14.x/reference/config).
 - The complete default installer can be found [with the Teleport source
-  ](https://github.com/gravitational/teleport/blob/master/api/types/installers/installer.sh.tmpl).
+  ](https://github.com/gravitational/teleport/blob/branch/v14/api/types/installers/installer.sh.tmpl).

@@ -1,0 +1,161 @@
+---
+title: Access Requests with ServiceNow
+description: How to set up Teleport's ServiceNow plugin for privilege elevation approvals.
+version: '14.x'
+---
+
+With Teleport's ServiceNow integration, engineers can access the infrastructure
+they need to resolve incidents quickly, without granting longstanding admin permissions
+that can become a vector for attacks.
+
+Teleport's ServiceNow integration allows you to treat Teleport Access
+Requests as ServiceNow incidents, notify the appropriate on-call team, and
+approve or deny the requests via Teleport.
+
+This guide will explain how to set up Teleport's Access Request plugin for
+ServiceNow.
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
+      Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.3.6 go1.21
+
+      $ tsh version
+      # Teleport v14.3.6 go1.21
+      ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
+      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+
+      ```code
+      $ tctl version
+      # Teleport Enterprise v14.3.6 go1.21
+
+      $ tsh version
+      # Teleport v14.3.6 go1.21
+      ```
+  </Tab>
+</Tabs>
+
+- An ServiceNow account with access to read and write to and from the 'incident' table.
+- The ServiceNow integration is currently only available in Teleport Cloud.
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  14.3.6
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+
+## Step 1/4. Create services
+
+We will configure the ServiceNow plugin to create an incident when
+certain users create an Access Request.
+
+## Step 2/4. Define RBAC resources
+
+The Teleport ServiceNow plugin works by receiving Access Request events from the
+Teleport Auth Service and, based on these events, interacting with the ServiceNow
+API.
+
+Before making the access request ensure the user making the request has
+the `requester` role.
+
+## Step 3/4. Configure the ServiceNow plugin
+
+At this point, you have a ServiceNow user that the ServiceNow plugin will use
+to connect to the ServiceNow API. To configure the plugin to use this user navigate
+to Management -> Integrations -> Enroll New Integration.
+
+![Integrations page](/assets/servicenow-integration-page-f7a94b1da2.png)
+
+The plugin requires credentials that can read and write to the incident table.
+
+## Step 4/4. Test the ServiceNow plugin
+
+### Create an Access Request
+
+As the Teleport user `myuser`, create an Access Request for the `editor` role:
+
+<Tabs>
+  <Tab title="As an Admin">
+    A Teleport admin can create an Access Request for another user with `tctl`:
+
+    ```code
+    $ tctl request create myuser --roles=editor
+    ```
+  </Tab>
+
+  <Tab title="As a User">
+    Users can use `tsh` to create an Access Request and log in with approved roles:
+
+    ```code
+    $ tsh request create --roles=editor
+    Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
+    ```
+  </Tab>
+
+  <Tab title="From the Web UI">
+    Users can request access using the Web UI by visiting the "Access Requests"
+    tab and clicking "New Request":
+
+    ![Creating an Access Request using the Web UI](/assets/request-access-989f648dce.png)
+  </Tab>
+</Tabs>
+
+In ServiceNow, you will see a new incident containing information about the
+Access Request.
+
+### Resolve the request
+
+Once you receive an Access Request message, click the link to visit Teleport and
+approve or deny the request:
+
+![Reviewing a request](/assets/review-request-a35de046df.png)
+
+<Accordion title="Reviewing from the command line">
+  You can also review an Access Request from the command line:
+
+  <Tabs>
+    <Tab title="As an Admin">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tctl request approve REQUEST_ID
+      $ tctl request deny REQUEST_ID
+      ```
+    </Tab>
+
+    <Tab title="As a User">
+      ```code
+      # Replace REQUEST_ID with the id of the request
+      $ tsh request review --approve REQUEST_ID
+      $ tsh request review --deny REQUEST_ID
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>

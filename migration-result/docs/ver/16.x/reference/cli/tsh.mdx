@@ -777,7 +777,7 @@ $ gsutil ls
 
 Start a local TLS proxy for `ssh` connections when using Teleport in TLS Routing mode.
 This is typically used as part of the SSH client configuration to use `ssh` as a client
-through Teleport.  See the [OpenSSH Guide](/docs/ver/16.x/server-access/guides/openssh) guide
+through Teleport.  See the [OpenSSH Guide](/docs/ver/16.x/server-access/openssh/openssh) guide
 on configuring OpenSSH servers and clients.  The `tsh config` output will include `tsh proxy ssh`
 within a `ProxyCommand` directive.
 
@@ -1208,8 +1208,8 @@ $ tsh version [<flags>]
 
 ```code
 $ tsh version
-Teleport v15.0.0-dev git: go1.21
-Proxy version: 15.0.0-dev
+Teleport v16.0.0-dev git: go1.22
+Proxy version: 16.0.0-dev
 Proxy: teleport.example.com:443
 ```
 
@@ -1221,10 +1221,10 @@ $ tsh version --format=json
 
 ```json
 {
-  "version": "15.0.0-dev",
+  "version": "16.0.0-dev",
   "gitref": "",
-  "runtime": "go1.21",
-  "proxyVersion": "15.0.0-dev",
+  "runtime": "go1.22",
+  "proxyVersion": "16.0.0-dev",
   "proxyPublicAddress": "teleport.example.com:443"
 }
 ```
@@ -1233,5 +1233,5 @@ Only display the `tsh` binary version:
 
 ```code
 $ tsh version --client
-Teleport v15.0.0-dev git: go1.21
+Teleport v16.0.0-dev git: go1.22
 ```

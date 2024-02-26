@@ -4,20 +4,20 @@ description: Configure automatic user provisioning for PostgreSQL.
 version: '15.x'
 ---
 
-<Accordion title="Version warning">
-  Automatic user provisioning for PostgreSQL is available starting from
-  Teleport 13.1.
-</Accordion>
-
 Teleport can automatically create users in your database, removing the need for
 creating individual user accounts in advance or using the same set of shared
 database accounts for all users.
 
 ## Prerequisites
 
-- Teleport cluster with a configured [self-hosted PostgreSQL](/docs/database-access/guides/postgres-self-hosted)
-  or [RDS PostgreSQL](/docs/database-access/guides/rds) database.
+- Teleport cluster v13.1 or above with a configured [self-hosted
+  PostgreSQL](/docs/database-access/guides/postgres-self-hosted) or [RDS
+  PostgreSQL](/docs/database-access/guides/rds) database.
 - Ability to connect to and create user accounts in the target database.
+
+<Warning>
+  Automatic user provisioning is not compatible with RDS Aurora reader endpoints.
+</Warning>
 
 ## Step 1/3. Configure database admin
 
@@ -38,7 +38,7 @@ users and grant them privileges.
 
     ```sql
     CREATE USER "teleport-admin" login createrole;
-    GRANT rds_iam TO "teleport-admin";
+    GRANT rds_iam TO "teleport-admin" WITH ADMIN OPTION;
     ```
 
     Note that the RDS database must have IAM authentication enabled.
@@ -70,7 +70,7 @@ users and grant them privileges.
 Users created by Teleport will be placed in the `teleport-auto-user` group in
 the database, which will be created automatically if it doesn't exist.
 
-Next, enable the database admin on the Teleport database configuration:
+Next, configure the database admin user in the Teleport database configuration:
 
 <Tabs>
   <Tab title="Static config">
@@ -83,6 +83,9 @@ Next, enable the database admin on the Teleport database configuration:
         uri: "localhost:5432"
         admin_user:
           name: "teleport-admin"
+          # Optional default database the admin user logs into. Default is
+          # the same database that the user is accessing, if not specified.
+          # default_database: teleport
     ```
   </Tab>
 
@@ -97,16 +100,35 @@ Next, enable the database admin on the Teleport database configuration:
       uri: "localhost:5432"
       admin_user:
         name: "teleport-admin"
+        # Optional default database the admin user logs into. Default is
+        # the same database that the user is accessing, if not specified.
+        # default_database: teleport
     ```
   </Tab>
 </Tabs>
 
 <Tip>
   For auto-discovered cloud databases, the name of the admin user is taken from
-  the `teleport.dev/db-admin` label.
+  the `teleport.dev/db-admin` label, and the default database is taken from the
+  `teleport.dev/db-admin-default-database` label.
 </Tip>
 
-## Step 2/3. Configure Teleport role
+<Warning>
+  PostgreSQL 15 revokes the `CREATE` permission from all users except a database
+  owner from the public (or default) schema.
+
+  Grant the admin user `CREATE` privilege so the admin user can create procedures:
+
+  ```sql
+  GRANT CREATE ON SCHEMA public TO "teleport-admin";
+  ```
+
+  If `admin_user.default_database` is specified, the `CREATE` privilege is only
+  required for the database specified in the `default_database`. Otherwise, you
+  have to repeat the privilege grant for every database Teleport will access.
+</Warning>
+
+## Step 2/3. Configure a Teleport role
 
 To specify the database roles a user should be assigned within the database,
 use the `db_roles` role option:
@@ -143,13 +165,14 @@ The available provisioning modes are:
 - `keep`: Enables user provisioning and disables users at session end. The user
   will be stripped of all roles and the user account will be locked.
 
-- `best_effort_drop`: Enables user provisioning and tries to drop user
-  at session end. If the drop fails, fallback to disabling them (same as `keep`
-  mode).
+- `best_effort_drop`: Enables user provisioning and, when the session ends,
+  drops the user if no resources depend on it. In cases where any resource
+  depends on the user, it falls back to disabling the user, mirroring the
+  behavior of `keep` mode.
 
 Users created within the database will:
 
-- Have the same name as Teleport username.
+- Have the same username as the authenticated Teleport user.
 - Be a part of the `teleport-auto-user` role.
 - Be assigned all roles from the Teleport user's role set that match the database.
   The role names must be valid and exist in the database. See PostgreSQL
@@ -177,7 +200,127 @@ $ tsh db connect --db-name <database> example
   username as the database username. `tsh db connect` will default to your
   Teleport username automatically when connecting to a database with user
   provisioning enabled.
+
+  When connecting to a leaf cluster database with user provisioning enabled, the
+  Database Service expects the database username to be
+  `remote-<your-teleport-username>-<root-cluster-name>`.
 </Note>
+
+To view the list of database roles that are allowed for each database, you can
+use the command `tsh db ls -v`. By default, all database roles will be assigned
+to your auto-provisioned database user. You can optionally select a subset of
+the database roles with `--db-roles`:
+
+```code
+$ tsh db connect --db-name <database> --db-roles reader example
+```
+
+## Troubleshooting
+
+### Permission denied for schema public error
+
+PostgreSQL 15 revokes the `CREATE` permission from all users except a database
+owner from the public (or default) schema.
+
+Grant the admin user `CREATE` privilege so the admin user can create procedures:
+
+```sql
+GRANT CREATE ON SCHEMA public TO "teleport-admin";
+```
+
+If `admin_user.default_database` is specified, the `CREATE` privilege is only
+required for the database specified in the `default_database`. Otherwise, you
+have to repeat the privilege grant for every database Teleport will access.
+
+### User does not have CONNECT privilege error
+
+You may encounter the following error when the admin user or the roles assigned
+to the auto-provisioned user do not have permission to connect to the target
+database:
+
+```shell
+$ tsh db connect --db-name <database> example
+...
+FATAL: permission denied for database "<database>"
+DETAIL: User does not have CONNECT privilege.
+```
+
+Make sure `CONNECT` is granted to the admin user and the respective roles:
+
+```sql
+GRANT CONNECT ON DATABASE <database> to "teleport-admin";
+GRANT CONNECT ON DATABASE <database> to "reader";
+```
+
+### Cannot execute in a read-only transaction error
+
+You may encounter the following error when connecting to an AWS RDS Aurora
+reader endpoint:
+
+```shell
+$ tsh db connect --db-name <database> example
+psql: error: connection to server at "localhost" (::1), port 12345 failed: Connection refused
+...
+ERROR: cannot execute CREATE ROLE in a read-only transaction (SQLSTATE 25006)
+```
+
+Database auto-user provisioning is not compatible with RDS Aurora reader
+endpoints. Please use auto-user provisioning on the primary endpoints.
+
+### No schema has been selected error
+
+You may encounter the following error when connecting if the admin user does
+not have `USAGE` permission on the schema:
+
+```shell
+$ tsh db connect --db-name <database> example
+psql: error: connection to server at "localhost" (::1), port 12345 failed: Connection refused
+...
+ERROR: no schema has been selected to create in (SQLSTATE 3F000)
+```
+
+To fix this, make sure that the admin user is granted `USAGE` and `CREATE` on
+schema `public` in the target database:
+
+```sql
+GRANT USAGE ON SCHEMA public TO "teleport-admin";
+GRANT CREATE ON SCHEMA public TO "teleport-admin";
+```
+
+### Permission denied to grant role "rds\_iam"
+
+You may encounter the following error when connecting to an RDS database:
+
+```shell
+$ tsh db connect --db-name <database> example
+psql: error: connection to server at "localhost" (::1), port 12345 failed: Connection refused
+...
+ERROR: permission denied to grant role "rds_iam" (SQLSTATE 42501)
+```
+
+This happens when the admin user does not have permission to grant the
+"rds\_iam" role to other users. To fix this, grant the "rds\_iam" role with the
+`ADMIN` option to the admin user:
+
+```sql
+GRANT rds_iam TO "teleport-admin" WITH ADMIN OPTION;
+```
+
+### Use your mapped remote username error
+
+You may encounter the following error when connecting to a database in a remote
+cluster:
+
+```shell
+> tsh db connect --db-name <database> example
+ERROR: please use your mapped remote username ("remote-<your-teleport-username>-<root-cluster-name>") to connect instead of "<database-user>"
+```
+
+When you access resources in a remote cluster, the remote cluster will receive
+the name `remote-<your-teleport-username>-<root-cluster-name>` from the local
+cluster. This is to prevent any naming collisions with users in the remote
+cluster. Please use the username from the error message as the database
+username for when connecting through `tsh` or GUI clients.
 
 ## Next steps
 

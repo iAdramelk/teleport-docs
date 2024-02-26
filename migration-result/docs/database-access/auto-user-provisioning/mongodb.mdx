@@ -1,0 +1,215 @@
+---
+title: MongoDB Automatic User Provisioning 
+description: Configure automatic user provisioning for MongoDB.
+version: '15.x'
+---
+
+Teleport can automatically create users in your database, removing the need for
+creating individual user accounts in advance or using the same set of shared
+database accounts for all users.
+
+- Teleport cluster v14.3 or above.
+- A self-hosted MongoDB database enrolled with your Teleport cluster. Follow
+  the [Teleport documentation](/docs/database-access/guides/mongodb-self-hosted) to learn how
+  to enroll your database.
+- Ability to connect to and create user accounts in the target database.
+
+<Note>
+  Automatic user provisioning is not compatible with MongoDB Atlas.
+</Note>
+
+## Step 1/3. Configure database admin
+
+Teleport uses the same authentication mechanism (X.509) when connecting as an
+admin user as for regular user connections.
+
+The admin user must have privileges within the database to create users and
+grant them privileges. The admin user must also have privileges to monitor user
+connections.
+
+First create a role on `admin` database with the following privileges:
+
+```bash
+db.getSiblingDB("admin").runCommand({
+    createRole: "teleport-admin-role",
+    privileges: [
+        { resource: { cluster: true }, actions: [ "inprog" ] },
+        { resource: { db: "", collection: "" }, actions: [ "grantRole", "revokeRole" ] },
+        { resource: { db: "$external", "collection": "" }, actions: [ "createUser", "updateUser", "dropUser", "viewUser", "setAuthenticationRestriction", "changeCustomData"] },
+    ],
+    roles: [],
+})
+```
+
+<Accordion title="Limit the grantRole action to specific databases">
+  In the above example, the `grantRole` privilege is granted to the admin user
+  for all databases in order for the admin user to assign roles from all
+  databases, including the `admin` database.
+
+  To enforce the principle of least privilege, you can limit the `grantRole` to
+  only the databases that own the roles to be assigned to the auto-provisioned
+  users:
+
+  ```bash
+  db.getSiblingDB("admin").runCommand({
+      createRole: "teleport-admin-role",
+      privileges: [
+          { resource: { cluster: true }, actions: [ "inprog" ] },
+          { resource: { db: "", collection: "" }, actions: [ "revokeRole" ] },
+          { resource: { db: "$external", "collection": "" }, actions: [ "createUser", "updateUser", "dropUser", "viewUser", "setAuthenticationRestriction", "changeCustomData"] },
+          { resource: { db: "<db1>", collection: "" }, actions: [ "grantRole" ] },
+          { resource: { db: "<db2>", collection: "" }, actions: [ "grantRole" ] },
+          ...
+      ],
+      roles: [],
+  })
+  ```
+</Accordion>
+
+Now create the admin user with this role:
+
+```bash
+db.getSiblingDB("$external").runCommand({
+  createUser: "CN=teleport-admin",
+  roles: [ { role: 'teleport-admin-role', db: 'admin' } ],
+})
+```
+
+Next, configure the database admin user in the Teleport database configuration:
+
+<Tabs>
+  <Tab title="Static config">
+    ```yaml
+    db_service:
+      enabled: "yes"
+      databases:
+      - name: "example"
+        protocol: "mongodb"
+        uri: "localhost:27017"
+        admin_user:
+          name: "teleport-admin"
+    ```
+  </Tab>
+
+  <Tab title="Dynamic resource">
+    ```yaml
+    kind: db
+    version: v3
+    metadata:
+      name: example
+    spec:
+      protocol: "mongodb"
+      uri: "localhost:27017"
+      admin_user:
+        name: "teleport-admin"
+    ```
+  </Tab>
+</Tabs>
+
+## Step 2/3. Configure a Teleport role
+
+To specify the database roles a user should be assigned within the database,
+use the `db_roles` role option:
+
+```yaml
+kind: role
+version: v7
+metadata:
+  name: auto-db-users
+spec:
+  options:
+    # create_db_user_mode enables automatic user provisioning for matching databases
+    create_db_user_mode: keep
+  allow:
+    db_labels:
+      "*": "*"
+    db_names:
+    - "*"
+    # db_roles is a list of roles the database user will be assigned
+    db_roles:
+    - "readAnyDatabase@admin"
+    - "readWrite@db1"
+    - "myCustomRole@db2"
+    - "{{internal.db_roles}}"
+    - "{{external.db_roles}}"
+```
+
+With automatic user provisioning, users always connect to the database with
+their Teleport username so the `db_users` role field is ignored for roles
+that have database user provisioning enabled.
+
+The available provisioning modes are:
+
+- `off`: Disables user provisioning.
+
+- `keep`: Enables user provisioning and disables users at session end. The user
+  will be stripped of all roles and the user account will be locked.
+
+- `best_effort_drop`: Enables user provisioning and, when the session ends,
+  drops the user if no resources depend on it. In cases where any resource
+  depends on the user, it falls back to disabling the user, mirroring the
+  behavior of `keep` mode.
+
+Users created within the database will:
+
+- Have the same username as the authenticated Teleport user.
+- Have `teleport-auto-user` set to `true` in the user's `customData`.
+- Be assigned all roles from the Teleport user's role set that match the database.
+  The role names must be valid and exist in the database.
+
+## Step 3/3. Connect to the database
+
+Now, log into your Teleport cluster and connect to the database:
+
+```code
+$ tsh login --proxy=teleport.example.com
+$ tsh db connect --db-name <database> example
+```
+
+<Note>
+  When connecting to a database with user provisioning enabled, the Database
+  Service expects your Teleport username will be used as the database username .
+
+  If using a GUI database client like MongoDB Compass, make sure to use your Teleport
+  username as the database username. `tsh db connect` will default to your
+  Teleport username automatically when connecting to a database with user
+  provisioning enabled.
+
+  When connecting to a leaf cluster database with user provisioning enabled, the
+  Database Service expects the database username to be
+  `remote-<your-teleport-username>-<root-cluster-name>`.
+</Note>
+
+To view the list of database roles that are allowed for each database, you can
+use the command `tsh db ls -v`. By default, all database roles will be assigned
+to your auto-provisioned database user. You can optionally select a subset of
+the database roles with `--db-roles`:
+
+```code
+$ tsh db connect --db-name <database> --db-roles myCustomRole@db2 example
+```
+
+## Troubleshooting
+
+### Use your mapped remote username error
+
+You may encounter the following error when connecting to a database in a remote
+cluster:
+
+```shell
+> tsh db connect --db-name <database> example
+ERROR: please use your mapped remote username ("remote-<your-teleport-username>-<root-cluster-name>") to connect instead of "<database-user>"
+```
+
+When you access resources in a remote cluster, the remote cluster will receive
+the name `remote-<your-teleport-username>-<root-cluster-name>` from the local
+cluster. This is to prevent any naming collisions with users in the remote
+cluster. Please use the username from the error message as the database
+username for when connecting through `tsh` or GUI clients.
+
+## Next steps
+
+- Learn more about MongoDB [built-in roles](https://www.mongodb.com/docs/manual/reference/built-in-roles/) and [User-Defined Roles](https://www.mongodb.com/docs/manual/core/security-user-defined-roles/).
+- Connect using your [GUI database client](/docs/connect-your-client/gui-clients).
+- Learn about [role templating](/docs/access-controls/guides/role-templates#interpolation-rules).
+- Read automatic user provisioning [RFD](https://github.com/gravitational/teleport/blob/master/rfd/0113-automatic-database-users.md).

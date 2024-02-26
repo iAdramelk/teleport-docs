@@ -1,5 +1,5 @@
 ---
-title: Access Requests with PagerDuty
+title: Run the PagerDuty Access Request Plugin
 description: How to set up Teleport's PagerDuty plugin for privilege elevation approvals.
 version: '14.x'
 ---
@@ -14,45 +14,45 @@ approve or deny the requests via Teleport. You can also configure the plugin to
 approve Role Access Requests automatically if the user making the request is on
 the on-call team for a service affected by an incident.
 
+<Accordion title="This integration is hosted on Teleport Cloud">
+  In Teleport Team and Teleport Enterprise Cloud, Teleport manages the PagerDuty integration for
+  you, and you can enroll the PagerDuty integration from the Teleport Web UI.
+
+  Visit the Teleport Web UI and find the dropdown menu on the upper left of the
+  screen. Select the **Management** option.
+
+  On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
+  Integration" page:
+
+  ![Enroll an Access Request plugin](/assets/enroll-7cf5756f5a.png)
+
+  On the "Select Integration Type" menu, click the tile for your integration. You
+  will see a page with instructions to set up the integration, as well as a form
+  that you can use to configure the integration.
+</Accordion>
+
 This guide will explain how to set up Teleport's Access Request plugin for
 PagerDuty.
 
-```mermaid
-flowchart LR
-subgraph teleport["Teleport cluster"]
-  direction LR
-  auth["Auth Service"]
-  proxy["Proxy Service"]
-end
-api[PagerDuty API]
-
-subgraph private["Private network"]
-  subgraph plugin[PagerDuty plugin]
-    id["Teleport identity file"]
-  end 
-  plugin<-- "Listen for Access Requests\nModify Access Requests\n(via reverse tunnel)"-->proxy
-end 
-proxy<-- Forward gRPC traffic -->auth
-plugin-- "Send notifications\nGet incident status" -->api
-```
+![PagerDuty plugin architecture](/assets/diagram-03bb7cc003.png)
 
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Enterprise">
-    - A running Teleport Enterprise cluster, including the Auth Service and Proxy Service. For
-      details on how to set this up, see our Enterprise [Getting
+  <Tab title="Self-Hosted Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise [Getting
       Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools by visiting your [Teleport account](https://teleport.sh).
+      You can verify the tools you have installed by running the following commands:
 
       ```code
       $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v14.0.0-dev go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 
@@ -61,18 +61,23 @@ plugin-- "Send notifications\nGet incident status" -->api
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
+
+**Recommended:** Configure Machine ID to provide short-lived Teleport
+credentials to the plugin. Before following this guide, follow a Machine ID
+[deployment guide](/docs/ver/14.x/machine-id/deployment) to run the `tbot` binary on
+your infrastructure.
 
 - A PagerDuty account with the "Admin", "Global Admin", or "Account Owner"
   roles. These roles are necessary for generating an API token that can list and
@@ -84,43 +89,22 @@ plugin-- "Send notifications\nGet incident status" -->api
 
 - Either a Linux host or Kubernetes cluster where you will run the PagerDuty plugin.
 
-<Tabs>
-  <Tab title="Teleport Enterprise">
-    We recommend installing Teleport plugins on the same host as the Teleport Proxy
-    Service. This is an ideal location as plugins have a low memory footprint, and
-    will require both public internet access and Teleport Auth Service access.
-  </Tab>
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
 
-  <Tab title="Teleport Enterprise Cloud">
-    Install the Teleport PagerDuty plugin on a host that can access both your
-    Teleport Cloud tenant and PagerDuty.
-  </Tab>
-</Tabs>
-
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 ## Step 1/8. Create services
 
@@ -356,8 +340,9 @@ As with all Teleport users, the Teleport Auth Service authenticates the
 will need to request the credentials manually by *impersonating* the
 `access-plugin` role and user.
 
-If you are using `tctl` from the Auth
-Service host, you will already have impersonation privileges.
+If you are running a self-hosted Teleport Enterprise cluster and are using
+`tctl` from the Auth Service host, you will already have impersonation
+privileges.
 
 To grant your user impersonation privileges for `access-plugin`, define a role
 called `access-plugin-impersonator` by pasting the following YAML document into
@@ -442,51 +427,77 @@ Teleport cluster.
 
 ## Step 3/8. Install the Teleport PagerDuty plugin
 
-We currently only provide `linux-amd64` binaries. You can also compile these
-plugins from source. You can run the plugin from a remote host or your local
-development machine.
-
 <Tabs>
   <Tab title="Download">
+    We currently only provide `linux-amd64` binaries. You can also compile these
+    plugins from source. You can run the plugin from a remote host or your local
+    development machine.
+
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-access-pagerduty-v12.1.1-linux-amd64-bin.tar.gz
-    $ tar -xzf teleport-access-pagerduty-v12.1.1-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-access-pagerduty-v14.3.3-linux-amd64-bin.tar.gz
+    $ tar -xzf teleport-access-pagerduty-v14.3.3-linux-amd64-bin.tar.gz
     $ cd teleport-access-pagerduty
     $ sudo ./install
-    Teleport PagerDuty Plugin binaries have been copied to /usr/local/bin
-    You can run teleport-pagerduty configure > /etc/teleport-pagerduty.toml to
-    bootstrap your config file.
+    ```
+
+    Make sure the binary is installed:
+
+    ```code
+    $ teleport-pagerduty version
+    teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-fffffffff go1.21
     ```
   </Tab>
 
-  <Tab title="From Source">
-    To install from source you need `git` and `go` installed. If you do not have
-    Go installed, visit the Go [downloads page](https://go.dev/dl/).
+  <Tab title="Docker Image">
+    We currently only provide Docker images for `linux-amd64`.
+    Pull the Docker image for the latest access request plugin by running the following command:
 
     ```code
-    # Checkout teleport-plugins
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.3
+    ```
+
+    Make sure the plugin is installed by running the following command:
+
+    ```code
+    $ docker run public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.3 version
+    teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-api/14.0.0-gd1e081e 1.21
+    ```
+
+    For a list of available tags, visit [Amazon ECR Public Gallery](https://gallery.ecr.aws/gravitational/teleport-plugin-pagerduty).
+  </Tab>
+
+  <Tab title="From Source">
+    To install from source you need `git` and `go` installed. If you do not have Go
+    installed, visit the Go [downloads page](https://go.dev/dl/).
+
+    ```code
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/pagerduty
     $ make
     ```
 
-    Run `./install` from `teleport-pagerduty`.
-  </Tab>
+    Move the `teleport-pagerduty` binary into your PATH.
 
-  <Tab title="Docker">
+    Make sure the binary is installed:
+
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-pagerduty:12.1.1
+    $ teleport-pagerduty version
+    teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-fffffffff go1.21
     ```
   </Tab>
 
   <Tab title="Helm Chart">
-    To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
+    {/*TODO: Replace this with the following partial once we fix
+    gravitational/docs#299:
+    docs/pages/kubernetes-access/helm/includes/helm-repo-add.mdx*/}
+
+    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
     ```code
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
-    To update the cache of charts from the remote repository, run `helm repo update`:
+    Update the cache of charts from the remote repository:
 
     ```code
     $ helm repo update
@@ -496,45 +507,116 @@ development machine.
 
 ## Step 4/8. Export the access plugin identity
 
-Like all Teleport users, `access-plugin` needs signed credentials in
-order to connect to your Teleport cluster. You will use the `tctl auth sign`
-command to request these credentials for your plugin.
+Give the plugin access to a Teleport identity file. We recommend using Machine
+ID for this in order to produce short-lived identity files that are less
+dangerous if exfiltrated, though in demo deployments, you can generate
+longer-lived identity files with `tctl`:
 
-The following `tctl auth sign` command impersonates the `access-plugin` user,
-generates signed credentials, and writes an identity file to the local
-directory:
+<Tabs>
+  <Tab title="Machine ID">
+    Configure `tbot` with an output that will produce the credentials needed by
+    the plugin. As the plugin will be accessing the Teleport API, the correct
+    output type to use is `identity`.
 
-```code
-$ tctl auth sign --user=access-plugin --out=auth.pem
-```
+    For this guide, the `directory` destination will be used. This will write these
+    credentials to a specified directory on disk. Ensure that this directory can
+    be written to by the Linux user that `tbot` runs as, and that it can be read by
+    the Linux user that the plugin will run as.
 
-The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+    Modify your `tbot` configuration to add an `identity` output.
 
-The identity file, `auth.pem`, includes both TLS and SSH credentials. The plugin
-uses the SSH credentials to connect to the Proxy Service, which establishes a
-reverse tunnel connection to the Auth Service. The plugin uses this reverse
-tunnel, along with your TLS credentials, to connect to the Auth Service's gRPC
-endpoint.
+    If running `tbot` on a Linux server, use the `directory` output to write
+    identity files to the `/opt/machine-id` directory:
 
-You will refer to this file later when configuring the plugin.
+    ```yaml
+    outputs:
+    - type: identity
+      destination:
+        type: directory
+        # For this guide, /opt/machine-id is used as the destination directory.
+        # You may wish to customize this. Multiple outputs cannot share the same
+        # destination.
+        path: /opt/machine-id
+    ```
 
-<Note>
-  By default, `tctl auth sign` produces certificates with a relatively short
-  lifetime. For production deployments, we suggest using [Machine
-  ID](/docs/ver/14.x/machine-id/introduction) to programmatically issue and renew
-  certificates for your plugin. See our Machine ID [getting started
-  guide](/docs/ver/14.x/machine-id/getting-started) to learn more.
+    If running `tbot` on Kubernetes, write the identity file to Kubernetes secret
+    instead:
 
-  Note that you cannot issue certificates that are valid longer than your existing credentials.
-  For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
-  valid for at least 1000 hours. This means your user must have a role allowing
-  a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
-  when logging in:
+    ```yaml
+    outputs:
+      - type: identity
+        destination:
+          type: kubernetes_secret
+          name: teleport-plugin-pagerduty-identity
+    ```
 
-  ```code
-  $ tsh login --proxy=teleport.example.com --ttl=1001h
-  ```
-</Note>
+    If operating `tbot` as a background service, restart it. If running `tbot` in
+    one-shot mode, execute it now.
+
+    You should now see an `identity` file under `/opt/machine-id` or a Kubernetes
+    secret named `teleport-plugin-pagerduty-identity`. This contains the private key and signed
+    certificates needed by the plugin to authenticate with the Teleport Auth
+    Service.
+  </Tab>
+
+  <Tab title="Long-lived identity files">
+    Like all Teleport users, `access-plugin` needs signed credentials in order to
+    connect to your Teleport cluster. You will use the `tctl auth sign` command to
+    request these credentials.
+
+    The following `tctl auth sign` command impersonates the `access-plugin` user,
+    generates signed credentials, and writes an identity file to the local
+    directory:
+
+    ```code
+    $ tctl auth sign --user=access-plugin --out=identity
+    ```
+
+    The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
+
+    The identity file, `identity`, includes both TLS and SSH credentials. The
+    plugin uses the SSH credentials to connect to the Proxy Service, which
+    establishes a reverse tunnel connection to the Auth Service. The plugin
+    uses this reverse tunnel, along with your TLS credentials, to connect to the
+    Auth Service's gRPC endpoint.
+
+    <Accordion title="Certificate Lifetime">
+      By default, `tctl auth sign` produces certificates with a relatively short
+      lifetime. For production deployments, we suggest using [Machine
+      ID](/docs/ver/14.x/machine-id/introduction) to programmatically issue and renew
+      certificates for your plugin. See our Machine ID [getting started
+      guide](/docs/ver/14.x/machine-id/getting-started) to learn more.
+
+      Note that you cannot issue certificates that are valid longer than your existing credentials.
+      For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+      valid for at least 1000 hours. This means your user must have a role allowing
+      a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
+      when logging in:
+
+      ```code
+      $ tsh login --proxy=teleport.example.com --ttl=60060
+      ```
+    </Accordion>
+
+    If you are running the plugin on a Linux server, create a data directory
+    to hold certificate files for the plugin:
+
+    ```code
+    $ sudo mkdir -p /var/lib/teleport/api-credentials
+    $ sudo mv identity /var/lib/teleport/plugins/api-credentials
+    ```
+
+    If you are running the plugin on Kubernetes, Create a Kubernetes secret
+    that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-pagerduty-identity
+    ```
+
+    Once the Teleport credentials expire, you will need to renew them by running the
+    `tctl auth sign` command again.
+  </Tab>
+</Tabs>
 
 ## Step 5/8. Set up a PagerDuty API key
 
@@ -557,7 +639,7 @@ PagerDuty plugin to use these credentials, plus adjust any settings required for
 your environment.
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     Teleport's PagerDuty plugin has its own configuration file in TOML format. On
     the host where you will run the PagerDuty plugin, generate a boilerplate config
     by running the following commands:
@@ -569,14 +651,15 @@ your environment.
   </Tab>
 
   <Tab title="Helm Chart">
-    The Mattermost Helm Chart uses a YAML values file to configure the plugin. On
+    The PagerDuty Helm Chart uses a YAML values file to configure the plugin. On
     the host where you have Helm installed, create a file called
     `teleport-pagerduty-values.yaml` based on the following example:
 
     ```yaml
     teleport:
       address: ""                 # Teleport Auth Server GRPC API address
-      identitySecretName: ""      # Identity file path
+      identitySecretName: ""      # Identity secret name
+      identitySecretPath: ""      # Identity secret path
 
     pagerduty:
       apiKey: ""                  # PagerDuty API Key
@@ -599,7 +682,7 @@ below:
 The PagerDuty plugin uses this section to connect to your Teleport cluster:
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
     or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
     `mytenant.teleport.sh:443`).
@@ -618,8 +701,26 @@ The PagerDuty plugin uses this section to connect to your Teleport cluster:
 
     **`identitySecretName`**: Fill in the `identitySecretName` field with the name
     of the Kubernetes secret you created earlier.
+
+    **`identitySecretPath`**: Fill in the `identitySecretPath` field with the path
+    of the identity file within the Kubernetes secret. If you have followed the
+    instructions above, this will be `identity`.
   </Tab>
 </Tabs>
+
+If you are providing credentials to the plugin using a `tbot` binary that runs
+on a Linux server, make sure the value of `identity` is the same as the path of
+the identity file you configured `tbot` to generate, `/opt/machine-id/identity`.
+
+Configure the plugin to periodically reload the identity file, ensuring that it
+does not attempt to connect to the Teleport Auth Service with expired
+credentials.
+
+Add the following to the `teleport` section of the configuration:
+
+```toml
+refresh_identity = true
+```
 
 ### `[pagerduty]`
 
@@ -643,12 +744,13 @@ PagerDuty will display this incident as created by that user.
 The final configuration should resemble the following:
 
 <Tabs>
-  <Tab title="Executable">
+  <Tab title="Executable or Docker">
     ```yaml
     # example teleport-pagerduty configuration TOML file
     [teleport]
     auth_server = "myinstance.teleport.sh:443"                  # Teleport Cloud proxy HTTPS address
-    identity = "/var/lib/teleport/plugins/pagerduty/auth.pem"   # Identity file path
+    identity = "/var/lib/teleport/plugins/pagerduty/identity"   # Identity file path
+    refresh_identity = true                                     # Refresh identity file periodically
 
     [pagerduty]
     api_key = "key"               # PagerDuty API Key
@@ -668,6 +770,8 @@ The final configuration should resemble the following:
       address: "teleport.example.com:443"
       # Secret containing identity
       identitySecretName: teleport-plugin-pagerduty-identity
+      # Path within the secret containing the identity file.
+      identitySecretPath: identity
 
     pagerduty:
       apiKey: "key"                # PagerDuty API Key
@@ -700,6 +804,14 @@ The final configuration should resemble the following:
     # DEBU   Watcher connected pagerduty/main.go:252
     # DEBU   PagerDuty API health check finished ok pagerduty/main.go:176
     # DEBU   Setting up the webhook extensions pagerduty/main.go:178
+    ```
+  </Tab>
+
+  <Tab title="Docker">
+    Run the plugin:
+
+    ```code
+    $ docker run -v <path-to-config>:/etc/teleport-pagerduty.toml public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.6 start
     ```
   </Tab>
 
@@ -808,8 +920,7 @@ approve or deny the request:
   reviewing the right requests.
 
   When auditing Access Request reviews, check for events with the type `Access
-  Request Reviewed` in the Teleport Web UI and `access_request.review` if reviewing the audit log on the
-  Auth Service host.
+  Request Reviewed` in the Teleport Web UI.
 </Note>
 
 ### Trigger an auto-approval
@@ -835,6 +946,9 @@ ID                                   User               Roles     Created (UTC) 
 ```
 
 ## Step 8/8. Set up systemd
+
+This section is only relevant if you are running the Teleport PagerDuty plugin
+on a Linux host.
 
 In production, we recommend starting the Teleport plugin daemon via an init
 system like systemd. Here's the recommended Teleport plugin service unit file
@@ -867,8 +981,3 @@ Enable and start the plugin:
 $ sudo systemctl enable teleport-pagerduty
 $ sudo systemctl start teleport-pagerduty
 ```
-
-## Feedback
-
-If you have any issues with this plugin please create a [GitHub
-issue](https://github.com/gravitational/teleport-plugins/issues/new).

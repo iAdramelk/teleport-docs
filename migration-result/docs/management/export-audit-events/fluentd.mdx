@@ -15,23 +15,7 @@ This guide also serves as an explanation for the Teleport Event Handler plugin,
 using Fluentd as the target service. We'll create a local Docker container as a
 destination for the Event Handler:
 
-```mermaid
- graph LR
-subgraph workstation [fa:fa-laptop Workstation]
-    style workstation fill:#C0C0C0,stroke: #000000
-    direction LR
-    c(teleport-event-handler)
-    style c fill: #a379ff,color: #ffffff
-    subgraph Docker
-        style Docker fill:#0db7ed,stroke: #000000
-        d(fluentd)
-    end
-    c-->d
-end
-e(Teleport)
-style e fill: #844cff,color: #ffffff
-e-->c
-```
+![The Teleport Fluentd plugin](/assets/fluentd-diagram-085a5246be.png)
 
 You can follow the instructions below for a local proof-of-concept demo, or use any
 of the additional installation instructions to configure the Teleport Event Handler
@@ -44,7 +28,7 @@ to integrate with your infrastructure.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -53,11 +37,11 @@ to integrate with your infrastructure.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -66,7 +50,7 @@ to integrate with your infrastructure.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -75,11 +59,11 @@ to integrate with your infrastructure.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -89,7 +73,7 @@ to integrate with your infrastructure.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -99,11 +83,11 @@ to integrate with your infrastructure.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -113,7 +97,7 @@ to integrate with your infrastructure.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -122,15 +106,20 @@ to integrate with your infrastructure.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
 </Tabs>
+
+**Recommended:** Configure Machine ID to provide short-lived Teleport
+credentials to the plugin. Before following this guide, follow a Machine ID
+[deployment guide](/docs/machine-id/deployment) to run the `tbot` binary on
+your infrastructure.
 
 - Fluentd version v1.12.4 or greater.
 
@@ -145,7 +134,7 @@ to integrate with your infrastructure.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -168,8 +157,8 @@ from Teleport's events API, and forwards them to Fluentd.
 <Tabs>
   <Tab title="Linux">
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.7-linux-amd64-bin.tar.gz
-    $ tar -zxvf teleport-event-handler-v13.3.7-linux-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v15.0.2-linux-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v15.0.2-linux-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
     ```
 
@@ -179,8 +168,8 @@ from Teleport's events API, and forwards them to Fluentd.
 
   <Tab title="macOS">
     ```code
-    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.7-darwin-amd64-bin.tar.gz
-    $ tar -zxvf teleport-event-handler-v13.3.7-darwin-amd64-bin.tar.gz
+    $ curl -L -O https://get.gravitational.com/teleport-event-handler-v15.0.2-darwin-amd64-bin.tar.gz
+    $ tar -zxvf teleport-event-handler-v15.0.2-darwin-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
     ```
 
@@ -194,7 +183,7 @@ from Teleport's events API, and forwards them to Fluentd.
     Ensure that you have Docker installed and running.
 
     ```code
-    $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.7
+    $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:15.0.2
     ```
   </Tab>
 
@@ -244,7 +233,7 @@ from Teleport's events API, and forwards them to Fluentd.
   </Tab>
 </Tabs>
 
-## Step 2/6. Configure the plugin
+## Step 2/6. Generate a plugin configuration
 
 <Tabs>
   <Tab title="Cloud-Hosted">
@@ -274,7 +263,7 @@ from Teleport's events API, and forwards them to Fluentd.
 
     ```code
     $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
-    $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.7 configure . ${TELEPORT_CLUSTER_ADDRESS?}
+    $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:15.0.2 configure . ${TELEPORT_CLUSTER_ADDRESS?}
     ```
 
     In order to export audit events, you'll need to have the root certificate and the
@@ -293,7 +282,7 @@ from Teleport's events API, and forwards them to Fluentd.
 You'll see the following output:
 
 ```txt
-Teleport event handler 15.0.0-dev
+Teleport event handler 15.0.2
 
 [1] mTLS Fluentd certificates generated and saved to ca.crt, ca.key, server.crt, server.key, client.crt, client.key
 [2] Generated sample teleport-event-handler role and user file teleport-event-handler-role.yaml
@@ -390,13 +379,13 @@ $ tctl create -f teleport-event-handler-role.yaml
 
 ### Enable impersonation of the Fluentd plugin user
 
-In order for the Fluentd plugin to forward events from your Teleport cluster, it
-needs a signed identity file from the cluster's certificate authority. The
-Fluentd user cannot request this itself, and requires another user to
-**impersonate** this account in order to request a certificate.
+In order for the Event Handler plugin to forward events from your Teleport
+cluster, it needs signed credentials from the cluster's certificate authority.
+The `teleport-event-handler` user cannot request this itself, and requires
+another user to **impersonate** this account in order to request credentials.
 
-Create a role that enables your user to impersonate the Fluentd user. First,
-paste the following YAML document into a file called
+Create a role that enables your user to impersonate the `teleport-event-handler`
+user. First, paste the following YAML document into a file called
 `teleport-event-handler-impersonator.yaml`:
 
 ```yaml
@@ -405,14 +394,13 @@ version: v5
 metadata:
   name: teleport-event-handler-impersonator
 spec:
-  # SSH options used for user sessions
   options:
     # max_session_ttl defines the TTL (time to live) of SSH certificates
     # issued to the users with this role.
     max_session_ttl: 10h
 
-  # allow section declares a list of resource/verb combinations that are
-  # allowed for the users of this role. by default nothing is allowed.
+  # This section declares a list of resource/verb combinations that are
+  # allowed for the users of this role. By default nothing is allowed.
   allow:
     impersonate:
       users: ["teleport-event-handler"]
@@ -422,37 +410,32 @@ spec:
 Next, create the role:
 
 ```code
-$ tctl create -f teleport-event-handler-impersonator.yaml
+$ tctl create teleport-event-handler-impersonator.yaml
 ```
+
+If you are using Machine ID to provide short-lived credentials to the Event
+Handler, add this role to the Machine ID bot user. Otherwise, add this role to
+the user that generates signed credentials for the Event Handler:
 
 Assign the `teleport-event-handler-impersonator` role to your Teleport user by running the appropriate
 commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `teleport-event-handler-impersonator` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - teleport-event-handler-impersonator 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},teleport-event-handler-impersonator"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -569,53 +552,114 @@ commands for your authentication provider:
 
 ### Export an identity file for the Fluentd plugin user
 
-The Fluentd Teleport plugin uses the `teleport-event-handler` role and user to
-read events. We export an identity file for the user with the `tctl auth sign`
-command.
+Give the plugin access to a Teleport identity file. We recommend using Machine
+ID for this in order to produce short-lived identity files that are less
+dangerous if exfiltrated, though in demo deployments, you can generate
+longer-lived identity files with `tctl`:
 
 <Tabs>
-  <Tab title="Self-Hosted">
+  <Tab title="Machine ID">
+    Configure `tbot` with an output that will produce the credentials needed by
+    the plugin. As the plugin will be accessing the Teleport API, the correct
+    output type to use is `identity`.
+
+    For this guide, the `directory` destination will be used. This will write these
+    credentials to a specified directory on disk. Ensure that this directory can
+    be written to by the Linux user that `tbot` runs as, and that it can be read by
+    the Linux user that the plugin will run as.
+
+    Modify your `tbot` configuration to add an `identity` output.
+
+    If running `tbot` on a Linux server, use the `directory` output to write
+    identity files to the `/opt/machine-id` directory:
+
+    ```yaml
+    outputs:
+    - type: identity
+      destination:
+        type: directory
+        # For this guide, /opt/machine-id is used as the destination directory.
+        # You may wish to customize this. Multiple outputs cannot share the same
+        # destination.
+        path: /opt/machine-id
+    ```
+
+    If running `tbot` on Kubernetes, write the identity file to Kubernetes secret
+    instead:
+
+    ```yaml
+    outputs:
+      - type: identity
+        destination:
+          type: kubernetes_secret
+          name: teleport-event-handler-identity
+    ```
+
+    If operating `tbot` as a background service, restart it. If running `tbot` in
+    one-shot mode, execute it now.
+
+    You should now see an `identity` file under `/opt/machine-id` or a Kubernetes
+    secret named `teleport-event-handler-identity`. This contains the private key and signed
+    certificates needed by the plugin to authenticate with the Teleport Auth
+    Service.
+  </Tab>
+
+  <Tab title="Long-lived identity files">
+    Like all Teleport users, `teleport-event-handler` needs signed credentials in order to
+    connect to your Teleport cluster. You will use the `tctl auth sign` command to
+    request these credentials.
+
+    The following `tctl auth sign` command impersonates the `teleport-event-handler` user,
+    generates signed credentials, and writes an identity file to the local
+    directory:
+
     ```code
     $ tctl auth sign --user=teleport-event-handler --out=identity
     ```
 
-    This command creates one PEM-encoded file, `identity`. The identity file
-    includes both TLS and SSH credentials. The Event Handler plugin uses the SSH
-    credentials to connect to the Proxy Service, which establishes a reverse tunnel
-    connection to the Auth Service. The plugin uses this reverse tunnel, along with
-    your TLS credentials, to connect to the Auth Service's gRPC endpoint.
-  </Tab>
+    The plugin connects to the Teleport Auth Service's gRPC endpoint over TLS.
 
-  <Tab title="Cloud-Hosted">
-    ```code
-    $ tctl auth sign --user=teleport-event-handler --out=identity
-    ```
+    The identity file, `identity`, includes both TLS and SSH credentials. The
+    plugin uses the SSH credentials to connect to the Proxy Service, which
+    establishes a reverse tunnel connection to the Auth Service. The plugin
+    uses this reverse tunnel, along with your TLS credentials, to connect to the
+    Auth Service's gRPC endpoint.
 
-    This command creates one PEM-encoded file, `identity`. The identity file
-    includes both TLS and SSH credentials. Your Event Handler plugin uses the SSH
-    credentials to connect to the Proxy Service, which establishes a reverse tunnel
-    connection to the Auth Service. The plugin uses this reverse tunnel, along with
-    your TLS credentials, to connect to the Auth Service's gRPC endpoint.
-  </Tab>
+    <Accordion title="Certificate Lifetime">
+      By default, `tctl auth sign` produces certificates with a relatively short
+      lifetime. For production deployments, we suggest using [Machine
+      ID](/docs/machine-id/introduction) to programmatically issue and renew
+      certificates for your plugin. See our Machine ID [getting started
+      guide](/docs/machine-id/getting-started) to learn more.
 
-  <Tab title="Helm Chart">
-    If you are planning to use the Helm Chart, you'll need to generate the keys
-    with the `file` format, then create a secret in Kubernetes.
+      Note that you cannot issue certificates that are valid longer than your existing credentials.
+      For example, to issue certificates with a 1000-hour TTL, you must be logged in with a session that is
+      valid for at least 1000 hours. This means your user must have a role allowing
+      a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
+      when logging in:
 
-    Create the identity using the following command:
+      ```code
+      $ tsh login --proxy=teleport.example.com --ttl=60060
+      ```
+    </Accordion>
 
-    ```code
-    $ tctl auth sign --format=file --user=teleport-event-handler --out=identity
-    ```
-
-    Then create the Kubernetes secret:
+    If you are running the plugin on a Linux server, create a data directory
+    to hold certificate files for the plugin:
 
     ```code
-    $ kubectl create secret generic teleport-event-handler-identity --from-file=auth_id=identity
+    $ sudo mkdir -p /var/lib/teleport/api-credentials
+    $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
 
-    These commands should result in a PEM-encoded file, `identity`, and a secret
-    in Kubernetes with the name `teleport-event-handler-identity`.
+    If you are running the plugin on Kubernetes, Create a Kubernetes secret
+    that contains the Teleport identity file:
+
+    ```code
+    $ kubectl -n teleport create secret generic --from-file=identity teleport-event-handler-identity
+    ```
+
+    Once the Teleport credentials expire, you will need to renew them by running the
+    `tctl auth sign` command again.
   </Tab>
 </Tabs>
 
@@ -682,13 +726,18 @@ $ docker run -u $(id -u ${USER}):$(id -g ${USER}) -p 8888:8888 -v $(pwd):/keys -
 
 This will consume your current terminal, so open a new one to continue following along.
 
-## Step 6/6. Start the event handler plugin
+## Step 6/6. Run the Event Handler plugin
 
-Earlier, we generated a file called `teleport-event-handler.toml` to configure
-the Fluentd event handler. This file includes setting similar to the following:
+### Configure the Event Handler
+
+In this section, you will configure the Teleport Event Handler for your
+environment.
 
 <Tabs>
-  <Tab title="Cloud-Hosted">
+  <Tab title="Linux server">
+    Earlier, we generated a file called `teleport-event-handler.toml` to configure
+    the Fluentd event handler. This file includes setting similar to the following:
+
     ```toml
     storage = "./storage"
     timeout = "10s"
@@ -699,43 +748,16 @@ the Fluentd event handler. This file includes setting similar to the following:
     ca = "/home/bob/event-handler/ca.crt"
     cert = "/home/bob/event-handler/client.crt"
     key = "/home/bob/event-handler/client.key"
-    url = "https://localhost:8888/test.log"
+    url = "https://fluentd.example.com:8888/test.log"
+    session-url = "https://fluentd.example.com:8888/session"
 
     [teleport]
     addr = "example.teleport.com:443"
     identity = "identity"
     ```
 
-    To start the event handler, run the following command:
-
-    ```code
-    $ teleport-event-handler start --config teleport-event-handler.toml
-    ```
-  </Tab>
-
-  <Tab title="Self-Hosted">
-    ```toml
-    storage = "./storage"
-    timeout = "10s"
-    batch = 20
-    namespace = "default"
-
-    [forward.fluentd]
-    ca = "/home/bob/event-handler/ca.crt"
-    cert = "/home/bob/event-handler/client.crt"
-    key = "/home/bob/event-handler/client.key"
-    url = "https://localhost:8888/test.log"
-
-    [teleport]
-    addr = "example.teleport.com:443"
-    identity = "identity"
-    ```
-
-    To start the Event Handler, run the following command:
-
-    ```code
-    $ teleport-event-handler start --config teleport-event-handler.toml
-    ```
+    Modify the configuration to replace `fluentd.example.com` with the domain name
+    of your Fluentd deployment.
   </Tab>
 
   <Tab title="Helm Chart">
@@ -751,6 +773,7 @@ the Fluentd event handler. This file includes setting similar to the following:
     teleport:
       address: "example.teleport.com:443"
       identitySecretName: teleport-event-handler-identity
+      identitySecretPath: identity
 
     fluentd:
       url: "https://fluentd.fluentd.svc.cluster.local/events.log"
@@ -764,36 +787,117 @@ the Fluentd event handler. This file includes setting similar to the following:
     persistentVolumeClaim:
       enabled: true
     ```
+  </Tab>
+</Tabs>
 
-    To start the event handler in Kubernetes, run the following command:
+Next, modify the configuration file as follows:
+
+<Tabs>
+  <Tab title="Executable or Docker">
+    **`addr`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identity`**: Fill this in with the path to the identity file you exported
+    earlier.
+
+    **`client_key`**, **`client_crt`**, **`root_cas`**: Comment these out, since we
+    are not using them in this configuration.
+  </Tab>
+
+  <Tab title="Helm Chart">
+    **`address`**: Include the hostname and HTTPS port of your Teleport Proxy Service
+    or Teleport Enterprise Cloud tenant (e.g., `teleport.example.com:443` or
+    `mytenant.teleport.sh:443`).
+
+    **`identitySecretName`**: Fill in the `identitySecretName` field with the name
+    of the Kubernetes secret you created earlier.
+
+    **`identitySecretPath`**: Fill in the `identitySecretPath` field with the path
+    of the identity file within the Kubernetes secret. If you have followed the
+    instructions above, this will be `identity`.
+  </Tab>
+</Tabs>
+
+If you are providing credentials to the Event Handler using a `tbot` binary that
+runs on a Linux server, make sure the value of `identity` in the Event Handler
+configuration is the same as the path of the identity file you configured `tbot`
+to generate, `/opt/machine-id/identity`.
+
+### Start the Teleport Event Handler
+
+Start the Teleport Teleport Event Handler by following the instructions below.
+
+<Tabs>
+  <Tab title="Linux server">
+    Copy the `teleport-event-handler.toml` file to `/etc` on your Linux server.
+
+    Next, create a systemd service definition at the path
+    `/usr/lib/systemd/system/teleport-event-handler.service` with the following
+    content:
+
+    ```ini
+    [Unit]
+    Description=Teleport Event Handler
+    After=network.target
+
+    [Service]
+    Type=simple
+    Restart=on-failure
+    ExecStart=/usr/local/bin/teleport-event-handler start --config=/etc/teleport-event-handler.toml --teleport-refresh-enabled true
+    ExecReload=/bin/kill -HUP $MAINPID
+    PIDFile=/run/teleport-event-handler.pid
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+    If you are not using Machine ID to provide short-lived credentials to the Event
+    Handler, you can remove the `--teleport-refresh-enabled true` flag.
+
+    Enable and start the plugin:
+
+    ```code
+    $ sudo systemctl enable teleport-event-handler
+    $ sudo systemctl start teleport-event-handler
+    ```
+
+    <Accordion title="Choose when to start exporting events">
+      You can configure when you would like the Teleport Event Handler to begin
+      exporting events when you run the `start` command. This example will start
+      exporting from May 5th, 2021:
+
+      ```code
+      $ teleport-event-handler start --config /etc/teleport-event-handler.toml --start-time "2021-05-05T00:00:00Z"
+      ```
+
+      You can only determine the start time once, when first running the Teleport
+      Event Handler. If you want to change the time frame later, remove the plugin
+      state directory that you specified in the `storage` field of the handler's
+      configuration file.
+    </Accordion>
+
+    Once the Teleport Event Handler starts, you will see notifications about scanned
+    and forwarded events:
+
+    ```code
+    $ sudo journalctl -u teleport-event-handler
+    DEBU   Event sent id:f19cf375-4da6-4338-bfdc-e38334c60fd1 index:0 ts:2022-09-21
+    18:51:04.849 +0000 UTC type:cert.create event-handler/app.go:140
+    ...
+    ```
+  </Tab>
+
+  <Tab title="Helm chart">
+    Run the following command on your workstation:
 
     ```code
     $ helm install teleport-plugin-event-handler teleport/teleport-plugin-event-handler \
       --values teleport-plugin-event-handler-values.yaml \
-      --version 13.3.7
+      --version 15.0.2
     ```
   </Tab>
 </Tabs>
-
-<Note>
-  This example will start exporting from `May 5th 2021`:
-
-  ```code
-  $ teleport-event-handler start --config teleport-event-handler.toml --start-time "2021-05-05T00:00:00Z"
-  ```
-
-  The start time can be set only once, on the first run of the tool.
-
-  If you want to change the time frame later, remove the plugin state directory
-  that you specified in the `storage` field of the handler's configuration file.
-</Note>
-
-Once the handler starts, you will see notifications about scanned and forwarded events:
-
-```txt
-INFO[0046] Event sent id=0b5f2a3e-faa5-4d77-ab6e-362bca0994fc ts="2021-06-08 11:00:56.034 +0000 UTC" type=user.login
-...
-```
 
 ## Troubleshooting connection issues
 

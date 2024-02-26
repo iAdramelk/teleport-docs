@@ -12,30 +12,22 @@ Teleport encourages users to practice defense in depth so that every component o
 - [Automatically prevent some roles from requesting others](#automatically-prevent-some-roles-from-requesting-others)
 - [Restrict role requests based on user traits](#restrict-role-requests-based-on-user-traits)
 - [Set up your RBAC without admin roles](#set-up-your-rbac-without-admin-roles)
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 
 ## Make MFA mandatory for `tsh login`
 
@@ -63,8 +55,6 @@ To do so, make the following changes depending on your environment:
     ```code
     $ tctl get cap > cap.yaml
     ```
-
-    If you have not defined a `cluster_auth_preference`, `cap.yaml` will be blank.
 
     In `cap.yaml`, ensure that the value of `spec.second_factor` is `otp`,
     `webauthn`, or `on`:
@@ -97,7 +87,7 @@ Choose `on` if you would like to require MFA for all users while letting them ch
 - Adjusting the Teleport signup page so a user must enroll an MFA device of the kind you have selected. If the value of `second_factor` is `on`, users will have the option to select from multiple device types.
 - Presenting the user with an MFA challenge when they run `tsh login`.
 
-If you have enabled SSO in your Teleport environment, Teleport will conduct its own MFA challenge before sending a request to the identity provider. This means that, even if an attacker has managed to compromise your organization's SSO provider (e.g., by impersonating an administrator), a malicious user will still need to authenticate using valid credentials.
+If you have enabled SSO in your Teleport environment, MFA challenges at login only apply for local users, but the IdP may apply its own MFA checks.
 
 <Warning>
   If your `second_factor` configuration is set to `off` and a user creates an account without a second factor, changing `second_factor` to a value that requires MFA will force that user to authenticate with a credential they have not registered. This will lock them out of their account. You have two ways to avoid this scenario:
@@ -138,6 +128,8 @@ To enable per-session MFA for all users, do the following depending on your Tele
     Create your dynamic resource using `tctl create -f <path to your YAML file>`.
   </Tab>
 </Tabs>
+
+If you have SSO users, they will need to add an MFA device to Teleport to be able to take advantage of per-session MFA.
 
 ## Require dual authorization for role requests
 
@@ -322,3 +314,7 @@ Two `user`s can grant elevated privileges to another `user` temporarily without 
 - [Authentication connectors](/docs/ver/14.x/reference/authentication)
 - [Proxy Service](/docs/ver/14.x/architecture/proxy)
 - [Auth Service](/docs/ver/14.x/architecture/authentication)
+- The roles we illustrated in this guide use `internal` traits, which Teleport
+  replaces with values from the Teleport local user database.  For full details
+  on how variable expansion works in Teleport roles, see the [Teleport Access
+  Controls Reference](/docs/ver/14.x/access-controls/reference).

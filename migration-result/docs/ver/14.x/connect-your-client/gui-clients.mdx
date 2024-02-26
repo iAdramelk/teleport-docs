@@ -12,98 +12,114 @@ work with Teleport.
 ### Prerequisites
 
 <Tabs>
-  <Tab title="Teleport Team">
-    - A Teleport Team account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin your free trial.
-
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
-
-      See [Installation](/docs/ver/14.x/installation) for details.
-  </Tab>
-
   <Tab title="Teleport Community Edition">
-    - A running Teleport cluster. For details on how to set this up, see our
+    - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/ver/14.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev.
-
-      ```code
-      $ tctl version
-      # Teleport v14.0.0-dev go1.20
-
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       See [Installation](/docs/ver/14.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
       [Getting Started](/docs/ver/14.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.0.0-dev,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v14.0.0-dev go1.20
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
 
-      $ tsh version
-      # Teleport v14.0.0-dev go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
-      page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
-      $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      $ tsh version
-      # Teleport v13.2.0 go1.20
-      ```
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
   </Tab>
 </Tabs>
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  {/* Ignoring scope linting since we use this partial throughout the docs and
-  cannot guarantee that it will line up with a page's configured scopes*/}
-  {/*lint ignore scopes*/}
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
   ```code
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  14.0.0-dev
+  # Version  14.3.6
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
-
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  {/*lint ignore scopes*/}
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
 - The Teleport Database Service configured to access a database. See one of our
   [guides](/docs/ver/14.x/database-access/guides) for how to set up the Teleport
   Database Service for your database.
@@ -111,35 +127,87 @@ work with Teleport.
 ### Get connection information
 
 <Tabs>
-  <Tab title="Authenticated Proxy">
-    Starting the local database proxy with the `--tunnel` flag will create an
-    authenticated tunnel that you can use to connect to your database instances.
-    You won't need to configure any credentials when connecting to this tunnel.
+  <Tab title="Self-Hosted">
+    <Tabs>
+      <Tab title="Authenticated Proxy">
+        Starting the local database proxy with the `--tunnel` flag will create an
+        authenticated tunnel that you can use to connect to your database instances.
+        You won't need to configure any credentials when connecting to this tunnel.
 
-    Here is an example on how to start the proxy:
+        Here is an example on how to start the proxy:
 
-    ```bash
-    # Start the local proxy.
-    $ tsh proxy db --tunnel <database-name>
-    Started authenticated tunnel for the <engine> database "<database-name>" in cluster "<cluster-name>" on 127.0.0.1:62652.
-    ```
+        ```bash
+        # Start the local proxy.
+        $ tsh proxy db --tunnel <database-name>
+        Started authenticated tunnel for the <engine> database "<database-name>" in cluster "<cluster-name>" on 127.0.0.1:62652.
+        ```
 
-    You can optionally specify the database name and the user to use by default
-    when connecting to the database:
+        You can optionally specify the database name and the user to use by default
+        when connecting to the database:
 
-    ```code
-    $ tsh proxy db --db-user=my-database-user --db-name=my-schema --tunnel <database-name>
-    ```
+        ```code
+        $ tsh proxy db --db-user=my-database-user --db-name=my-schema --tunnel <database-name>
+        ```
 
-    Now, you can connect to the address the proxy command returns. In our example it
-    is `127.0.0.1:62652`.
+        Now, you can connect to the address the proxy command returns. In our example it
+        is `127.0.0.1:62652`.
+      </Tab>
+
+      <Tab title="TLS routing">
+        If you're using Teleport in [TLS routing](/docs/ver/14.x/management/operations/tls-routing)
+        mode where each database protocol is multiplexed on the same web proxy port, use
+        the following command to start a local TLS proxy your GUI database client will
+        be connecting to:
+
+        ```code
+        $ tsh proxy db <database-name>
+        Started DB proxy on 127.0.0.1:61740
+
+        Use following credentials to connect to the <database-name> proxy:
+          ca_file=/Users/r0mant/.tsh/keys/root.gravitational.io/certs.pem
+          cert_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice-db/root/<database-name>-x509.pem
+          key_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice
+        ```
+
+        Use the displayed local proxy host/port and credentials paths when configuring
+        your GUI client below. When entering the hostname, use `localhost` rather than
+        `127.0.0.1`.
+      </Tab>
+
+      <Tab title="Separate ports">
+        If you're not using TLS routing, run the following command to see the database
+        connection information:
+
+        ```code
+        # View configuration for the database you're logged in to.
+        $ tsh db config
+        # View configuration for the specific database when you're logged into multiple.
+        $ tsh db config example
+        ```
+
+        It will display the path to your locally cached certificate and key files:
+
+        ```
+        Name:      example
+        Host:      teleport.example.com
+        Port:      3080
+        User:      postgres
+        Database:  postgres
+        CA:        /Users/alice/.tsh/keys/teleport.example.com/certs.pem
+        Cert:      /Users/alice/.tsh/keys/teleport.example.com/alice-db/root/example-x509.pem
+        Key:       /Users/alice/.tsh/keys/teleport.example.com/alice
+        ```
+
+        The displayed `CA`, `Cert`, and `Key` files are used to connect through pgAdmin
+        4, MySQL Workbench, and other graphical database clients that support mutual
+        TLS authentication.
+      </Tab>
+    </Tabs>
   </Tab>
 
-  <Tab title="TLS routing">
-    If you're using Teleport in [TLS routing](/docs/ver/14.x/management/operations/tls-routing)
-    mode where each database protocol is multiplexed on the same web proxy port, use
-    the following command to start a local TLS proxy your GUI database client will
-    be connecting to:
+  <Tab title="Teleport Enterprise Cloud">
+    Use the following command to start a local TLS proxy your GUI database client
+    will be connecting to:
 
     ```code
     $ tsh proxy db <database-name>
@@ -155,53 +223,7 @@ work with Teleport.
     your GUI client below. When entering the hostname, use `localhost` rather than
     `127.0.0.1`.
   </Tab>
-
-  <Tab title="Separate ports">
-    If you're not using TLS routing, run the following command to see the database
-    connection information:
-
-    ```code
-    # View configuration for the database you're logged in to.
-    $ tsh db config
-    # View configuration for the specific database when you're logged into multiple.
-    $ tsh db config example
-    ```
-
-    It will display the path to your locally cached certificate and key files:
-
-    ```
-    Name:      example
-    Host:      teleport.example.com
-    Port:      3080
-    User:      postgres
-    Database:  postgres
-    CA:        /Users/alice/.tsh/keys/teleport.example.com/certs.pem
-    Cert:      /Users/alice/.tsh/keys/teleport.example.com/alice-db/root/example-x509.pem
-    Key:       /Users/alice/.tsh/keys/teleport.example.com/alice
-    ```
-
-    The displayed `CA`, `Cert`, and `Key` files are used to connect through pgAdmin
-    4, MySQL Workbench, and other graphical database clients that support mutual
-    TLS authentication.
-  </Tab>
 </Tabs>
-
-Use the following command to start a local TLS proxy your GUI database client
-will be connecting to:
-
-```code
-$ tsh proxy db <database-name>
-Started DB proxy on 127.0.0.1:61740
-
-Use following credentials to connect to the <database-name> proxy:
-  ca_file=/Users/r0mant/.tsh/keys/root.gravitational.io/certs.pem
-  cert_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice-db/root/<database-name>-x509.pem
-  key_file=/Users/r0mant/.tsh/keys/root.gravitational.io/alice
-```
-
-Use the displayed local proxy host/port and credentials paths when configuring
-your GUI client below. When entering the hostname, use `localhost` rather than
-`127.0.0.1`.
 
 ## MongoDB Compass
 

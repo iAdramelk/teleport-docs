@@ -19,7 +19,7 @@ end of an SSH session.
     - A running Teleport cluster. For details on how to set this up, see the
       [Getting Started](/docs/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 15.0.0-dev.
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
       See [Installation](/docs/installation) for details.
 
@@ -28,11 +28,11 @@ end of an SSH session.
 
     ```code
     $ tctl version
-    # Teleport v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -41,7 +41,7 @@ end of an SSH session.
     - A Teleport Team account. If you don't have an account, sign
       up to begin your [free trial](https://goteleport.com/signup/).
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -50,11 +50,11 @@ end of an SSH session.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -64,7 +64,7 @@ end of an SSH session.
       [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >=
-      15.0.0-dev.
+      15.0.2.
 
       You can download these tools by visiting your [Teleport
       account workspace](https://teleport.sh).
@@ -74,11 +74,11 @@ end of an SSH session.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v15.0.0-dev git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v15.0.0-dev go1.21
-    Proxy version: 15.0.0-dev
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -88,7 +88,7 @@ end of an SSH session.
       sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.3.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
       You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
 
@@ -97,11 +97,11 @@ end of an SSH session.
 
     ```code
     $ tctl version
-    # Teleport Enterprise v13.4.3 git:api/14.0.0-gd1e081e go1.21
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
     $ tsh version
-    # Teleport v13.4.3 go1.21
-    Proxy version: 13.4.3
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
     Proxy: teleport.example.com
     ```
   </Tab>
@@ -125,7 +125,7 @@ end of an SSH session.
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
-  # Version  15.0.0-dev
+  # Version  15.0.2
   # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
   If you can connect to the cluster and run the `tctl status` command, you can use your
@@ -135,16 +135,19 @@ end of an SSH session.
 
 ## Step 1/3. Configure a role
 
-First, create a role with `create_host_user_mode` set to `drop` or `keep`.
-
-Setting the option to `drop` will create transient users that are deleted once the
-session ends. Setting it to `keep` will create permanent users on the host at
-login time.
-
+First, create a role with `create_host_user_mode` set to `keep`.
 The following role specification will allow users to log in as `nginxrestarter` on
 any matching Node. The host user will be created and added to the groups listed in
 `host_groups`. They will also be given permission to restart the Nginx service as
 root.
+
+<Note>
+  `create_host_user_mode` can also be set to `insecure_drop`, which deletes users
+  once the session ends. However, in this mode it is possible for a created user
+  to get the same UID as a previously deleted user, which would give the new user access
+  to all of the old user's files if they are not deleted. Use `keep` mode
+  unless you really need users to be removed.
+</Note>
 
 Save the file below as `auto-users.yaml`
 
@@ -156,7 +159,7 @@ metadata:
 spec:
   options:
     # Allow automatic creation of users.
-    create_host_user_mode: drop
+    create_host_user_mode: keep
   allow:
     logins: [ "nginxrestarter" ]
     # List of host groups the created user will be added to. Any that don't already exist are created.
@@ -187,13 +190,8 @@ of the Linux distribution being used. See [User/Group Name Syntax](https://syste
 <Warning>
   When a Teleport user accesses an SSH Service instance, Teleport checks each of the
   user's roles that match the instance. If at least one role matches the instance
-  but does not specify `create_host_user_mode` to be either `keep` or `drop`,
-  automatic user creation will be disabled. Roles that do not match the server will
-  not be checked.
-
-  If multiple roles match where one might specify `keep` and another `drop`,
-  Teleport will default to `keep`, retaining the user on the server after the session
-  ends.
+  but does not set `create_host_user_mode`, automatic user creation will be disabled.
+  Roles that do not match the server will not be checked.
 </Warning>
 
 <Warning>
@@ -212,7 +210,7 @@ metadata:
   name: auto-users
 spec:
   options:
-    create_host_user_mode: drop
+    create_host_user_mode: keep
   deny:
     host_sudoers: [
        "*" # ensure that users in this role never have sudoers files created on matching Nodes
@@ -240,29 +238,20 @@ commands for your authentication provider:
 
 <Tabs>
   <Tab title="Local User">
-    1. Retrieve your local user's configuration resource:
+    1. Retrieve your local user's roles as a comma-separated list:
 
        ```code
-       $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+       $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
-    2. Edit `out.yaml`, adding `auto-users` to the list of existing roles:
-
-       ```diff
-         roles:
-          - access
-          - auditor
-          - editor
-       +  - auto-users 
-       ```
-
-    3. Apply your changes:
+    2. Edit your local user to add the new role:
 
        ```code
-       $ tctl create -f out.yaml
+       $ tctl users update $(tsh status -f json | jq -r '.active.username') \
+         --set-roles "${ROLES?},auto-users"
        ```
 
-    4. Sign out of the Teleport cluster and sign in again to assume the new role.
+    3. Sign out of the Teleport cluster and sign in again to assume the new role.
   </Tab>
 
   <Tab title="GitHub">
@@ -440,8 +429,9 @@ returns an error if it cannot find the `useradd` binary. The `useradd` command
 creates a new home directory with the name of the new host user and adds the
 user to the groups specified in the Teleport user's roles.
 
-Aside from specifying a home directory and groups, the SSH Service executes
-`useradd` with the system defaults. For example, it associates the user with the
+The SSH Service executes
+`useradd --no-create-home --home-dir <home> <username> --groups <groups> --uid <uid> --gid <gid>`
+when adding a user, with all other options using system defaults. For example, it associates the user with the
 default login shell for the host, which you can specify by setting the `SHELL`
 field in `/etc/default/useradd`. See the `useradd` manual for your system for a
 full description of the default behavior.
@@ -451,7 +441,8 @@ contents of the `host_sudoers` file written with one entry per line, each
 prefixed with the username of the user that has logged in.
 
 The session can then proceed as usual, however once the SSH session ends, the user
-will be automatically removed and their home directory will be deleted, as the
+will be automatically removed and their home directory will be deleted with
+`userdel --remove <username>`, as the
 matching role specified they should be dropped. Files owned by the deleted user,
 created outside the home directory, will remain in place. Groups that were created
 will remain on the system after the session ends.

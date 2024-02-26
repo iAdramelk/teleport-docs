@@ -1,0 +1,209 @@
+---
+title: MFA for Administrative Actions
+description: Require MFA checks to perform administrative actions.
+version: '15.x'
+---
+
+Teleport can be configured to require additional multi-factor authentication
+checks to perform administrative actions through `tctl`, `tsh`, the Web UI,
+Teleport Connect, and any other Teleport client.
+
+Examples of administrative actions include, but are not limited to:
+
+- Resetting or recovering user accounts
+- Inviting new users
+- Updating cluster configuration resources
+- Modifying access management resources
+- Approving access requests
+- Generating new join tokens
+- Impersonation
+- Creating new bots for Machine ID
+
+This is an advanced security feature that protects users against compromises of
+their on-disk Teleport certificates.
+
+<Warning>
+  When MFA for administrative actions is enabled, user certificates produced
+  with `tctl auth sign` will no longer be suitable for automation due to the
+  additional MFA checks.
+
+  We recommend using [Machine ID](/docs/machine-id/getting-started) to
+  issue certificates for automated workflows, which uses role impersonation
+  that is not subject to MFA checks.
+
+  Certificates produced with `tctl auth sign` directly on an Auth Service
+  instance using the super-admin role are not subject to MFA checks to support
+  legacy self-hosted setups.
+</Warning>
+
+## Prerequisites
+
+<Tabs>
+  <Tab title="Teleport Community Edition">
+    - A running Teleport cluster. For details on how to set this up, see the
+      [Getting Started](/docs/index) guide.
+
+    - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
+
+      See [Installation](/docs/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
+    - A running Teleport Enterprise cluster. For details on how to set this up, see the Enterprise
+      [Getting Started](/docs/choose-an-edition/teleport-enterprise/introduction) guide.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      15.0.2.
+
+      You can download these tools by visiting your [Teleport
+      account workspace](https://teleport.sh).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v15.0.2 go1.21
+    Proxy version: 15.0.2
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise Cloud">
+    - A Teleport Enterprise Cloud account. If you don't have an account,
+      sign up to begin a [free trial](https://goteleport.com/signup/)  of Teleport Team
+      and upgrade to Teleport Enterprise Cloud.
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    Proxy version: 14.3.6
+    Proxy: teleport.example.com
+    ```
+  </Tab>
+</Tabs>
+
+- To check that you can connect to your Teleport cluster, sign in with `tsh login`, then
+  verify that you can run `tctl` commands using your current credentials.
+  `tctl` is supported on macOS and Linux machines.
+
+  For example:
+  ```code
+  $ tsh login --proxy=teleport.example.com --user=email@example.com
+  $ tctl status
+  # Cluster  teleport.example.com
+  # Version  15.0.2
+  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+  ```
+  If you can connect to the cluster and run the `tctl status` command, you can use your
+  current credentials to run subsequent `tctl` commands from your workstation.
+  If you host your own Teleport cluster, you can also run `tctl` commands on the computer that
+  hosts the Teleport Auth Service for full permissions.
+- [WebAuthn configured](/docs/access-controls/guides/webauthn) on this cluster
+- Second factor hardware device, such as YubiKey or SoloKey
+- A Web browser with [WebAuthn support](https://developers.yubico.com/WebAuthn/WebAuthn_Browser_Support/) (if using
+  SSH or desktop sessions from the Teleport Web UI).
+
+## Require MFA for administrative actions
+
+MFA for administrative actions is automatically enforced for clusters where
+WebAuthn is the only form of second factor allowed.
+
+<Note>
+  In a future major version, Teleport may enforce MFA for administrative actions
+  for a wider range of cluster configurations.
+</Note>
+
+<Tabs>
+  <Tab title="Dynamic Resources">
+    Edit the `cluster_auth_preference` resource:
+
+    ```code
+    $ tctl edit cap
+    ```
+
+    Update the `cluster_auth_preference` definition to include the following content:
+
+    ```yaml
+    kind: cluster_auth_preference
+    version: v2
+    metadata:
+      name: cluster-auth-preference
+    spec:
+      type: local
+      # To make webauthn the only form of second factor allowed, set this field to 'webauthn'.
+      second_factor: "webauthn"
+      webauthn:
+        rp_id: example.com
+    ```
+
+    Save and exit the file. `tctl` will update the remote definition:
+
+    ```text
+    cluster auth preference has been updated
+    ```
+  </Tab>
+
+  <Tab title="Static Config">
+    Edit the Auth Service's `teleport.yaml` file and restart all Auth Service instances:
+
+    ```yaml
+    # snippet from /etc/teleport.yaml:
+    auth_service:
+      authentication:
+        type: local
+        # To make webauthn the only form of second factor allowed, set this field to 'webauthn'.
+        second_factor: "webauthn"
+        webauthn:
+          rp_id: example.com
+    ```
+  </Tab>
+</Tabs>

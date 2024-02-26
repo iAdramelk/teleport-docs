@@ -21,53 +21,85 @@ balancer or reverse proxy is available in Teleport 13.0+.
 ## Prerequisites
 
 <Tabs>
-  <Tab title="Open Source">
+  <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
       [Getting Started](/docs/ver/13.x/index) guide.
 
-    - The `tctl` admin tool and `tsh` client tool version >= 13.2.0.
+    - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
       ```code
       $ tctl version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
 
       See [Installation](/docs/ver/13.x/installation) for details.
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport v13.4.16 go1.21
+      
+    $ tsh version
+    # Teleport v13.4.16 go1.21
+    ```
   </Tab>
 
-  <Tab title="Enterprise">
+  <Tab title="Teleport Team">
+    - A Teleport Team account. If you don't have an account, sign
+      up to begin your [free trial](https://goteleport.com/signup/).
+
+    - The Enterprise `tctl` admin tool and `tsh` client tool, version >= 14.3.6.
+
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
+
+    To check version information, run the `tctl version` and `tsh version` commands.
+    For example:
+
+    ```code
+    $ tctl version
+    # Teleport Enterprise v14.3.6 go1.21
+      
+    $ tsh version
+    # Teleport v14.3.6 go1.21
+    ```
+  </Tab>
+
+  <Tab title="Teleport Enterprise">
     - A running Teleport Enterprise cluster. For details on how to set this up, see our Enterprise
       [Getting Started](/docs/ver/13.x/choose-an-edition/teleport-enterprise/introduction) guide.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0,
-      which you can download by visiting your [Teleport account](https://teleport.sh).
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >=
+      13.4.16, which you can download by visiting your [Teleport
+      account](https://teleport.sh).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v13.4.16 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v13.4.16 go1.21
       ```
   </Tab>
 
-  <Tab title="Teleport Cloud">
+  <Tab title="Teleport Enterprise Cloud">
     - A Teleport Enterprise Cloud account. If you do not have one, visit the [signup
       page](https://goteleport.com/signup/) to begin a free trial of Teleport Team
       and upgrade to Teleport Enterprise Cloud.
 
-    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.2.0.
-      To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
+    - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
+      You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
       ```code
       $ tctl version
-      # Teleport Enterprise v13.2.0 go1.20
+      # Teleport Enterprise v14.3.6 go1.21
 
       $ tsh version
-      # Teleport v13.2.0 go1.20
+      # Teleport v14.3.6 go1.21
       ```
   </Tab>
 </Tabs>
@@ -77,7 +109,6 @@ balancer or reverse proxy is available in Teleport 13.0+.
 - An existing [IAM OpenID Connect (OIDC)](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html) provider for your cluster
 - Helm >= 3.4.2
 - AWS CLI >= `2.10.3` or `1.27.81`
-- A Teleport cluster with [TLS multiplexing](/docs/ver/13.x/management/operations/tls-routing)
 
 Verify that Helm and Kubernetes are installed and up to date.
 
@@ -90,26 +121,36 @@ $ kubectl version
 # Server Version: version.Info{Major:"1", Minor:"17+"}
 ```
 
-- Make sure you can connect to Teleport. Log in to your cluster using `tsh`, then use `tctl`
-  remotely:
-  ```code
-  $ tsh login --proxy=teleport.example.com --user=email@example.com
-  $ tctl status
-  # Cluster  teleport.example.com
-  # Version  13.2.0
-  # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
-  ```
-  You can run subsequent `tctl` commands in this guide on your local machine.
+- Make sure you can connect to your Teleport cluster by authenticating with `tsh`
+  so you can execute commands with the `tctl` admin tool:
+  <Tabs>
+    <Tab title="Self-Hosted">
+      ```code
+      $ tsh login --proxy=teleport.example.com --user=email@example.com
+      $ tctl status
+      # Cluster  teleport.example.com
+      # Version  13.4.16
+      # CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
+      ```
 
-  For full privileges, you can also run `tctl` commands on your Auth Service host.
-  ```code
-  $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
-  $ tctl status
-  # Cluster  myinstance.teleport.sh
-  # Version  13.2.0
-  # CA pin   sha256:sha-hash-here
-  ```
-  You must run subsequent `tctl` commands in this guide on your local machine.
+      You can run subsequent `tctl` commands in this guide on your local machine.
+
+      For full privileges, you can also run `tctl` commands on your Teleport Auth
+      Service host.
+    </Tab>
+
+    <Tab title="Teleport Cloud">
+      ```code
+      $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
+      $ tctl status
+      # Cluster  myinstance.teleport.sh
+      # Version  14.3.6
+      # CA pin   sha256:sha-hash-here
+      ```
+
+      You must run subsequent `tctl` commands in this guide on your local machine.
+    </Tab>
+  </Tabs>
 
 ## Step 1/3. Create a Kubernetes service account with an IAM identity
 
@@ -334,16 +375,27 @@ Switch `kubectl` to the Kubernetes cluster and run:
 # Deploy a Kubernetes agent. It dials back to the Teleport cluster tele.example.com.
 $ CLUSTER=iam-cluster
 $ PROXY=tele.example.com:443
+# Install the Teleport Kubernetes agent. Does not create a service account and uses the existing
+#   service account. See serviceAccount.create and serviceAccount.name parameters.
 $ helm install teleport-agent teleport/teleport-kube-agent \
   --set kubeClusterName=${CLUSTER?} \
   --set proxyAddr=${PROXY?} \
   --set joinParams.method=iam \
   --set joinParams.tokenName=kube-iam-token \
-  --set serviceAccount.create=false # do not create a new service account # \
-  --set serviceAccount.name=teleport-kube-agent-sa # use the existing service account # \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=teleport-kube-agent-sa \
   --create-namespace \
   --namespace=teleport-agent \
-  --version 13.2.0
+  --version 13.4.16
+```
+
+Make sure that the Teleport agent pod is running. You should see one Teleport
+agent pod pod with a single ready container:
+
+```code
+$ kubectl -n teleport get pods
+NAME               READY   STATUS    RESTARTS   AGE
+teleport-agent-0   1/1     Running   0          32s
 ```
 
 List connected clusters using `tsh kube ls` and switch between
@@ -414,147 +466,147 @@ For both cases, please refer to the section below.
   $ tctl create -f kube-access.yaml
   ```
 
-  Assign the `kube-access` role to your Teleport user by running the following
-  commands, depending on whether you authenticate as a local Teleport user or via
-  the `github`, `saml`, or `oidc` authentication connectors:
+  Assign the `kube-access` role to your Teleport user by running the appropriate
+  commands for your authentication provider:
 
   <Tabs>
     <Tab title="Local User">
-      Retrieve your local user's configuration resource:
+      1. Retrieve your local user's configuration resource:
 
-      ```code
-      $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
-      ```
+         ```code
+         $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
+         ```
 
-      Edit `out.yaml`, adding `kube-access` to the list of existing roles:
+      2. Edit `out.yaml`, adding `kube-access` to the list of existing roles:
 
-      ```diff
-        roles:
-         - access
-         - auditor
-         - editor
-      +  - kube-access
-      ```
+         ```diff
+           roles:
+            - access
+            - auditor
+            - editor
+         +  - kube-access 
+         ```
 
-      Apply your changes:
+      3. Apply your changes:
 
-      ```code
-      $ tctl create -f out.yaml
-      ```
+         ```code
+         $ tctl create -f out.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
     </Tab>
 
     <Tab title="GitHub">
-      Retrieve your `github`  configuration resource:
+      1. Retrieve your `github` authentication connector:
 
-      ```code
-      $ tctl get github/github --with-secrets > github.yaml
-      ```
+         ```code
+         $ tctl get github/github --with-secrets > github.yaml
+         ```
 
-      Edit `github.yaml`, adding `kube-access` to the
-      `teams_to_roles` section. The team you will map to this role will depend on how
-      you have designed your organization's RBAC, but it should be the smallest team
-      possible within your organization. This team must also include your user.
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `github.yaml` file. Because this key contains a sensitive value, you should remove the
+         github.yaml file immediately after updating the resource.
 
-      Here is an example:
+      2. Edit `github.yaml`, adding `kube-access` to the `teams_to_roles` section.
 
-      ```diff
-        teams_to_roles:
-          - organization: octocats
-            team: admins
-            roles:
-              - access
-      +       - kube-access
-      ```
+         The team you should map to this role depends on how you have designed your
+         organization's role-based access controls (RBAC). However, the team must include your user account and
+         should be the smallest team possible within your organization.
 
-      Apply your changes:
+         Here is an example:
 
-      ```code
-      $ tctl create -f github.yaml
-      ```
+         ```diff
+           teams_to_roles:
+             - organization: octocats
+               team: admins
+               roles:
+                 - access
+         +       - kube-access
+         ```
 
-      <Warning>
-        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-        `spec.signing_key_pair.private_key` to `github.yaml`. This is a sensitive value,
-        so take precautions when creating this file and remove it after updating the resource.
-      </Warning>
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f github.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
     </Tab>
 
     <Tab title="SAML">
-      Retrieve your `saml`  configuration resource:
+      1. Retrieve your `saml`  configuration resource:
 
-      ```code
-      $ tctl get --with-secrets saml/mysaml > saml.yaml
-      ```
+         ```code
+         $ tctl get --with-secrets saml/mysaml > saml.yaml
+         ```
 
-      Edit `saml.yaml`, adding `kube-access` to the
-      `attributes_to_roles` section. The attribute you will map to this role will
-      depend on how you have designed your organization's RBAC, but it should be the
-      smallest group possible within your organization. This group must also include
-      your user.
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `saml.yaml` file. Because this key contains a sensitive value, you should remove the
+         saml.yaml file immediately after updating the resource.
 
-      Here is an example:
+      2. Edit `saml.yaml`, adding `kube-access` to the `attributes_to_roles` section.
 
-      ```diff
-        attributes_to_roles:
-          - name: "groups"
-            value: "my-group"
-            roles:
-              - access
-      +       - kube-access
-      ```
+         The attribute you should map to this role depends on how you have designed your
+         organization's role-based access controls (RBAC). However, the group must include your
+         user account and should be the smallest group possible within your organization.
 
-      Apply your changes:
+         Here is an example:
 
-      ```code
-      $ tctl create -f saml.yaml
-      ```
+         ```diff
+           attributes_to_roles:
+             - name: "groups"
+               value: "my-group"
+               roles:
+                 - access
+         +       - kube-access
+         ```
 
-      <Warning>
-        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-        `spec.signing_key_pair.private_key` to `saml.yaml`. This is a sensitive value,
-        so take precautions when creating this file and remove it after updating the resource.
-      </Warning>
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f saml.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
     </Tab>
 
     <Tab title="OIDC">
-      Retrieve your `oidc`  configuration resource:
+      1. Retrieve your `oidc`  configuration resource:
 
-      ```code
-      $ tctl get oidc/myoidc --with-secrets > oidc.yaml
-      ```
+         ```code
+         $ tctl get oidc/myoidc --with-secrets > oidc.yaml
+         ```
 
-      Edit `oidc.yaml`, adding `kube-access` to the
-      `claims_to_roles` section. The claim you will map to this role will depend on
-      how you have designed your organization's RBAC, but it should be the smallest
-      group possible within your organization. This group must also include your
-      user.
+         Note that the `--with-secrets` flag adds the value of `spec.signing_key_pair.private_key`
+         to the `oidc.yaml` file. Because this key contains a sensitive value, you should remove the
+         oidc.yaml file immediately after updating the resource.
 
-      Here is an example:
+      2. Edit `oidc.yaml`, adding `kube-access` to the `claims_to_roles` section.
 
-      ```diff
-        claims_to_roles:
-          - name: "groups"
-            value: "my-group"
-            roles:
-              - access
-      +       - kube-access
-      ```
+         The claim you should map to this role depends on how you have designed your organization's
+         role-based access controls (RBAC). However, the group must include your user account and
+         should be the smallest group possible within your organization.
 
-      Apply your changes:
+         Here is an example:
 
-      ```code
-      $ tctl create -f oidc.yaml
-      ```
+         ```diff
+           claims_to_roles:
+             - name: "groups"
+               value: "my-group"
+               roles:
+                 - access
+         +       - kube-access
+         ```
 
-      <Warning>
-        Note the `--with-secrets` flag in the `tctl get` command. This adds the value of
-        `spec.signing_key_pair.private_key` to `oidc.yaml`. This is a sensitive value,
-        so take precautions when creating this file and remove it after updating the resource.
-      </Warning>
+      3. Apply your changes:
+
+         ```code
+         $ tctl create -f oidc.yaml
+         ```
+
+      4. Sign out of the Teleport cluster and sign in again to assume the new role.
     </Tab>
   </Tabs>
-
-  Log out of your Teleport cluster and log in again to assume the new role.
 
   Now that Teleport RBAC is configured, you can authenticate to your Kubernetes
   cluster via Teleport. To interact with your Kubernetes cluster, you will need to

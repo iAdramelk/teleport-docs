@@ -45,19 +45,20 @@ $ tctl get cluster_auth_preference
 
 ## List of dynamic resources
 
-Here's the list of resources currently exposed via [`tctl`](/docs/ver/14.x/reference/cli#tctl):
+Here's the list of resources currently exposed via [`tctl`](/docs/ver/14.x/reference/cli/tctl):
 
-| Resource Kind             | Description                                                                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [user](#user)             | A user record in the internal Teleport user DB.                                                                                  |
-| [role](#role)             | A role assumed by interactive and non-interactive users.                                                                         |
-| connector                 | Authentication connectors for [Single Sign-On](/docs/ver/14.x/access-controls/sso) (SSO) for SAML, OIDC and GitHub.              |
-| node                      | A registered SSH node. The same record is displayed via `tctl nodes ls`                                                          |
-| cluster                   | A trusted cluster. See [here](/docs/ver/14.x/management/admin/trustedclusters) for more details on connecting clusters together. |
-| login\_rule               | A Login Rule, see the [Login Rules guide](/docs/ver/14.x/access-controls/login-rules) for more info.                             |
-| device                    | A Teleport Trusted Device, see the [Device Trust guide](/docs/ver/14.x/access-controls/device-trust/guide) for more info.        |
-| [ui\_config](#ui-config)  | Configuration for the Web UI served by the Proxy Service                                                                         |
-| cluster\_auth\_preference | Configuration for the cluster's auth preferences.                                                                                |
+| Resource Kind                                          | Description                                                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| [user](#user)                                          | A user record in the internal Teleport user DB.                                                                                  |
+| [role](#role)                                          | A role assumed by interactive and non-interactive users.                                                                         |
+| connector                                              | Authentication connectors for [Single Sign-On](/docs/ver/14.x/access-controls/sso) (SSO) for SAML, OIDC and GitHub.              |
+| node                                                   | A registered SSH node. The same record is displayed via `tctl nodes ls`                                                          |
+| windows\_desktop                                       | A registered Windows desktop.                                                                                                    |
+| cluster                                                | A trusted cluster. See [here](/docs/ver/14.x/management/admin/trustedclusters) for more details on connecting clusters together. |
+| [login\_rule](#login-rules)                            | A Login Rule, see the [Login Rules guide](/docs/ver/14.x/access-controls/login-rules) for more info.                             |
+| [device](#device)                                      | A Teleport Trusted Device, see the [Device Trust guide](/docs/ver/14.x/access-controls/device-trust/guide) for more info.        |
+| [ui\_config](#ui-config)                               | Configuration for the Web UI served by the Proxy Service                                                                         |
+| [cluster\_auth\_preference](#cluster-auth-preferences) | Configuration for the cluster's auth preferences.                                                                                |
 
 ## User
 
@@ -103,7 +104,7 @@ Roles govern access to databases, SSH servers, Kubernetes clusters, web services
 
 ```yaml
 kind: role
-version: v6
+version: v7
 metadata:
   name: example
 spec:
@@ -189,7 +190,6 @@ spec:
     # enterprise-only: when enabled, the source IP that was used to log in is embedded in the user
     # certificates, preventing a compromised certificate from being used on another
     # network. The default is false.
-    # Note: Source IP pinning is currently in Preview mode.
     pin_source_ip: true
     # Specify a list of names and associated values to be included in user SSH keys.
     # The key type can only be "ssh" and the mode can only be "extension".
@@ -203,9 +203,13 @@ spec:
     # Controls whether this role supports auto provisioning of SSH users.
     # Options: drop (remove user on session end), keep (keep users at session end)
     #          and off (disable host user creation)
-    create_host_user_mode: drop    create_host_user: true
+    create_host_user_mode: drop
     # Controls whether this role requires automatic database user provisioning.
-    create_db_user: true
+    # Options: off (disable database user auto-provisioning), keep (disables the
+    # user at session end, removing the roles and locking it), and
+    # best_effort_drop (try to drop the user at session end, if it doesn't
+    # succeed, fallback to disabling it).
+    create_db_user_mode: keep
     # Specifies role specific options for identity provider access.
     idp:
       # Specifies role specific options for SAML identity provider access.
@@ -266,8 +270,30 @@ spec:
     # kubernetes_resources indicates the Kubernetes resources that a user with
     # this role is allowed to access.
     kubernetes_resources:
-        # The resource kind. Teleport currently only supports "pod".
-      - kind: pod
+        # The resource kind. Teleport currently supports:
+        # - * (all resources)
+        # - pod
+        # - secret
+        # - configmap
+        # - namespace
+        # - service
+        # - serviceaccount
+        # - kube_node
+        # - persistentvolume
+        # - persistentvolumeclaim
+        # - deployment
+        # - replicaset
+        # - statefulset
+        # - daemonset
+        # - clusterrole
+        # - kube_role
+        # - clusterrolebinding
+        # - rolebinding
+        # - cronjob
+        # - job
+        # - certificatesigningrequest
+        # - ingress
+      - kind: '*'
         # The name of the Kubernetes namespace in which to allow access the
         # resources you specify with "name" and "kind".
         # The wildcard character "*" matches any sequence of characters.
@@ -279,13 +305,27 @@ spec:
         # If the value begins with "^" and ends with "$", the Kubernetes
         # Service will treat it as a regular expression.
         name: "^nginx-[a-z0-9-]+$"
+        # The verbs that the user is allowed to perform on the resource.
+        # Teleport currently supports:
+        # - * (all verbs)
+        # - get
+        # - list
+        # - watch
+        # - create
+        # - update
+        # - patch
+        # - delete
+        # - deletecollection
+        # - exec - allows users to execute commands in a pod
+        # - portforward - allows users to forward ports from a pod
+        verbs: ['*']
 
     # Functions transform variables.
     db_users: ['{{email.local(external.email)}}']
     db_names: ['{{external.db_names}}']
     db_roles: ['{{external.db_roles}}']
     db_labels:
-      'env': '{{regexp.replace(external.access["env"], "^(staging)$", "$1")}}'
+      'env': '{{regexp.replace(external.env, "^(staging)$", "$1")}}'
 
     # app_labels: a user with this role will be allowed to connect to
     # applications with labels matching below.
@@ -377,6 +417,12 @@ spec:
         - approve: 2
           deny: 1
 
+      # max_duration specifies the maximum duration for which a user can request
+      # access to a role. The duration can be specified in seconds (s), minutes
+      # (m), hours (h), or days (d), e.g. 4d, 10h, 30m, 60s.
+      # The maximum duration is 7 days.
+      max_duration: 7d
+
       # the `claims_to_roles` mapping works the same as it does in
       # the OIDC connector, with the added benefit that the roles being mapped to
       # can also be matchers.
@@ -446,14 +492,16 @@ spec:
     # saml               - connector resource
     # github             - GitHub connector resource
     #
-    # trusted_cluster    - Trusted Cluster resource
+    # trusted_cluster    - Trusted cluster resource
     # remote_cluster     - remote cluster resource
     #
     # access_request     - Access Request resource
     # access_plugin_data - allows modifying Access Request plugin data
     #
     # session            - session playback records
-    # ssh_session        - an active SSH session
+    # session_tracker    - an active session
+    # ssh_session        - allows seeing active sessions page
+    # instance           - a Teleport instance
     # event              - structured audit logging event
     #
     #
@@ -495,6 +543,78 @@ spec:
   # The deny section uses the identical format as the 'allow' section.
   # The deny rules always override allow rules.
   deny: {}
+```
+
+### Role versions
+
+Versions 5, 6 and 7 of the Teleport role resource have different behaviors when
+accessing Kubernetes resources.
+
+{/*lint ignore messaging*/}
+
+Roles not [granting Kubernetes access](/docs/ver/14.x/kubernetes-access/introduction) are
+equivalent in the three versions.
+
+Roles v5 and v6 can only restrict actions on pods (e.g. executing in them).
+Role v7 supports restricting all common resource kinds (
+see [the `kubernetes_resource` documentation](/docs/ver/14.x/kubernetes-access/controls#kubernetes_resources)
+for a complete list).
+
+When no `kubernetes_resource` is set:
+
+- Roles v5 and v7 grant all access by default
+- Roles v6 blocks pod execution by default, this was reverted by roles v7 to improve the user experience.
+
+{/* This table is cursed. Our current docs engine doesn't support HTML tables
+(due to SSR and the rehydration process). We have dto do everything inlined in
+markdown. Some HTML character codes are used to render specific chars like {}
+or to avoid line breaks in the middle fo the YAML. Whitespaces before br tags
+are required.*/}
+
+| Allow rule                                                                                                                                                                                                                                                                        | Role v5                                                                                                             | Role v6                                                                                                             | Role v7                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: \{} <br />kubernetes\_resources: \[]<br /></pre>                                                                                                                                                    | ❌ no access                                                                                                         | ❌ no access                                                                                                         | ❌ no access                                                                                                                                                                                               |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: \[]<br /></pre>                                                                                                                                  | ✅ full access to `dev` clusters                                                                                     | ❌ cannot exec in pods <br /> ✅ can access other <br />resources like `secrets`                                      | ✅ full access to `dev` clusters                                                                                                                                                                           |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - name: "\*" <br />    kind: pod <br />    namespace: "foo"</pre>                                                                        | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in all namespaces. <br />❌ cannot exec in other namespaces | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in all namespaces. <br />❌ cannot exec in other namespaces | ✅ can exec in pods in `foo` <br />❌ cannot access `secrets` in all namespaces <br />❌ cannot exec in other namespaces                                                                                     |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - name: "\*" <br />    kind: pod <br />    namespace: "foo" <br />  - name: "\*" <br />    kind: secret <br />    namespace: "foo"</pre> | ⚠️ not supported                                                                                                    | ⚠️ not supported                                                                                                    | ✅ can exec in pods in `foo` <br />✅ can access `secrets` in `foo` <br />❌ cannot exec in other namespaces <br />❌ cannot access `secrets` in other namespaces <br />❌ cannot access `configmaps` in `foo` |
+| <pre>kubernetes\_groups: <br />  - "system:masters" <br />kubernetes\_labels: <br />  env: \["dev"] <br />kubernetes\_resources: <br />  - kind: "namespace" <br />    name: "foo"</pre>                                                                                          | ⚠️ not supported                                                                                                    | ⚠️ not supported                                                                                                    | ✅ full access in namespace `foo` <br />❌ cannot access other namespaces                                                                                                                                   |
+
+## Windows desktop
+
+In most cases, Teleport will register `windows_desktop` resources automatically
+based on static hosts in your configuration file or via LDAP-based discovery.
+
+However, you can also manage `windows_desktop` resources manually with `tctl`.
+This can be useful for managing inventories of hosts that are not joined to
+an Active Directory domain.
+
+There are a few important considerations to keep in mind when registering
+desktops this way:
+
+1. The desktop's `addr` can be a hostname or IP address, and should include
+   the RDP port (typically 3389).
+2. The desktop's `host_id` should be set to the name of a
+   `windows_desktop_service` that is capable of proxying remote desktop
+   connections to the host. If you have multiple such services, you can create
+   multiple `windows_desktop` resources with different `host_id` values.
+3. If you intend to log in to the desktop with local Windows users you must set
+   `non_ad: true`. If you intent to log in with Active Directory users, leave
+   `non_ad` unset (or false), and specify the Active Directory domain in the
+   `domain` field.
+
+```yaml
+kind: windows_desktop
+metadata:
+  name: desktop-without-ad
+  labels:
+    foo: bar
+    baz: quux
+spec:
+  host_id: 307e091b-7f6b-42e0-b78d-3362ad10b55d
+  addr: 192.168.1.153:3389
+  domain: ""
+  non_ad: true
+version: v3
 ```
 
 ## Login Rules
@@ -652,7 +772,7 @@ metadata:
 spec:
   # Sets the type of second factor to use.
   # Possible values: "on", "off", "otp", "webauthn" and "optional".
-  # If "on" is set, all 2FA protocols are supported.
+  # If "on" is set, all MFA protocols are supported.
   second_factor: "otp"
 
   # The name of the OIDC or SAML connector. if this is not set, the first connector in the backend is used.
@@ -685,8 +805,9 @@ spec:
     attestation_denied_cas: []
 
   # Enforce per-session MFA or PIV-hardware key restrictions on user login sessions.
-  # Possible values: true, false, "hardware_key", "hardware_key_touch"
-  require_mfa_type: "off"
+  # Possible values: true, false, "hardware_key", "hardware_key_touch".
+  # Defaults to false.
+  require_session_mfa: false
 
   # Sets whether connections with expired client certificates will be disconnected.
   disconnect_expired_cert: false

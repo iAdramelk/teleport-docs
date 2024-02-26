@@ -68,7 +68,7 @@ chart:
       --set clusterName=$CLUSTERNAME \
       --set acme=true \
       --set acmeEmail=$EMAIL_ADDR \
-      --version 15.0.0-dev
+      --version 16.0.0-dev
     NAME: teleport-cluster
     LAST DEPLOYED: Tue Oct 26 17:01:21 2021
     NAMESPACE: teleport-cluster
@@ -92,11 +92,11 @@ chart:
     The Teleport Auth Service reads a license file to authenticate your Teleport
     Enterprise account.
 
-    To obtain your license file, navigate to your [Teleport
-    account](https://teleport.sh) and enter your
-    account name (e.g., `my-license`). After logging in, click
-    the "DOWNLOAD LICENSE KEY" button to download your
-    license file.
+    To obtain your license file, navigate to your Teleport account dashboard and log
+    in. You can start at [teleport.sh](https://teleport.sh) and enter your Teleport
+    account name (e.g. my-company). After logging in you will see a "GENERATE
+    LICENSE KEY" button, which will generate a new license file and allow you to
+    download it.
 
     ![License File Download](/assets/license-23cee352ae.png)
 
@@ -117,7 +117,7 @@ chart:
       --set acme=true \
       --set acmeEmail=$EMAIL_ADDR \
       --set enterprise=true \
-      --version 15.0.0-dev
+      --version 16.0.0-dev
     NAME: teleport-cluster
     LAST DEPLOYED: Tue Oct 26 17:01:21 2021
     NAMESPACE: teleport-cluster
