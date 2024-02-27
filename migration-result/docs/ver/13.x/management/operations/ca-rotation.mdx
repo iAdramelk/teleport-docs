@@ -128,13 +128,20 @@ This section will show you how to rotate Teleport's certificate authority.
 If you are joining Teleport processes to a cluster via the Teleport Auth Service
 using a [join token](/docs/ver/13.x/agents/join-services-to-your-cluster/join-token), each
 Teleport process will need a CA pin to trust the Auth Service. The CA pin will
-change after each CA rotation. Make sure you use the *new* CA pin when adding
-Teleport services after rotation.
+change after each `host` CA rotation. Make sure you use the *new* CA pin when adding
+Teleport services after `host` CA rotation.
 
 <Warning>
-  Teleport signs Windows Desktop certificates with the user certificate authority.
-  If the user CA is rotated, the new CA certificate will need to be exported and
+  Teleport signs Windows Desktop client certificates with the `user` certificate
+  authority.
+  If the `user` CA is rotated, the new CA certificate must be exported and
   configured in group policy.
+
+  Teleport signs self-hosted database host certificates with the `db` certificate
+  authority and signs database client certificates with the `db_client` CA.
+  If either of these CAs is rotated, then self-hosted databases must be
+  reconfigured.
+  Refer to [the Database CA Rotation Guide](/docs/ver/13.x/management/operations/db-ca-rotation).
 </Warning>
 
 ### Rotation phases
@@ -166,7 +173,7 @@ There are two kinds of certificate rotations:
 - **Semi-automatic:** Teleport automatically transitions between phases of the
   rotation after some amount of time (known as a *grace period*) elapses.
 
-For both types of rotations, the cluster goes through the phases in the
+For both types of rotation, the cluster goes through the phases in the
 following order:
 
 - `standby` -> `init` -> `update_clients` -> `update_servers` -> `standby`
@@ -175,7 +182,7 @@ Administrators can abort the rotation and revert all changes any time before
 the rotation is completed by entering the `rollback` phase.
 
 ```code
-$ tctl auth rotate --phase=rollback --type=type --manual
+$ tctl auth rotate --manual --type=type --phase=rollback 
 ```
 
 For example, if an admin has detected that some nodes failed to upgrade during
@@ -202,7 +209,7 @@ of the cluster.
 Initiate the manual rotation of host certificate authorities:
 
 ```code
-$ tctl auth rotate --phase=init --type=type --manual
+$ tctl auth rotate --manual --type=type --phase=init 
 Updated rotation phase to "init". To check status use 'tctl status'
 ```
 
@@ -246,7 +253,7 @@ transitions.
 Execute the transition from `init` to `update_clients`:
 
 ```code
-$ tctl auth rotate --phase=update_clients --type=type --manual
+$ tctl auth rotate --manual --type=type --phase=update_clients
 # Updated rotation phase to "update_clients". To check status use 'tctl status'
 $ tctl status
 # Cluster  acme.cluster
@@ -276,7 +283,7 @@ Now that all nodes have caught up, execute the transition from `update_clients`
 to `update_servers`:
 
 ```code
-$ tctl auth rotate --phase=update_servers --type=type --manual
+$ tctl auth rotate --manual --type=type --phase=update_servers
 # Updated rotation phase to "update_servers". To check status use 'tctl status'
 
 $ tctl status
@@ -317,7 +324,7 @@ $ tsh ssh hello@terminal
 </Warning>
 
 ```code
-$ tctl auth rotate --phase=standby --type=type --manual
+$ tctl auth rotate --manual --type=type --phase=standby
 ```
 
 Verify that the rotation has completed with `tctl`:
