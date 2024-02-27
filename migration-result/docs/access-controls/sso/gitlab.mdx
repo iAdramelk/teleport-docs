@@ -73,12 +73,12 @@ to each of these groups.
    - Redirect URL: `https://<proxy url>/v1/webapi/oidc/callback`.
    - Check `Confidential`, `openid`, `profile`, and `email`.
 
-   ![Create App](/assets/gitlab-oidc-0-bab5a886ec.png)
+   <img src="/assets/gitlab-oidc-0-bab5a886ec.png" alt="Create App" width="2416" height="2559" />
 
 2. Collect the `Application ID` and `Secret` in the Application. These will be
    used in the Teleport OIDC auth connector:
 
-   ![Collection Information](/assets/gitlab-oidc-1-ab9abbae38.png)
+   <img src="/assets/gitlab-oidc-1-ab9abbae38.png" alt="Collection Information" width="1963" height="961" />
 
 3. Confirm the GitLab issuer address.
 
@@ -306,7 +306,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
+<img src="/assets/teleportauditlogssofailed-a5da7b0950.png" alt="Audit Log Entry for SSO Login error" width="2444" height="1356" />
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

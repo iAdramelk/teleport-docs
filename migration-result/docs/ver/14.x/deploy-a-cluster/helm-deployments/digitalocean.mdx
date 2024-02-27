@@ -29,13 +29,13 @@ cluster to Teleport.
 
 Create a new [DigitalOcean Kubernetes Cluster](https://cloud.digitalocean.com/kubernetes/clusters/)
 
-![Create DigitalOcean Kubernetes cluster](/assets/create-k8s-d007776ea2.png)
+<img src="/assets/create-k8s-d007776ea2.png" alt="Create DigitalOcean Kubernetes cluster" width="2462" height="1210" />
 
 <br />
 
 While the Kubernetes cluster is being provisioned, follow the "Getting Started" guide as shown below:
 
-![Set up DigitalOcean Kubernetes client](/assets/setup-k8s-91b0116d94.png)
+<img src="/assets/setup-k8s-91b0116d94.png" alt="Set up DigitalOcean Kubernetes client" width="990" height="643" />
 
 ## Step 2/4. Install Teleport
 
@@ -98,7 +98,7 @@ chart:
     the "DOWNLOAD LICENSE KEY" button to download your
     license file.
 
-    ![License File Download](/assets/license-23cee352ae.png)
+        <img src="/assets/license-23cee352ae.png" alt="License File Download" width="2952" height="604" />
 
     Create a secret called "license" in the namespace you created:
 
@@ -143,7 +143,7 @@ teleport-cluster-auth   ClusterIP      10.245.164.28   <none>            3025/TC
 
 Once you get the value for the external IP (it may take a few minutes for this field to be populated), update your DNS record such that the clusterName's A record points to this IP address. For example `192.168.200.200` is the external IP in the above case.
 
-![Configure DNS](/assets/fqdn-ac81fc3020.png)
+<img src="/assets/fqdn-ac81fc3020.png" alt="Configure DNS" width="2010" height="392" />
 
 ## Step 3/4. Create and set up Teleport user
 
@@ -175,7 +175,7 @@ Now we create a Teleport user by executing the `tctl` command with `kubectl`.
 
 Copy the link shown after executing the above command and open the link in a web browser to complete the user registration process (the link is `https://tele.example.com:443/web/invite/<invite-token>` in the above case).
 
-![Set up user](/assets/setup-user-2de78912de.png)
+<img src="/assets/setup-user-2de78912de.png" alt="Set up user" width="2380" height="1528" />
 
 After you complete the registration process by setting up a password and enrolling in multi-factor authentication, you will be logged in to Teleport Web UI.
 
@@ -216,11 +216,11 @@ $ kubectl --namespace=teleport-cluster exec -i deployment/teleport-cluster-auth 
 Now we will assign Teleport user **tadmin** with this role. The example below shows a process using Teleport Web UI:
 First, lets select user edit menu:
 
-![Edit user](/assets/edit-user-62df22ab07.png)
+<img src="/assets/edit-user-62df22ab07.png" alt="Edit user" width="2458" height="1330" />
 
 Second, update the **tadmin** user role to assign the **member** role:
 
-![Update role](/assets/update-role-0f878b32c7.png)
+<img src="/assets/update-role-0f878b32c7.png" alt="Update role" width="2452" height="1456" />
 
 We've updated the user **tadmin** to have the **member** role, which is allowed to access a Kubernetes cluster with privilege `system:master`.
 
@@ -295,7 +295,7 @@ Voila! User **tadmin** was able to list the pods in their DigitalOcean Kubernete
 
 Teleport keeps an audit log of access to a Kubernetes cluster. In the screenshot below, the Teleport audit log shows that the user **tadmin** has logged into the cluster.
 
-![View audit log](/assets/view-activity-e1e28d5e63.png)
+<img src="/assets/view-activity-e1e28d5e63.png" alt="View audit log" width="2446" height="1318" />
 
 ## Next steps
 

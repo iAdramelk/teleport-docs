@@ -100,21 +100,21 @@ Before you get started, you’ll need:
 
 1. Select **Azure AD -> Enterprise Applications**
 
-   ![Select Enterprise Applications From Manage](/assets/azuread-1-home-553b890d08.png)
+   <img src="/assets/azuread-1-home-553b890d08.png" alt="Select Enterprise Applications From Manage" width="293" height="438" />
 
 2. Select **New application**
 
-   ![Select New Applications From Manage](/assets/azuread-2-newapp-a801b4e3a8.png)
+   <img src="/assets/azuread-2-newapp-a801b4e3a8.png" alt="Select New Applications From Manage" width="903" height="372" />
 
 3. Select **Create your own application**, enter the application name (for example,
    Teleport), and select **Integrate any other application you don't find in
    the gallery (Non-gallery)**.
 
-   ![Select Non-gallery application](/assets/azuread-3-createnongalleryapp-baf3b0eb2c.png)
+   <img src="/assets/azuread-3-createnongalleryapp-baf3b0eb2c.png" alt="Select Non-gallery application" width="1377" height="883" />
 
 4. Select **Properties** under **Manage** and set **Assignment required?** to **No**
 
-   ![Turn off user assignment](/assets/azuread-4-turnoffuserassign-0d6e9d6d9a.png)
+   <img src="/assets/azuread-4-turnoffuserassign-0d6e9d6d9a.png" alt="Turn off user assignment" width="2044" height="1958" />
 
    Click **Save** before proceeding to the next step.
 
@@ -122,11 +122,11 @@ Before you get started, you’ll need:
 
 1. Select **Single sign-on** under **Manage** and choose **SAML**
 
-   ![Select SAML](/assets/azuread-5-selectsaml-b0abf716d8.png)
+   <img src="/assets/azuread-5-selectsaml-b0abf716d8.png" alt="Select SAML" width="990" height="497" />
 
 2. Edit the **Basic SAML Configuration**
 
-   ![Edit Basic SAML Configuration](/assets/azuread-6-editbasicsaml-2b8a335236.png)
+   <img src="/assets/azuread-6-editbasicsaml-2b8a335236.png" alt="Edit Basic SAML Configuration" width="1039" height="383" />
 
 3. Enter the URL for your Teleport Proxy Service host in the **Entity ID** and **Reply URL**  fields:
 
@@ -134,14 +134,14 @@ Before you get started, you’ll need:
    https://mytenant.teleport.sh:443/v1/webapi/saml/acs/ad
    ```
 
-   ![Put in Entity ID and Reply URL](/assets/azuread-7-entityandreplyurl-ad0a19fce1.png)
+   <img src="/assets/azuread-7-entityandreplyurl-ad0a19fce1.png" alt="Put in Entity ID and Reply URL" width="1710" height="1852" />
 
    Click **Save** before proceeding to the next step.
 
 4. In **SAML Certificates** section, copy the **App Federation
    Metadata URL** link and save it for use in our Teleport connector configuration:
 
-   ![Download Federation Metadata XML](/assets/azuread-9-fedmeatadataxml-c206577e78.png)
+   <img src="/assets/azuread-9-fedmeatadataxml-c206577e78.png" alt="Download Federation Metadata XML" width="1522" height="769" />
 
 ### Edit attributes & claims
 
@@ -150,11 +150,11 @@ Before you get started, you’ll need:
 2. Change the "name identifier format" to **Default**. Make sure the source
    attribute is `user.userprincipalname`.
 
-   ![Confirm Name Identifier](/assets/azuread-8a-nameidentifier-37bedec1e3.png)
+   <img src="/assets/azuread-8a-nameidentifier-37bedec1e3.png" alt="Confirm Name Identifier" width="1516" height="1042" />
 
 3. Add a group claim to make user security groups available to the connector:
 
-   ![Put in Security group claim](/assets/azuread-8b-groupclaim-800e91d5af.png)
+   <img src="/assets/azuread-8b-groupclaim-800e91d5af.png" alt="Put in Security group claim" width="1748" height="1098" />
 
 4. Add a claim that transforms the format of the Azure AD username to lower case, in order to pass it to
    Teleport. Set the Source to "Transformation". In the new panel:
@@ -165,7 +165,7 @@ Before you get started, you’ll need:
 
    - Set the Value to `ToLowercase()`.
 
-     ![Add a transformed username](/assets/azuread-8c-usernameclaim-1e6b540cd4.png)
+     <img src="/assets/azuread-8c-usernameclaim-1e6b540cd4.png" alt="Add a transformed username" width="2686" height="1818" />
 
 ## Step 2/3. Create a SAML connector
 
@@ -466,15 +466,15 @@ $ tctl create -f azure-connector.yaml
 
 - Navigate to **Token Encryption**:
 
-![Navigate to token encryption](/assets/azuread-token-encryption-0-e41ff41594.png)
+<img src="/assets/azuread-token-encryption-0-e41ff41594.png" alt="Navigate to token encryption" width="528" height="1430" />
 
 - Import certificate
 
-![Import certificate](/assets/azuread-token-encryption-1-import-24f85c2b7a.png)
+<img src="/assets/azuread-token-encryption-1-import-24f85c2b7a.png" alt="Import certificate" width="1650" height="472" />
 
 - Activate it
 
-![Activate certificate](/assets/azuread-token-encryption-2-activate-bdf006700e.png)
+<img src="/assets/azuread-token-encryption-2-activate-bdf006700e.png" alt="Activate certificate" width="2130" height="572" />
 
 If the SSO login with this connector is successful, the encryption works.
 
@@ -501,7 +501,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
+<img src="/assets/teleportauditlogssofailed-a5da7b0950.png" alt="Audit Log Entry for SSO Login error" width="2444" height="1356" />
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 
@@ -577,7 +577,7 @@ The error above is caused by a Name ID format that is not compatible with Telepo
 
 Change the Name ID format to use email instead:
 
-![Change NameID format to use email](/assets/azuread-nameid-427a83d6df.png)
+<img src="/assets/azuread-nameid-427a83d6df.png" alt="Change NameID format to use email" width="1740" height="1106" />
 
 ## Further reading
 

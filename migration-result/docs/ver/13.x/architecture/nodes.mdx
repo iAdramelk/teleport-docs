@@ -27,7 +27,7 @@ Just like with OpenSSH, the `node` service provides SSH access to every node wit
 
 A node candidate becomes a Teleport Node when it joins a cluster and authenticates itself to receive cluster certificate.
 
-![Node joins a cluster](/assets/node-registration@1.2x-7ce1141229.svg)
+<img src="/assets/node-registration@1.2x-7ce1141229.svg" alt="Node joins a cluster" width="1001.6666666666667" height="1040" />
 
 All cluster Nodes keep the Auth Server updated on their status with periodic ping messages.
 They report their IP addresses and the values of their assigned labels.
@@ -42,7 +42,7 @@ Clients can access the list of all Nodes in their cluster via the Auth Server AP
 
 Node's identity is represented by SSH host certificate it receives after registering withing the cluster:
 
-![Host certificate](/assets/ssh-host-cert@1.2x-f6ebec7a8a.svg)
+<img src="/assets/ssh-host-cert@1.2x-f6ebec7a8a.svg" alt="Host certificate" width="312.5" height="185.83333333333334" />
 
 This certificate contains information about the node including:
 
@@ -66,13 +66,13 @@ In standard mode, nodes act like OpenSSH servers that
 only accept client SSH certificates. Users can connect to nodes through Proxy as a jump-host
 or directly:
 
-![Standard Mode](/assets/ssh-direct-mode@1.2x-364a316e16.svg)
+<img src="/assets/ssh-direct-mode@1.2x-364a316e16.svg" alt="Standard Mode" width="990.8333333333334" height="240" />
 
 In reverse tunnel mode, nodes establish reverse tunnels back to proxy. Nodes
 do not bind to any interface on the host, making sure the connection is only possible
 through proxies:
 
-![Tunnel Mode](/assets/ssh-tunnel-mode@1.2x-99704565ca.svg)
+<img src="/assets/ssh-tunnel-mode@1.2x-99704565ca.svg" alt="Tunnel Mode" width="1239.1666666666667" height="297.5" />
 
 <Tip>
   You can mix both modes in the same cluster, depending on your use case.
@@ -107,7 +107,7 @@ on the Teleport proxy server. This is not the case in default configuration
 because a proxy cannot see the encrypted traffic, it is encrypted end-to-end,
 i.e. from an SSH client to an SSH server/node, see the diagram below:
 
-![session-recording-diagram](/assets/session-recording-9703d82171.svg)
+<img src="/assets/session-recording-9703d82171.svg" alt="session-recording-diagram" width="514" height="357" />
 
 ### Proxy recording mode
 
@@ -117,7 +117,7 @@ its own SSH connection to the final destination server, effectively becoming an
 authorized "man in the middle". This allows the proxy server to forward SSH
 session data to the auth server to be recorded, as shown below:
 
-![recording-proxy](/assets/recording-proxy-2f08329b20.svg)
+<img src="/assets/recording-proxy-2f08329b20.svg" alt="recording-proxy" width="624" height="357" />
 
 The recording proxy mode, although *less secure*, was added to allow Teleport
 users to enable session recording for OpenSSH's servers running `sshd`, which is

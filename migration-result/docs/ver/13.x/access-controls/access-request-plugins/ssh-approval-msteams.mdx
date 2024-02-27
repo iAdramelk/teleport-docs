@@ -10,7 +10,7 @@ Access Requests. Users can then approve and deny Access Requests by following th
 message link, making it easier to implement security best practices without
 compromising productivity.
 
-![The Microsoft Teams Access Request plugin](/assets/msteams-c50df8bb2f.png)
+<img src="/assets/msteams-c50df8bb2f.png" alt="The Microsoft Teams Access Request plugin" width="1800" height="684" />
 
 ## Prerequisites
 
@@ -678,7 +678,7 @@ the resource group and the bot pricing tier.
 In the "Microsoft App ID" section choose "Single Tenant" and "Create new
 Microsoft App ID".
 
-![Create Azure Bot](/assets/create-azure-bot-cdf8b721c5.png)
+<img src="/assets/create-azure-bot-cdf8b721c5.png" alt="Create Azure Bot" width="1448" height="838" />
 
 ### Connect the bot to Microsoft Teams
 
@@ -688,7 +688,7 @@ channel.
 
 The result should be as follows:
 
-![Add Bot Channel](/assets/add-bot-channel-2b432bf182.png)
+<img src="/assets/add-bot-channel-2b432bf182.png" alt="Add Bot Channel" width="1588" height="190" />
 
 ### Obtain information about your Microsoft App
 
@@ -698,7 +698,7 @@ plugin configuration.
 
 Click the "Manage" link next to "Microsoft App ID". This will open the app management view.
 
-![Manage Bot App](/assets/manage-bot-app-7cd51d56e7.png)
+<img src="/assets/manage-bot-app-7cd51d56e7.png" alt="Manage Bot App" width="1978" height="238" />
 
 Then, go to the "Certificates & Secrets" section and choose to create a "New client secret".
 Use the "Copy" icon to copy the newly created secret and keep it with the
@@ -726,12 +726,12 @@ At this point the app declares the required permissions but those have not been 
 If you are an admin, click "Grant admin consent for \<directory name>". If you are not an admin,
 contact an admin user to grant the permissions.
 
-![Specify App Permissions](/assets/specify-app-permissions-6bdfb670ce.png)
+<img src="/assets/specify-app-permissions-6bdfb670ce.png" alt="Specify App Permissions" width="1278" height="381" />
 
 Once permissions have been approved, refresh the page and check the approval status.
 The result should be as follows:
 
-![Granted App Permissions](/assets/granted-app-permissions-839a0def31.png)
+<img src="/assets/granted-app-permissions-839a0def31.png" alt="Granted App Permissions" width="1284" height="380" />
 
 ## Step 6/9. Configure the Teleport Microsoft Teams plugin
 
@@ -971,7 +971,7 @@ a Microsoft Teams user or a channel URL.
 You can find the URL of a channel by opening the channel and clicking the button
 "Get link to channel":
 
-![Copy Teams Channel](/assets/copy-teams-channel-9c0f76c322.png)
+<img src="/assets/copy-teams-channel-9c0f76c322.png" alt="Copy Teams Channel" width="1001" height="425" />
 
 The `role_to_recipients` map must also include an entry for `"*"`, which the
 plugin looks up if no other entry matches a given role name. In the example
@@ -1109,7 +1109,7 @@ The final configuration file should resemble the following:
 Open Microsoft Teams and go to "Apps", "Manage your apps", then in the additional
 choices menu choose "Upload an App".
 
-![Upload Teams App](/assets/upload-teams-app-23d60bd430.png)
+<img src="/assets/upload-teams-app-23d60bd430.png" alt="Upload Teams App" width="752" height="350" />
 
 If you're a Teams admin, choose "Upload an app to your org's app catalog".
 This will allow you to skip the approval step.
@@ -1126,7 +1126,7 @@ They can do so by connecting to the
 [Teams admin dashboard](https://admin.teams.microsoft.com/policies/manage-apps),
 searching "TeleBot", selecting it and choosing "Allow".
 
-![Upload Teams App](/assets/allowed-teams-app-92414f5f7e.png)
+<img src="/assets/allowed-teams-app-92414f5f7e.png" alt="Upload Teams App" width="1272" height="649" />
 
 ### Add the Teams App to a Team
 
@@ -1134,7 +1134,7 @@ Once the app is approved it should appear in the "Apps built for your org" secti
 Add the newly uploaded app to a team. Open the app, click "Add to a team",
 choose the "General" channel of your team and click "Set up a bot".
 
-![Add Teams App](/assets/add-teams-app-92607f7ce7.png)
+<img src="/assets/add-teams-app-92607f7ce7.png" alt="Add Teams App" width="864" height="350" />
 
 Note: Once an app is added to a team, it can post on all channels.
 
@@ -1170,7 +1170,7 @@ Check your MS Teams!
 
 The plugin should exit and you should have received two messages through Microsoft Teams.
 
-![Validate Bot Message](/assets/validate-bot-message-a3b391c86b.png)
+<img src="/assets/validate-bot-message-a3b391c86b.png" alt="Validate Bot Message" width="844" height="270" />
 
 ### Start the MS Teams Plugin
 
@@ -1256,7 +1256,7 @@ following steps.
     Users can request access using the Web UI by visiting the "Access Requests"
     tab and clicking "New Request":
 
-    ![Creating an Access Request using the Web UI](/assets/request-access-989f648dce.png)
+        <img src="/assets/request-access-989f648dce.png" alt="Creating an Access Request using the Web UI" width="2436" height="1370" />
   </Tab>
 </Tabs>
 
@@ -1269,7 +1269,7 @@ Web UI and either approve or deny the request.
 Once you receive an Access Request message, click the link to visit Teleport and
 approve or deny the request:
 
-![Reviewing a request](/assets/review-request-a35de046df.png)
+<img src="/assets/review-request-a35de046df.png" alt="Reviewing a request" width="2436" height="1370" />
 
 <Accordion title="Reviewing from the command line">
   You can also review an Access Request from the command line:

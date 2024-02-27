@@ -21,7 +21,7 @@ questions like:
 After logging into the Teleport UI, go to the Management tab. If enabled, Access Graph options can be found
 under the Permission Management section.
 
-![Teleport Access Graph](/assets/main-view-9493b0b65a.png)
+<img src="/assets/main-view-9493b0b65a.png" alt="Teleport Access Graph" width="4112" height="2360" />
 
 ## Graph nodes
 
@@ -29,56 +29,56 @@ Teleport Access Graph divides your infrastructure into eight main components:
 
 1. Users
 
-![User Node](/assets/user-node-7c4c712242.png)
+<img src="/assets/user-node-7c4c712242.png" alt="User Node" width="506" height="122" />
 
 Users are the people who access your infrastructure. They can be employees,
 contractors, or bots.
 
 2. User Groups
 
-![User Group Node](/assets/user-group-node-facc1ba93f.png)
+<img src="/assets/user-group-node-facc1ba93f.png" alt="User Group Node" width="522" height="124" />
 
 User Groups are collections of users. They can be used to organize users
 based on their role or team.
 
 3. Temporary user groups
 
-![Temporary User Group Node](/assets/temporary-user-group-node-638c2e5896.png)
+<img src="/assets/temporary-user-group-node-638c2e5896.png" alt="Temporary User Group Node" width="504" height="120" />
 
 Temporary User Groups are created when a user is granted temporary access to a
 resource. They are automatically deleted when the user's access expires.
 
 4. Actions
 
-![Action Node](/assets/allow-action-node-989a03a049.png)
+<img src="/assets/allow-action-node-989a03a049.png" alt="Action Node" width="534" height="186" />
 
 Actions are the things that users can or cannot do. Actions are related to
 resources. For example, a user can SSH into a node.
 
 5. Deny Actions
 
-![Deny Action Node](/assets/deny-action-node-d67cef8329.png)
+<img src="/assets/deny-action-node-d67cef8329.png" alt="Deny Action Node" width="520" height="186" />
 
 Deny Actions are the things that users cannot do. Deny Actions are related to
 resources. For example, a user cannot SSH into a node.
 
 6. Temporary Actions
 
-![Temporary Action Node](/assets/temporary-action-node-42a54b14af.png)
+<img src="/assets/temporary-action-node-42a54b14af.png" alt="Temporary Action Node" width="518" height="176" />
 
 Temporary Actions are created when a user is granted temporary access to a
 resource. They are automatically deleted when the user's access expires.
 
 7. Resource Groups
 
-![Resource Group Node](/assets/resource-group-node-9b9bd58801.png)
+<img src="/assets/resource-group-node-9b9bd58801.png" alt="Resource Group Node" width="310" height="99" />
 
 Resource Groups are collections of resources. They can be used to organize
 resources based on their role or team.
 
 8. Resources
 
-![Resource Node](/assets/resource-node-7fb68fb0e7.png)
+<img src="/assets/resource-node-7fb68fb0e7.png" alt="Resource Node" width="504" height="132" />
 
 Resources are the things that users can or cannot access. They can be
 servers, databases, or Kubernetes clusters.
@@ -88,7 +88,7 @@ servers, databases, or Kubernetes clusters.
 To search for a graph node, either click the search button in the sidebar on the left,
 or press the `s` key.
 
-![Search](/assets/search-1e948e361f.png)
+<img src="/assets/search-1e948e361f.png" alt="Search" width="1174" height="852" />
 
 You can then search through all node types. If you select a result using your keyboard
 arrow keys, you can press either `Tab` to add the node to the graph, or `Enter` to replace
@@ -99,18 +99,18 @@ the graph with just the individual node.
 By default, Teleport Access Graph shows all types of nodes and paths. You can see what
 node types are visible by looking at the sidebar on the left.
 
-![Sidebar](/assets/sidebar-5bc055c238.png)
+<img src="/assets/sidebar-5bc055c238.png" alt="Sidebar" width="600" height="762" />
 
 ### Showing/removing individual graph nodes
 
 To show or remove an individual graph node, open up the node type in the sidebar and
 click on the node you want to show or remove.
 
-![Show/Remove Node](/assets/search-item-click-de450e18eb.png)
+<img src="/assets/search-item-click-de450e18eb.png" alt="Show/Remove Node" width="608" height="84" />
 
 Clicking on the node name will toggle the visibility of that node.
 
-![Select only one node](/assets/search-item-checkbox-click-b1d74182a7.png)
+<img src="/assets/search-item-checkbox-click-b1d74182a7.png" alt="Select only one node" width="608" height="84" />
 
 Clicking on the checkbox will select only that node.
 
@@ -119,12 +119,12 @@ Clicking on the checkbox will select only that node.
 To add a graph node type that isn't in the view, select it from the list of available
 node types.
 
-![Add node type](/assets/add-node-type-07064d9619.png)
+<img src="/assets/add-node-type-07064d9619.png" alt="Add node type" width="600" height="331" />
 
 To remove the graph node type, expand the node type in the sidebar and click on the
 remove button.
 
-![Remove node type](/assets/remove-node-type-05fffa516a.png)
+<img src="/assets/remove-node-type-05fffa516a.png" alt="Remove node type" width="602" height="298" />
 
 ### Expanding/collapsing graph nodes
 
@@ -133,17 +133,17 @@ connections. To expand a node, hover over the edge of the node. If there are
 connections in that direction, the edge will turn blue. Clicking on the edge
 will expand the node.
 
-![Expand node](/assets/expand-node-b9348c08ec.png)
+<img src="/assets/expand-node-b9348c08ec.png" alt="Expand node" width="642" height="200" />
 
 You can keep expanding graph nodes until you reach the end of the path.
 
-![Expand one level](/assets/expand-one-level-f1d9f0c8ed.png)
+<img src="/assets/expand-one-level-f1d9f0c8ed.png" alt="Expand one level" width="1380" height="836" />
 
-![Expand two levels](/assets/expand-two-levels-98ec1d43f0.png)
+<img src="/assets/expand-two-levels-98ec1d43f0.png" alt="Expand two levels" width="2454" height="980" />
 
 To collapse a graph node, click on the edge that was used to expand it.
 
-![Collapse node](/assets/collapse-node-092295bd04.png)
+<img src="/assets/collapse-node-092295bd04.png" alt="Collapse node" width="698" height="210" />
 
 ## Graph paths
 
@@ -161,14 +161,14 @@ Paths can be divided into two categories:
 
 1. Allow paths
 
-![Allow Path](/assets/allow-path-1cc832e8d5.png)
+<img src="/assets/allow-path-1cc832e8d5.png" alt="Allow Path" width="3880" height="278" />
 
 Allow paths connect users to resources. They show what a user can access
 and what actions they can perform.
 
 2. Deny paths
 
-![Deny Path](/assets/deny-path-fe8fd3111f.png)
+<img src="/assets/deny-path-fe8fd3111f.png" alt="Deny Path" width="3880" height="278" />
 
 Deny paths connect users to resources. They show what a user cannot access
 and what actions they cannot perform. Deny paths take precedence over allow
@@ -180,11 +180,11 @@ Teleport Access Graph can help you to answer questions like:
 
 - Who can access a specific resource?
 
-![Show Access Path Resource](/assets/show-access-path-resource-824f96d27a.gif)
+<img src="/assets/show-access-path-resource-824f96d27a.gif" alt="Show Access Path Resource" width="3954" height="2304" />
 
 - What resources can a specific user access?
 
-![Show Access Path](/assets/show-access-path-a3950fb360.gif)
+<img src="/assets/show-access-path-a3950fb360.gif" alt="Show Access Path" width="3954" height="2304" />
 
 ## How Teleport resources are represented
 

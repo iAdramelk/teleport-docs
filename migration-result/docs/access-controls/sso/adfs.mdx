@@ -70,27 +70,27 @@ incoming claims: `Name ID` and `Group`.
 - `Name ID` should be a mapping of the LDAP Attribute `E-Mail-Addresses` to
   `Name ID`.
 
-  ![Name ID Configuration](/assets/adfs-1-7c6d9499db.png)
+  <img src="/assets/adfs-1-7c6d9499db.png" alt="Name ID Configuration" width="959" height="552" />
 
 - A group membership claim should be used to map users to roles (for example to
   separate normal users and admins).
 
-  ![Group Configuration](/assets/adfs-2-f7329334c4.png)
+  <img src="/assets/adfs-2-f7329334c4.png" alt="Group Configuration" width="960" height="556" />
 
 - If you are using dynamic roles (see below), it may be useful to map the LDAP
   Attribute `SAM-Account-Name` to `Windows account name`:
 
-  ![WAN Configuration](/assets/adfs-3-f5a2ad14ff.png)
+  <img src="/assets/adfs-3-f5a2ad14ff.png" alt="WAN Configuration" width="962" height="554" />
 
 - And create another mapping of `E-Mail-Addresses` to `UPN`:
 
-  ![UPN Configuration](/assets/adfs-4-6582626b20.png)
+  <img src="/assets/adfs-4-6582626b20.png" alt="UPN Configuration" width="957" height="551" />
 
 You'll also need to create a Relying Party Trust. Use the below information to
 help guide you through the Wizard.
 
 - Create a Relaying Party Trust:
-  ![Add a Claims Provider Trust](/assets/adfs-add-provider-trust-c148a6faa2.png)
+  <img src="/assets/adfs-add-provider-trust-c148a6faa2.png" alt="Add a Claims Provider Trust" width="1732" height="904" />
 - Enter data about the relying party manually.
 - Set the display name to something along the lines of `Teleport`.
 - Skip the token encryption certificate.
@@ -210,7 +210,7 @@ $ tctl saml export adfs > saml.cer
 Copy `saml.cer`, to ADFS server, open the "Relying Party Trust" and add this
 file as one of the signature verification certificates:
 
-![adfs-add-teleport-cert.png](/assets/adfs-add-teleport-cert-d15eb9ac13.png)
+<img src="/assets/adfs-add-teleport-cert-d15eb9ac13.png" alt="adfs-add-teleport-cert.png" width="1770" height="1286" />
 
 The Web UI will now contain a new button: "Login with MS Active Directory". The CLI is
 the same as before:
@@ -301,7 +301,7 @@ If you get "access denied" or other login errors, the number one place to check 
 Log. Under the **Management** area you can access it within the **Activity** tab in the
 Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
+<img src="/assets/teleportauditlogssofailed-a5da7b0950.png" alt="Audit Log Entry for SSO Login error" width="2444" height="1356" />
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

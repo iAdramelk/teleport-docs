@@ -154,13 +154,13 @@ AWS provides the `ReadOnlyAccess` and `PowerUserAccess` IAM policies that can be
 Go to the IAM -> Access Management -> [Roles](https://console.aws.amazon.com/iamv2/home#/roles).
 Press Create Role.
 
-![Create Role Step 1](/assets/create-role-example-readonly-1-309932b26d.png)
+<img src="/assets/create-role-example-readonly-1-309932b26d.png" alt="Create Role Step 1" width="982" height="677" />
 
 ### Select the ReadOnlyAccess policy
 
 Press Next and Select the `ReadOnlyAccess`.  Sorting the Policy Name table from Z-A will make it faster to select.
 
-![Select Role Step 2](/assets/create-role-example-readonly-2-c531d9b5da.png)
+<img src="/assets/create-role-example-readonly-2-c531d9b5da.png" alt="Select Role Step 2" width="988" height="681" />
 
 Press next through the tags
 
@@ -168,7 +168,7 @@ Press next through the tags
 
 Enter a role name and press create role.
 
-![Create Role Step 3](/assets/create-role-example-readonly-3-61a353eca8.png)
+<img src="/assets/create-role-example-readonly-3-61a353eca8.png" alt="Create Role Step 3" width="985" height="636" />
 
 ### Repeat for Power User
 
@@ -208,7 +208,7 @@ for more details. After saving the trust policy, the account will show as a
 trusted entity.
 
 From the EC2 dashboard select Actions -> Security -> Modify IAM Role.
-![AWS trusted entities](/assets/aws-trusted-entities@2x-8f91d35971.png)
+<img src="/assets/aws-trusted-entities@2x-8f91d35971.png" alt="AWS trusted entities" width="298" height="257" />
 
 Do this for each IAM role your Teleport users will need to assume.
 
@@ -237,7 +237,7 @@ Next, create a Role using this IAM policy to allow Teleport to assume IAM roles:
 Attach this policy to the IAM role/user your Teleport Application Service agent
 is using.
 
-![AWS Attach Security Role](/assets/attach-security-role-734008788a.png)
+<img src="/assets/attach-security-role-734008788a.png" alt="AWS Attach Security Role" width="824" height="397" />
 
 ## Step 4/9. Configure Teleport IAM role mapping
 
@@ -1059,7 +1059,7 @@ Navigate to the Applications tab in your Teleport cluster's control panel and
 click on the Launch button for the AWS console application which will bring up
 an IAM role selector:
 
-![IAM role selector](/assets/iam-role-selector-0292fc870f.png)
+<img src="/assets/iam-role-selector-0292fc870f.png" alt="IAM role selector" width="2228" height="298" />
 
 Click on the role you want to assume and you will get redirected to the AWS
 Management Console, signed in with the selected role.
@@ -1067,7 +1067,7 @@ Management Console, signed in with the selected role.
 In the console's top-right corner you should see that you're logged in through
 federated login and the name of your assumed IAM role:
 
-![Federated login](/assets/federated-login@2x-f18a98c758.png)
+<img src="/assets/federated-login@2x-f18a98c758.png" alt="Federated login" width="369" height="114" />
 
 Note that your federated login session is marked with your Teleport username.
 
@@ -1087,7 +1087,7 @@ To view CloudTrail events for your federated sessions, navigate to the CloudTrai
 Each Teleport federated login session uses a Teleport username as the federated
 username which you can search for to get the events history:
 
-![CloudTrail](/assets/cloud-trail-d3fc186bff.png)
+<img src="/assets/cloud-trail-d3fc186bff.png" alt="CloudTrail" width="1864" height="796" />
 
 ## Step 8/9. Access AWS CLI
 

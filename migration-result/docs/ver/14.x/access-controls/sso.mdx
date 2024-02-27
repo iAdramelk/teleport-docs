@@ -731,13 +731,13 @@ SAML and OIDC types:
 Use the `display` field in an authentication connector to control the appearance
 of SSO buttons in the Teleport Web UI.
 
-| Provider  | YAML                 | Example                                           |
-| --------- | -------------------- | ------------------------------------------------- |
-| GitHub    | `display: GitHub`    | ![github](/assets/github@2x-724ac54c76.png)       |
-| Microsoft | `display: Microsoft` | ![microsoft](/assets/microsoft@2x-6158acb10a.png) |
-| Google    | `display: Google`    | ![google](/assets/google@2x-ef9a318526.png)       |
-| BitBucket | `display: Bitbucket` | ![bitbucket](/assets/bitbucket@2x-18a1eedbbf.png) |
-| OpenID    | `display: Okta`      | ![Okta](/assets/openId@2x-dafbbc8b0b.png)         |
+| Provider  | YAML                 | Example                                                                                     |
+| --------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| GitHub    | `display: GitHub`    | <img src="/assets/github@2x-724ac54c76.png" alt="github" width="419" height="62.5" />       |
+| Microsoft | `display: Microsoft` | <img src="/assets/microsoft@2x-6158acb10a.png" alt="microsoft" width="416" height="62.5" /> |
+| Google    | `display: Google`    | <img src="/assets/google@2x-ef9a318526.png" alt="google" width="419" height="62.5" />       |
+| BitBucket | `display: Bitbucket` | <img src="/assets/bitbucket@2x-18a1eedbbf.png" alt="bitbucket" width="419" height="62.5" /> |
+| OpenID    | `display: Okta`      | <img src="/assets/openId@2x-dafbbc8b0b.png" alt="Okta" width="418" height="54.5" />         |
 
 ## Troubleshooting
 
@@ -765,7 +765,7 @@ If something is not working, we recommend to:
 If you get "access denied" or other login errors, the number one place to check is the Audit
 Log. You can access it in the **Activity** tab of the Teleport Web UI.
 
-![Audit Log Entry for SSO Login error](/assets/teleportauditlogssofailed-a5da7b0950.png)
+<img src="/assets/teleportauditlogssofailed-a5da7b0950.png" alt="Audit Log Entry for SSO Login error" width="2444" height="1356" />
 
 Example of a user being denied because the role `clusteradmin` wasn't set up:
 

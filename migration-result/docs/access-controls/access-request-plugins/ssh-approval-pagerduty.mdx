@@ -24,7 +24,7 @@ the on-call team for a service affected by an incident.
   On the left sidebar, click **Enroll New Integration** to visit the "Enroll New
   Integration" page:
 
-  ![Enroll an Access Request plugin](/assets/enroll-336e8c2e41.png)
+    <img src="/assets/enroll-336e8c2e41.png" alt="Enroll an Access Request plugin" width="2814" height="1692" />
 
   On the "Select Integration Type" menu, click the tile for your integration. You
   will see a page with instructions to set up the integration, as well as a form
@@ -34,7 +34,7 @@ the on-call team for a service affected by an incident.
 This guide will explain how to set up Teleport's Access Request plugin for
 PagerDuty.
 
-![PagerDuty plugin architecture](/assets/diagram-03bb7cc003.png)
+<img src="/assets/diagram-03bb7cc003.png" alt="PagerDuty plugin architecture" width="3555" height="1341" />
 
 ## Prerequisites
 
@@ -612,8 +612,13 @@ In your PagerDuty dashboard, go to **Integrations → API Access Keys** and clic
 Leave "Read-only API Key" unchecked. Copy the key to a file on your local
 machine. We'll use the key in the plugin config file later.
 
-![Create an API
-key](/assets/pagerduty-integrations-9ae3d64cf4.png)
+<img
+  src="/assets/pagerduty-integrations-9ae3d64cf4.png"
+  alt="Create an API
+key"
+  width="2436"
+  height="1370"
+/>
 
 ## Step 6/8. Configure the PagerDuty plugin
 
@@ -848,7 +853,7 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
     Users can request access using the Web UI by visiting the "Access Requests"
     tab and clicking "New Request":
 
-    ![Creating an Access Request using the Web UI](/assets/request-access-989f648dce.png)
+        <img src="/assets/request-access-989f648dce.png" alt="Creating an Access Request using the Web UI" width="2436" height="1370" />
   </Tab>
 </Tabs>
 
@@ -864,15 +869,20 @@ request_state:PENDING pagerduty/app.go:366
 In PagerDuty, you will see a new incident containing information about the
 Access Request:
 
-![PagerDuty dashboard showing an Access
-Request](/assets/new-access-req-incident-150a94087d.png)
+<img
+  src="/assets/new-access-req-incident-150a94087d.png"
+  alt="PagerDuty dashboard showing an Access
+Request"
+  width="2436"
+  height="1370"
+/>
 
 ### Resolve the request
 
 Once you receive an Access Request message, click the link to visit Teleport and
 approve or deny the request:
 
-![Reviewing a request](/assets/review-request-a35de046df.png)
+<img src="/assets/review-request-a35de046df.png" alt="Reviewing a request" width="2436" height="1370" />
 
 <Accordion title="Reviewing from the command line">
   You can also review an Access Request from the command line:

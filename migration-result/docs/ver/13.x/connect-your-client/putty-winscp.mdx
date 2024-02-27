@@ -112,11 +112,11 @@ If you don't provide a login to this command, your local Windows username is use
 
 1. Start PuTTY to see the saved sessions available for your cluster.
 
-![Main PuTTY window](/assets/putty-window-1edb46b857.png)
+<img src="/assets/putty-window-1edb46b857.png" alt="Main PuTTY window" width="452" height="437" />
 
 2. Double-click a session to connect to the host through Teleport.
 
-![PuTTY console](/assets/putty-console-753182d312.png)
+<img src="/assets/putty-console-753182d312.png" alt="PuTTY console" width="661" height="418" />
 
 After you connect to the host, Teleport generates an audit log entry for the session's start,
 and appears in the list of "Active Sessions" within Teleport.
@@ -166,18 +166,18 @@ transfer files to and from it.
 If you don't see the Site Manager "Login" dialog appear with a list of sessions to connect to when WinSCP starts,
 click the **Tabs** menu, choose **Sites**, then **Site Manager...** to show it.
 
-![WinSCP Site Manager window](/assets/winscp-1-ab50b3a746.png)
+<img src="/assets/winscp-1-ab50b3a746.png" alt="WinSCP Site Manager window" width="626" height="422" />
 
 2. Click the **Tools** button at the bottom left, and choose **Import Sites**.
 
-![Click 'Tools', then choose 'Import Sites...'](/assets/winscp-2-4106a33512.png)
+<img src="/assets/winscp-2-4106a33512.png" alt="Click 'Tools', then choose 'Import Sites...'" width="226" height="237" />
 
 3. Check the box next to any saved PuTTY sessions that you wish to import into WinSCP for use, then click the "OK" button.
 
 If you don't see sessions matching the hosts that you want to connect to, close this box and run `tsh puttyconfig <user>@<host>`
 from a terminal [as described above](#summary) to add the sessions, then repeat this step.
 
-![Choose PuTTY sessions to import and click OK](/assets/winscp-3-dda4ab049b.png)
+<img src="/assets/winscp-3-dda4ab049b.png" alt="Choose PuTTY sessions to import and click OK" width="374" height="301" />
 
 4. To tell WinSCP it should trust and load saved Host CAs from PuTTY, click **Tools** again at the bottom left,
    then choose **Preferences...**
@@ -186,17 +186,17 @@ from a terminal [as described above](#summary) to add the sessions, then repeat 
   You can skip steps 4 and 5 if you've completed the process as this user on this PC before.
 </Tip>
 
-![Click 'Tools', then choose 'Preferences...'](/assets/winscp-4-db81dd5c1a.png)
+<img src="/assets/winscp-4-db81dd5c1a.png" alt="Click 'Tools', then choose 'Preferences...'" width="226" height="245" />
 
 5. Click the **Security** section at the left, then check the **Load authorities from PuTTY** checkbox under
    the *Trusted host certification authorities* section and click **OK** to exit.
 
-![Click 'Security', Check 'Load authorities from PuTTY' then click OK](/assets/winscp-5-e7dafcd7cb.png)
+<img src="/assets/winscp-5-e7dafcd7cb.png" alt="Click 'Security', Check 'Load authorities from PuTTY' then click OK" width="545" height="495" />
 
 6. Choose the host to connect to from the list at the left-hand side and click **Login**. You can also start the session
    by double clicking on its name if you like.
 
-![Choose the host from the list and click Login](/assets/winscp-6-707baef6c7.png)
+<img src="/assets/winscp-6-707baef6c7.png" alt="Choose the host from the list and click Login" width="625" height="422" />
 
 Uploading or downloading files using WinSCP through Teleport will generate audit events.
 

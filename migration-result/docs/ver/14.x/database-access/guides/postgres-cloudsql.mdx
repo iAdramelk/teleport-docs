@@ -17,11 +17,11 @@ In this guide, you will:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ![Teleport Database Access CloudSQL Self-Hosted](/assets/cloudsql_selfhosted-a8827f6109.png)
+        <img src="/assets/cloudsql_selfhosted-a8827f6109.png" alt="Teleport Database Access CloudSQL Self-Hosted" width="1354" height="600" />
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ![Teleport Database Access CloudSQL Cloud](/assets/cloudsql_cloud-8fde563c0b.png)
+        <img src="/assets/cloudsql_cloud-8fde563c0b.png" alt="Teleport Database Access CloudSQL Cloud" width="1354" height="600" />
   </Tab>
 </Tabs>
 
@@ -150,12 +150,12 @@ If you're [creating](https://console.cloud.google.com/sql/choose-instance-engine
 a new PostgreSQL instance, make sure to add the `cloudsql.iam_authentication`
 database flag under "Customize your instance / Flags" section:
 
-![Enable IAM Authentication](/assets/iam-new-instance@2x-4cb09a7e14.png)
+<img src="/assets/iam-new-instance@2x-4cb09a7e14.png" alt="Enable IAM Authentication" width="517" height="290" />
 
 To check whether IAM authentication is enabled for an existing Cloud SQL instance,
 look for the flag on the Configuration panel on the instance's Overview page:
 
-![Check IAM Authentication](/assets/iam-existing-instance@2x-3885af8ec4.png)
+<img src="/assets/iam-existing-instance@2x-3885af8ec4.png" alt="Check IAM Authentication" width="276" height="80" />
 
 If it isn't enabled, you can add this flag using the "Edit configuration" dialog
 at the bottom of the Configuration panel. Note, changing this setting may
@@ -170,7 +170,7 @@ Teleport uses service accounts to connect to Cloud SQL databases.
 Go to the IAM & Admin [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
 page and create a new service account:
 
-![Create Service Account](/assets/service-account-db@2x-cafb725c49.png)
+<img src="/assets/service-account-db@2x-cafb725c49.png" alt="Create Service Account" width="531" height="536" />
 
 Press "Create".
 
@@ -180,7 +180,7 @@ On the second step grant this service account the "Cloud SQL Instance User" role
 which will allow it to connect to Cloud SQL instances using IAM token for
 authentication:
 
-![Grant Cloud SQL Instance User to Service Account](/assets/service-account-db-grant@2x-74e98d4aed.png)
+<img src="/assets/service-account-db-grant@2x-74e98d4aed.png" alt="Grant Cloud SQL Instance User to Service Account" width="532" height="557" />
 
 Press "Done".
 
@@ -190,11 +190,11 @@ Now go back to the Users page of your Cloud SQL instance and add a new user
 account. In the sidebar, choose "Cloud IAM" authentication type and add the
 service account you've just created:
 
-![Add Cloud SQL User Account](/assets/add-user-account@2x-95a26569e6.png)
+<img src="/assets/add-user-account@2x-95a26569e6.png" alt="Add Cloud SQL User Account" width="531" height="382" />
 
 Press "Add" and your Users table should look similar to this:
 
-![Cloud SQL User Accounts Table](/assets/user-accounts@2x-efa6079ce3.png)
+<img src="/assets/user-accounts@2x-efa6079ce3.png" alt="Cloud SQL User Accounts Table" width="514" height="447" />
 
 See [Creating and managing IAM users](https://cloud.google.com/sql/docs/postgres/create-manage-iam-users)
 in Google Cloud documentation for more info.
@@ -209,7 +209,7 @@ Teleport Database Service.
 Go to the [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
 page and create a service account:
 
-![Create Service Account](/assets/service-account-db-service@2x-e1b164a4cb.png)
+<img src="/assets/service-account-db-service@2x-e1b164a4cb.png" alt="Create Service Account" width="532" height="536" />
 
 ### Grant permissions
 
@@ -229,7 +229,7 @@ Assign the Service Account the following IAM roles:
 
 Assign it the "Service Account Token Creator" role:
 
-![Grant Service Account Token Creator to Service Account](/assets/service-account-db-service-grant@2x-37a61f6313.png)
+<img src="/assets/service-account-db-service-grant@2x-37a61f6313.png" alt="Grant Service Account Token Creator to Service Account" width="527" height="520" />
 
 <Note>
   "Service Account Token Creator", "Cloud SQL Viewer", and "Cloud SQL Admin"
@@ -266,11 +266,11 @@ database is still over TLS even with this setting disabled.
 
 Once created, go to that service account's Keys tab and create a new key:
 
-![Service Account Keys](/assets/service-account-keys@2x-e1ddc54e71.png)
+<img src="/assets/service-account-keys@2x-e1ddc54e71.png" alt="Service Account Keys" width="539" height="313" />
 
 Make sure to choose JSON format:
 
-![Service Account New Key](/assets/service-account-new-key@2x-2990843e34.png)
+<img src="/assets/service-account-new-key@2x-2990843e34.png" alt="Service Account New Key" width="538" height="335" />
 
 Save the file. The Teleport Database Service will need it to be able to generate
 IAM auth tokens.
@@ -289,14 +289,14 @@ You can normally see it in the organization view at the top of the GCP dashboard
 The instance ID is the name of your Cloud SQL instance shown at the top of the
 Overview page:
 
-![Instance ID](/assets/instance-id@2x-8605898b78.png)
+<img src="/assets/instance-id@2x-8605898b78.png" alt="Instance ID" width="154" height="94" />
 
 - Cloud SQL instance endpoint.
 
 You will use the instance's public IP address to connect to it. It can be viewed
 on the "Connect to this instance" panel on the Overview page:
 
-![Instance Public IP](/assets/instance-public-ip@2x-e518dac4bf.png)
+<img src="/assets/instance-public-ip@2x-e518dac4bf.png" alt="Instance Public IP" width="794" height="236" />
 
 - Cloud SQL instance root certificate.
 
@@ -304,7 +304,7 @@ The instance's root certificate is required so Teleport can validate the
 certificate presented by the database instance. You can download `server-ca.pem`
 file from the Connections tab under Security section:
 
-![Instance Root Certificate](/assets/instance-root-ca@2x-2466edcc40.png)
+<img src="/assets/instance-root-ca@2x-2466edcc40.png" alt="Instance Root Certificate" width="518" height="369" />
 
 ## Step 5/7. Set up the Teleport Database Service
 

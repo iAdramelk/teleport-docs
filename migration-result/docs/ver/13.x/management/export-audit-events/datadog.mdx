@@ -10,7 +10,7 @@ how to forward Teleport audit events to Datadog using Fluentd.
 The Teleport Event Handler is designed to communicate with Fluentd using mTLS
 to establish a secure channel. In this setup, the Event Handler sends events to Fluentd, which forwards them to Datadog using an API key to authenticate.
 
-![Architecture of the setup shown in this guide](/assets/datadog-diagram-44983c398b.png)
+<img src="/assets/datadog-diagram-44983c398b.png" alt="Architecture of the setup shown in this guide" width="2458" height="2379" />
 
 ## Prerequisites
 
@@ -678,7 +678,7 @@ $ /usr/sbin/td-agent-gem install fluent-plugin-datadog
 
 From the Datadog web UI, generate an API key for Fluentd. From **Organization Settings** -> Access -> **API Keys**, click on **+ New Key**:
 
-![Datadog API key generation](/assets/datadog-generate-api-b00abf2e92.png)
+<img src="/assets/datadog-generate-api-b00abf2e92.png" alt="Datadog API key generation" width="2528" height="1346" />
 
 Copy the API key, and use it to add a new `<match>` block to `fluent.conf`:
 
@@ -824,7 +824,7 @@ INFO[0046] Event sent id=0b5f2a3e-faa5-4d77-ab6e-362bca0994fc ts="2021-06-08 11:
 
 The Logs view in Datadog should now report your Teleport cluster events:
 
-![Datadog Logs](/assets/datadog-logs-39bec04fe0.png)
+<img src="/assets/datadog-logs-39bec04fe0.png" alt="Datadog Logs" width="3095" height="1192" />
 
 ## Troubleshooting connection issues
 

@@ -93,27 +93,27 @@ Go to the "Roles" section of Google Cloud IAM & Admin.
 
 1. Click the "Create Role" button at the top.
 
-![Roles section](/assets/1-roles@1.5x-5879bb9a31.png)
+<img src="/assets/1-roles@1.5x-5879bb9a31.png" alt="Roles section" width="633.3333333333334" height="440" />
 
 2. Fill in the details of a "Storage Bucket Creator" role (we suggest using the name `storage-bucket-creator-role`)
 
-![Create role](/assets/2-createrole@1.5x-0b0a1b7330.png)
+<img src="/assets/2-createrole@1.5x-0b0a1b7330.png" alt="Create role" width="618" height="584.6666666666666" />
 
 3. Click the "Add Permissions" button.
 
-![Storage bucket creator role](/assets/3-addpermissions@1.5x-6e2b3c8e7c.png)
+<img src="/assets/3-addpermissions@1.5x-6e2b3c8e7c.png" alt="Storage bucket creator role" width="374.6666666666667" height="432" />
 
 4. Use the "Filter" box to enter `storage.buckets.create` and select it in the list.
 
-![Filter the list](/assets/4-storagebucketscreate@1.5x-7a13f9a203.png)
+<img src="/assets/4-storagebucketscreate@1.5x-7a13f9a203.png" alt="Filter the list" width="371.3333333333333" height="426.6666666666667" />
 
 5. Check the `storage.buckets.create` permission in the list and click the "Add" button to add it to the role.
 
-![Select storage.buckets.create](/assets/5-select@1.5x-4ec47d7838.png)
+<img src="/assets/5-select@1.5x-4ec47d7838.png" alt="Select storage.buckets.create" width="368" height="246.66666666666666" />
 
 6. Once all these settings are entered successfully, click the "Create" button.
 
-![Create role](/assets/6-createrole@1.5x-439972b9df.png)
+<img src="/assets/6-createrole@1.5x-439972b9df.png" alt="Create role" width="575.3333333333334" height="611.3333333333334" />
 
 ### Create an IAM role granting Cloud DNS permissions
 
@@ -121,15 +121,15 @@ Go to the "Roles" section of Google Cloud IAM & Admin.
 
 1. Click the "Create Role" button at the top.
 
-![Roles section](/assets/1-roles@1.5x-5879bb9a31.png)
+<img src="/assets/1-roles@1.5x-5879bb9a31.png" alt="Roles section" width="633.3333333333334" height="440" />
 
 2. Fill in the details of a "DNS Updater" role (we suggest using the name `dns-updater-role`)
 
-![Create role](/assets/13-dns-createrole@1.5x-b7c90ccc1a.png)
+<img src="/assets/13-dns-createrole@1.5x-b7c90ccc1a.png" alt="Create role" width="540.6666666666666" height="542" />
 
 3. Click the "Add Permissions" button.
 
-![DNS updater role](/assets/3-addpermissions@1.5x-6e2b3c8e7c.png)
+<img src="/assets/3-addpermissions@1.5x-6e2b3c8e7c.png" alt="DNS updater role" width="374.6666666666667" height="432" />
 
 4. Use the "Filter" box to find each of the following permissions in the list and add it.
    You can type things like `dns.resourceRecordSets.*` to quickly filter the list.
@@ -147,7 +147,7 @@ dns.managedZones.list
 
 5. Once all these settings are entered successfully, click the "Create" button.
 
-![Add DNS permissions](/assets/14-dns-permissions-create@1.5x-62e1fda728.png)
+<img src="/assets/14-dns-permissions-create@1.5x-62e1fda728.png" alt="Add DNS permissions" width="370" height="632" />
 
 ### Create a service account for the Teleport Helm chart
 
@@ -161,11 +161,11 @@ Go to the "Service Accounts" section of Google Cloud IAM & Admin.
 
 1. Click the "Create Service Account" button at the top.
 
-![Create service account](/assets/7-serviceaccounts@1.5x-4cf6bc0a07.png)
+<img src="/assets/7-serviceaccounts@1.5x-4cf6bc0a07.png" alt="Create service account" width="515.3333333333334" height="253.33333333333334" />
 
 2. Enter details for the service account (we recommend using the name `teleport-helm`) and click the "Create" button.
 
-![Enter service account details](/assets/8-createserviceaccount@1.5x-6d360d6021.png)
+<img src="/assets/8-createserviceaccount@1.5x-6d360d6021.png" alt="Enter service account details" width="556.6666666666666" height="446" />
 
 3. In the "Grant this service account access to project" section, add these four roles:
 
@@ -176,7 +176,7 @@ Go to the "Service Accounts" section of Google Cloud IAM & Admin.
 | Cloud Datastore Owner       | Grants permissions to create Cloud Datastore collections    |
 | Storage Object Admin        | Allows read/write/delete of Google Cloud storage objects    |
 
-![Add roles](/assets/9-addroles@1.5x-7eeaf0bf07.png)
+<img src="/assets/9-addroles@1.5x-7eeaf0bf07.png" alt="Add roles" width="363.3333333333333" height="434.6666666666667" />
 
 4. Click the "continue" button to save these settings, then click the "create" button to create the service account.
 
@@ -186,16 +186,16 @@ Go back to the "Service Accounts" view in Google Cloud IAM & Admin.
 
 1. Click on the `teleport-helm` service account that you just created.
 
-![Click on the service account](/assets/10-serviceaccountdetails@1.5x-cc39661e82.png)
+<img src="/assets/10-serviceaccountdetails@1.5x-cc39661e82.png" alt="Click on the service account" width="539.3333333333334" height="522" />
 
 2. Click the "Keys" tab at the top and click "Add Key". Choose "JSON" and click "Create".
 
-![Create JSON key](/assets/11-createkey-aeb904f897.png)
+<img src="/assets/11-createkey-aeb904f897.png" alt="Create JSON key" width="1344" height="804" />
 
 3. The JSON private key will be downloaded to your computer. Take note of the filename (`bens-demos-24150b1a0a7f.json` in this example)
    as you will need it shortly.
 
-![Private key saved](/assets/12-privatekey@1.5x-bbc25bff71.png)
+<img src="/assets/12-privatekey@1.5x-bbc25bff71.png" alt="Private key saved" width="494" height="170" />
 
 #### Create the Kubernetes secret containing the JSON private key for the service account
 
@@ -309,7 +309,7 @@ $ kubectl --namespace teleport create -f gcp-issuer.yaml
   the "DOWNLOAD LICENSE KEY" button to download your
   license file.
 
-  ![License File Download](/assets/license-23cee352ae.png)
+    <img src="/assets/license-23cee352ae.png" alt="License File Download" width="2952" height="604" />
 
   Create a secret from your license file. Teleport will automatically discover
   this secret as long as your file is named `license.pem`.

@@ -59,7 +59,7 @@ We recommend setting up Teleport in High Availability mode (HA). In High Availab
 stores the state of the system and [IBM Cloud Storage](https://www.ibm.com/cloud/storage)
 stores the audit logs.
 
-![GCP Intro Image](/assets/IBM_HA-8d916a946d.svg)
+<img src="/assets/IBM_HA-8d916a946d.svg" alt="GCP Intro Image" width="809" height="435" />
 
 ### IBM Cloud: Virtual Servers with Instance Groups
 
@@ -83,12 +83,12 @@ cluster.
 - CPU allocation: Shared
 - etcd version: 3.3
 
-![Creating IBM Server](/assets/cloud.ibm.com_catalog_services_databases-for-etcd-a2cc2decad.png)
+<img src="/assets/cloud.ibm.com_catalog_services_databases-for-etcd-a2cc2decad.png" alt="Creating IBM Server" width="2944" height="2844" />
 
 #### Saving Credentials
 
-![Creating IBM Server](/assets/etcd-pass-27796b09bf.png)
-![etcd cert and host](/assets/etcd-cert-and-host-237b263fe1.png)
+<img src="/assets/etcd-pass-27796b09bf.png" alt="Creating IBM Server" width="2476" height="1856" />
+<img src="/assets/etcd-cert-and-host-237b263fe1.png" alt="etcd cert and host" width="2476" height="2204" />
 
 ```yaml
 teleport:
@@ -123,7 +123,7 @@ When setting up `audit_sessions_uri` use `s3://` session prefix.
 
 The credentials are used from `~/.aws/credentials` and should be created with HMAC option:
 
-![Creating Service Creds](/assets/cloud.ibm.com_object-store-service-creds-df6556dada.png)
+<img src="/assets/cloud.ibm.com_object-store-service-creds-df6556dada.png" alt="Creating Service Creds" width="3018" height="1846" />
 
 ```json
 {
