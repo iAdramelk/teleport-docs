@@ -3,7 +3,7 @@ title: Installing Teleport
 description: How to install Teleport and Teleport's client tools on your platform, including binaries and instructions for Docker and Helm.
 h1: Installation
 videoBanner: fjk29wqXm1A
-version: '13.x'
+version: "13.x"
 ---
 
 This guide shows you how to install Teleport binaries on your platform,
@@ -15,7 +15,7 @@ including:
 - `tbot`
 
 If you are new to Teleport, we recommend following our [getting started
-guide](/docs/ver/13.x/index).
+guide](/docs/ver/13.x).
 
 For best results, Teleport clients (`tsh`, `tctl`, `tbot`) should be the same major
 version as the cluster they are connecting to. Teleport servers are compatible
@@ -106,7 +106,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -116,7 +116,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -138,7 +138,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -161,7 +161,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -184,7 +184,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -242,7 +242,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -260,13 +260,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -284,13 +284,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -308,13 +308,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -334,13 +334,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -356,7 +356,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -366,7 +366,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -380,7 +380,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -410,7 +410,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -432,7 +432,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -455,7 +455,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -478,7 +478,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -715,7 +715,7 @@ method](/docs/ver/13.x/agents/join-services-to-your-cluster/join-token).
 First, create directories in your home directory to mount to the container. The
 Teleport container will write its configuration and data to these directories:
 
-```code
+```bash
 $ mkdir -p ~/teleport/config ~/teleport/data
 ```
 
@@ -723,7 +723,7 @@ Run `teleport configure` from the Teleport container to generate a configuration
 file. This sets the container's name to `localhost` so your browser can trust
 the Proxy Service's self-signed TLS certificate:
 
-```code
+```bash
 $ docker run --hostname localhost --rm \
   --entrypoint=/usr/local/bin/teleport \
   public.ecr.aws/gravitational/teleport-distroless:13.4.16 configure --roles=proxy,auth > ~/teleport/config/teleport.yaml
@@ -731,7 +731,7 @@ $ docker run --hostname localhost --rm \
 
 Start Teleport on your container:
 
-```code
+```bash
 $ docker run --hostname localhost --name teleport \
   -v ~/teleport/config:/etc/teleport \
   -v ~/teleport/data:/var/lib/teleport \
@@ -742,7 +742,7 @@ $ docker run --hostname localhost --name teleport \
 From there, open another terminal and make sure your Teleport container's web
 API is functioning as intended:
 
-```code
+```bash
 $ curl --insecure https://localhost:3080/webapi/ping
 ```
 
@@ -792,13 +792,13 @@ from a trusted CA, e.g., Let's Encrypt.
 
 To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 To update the cache of charts from the remote repository, run `helm repo update`:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -825,7 +825,7 @@ chart.
 
         You can also fetch an installer via the command line:
 
-        ```code
+        ```bash
         $ curl -O https://cdn.teleport.dev/teleport-13.4.16.pkg
         # Installs on Macintosh HD
         $ sudo installer -pkg teleport-13.4.16.pkg -target /
@@ -861,7 +861,7 @@ chart.
 
         To install Teleport with Homebrew, run the following command:
 
-        ```code
+        ```bash
         $ brew install teleport
         ```
 
@@ -887,7 +887,7 @@ chart.
 
     You can also fetch an installer from the command line:
 
-    ```code
+    ```bash
     $ curl -O https://cdn.teleport.dev/teleport-ent-13.4.16.pkg
     # Install on Macintosh HD
     $ sudo installer -pkg teleport-ent-13.4.16.pkg -target / 
@@ -910,7 +910,7 @@ chart.
 
     You can also fetch an installer from the command line:
 
-    ```code
+    ```bash
     $ curl -O https://cdn.teleport.dev/teleport-ent-14.3.6.pkg
     # Install on Macintosh HD
     $ sudo installer -pkg teleport-ent-14.3.6.pkg -target / 
@@ -933,7 +933,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
@@ -953,7 +953,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     The executable will be available at
     `teleport-v13.4.16-windows-amd64-bin\tsh.exe`.
 
-    ```code
+    ```bash
     $ Expand-Archive teleport-v13.4.16-windows-amd64-bin.zip
     $ cd teleport-v13.4.16-windows-amd64-bin
     $ .\tsh.exe version
@@ -964,7 +964,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
   </Tab>
 
   <Tab title="Teleport Team">
-    ```code
+    ```bash
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
@@ -984,7 +984,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     The executable will be available at
     `teleport-v13.4.16-windows-amd64-bin\tsh.exe`.
 
-    ```code
+    ```bash
     $ Expand-Archive teleport-v13.4.16-windows-amd64-bin.zip
     $ cd teleport-v13.4.16-windows-amd64-bin
     $ .\tsh.exe version
@@ -995,7 +995,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    ```code
+    ```bash
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
@@ -1015,7 +1015,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     The executable will be available at
     `teleport-v13.4.16-windows-amd64-bin\tsh.exe`.
 
-    ```code
+    ```bash
     $ Expand-Archive teleport-v13.4.16-windows-amd64-bin.zip
     $ cd teleport-v13.4.16-windows-amd64-bin
     $ .\tsh.exe version
@@ -1026,7 +1026,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # Set the TLS level to TLS 1.2 (required on Windows Server 2016 and lower)
     $ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     # Get the expected checksum for the Windows tsh package
@@ -1046,7 +1046,7 @@ To install `tsh` on Windows, run the following commands in **PowerShell** (these
     The executable will be available at
     `teleport-v14.3.6-windows-amd64-bin\tsh.exe`.
 
-    ```code
+    ```bash
     $ Expand-Archive teleport-v14.3.6-windows-amd64-bin.zip
     $ cd teleport-v14.3.6-windows-amd64-bin
     $ .\tsh.exe version
@@ -1075,7 +1075,7 @@ If you download Teleport via an automated system, you can programmatically
 obtain the checksum by adding `.sha256` to the download link. This is the method
 shown in the installation examples.
 
-```code
+```bash
 $ export version=v13.4.16
 # 'darwin' 'linux' or 'windows'
 $ export os=linux

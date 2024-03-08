@@ -1,7 +1,7 @@
 ---
 title: UI Reference
 description: Use this resource for guidance on using our custom Next.js components and syntax
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport uses Next.js to generate its static documentation site. Next.js uses Markdown with React, hence the `.mdx` filename suffix.
@@ -11,6 +11,10 @@ This section briefly describes some of the features that are most relevant when 
 ## Admonitions
 
 <Tip>
+  <p>
+    **Admonition title**
+  </p>
+
   Admonition content.
 </Tip>
 
@@ -65,7 +69,7 @@ Output
 
 Here is the same block after rendering:
 
-```code
+```bash
 # Comment
 $ tsh login
 Output
@@ -226,13 +230,13 @@ Here is the result:
 <Accordion title="Getting cluster information">
   Log in to your Teleport cluster using the following command:
 
-  ```code
+  ```bash
   $ tsh login --user=user --proxy=proxy
   ```
 
   Get information about your Teleport cluster:
 
-  ```code
+  ```bash
   $ curl https://proxy/webapi/ping
   ```
 </Accordion>

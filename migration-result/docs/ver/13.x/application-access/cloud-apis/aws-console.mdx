@@ -2,7 +2,7 @@
 title: Access AWS With Teleport Application Access
 description: How to access AWS with Teleport application access.
 videoBanner: GVcy_rffxQw
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport can automatically sign your users into the AWS Management Console with
@@ -21,11 +21,11 @@ This guide will explain how to:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -38,7 +38,7 @@ This guide will explain how to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -58,7 +58,7 @@ This guide will explain how to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -75,7 +75,7 @@ This guide will explain how to:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -92,7 +92,7 @@ This guide will explain how to:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -106,7 +106,7 @@ This guide will explain how to:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -121,7 +121,7 @@ This guide will explain how to:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -289,7 +289,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -305,7 +305,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -315,7 +315,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -342,7 +342,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -352,7 +352,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -379,7 +379,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -389,7 +389,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -416,7 +416,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -431,7 +431,7 @@ commands for your authentication provider:
 Establish trust between your Teleport cluster and your new Application Service
 instance by creating a join token:
 
-```code
+```bash
 $ tctl tokens add --type=app --ttl=1h --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -439,7 +439,7 @@ abcd123-insecure-do-not-use-this
 On the host where you will install the Teleport Application Service, create a
 file called `/tmp/token` that consists only of your token:
 
-```code
+```bash
 $ echo join-token | sudo tee /tmp/token
 ```
 
@@ -452,7 +452,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -462,7 +462,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -484,7 +484,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -507,7 +507,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -530,7 +530,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -588,7 +588,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -606,13 +606,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -630,13 +630,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -654,13 +654,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -680,13 +680,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -702,7 +702,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -712,7 +712,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -726,7 +726,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -756,7 +756,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -778,7 +778,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -801,7 +801,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -824,7 +824,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -1020,7 +1020,7 @@ the Application Service.
   <Tab title="Package Manager">
     On the host where you will run the Application Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -1030,7 +1030,7 @@ the Application Service.
     On the host where you will run the Application Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -1042,6 +1042,10 @@ You can check the status of the Application Service with `systemctl status telep
 and view its logs with `journalctl -fu teleport`.
 
 <Warning>
+  <p>
+    **non-standard AWS regions**
+  </p>
+
   For non-standard AWS regions such as AWS GovCloud (US) regions and AWS China
   regions, please set the corresponding region in the `AWS_REGION` environment
   variable or in the AWS credentials file so that the Application Service can use
@@ -1067,6 +1071,10 @@ federated login and the name of your assumed IAM role:
 Note that your federated login session is marked with your Teleport username.
 
 <Note>
+  <p>
+    **Session Duration**
+  </p>
+
   Due to limitations in AWS IAM [role
   chaining](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html#iam-term-role-chaining),
   Management Console sessions will be restricted to one hour if Teleport is
@@ -1090,7 +1098,7 @@ Before beginning this step, make sure that the `aws` command line interface (CLI
 
 First, log into the previously configured AWS console app on your desktop:
 
-```code
+```bash
 $ tsh apps login --aws-role ExamplePowerUser awsconsole-test
 Logged into AWS app awsconsole-test. Example AWS CLI command:
 
@@ -1102,13 +1110,13 @@ provide a role name like `--aws-role ExamplePowerUser` or a full role ARN `arn:a
 
 Now you can use the `tsh aws` command like the native `aws` command-line tool:
 
-```code
+```bash
 $ tsh aws s3 ls
 ```
 
 To log out of the aws application and remove credentials:
 
-```code
+```bash
 $ tsh apps logout awsconsole-test
 ```
 
@@ -1117,14 +1125,14 @@ $ tsh apps logout awsconsole-test
 First, log into the previously configured console app if you haven't already
 done so:
 
-```code
+```bash
 $ tsh apps login --aws-role ExamplePowerUser awsconsole-test
 ```
 
 Now, use the following command to start a local HTTPS proxy server your
 applications will be connecting to:
 
-```code
+```bash
 $ tsh proxy aws -p 23456
 Started AWS proxy on http://127.0.0.1:23456.
 
@@ -1143,7 +1151,7 @@ configured for your application. For example, many command line tools like
 `terraform` or `eksctl` support setting the above AWS credentials and the HTTPS
 proxy using environment variables:
 
-```code
+```bash
 $ export AWS_ACCESS_KEY_ID=abcd1234-this-is-an-example
 $ export AWS_SECRET_ACCESS_KEY=zyxw9876-this-is-an-example
 $ export AWS_CA_BUNDLE=<ca-bundle-path>
@@ -1158,7 +1166,7 @@ SDK for JavaScript).
 
 To log out of the AWS application and remove credentials:
 
-```code
+```bash
 $ tsh apps logout awsconsole-test
 ```
 

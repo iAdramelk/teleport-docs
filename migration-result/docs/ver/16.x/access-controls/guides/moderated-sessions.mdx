@@ -6,7 +6,7 @@ keywords:
   - Kubernetes
   - session moderation
   - audit
-version: '16.x'
+version: "16.x"
 ---
 
 Moderated sessions allow you to define requirements for other users to be present
@@ -209,7 +209,7 @@ The following are required fields for `join_sessions`:
 In the following example, Jeff is assigned the `prod-access` role and attempts to connect to
 a server in the production environment using `tsh ssh`:
 
-```code
+```bash
 $ tsh ssh ubuntu@prod.teleport.example.com
 Teleport > Creating session with ID: 46e2af03-62d6-4e07-a886-43fe741ca044...
 Teleport > Controls
@@ -224,7 +224,7 @@ When Alice, who is assigned the `auditor` role, joins the waiting session
 as a moderator, the session can begin.
 For example:
 
-```code
+```bash
 $ tsh join --mode=moderator 46e2af03-62d6-4e07-a886-43fe741ca044
 Teleport > Creating session with ID: 46e2af03-62d6-4e07-a886-43fe741ca044...
 Teleport > Controls

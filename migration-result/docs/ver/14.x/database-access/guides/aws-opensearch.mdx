@@ -1,7 +1,7 @@
 ---
 title: Database Access with AWS OpenSearch
 description: How to access AWS OpenSearch with Teleport database access
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport can provide secure access to AWS OpenSearch via the  [Teleport Database
@@ -36,7 +36,7 @@ In this guide, you will:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -45,7 +45,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -67,7 +67,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -91,7 +91,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -114,7 +114,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -136,7 +136,7 @@ In this guide, you will:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -149,6 +149,10 @@ In this guide, you will:
   hosts the Teleport Auth Service for full permissions.
 
 <Note>
+  <p>
+    **Example Access Control**
+  </p>
+
   This guide provides an example configuration of IAM access roles as a model,
   and uses an EC2 instance to serve the Teleport Database Service. The level of
   access provided may not suit your needs, or may not fit your organization's
@@ -259,7 +263,7 @@ spec:
 
 Create the new role:
 
-```code
+```bash
 $ tctl create -f aws-opensearch-access.yaml
 ```
 
@@ -270,7 +274,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -286,7 +290,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -296,7 +300,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -323,7 +327,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -333,7 +337,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -360,7 +364,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -370,7 +374,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -397,7 +401,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -411,7 +415,7 @@ The Database Service requires a valid auth token to connect to the cluster. Gene
 one by running the following command against your Teleport Auth Service and save
 it in `/tmp/token` on the node that will run the Database Service:
 
-```code
+```bash
 $ tctl tokens add --type=db
 ```
 
@@ -435,7 +439,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
     ```
   </Tab>
@@ -445,7 +449,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -467,7 +471,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -490,7 +494,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -513,7 +517,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -573,7 +577,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -591,13 +595,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -615,13 +619,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v14. You'll need to update this
@@ -639,13 +643,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -665,13 +669,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -687,7 +691,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -697,7 +701,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -711,7 +715,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -741,7 +745,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -763,7 +767,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -786,7 +790,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -809,7 +813,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -872,7 +876,7 @@ Databases can be registered dynamically by Discovery Service, `tctl`, etc.
 Generate a Database Service configuration that monitors the dynamic database
 resources:
 
-```code
+```bash
 $ sudo teleport db configure create \
    -o file \
    --proxy=mytenant.teleport.sh:443 \
@@ -909,7 +913,7 @@ the Database Service.
   <Tab title="Package Manager">
     On the host where you will run the Database Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -919,7 +923,7 @@ the Database Service.
     On the host where you will run the Database Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -936,7 +940,7 @@ Once the Database Service has started and joined the cluster, you can start acce
 
 Create a proxy tunnel:
 
-```code
+```bash
 $ tsh proxy db --tunnel --port=8000 --db-user=ExampleTeleportOpenSearchRole example-opensearch
 Started authenticated tunnel for the OpenSearch database "example-opensearch" in cluster "teleport.example.com" on 127.0.0.1:8000.
 
@@ -957,7 +961,7 @@ Use one of the following commands to connect to the database or to the address a
 
 You can now interact with AWS OpenSearch API via local tunnel created by the `tsh proxy db` command:
 
-```code
+```bash
 $ curl http://localhost:8000/movies/_search \
    -H 'Content-Type: application/json'  \
    -d '{ "query": { "match_all": {} } }'
@@ -967,7 +971,7 @@ $ curl http://localhost:8000/movies/_search \
 
 Interactive session can be started using the `tsh db connect` command, which invokes the `opensearchsql` binary with interactive mode under the hood:
 
-```code
+```bash
 $ tsh db connect example-opensearch --db-user=ExampleTeleportOpenSearchRole
 #   ____                  _____                      __
 #  / __ \____  ___  ____ / ___/___  ____ ___________/ /_

@@ -1,7 +1,7 @@
 ---
 title: Using Teleport Machine ID with Jenkins
 description: Using Teleport Machine ID with Jenkins
-version: '13.x'
+version: "13.x"
 ---
 
 Jenkins is an open source automation server that is frequently used to build
@@ -17,11 +17,11 @@ You will need the following tools to use Teleport with Jenkins.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -34,7 +34,7 @@ You will need the following tools to use Teleport with Jenkins.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -54,7 +54,7 @@ You will need the following tools to use Teleport with Jenkins.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -71,7 +71,7 @@ You will need the following tools to use Teleport with Jenkins.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -88,7 +88,7 @@ You will need the following tools to use Teleport with Jenkins.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -104,7 +104,7 @@ You will need the following tools to use Teleport with Jenkins.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -119,7 +119,7 @@ You will need the following tools to use Teleport with Jenkins.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -191,7 +191,7 @@ spec:
   <Tab title="Teleport Enterprise Cloud">
     On your client machine, log in to Teleport using `tsh` before using `tctl`.
 
-    ```code
+    ```bash
     $ tctl create -f api-workers.yaml
     $ tctl bots add jenkins --roles=api-workers
     ```
@@ -201,7 +201,7 @@ spec:
     Connect to the Teleport Auth Server and use `tctl` to examine what roles exist on
     your system.
 
-    ```code
+    ```bash
     $ tctl create -f api-workers.yaml
     $ tctl bots add jenkins --roles=api-workers
     ```
@@ -216,7 +216,7 @@ In the example that follows, you will create a Linux user called `teleport` to
 run Machine ID but short-lived certificates will be written to disk as the
 Linux user `jenkins`.
 
-```code
+```bash
 $ sudo adduser \
     --disabled-password \
     --no-create-home \
@@ -228,7 +228,7 @@ $ sudo adduser \
 Create and initialize the directories you will need using the `tbot init`
 command.
 
-```code
+```bash
 $ sudo tbot init \
     --destination-dir=/opt/machine-id \
     --bot-user=teleport \
@@ -238,7 +238,7 @@ $ sudo tbot init \
 
 Create the bot data directory and grant permissions to access it to the Linux user (in our example, `teleport`) which `tbot` will run as.
 
-```code
+```bash
 # Make the bot directory and assign ownership to teleport user
 $ sudo mkdir -p /var/lib/teleport/bot
 $ sudo chown teleport:teleport /var/lib/teleport/bot
@@ -312,7 +312,7 @@ this by omitting this.
 
 Finally, run the following commands to start Machine ID.
 
-```code
+```bash
 $ sudo systemctl enable machine-id
 $ sudo systemctl start machine-id
 $ sudo systemctl status machine-id

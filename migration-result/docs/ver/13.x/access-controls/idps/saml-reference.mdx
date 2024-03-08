@@ -1,7 +1,7 @@
 ---
 title: SAML Identity Provider Reference
 description: Reference documentation for the SAML identity provider
-version: '13.x'
+version: "13.x"
 ---
 
 This page provides details on the SAML identity provider, built into Teleport
@@ -152,7 +152,7 @@ If the Teleport server returns a `Bad Request` the service provider metadata may
 have been added properly to Teleport and, as a result, Teleport is unable to find the
 service provider. You can verify this by looking for a log entry in Teleport's logs:
 
-```code
+```bash
 2023-03-01T10:32:34-05:00 INFO [SAMLIDP]   failed to validate request: cannot find service provider https://samltest.id/saml/sp: could not find service provider https://samltest.id/saml/sp pid:31036.1 saml@v0.4.12/identity_provider.go:232
 ```
 

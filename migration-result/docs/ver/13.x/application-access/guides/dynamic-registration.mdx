@@ -1,7 +1,7 @@
 ---
 title: Dynamic App Registration
 description: Register/unregister apps without restarting Teleport.
-version: '13.x'
+version: "13.x"
 ---
 
 Dynamic app registration allows Teleport administrators to register new apps (or
@@ -106,7 +106,7 @@ To create an application resource, run:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     # Log in to your cluster with tsh so you can use tctl from your local machine.
     # You can also run tctl on your Auth Service host without running "tsh login"
     # first.
@@ -116,7 +116,7 @@ To create an application resource, run:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # Log in to your Teleport cluster so you can use tctl remotely.
     $ tsh login --proxy=mytenant.teleport.sh --user=myuser
     $ tctl create app.yaml
@@ -130,7 +130,7 @@ instance picks it up according to its label selectors.
 
 To update an existing application resource, run:
 
-```code
+```bash
 $ tctl create -f app.yaml
 ```
 
@@ -139,6 +139,6 @@ will unregister and stop proxying it.
 
 To delete an application resource, run:
 
-```code
+```bash
 $ tctl rm app/example
 ```

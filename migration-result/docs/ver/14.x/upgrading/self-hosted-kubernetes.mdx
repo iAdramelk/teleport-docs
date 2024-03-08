@@ -1,7 +1,7 @@
 ---
 title: Upgrade Self-Hosted Teleport Clusters on Kubernetes
 description: Provides instructions for upgrading self-hosted Teleport clusters that run on Kubernetes. 
-version: '14.x'
+version: "14.x"
 ---
 
 This guide explains how to upgrade self-hosted Teleport clusters running on
@@ -48,20 +48,20 @@ running on Kubernetes.
 
    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-   ```code
+   ```bash
    $ helm repo add teleport https://charts.releases.teleport.dev
    ```
 
    Update the cache of charts from the remote repository so you can upgrade to all
    available releases:
 
-   ```code
+   ```bash
    $ helm repo update
    ```
 
 2. Upgrade the Helm release:
 
-   ```code
+   ```bash
    $ helm upgrade teleport-cluster teleport/teleport-cluster \
      --version=14.3.6 \
      --values=values.yaml
@@ -82,20 +82,20 @@ Run the following commands to upgrade Teleport agents running on Kubernetes.
 
    Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-   ```code
+   ```bash
    $ helm repo add teleport https://charts.releases.teleport.dev
    ```
 
    Update the cache of charts from the remote repository so you can upgrade to all
    available releases:
 
-   ```code
+   ```bash
    $ helm repo update
    ```
 
 2. Upgrade the Helm release:
 
-   ```code
+   ```bash
    $ helm -n teleport upgrade teleport-agent teleport/teleport-kube-agent \
      --values=values.yaml \
      --version=14.3.6

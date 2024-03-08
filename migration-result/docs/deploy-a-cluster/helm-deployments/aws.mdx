@@ -1,12 +1,16 @@
 ---
 title: Running an HA Teleport cluster using AWS, EKS, and Helm
 description: Install and configure an HA Teleport cluster using an AWS EKS cluster
-version: '15.x'
+version: "15.x"
 ---
 
 In this guide, we'll use Teleport Helm charts to set up a high-availability Teleport cluster that runs on AWS EKS.
 
 <Tip>
+  <p>
+    **Have an existing Teleport cluster?**
+  </p>
+
   If you are already running Teleport on another platform, you can use your
   existing Teleport deployment to access your Kubernetes cluster. [Follow our
   guide](/docs/kubernetes-access/getting-started) to connect your Kubernetes
@@ -30,7 +34,7 @@ Teleport's charts require the use of Helm version 3. You can [install Helm 3 by 
 
 Throughout this guide, we will assume that you have the `helm` and `kubectl` binaries available in your `PATH`:
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -73,9 +77,9 @@ $ kubectl version
 
   If you don't know what to put here, use `teleport` for both values.
 
-  Namespace: NAMESPACE
+  Namespace: namespace
 
-  Release name: RELEASE-NAME
+  Release name: release-name
 </Note>
 
 ## Step 1/7. Install Helm
@@ -84,7 +88,7 @@ Teleport's charts require the use of Helm version 3. You can [install Helm 3 by 
 
 Throughout this guide, we will assume that you have the `helm` and `kubectl` binaries available in your `PATH`:
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -99,14 +103,14 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -183,10 +187,10 @@ Service to create and configure one for you:
 
     | Placeholder value     | Replace with                                                                                       |
     | --------------------- | -------------------------------------------------------------------------------------------------- |
-    | US-WEST-2             | AWS region                                                                                         |
+    | us-west-2             | AWS region                                                                                         |
     | 1234567890            | AWS account ID                                                                                     |
-    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
-    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | teleport-helm-backend | DynamoDB table name to use for the Teleport backend                                                |
+    | teleport-helm-events  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -252,10 +256,10 @@ Service to create and configure one for you:
 
     | Placeholder value     | Replace with                                                                                       |
     | --------------------- | -------------------------------------------------------------------------------------------------- |
-    | US-WEST-2             | AWS region                                                                                         |
+    | us-west-2             | AWS region                                                                                         |
     | 1234567890            | AWS account ID                                                                                     |
-    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
-    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | teleport-helm-backend | DynamoDB table name to use for the Teleport backend                                                |
+    | teleport-helm-events  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -336,7 +340,7 @@ enable the Auth Service to create and configure it for you:
 
     | Placeholder value    | Replace with                                             |
     | -------------------- | -------------------------------------------------------- |
-    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
+    | your-sessions-bucket | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -377,7 +381,7 @@ enable the Auth Service to create and configure it for you:
 
     | Placeholder value    | Replace with                                             |
     | -------------------- | -------------------------------------------------------- |
-    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
+    | your-sessions-bucket | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -535,7 +539,7 @@ Once you have chosen an approach based on the details above, select the correct 
     If you do not have `cert-manager` already configured in the Kubernetes cluster where you are installing Teleport,
     you should add the Jetstack Helm chart repository which hosts the `cert-manager` chart, and install the chart:
 
-    ```code
+    ```bash
     $ helm repo add jetstack https://charts.jetstack.io
     $ helm repo update
     $ helm install cert-manager jetstack/cert-manager \
@@ -552,9 +556,9 @@ Once you have chosen an approach based on the details above, select the correct 
 
     | Placeholder value     | Replace with                                                         |
     | --------------------- | -------------------------------------------------------------------- |
-    | EMAIL\@ADDRESS.COM    | An email address to receive communications from Let's Encrypt        |
-    | EXAMPLE.COM           | The name of the Route 53 domain hosting your Teleport cluster        |
-    | US-WEST-2             | AWS region where the cluster is running                              |
+    | email\@address.com    | An email address to receive communications from Let's Encrypt        |
+    | example.com           | The name of the Route 53 domain hosting your Teleport cluster        |
+    | us-west-2             | AWS region where the cluster is running                              |
     | Z0159221358P96JYAUAA4 | Route 53 hosted zone ID for the domain hosting your Teleport cluster |
 
     ```yaml
@@ -583,7 +587,7 @@ Once you have chosen an approach based on the details above, select the correct 
 
     After you have created the `Issuer` and updated the values, add it to your cluster using `kubectl`:
 
-    ```code
+    ```bash
     $ kubectl create namespace namespace
     $ kubectl label namespace teleport 'pod-security.kubernetes.io/enforce=baseline'
     $ kubectl --namespace namespace create -f aws-issuer.yaml
@@ -595,13 +599,17 @@ Once you have chosen an approach based on the details above, select the correct 
     to provision your Teleport instances with TLS credentials.
 
     <Warning>
+      <p>
+        **Prerequisite: Install and configure the AWS Load Balancer controller**
+      </p>
+
       You must either follow the [AWS-maintained documentation on installing the AWS Load Balancer Controller](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
       or already have a working installation of the AWS LB controller before continuing with these instructions. Failure to do this will result in an unusable Teleport cluster.
 
       Assuming you follow the AWS guide linked above, you can check whether the AWS LB controller is running in your cluster by looking
       for pods with the `app.kubernetes.io/name=aws-load-balancer-controller` label:
 
-      ```code
+      ```bash
       $ kubectl get pods -A -l app.kubernetes.io/name=aws-load-balancer-controller
       NAMESPACE     NAME                                            READY   STATUS    RESTARTS   AGE
       kube-system   aws-load-balancer-controller-655f647b95-5vz56   1/1     Running   0          109d
@@ -610,7 +618,7 @@ Once you have chosen an approach based on the details above, select the correct 
 
       You can also check whether `alb` is registered as an `IngressClass` in your cluster:
 
-      ```code
+      ```bash
       $ kubectl get ingressclass
       NAME    CONTROLLER             PARAMETERS   AGE
       alb     ingress.k8s.aws/alb    <none>       109d
@@ -621,7 +629,7 @@ Once you have chosen an approach based on the details above, select the correct 
     the ACM certificate ARN to use, the port it should be served on and other ALB configuration
     parameters.
 
-    Replace ARN:AWS:ACM:US-WEST-2:1234567890:CERTIFICATE/12345678-43C7-4DD1-A2F6-C495B91EBECE
+    Replace arn:aws:acm:us-west-2:1234567890:certificate/12345678-43c7-4dd1-a2f6-c495b91ebece
     with your actual ACM certificate ARN.
   </Tab>
 
@@ -631,7 +639,7 @@ Once you have chosen an approach based on the details above, select the correct 
 
     Use the following command to create your secret:
 
-    ```code
+    ```bash
     $ kubectl -n namespace create secret tls my-tls-secret --cert=/path/to/cert/file --key=/path/to/key/file
     ```
 
@@ -665,7 +673,7 @@ Once you have chosen an approach based on the details above, select the correct 
     Create a secret from your license file. Teleport will automatically discover
     this secret as long as your file is named `license.pem`.
 
-    ```code
+    ```bash
     $ kubectl -n namespace create secret generic license --from-file=license.pem
     ```
   </Tab>
@@ -860,7 +868,7 @@ a file called `aws-values.yaml` and write the values you've chosen above to it:
 
 Install the chart with the values from your `aws-values.yaml` file using this command:
 
-```code
+```bash
 $ helm install release-name teleport/teleport-cluster \
   --create-namespace \
   --namespace namespace \
@@ -873,7 +881,7 @@ $ helm install release-name teleport/teleport-cluster \
 
 Once the chart is installed, you can use `kubectl` commands to view the deployment (example using `cert-manager`):
 
-```code
+```bash
 $ kubectl --namespace namespace get all
 
 NAME                                 READY   STATUS    RESTARTS   AGE
@@ -927,7 +935,7 @@ Here's how to do this in a hosted zone with AWS Route 53:
 
 <Tabs>
   <Tab title="cert-manager">
-    ```code
+    ```bash
     # Change these parameters if you altered them above
     $ NAMESPACE='namespace'
     $ RELEASE_NAME='release-name'
@@ -987,7 +995,7 @@ Here's how to do this in a hosted zone with AWS Route 53:
   </Tab>
 
   <Tab title="AWS Certificate Manager">
-    ```code
+    ```bash
     # Change these parameters if you altered them above
     $ NAMESPACE='namespace'
     $ RELEASE_NAME='release-name'
@@ -1055,7 +1063,7 @@ so we can run the command using `kubectl`:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ kubectl --namespace namespace exec deploy/release-name-auth -- tctl users add test --roles=access,editor
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -1066,7 +1074,7 @@ so we can run the command using `kubectl`:
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ kubectl --namespace teleport exec deploy/teleport-auth -- tctl users add test --roles=access,editor,reviewer
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -1102,7 +1110,7 @@ highAvailability:
 
 Upgrade the deployment with the values from your `aws-values.yaml` file using this command:
 
-```code
+```bash
 $ helm upgrade release-name teleport/teleport-cluster \
   --namespace namespace \
   -f aws-values.yaml
@@ -1114,7 +1122,7 @@ $ helm upgrade release-name teleport/teleport-cluster \
 
 Then perform a cluster upgrade with the new values:
 
-```code
+```bash
 $ helm upgrade release-name teleport/teleport-cluster \
   --namespace namespace \
   -f aws-values.yaml
@@ -1124,7 +1132,7 @@ $ helm upgrade release-name teleport/teleport-cluster \
 
 To uninstall the `teleport-cluster` chart, use `helm uninstall <release-name>`. For example:
 
-```code
+```bash
 $ helm --namespace namespace uninstall release-name
 ```
 
@@ -1132,7 +1140,7 @@ $ helm --namespace namespace uninstall release-name
 
 If you want to remove the `cert-manager` installation later, you can use this command:
 
-```code
+```bash
 $ helm --namespace cert-manager uninstall cert-manager
 ```
 

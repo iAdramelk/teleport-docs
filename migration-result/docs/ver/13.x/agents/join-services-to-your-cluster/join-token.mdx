@@ -1,7 +1,7 @@
 ---
 title: Join Services with a Secure Token
 description:  This guide shows you how to join a Teleport instance to your cluster using a join token in order to proxy access to resources in your infrastructure.
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will show you how to register a Teleport process running one
@@ -16,11 +16,11 @@ relationship with the Teleport cluster.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -33,7 +33,7 @@ relationship with the Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -53,7 +53,7 @@ relationship with the Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -70,7 +70,7 @@ relationship with the Teleport cluster.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -87,7 +87,7 @@ relationship with the Teleport cluster.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -131,7 +131,7 @@ so you can execute commands with the `tctl` admin tool:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=email@example.com
     $ tctl status
     # Cluster  teleport.example.com
@@ -146,7 +146,7 @@ so you can execute commands with the `tctl` admin tool:
   </Tab>
 
   <Tab title="Teleport Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
     $ tctl status
     # Cluster  myinstance.teleport.sh
@@ -166,7 +166,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -176,7 +176,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -198,7 +198,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -221,7 +221,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -244,7 +244,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -302,7 +302,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -320,13 +320,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -344,13 +344,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -368,13 +368,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -394,13 +394,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -416,7 +416,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -426,7 +426,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -440,7 +440,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -470,7 +470,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -492,7 +492,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -515,7 +515,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -538,7 +538,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -609,7 +609,7 @@ processes that that have joined the cluster.
 On your local machine, use the `tctl` tool to generate a new token. In the
 following example, a new token is created with a TTL of five minutes:
 
-```code
+```bash
 # Generate a short-lived invite token for a new Teleport SSH Service instance:
 $ tctl tokens add --ttl=5m --type=node 
 The invite token: abcd123-insecure-do-not-use-this
@@ -657,7 +657,7 @@ exception of tokens with the `bot` type, which are used by Machine ID.
 
 To list all of the tokens you have generated, run the following command:
 
-```code
+```bash
 $ tctl tokens ls
 Token                            Type Labels Expiry Time (UTC)
 -------------------------------- ---- ------ --------------------------
@@ -689,12 +689,12 @@ abcd123-insecure-do-not-use-this Node        30 Mar 23 18:15 UTC (2m8s)
 ### Start your Teleport process with the invite token
 
 Execute the following command on the host running your new Teleport process to
-add it to a cluster. Assign JOIN-TOKEN to the token you generated
-earlier and PROXY-ADDRESS to the host and web port of your
+add it to a cluster. Assign join-token to the token you generated
+earlier and proxy-address to the host and web port of your
 Teleport Proxy Service or Teleport Enterprise Cloud tenant (e.g.,
 `teleport.example.com:443`):
 
-```code
+```bash
 $ sudo teleport configure \
    --roles=node \
    --token=join-token \
@@ -734,7 +734,7 @@ $ sudo teleport configure \
 
   On you local machine, retrieve the CA pin of the Auth Service:
 
-  ```code
+  ```bash
   $ tctl status
   Cluster      teleport.example.com
   Version      12.1.1
@@ -747,7 +747,7 @@ $ sudo teleport configure \
   CA pin       sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
   ```
 
-  Copy the CA pin and assign it to the value of CA-PIN.
+  Copy the CA pin and assign it to the value of ca-pin.
 
   <Warning>
     The CA pin becomes invalid if a Teleport administrator performs the CA rotation
@@ -757,10 +757,10 @@ $ sudo teleport configure \
   ### Configure your Teleport process with the join token and CA pin
 
   Run the following command to configure your Teleport process instead of the
-  `teleport configure` command we showed you earlier. Assign AUTH-SERVICE to the host and gRPC port of your Auth Service host, e.g.,
+  `teleport configure` command we showed you earlier. Assign auth-service to the host and gRPC port of your Auth Service host, e.g.,
   `teleport.example.com:3025`.
 
-  ```code
+  ```bash
   $ sudo teleport configure \
      --roles=node \
      --token=join-token \
@@ -771,7 +771,7 @@ $ sudo teleport configure \
   Next, edit the Teleport configuration file, `/etc/teleport.yaml`, assigning the
   CA pin (the `teleport.ca_pin` field) to the one you copied earlier:
 
-  ```code
+  ```bash
   $ sudo sed -i 's|  ca_pin: ""|  ca_pin: "ca-pin"|' /etc/teleport.yaml
   ```
 </Accordion>
@@ -784,7 +784,7 @@ your Teleport instance.
   <Tab title="Package Manager">
     On the host where you will run your Teleport instance, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -794,7 +794,7 @@ your Teleport instance.
     On the host where you will run your Teleport instance, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -809,7 +809,7 @@ and view its logs with `journalctl -fu teleport`.
   If you followed this guide with a local Docker container, execute the following
   command within your container to run your new Teleport process in the foreground:
 
-  ```code
+  ```bash
   $ teleport start
   ```
 </Accordion>
@@ -821,7 +821,7 @@ size.
 Run the following command on your local machine to see all of the Teleport SSH
 Service instances in your cluster:
 
-```code
+```bash
 $ tctl nodes ls
 Host          UUID                  Public Address Labels                 Version
 ------------- --------------------- -------------- ---------------------- -------
@@ -835,7 +835,7 @@ You can revoke a join token to prevent a Teleport process from using it.
 Run the following command on your local machine to create a token for a new
 Proxy Service:
 
-```code
+```bash
 $ tctl nodes add --ttl=5m --roles=proxy 
 # The invite token: abcd123-insecure-do-not-use-this.
 # This token will expire in 5 minutes.
@@ -856,7 +856,7 @@ $ tctl nodes add --ttl=5m --roles=proxy
 
 Next, run the following command to see a list of outstanding tokens:
 
-```code
+```bash
 $ tctl tokens ls
 Token                            Type  Labels Expiry Time (UTC)
 -------------------------------- ----- ------ ---------------------------
@@ -865,6 +865,10 @@ efgh456-insecure-do-not-use-this Proxy        30 Mar 23 18:24 UTC (4m39s)
 ```
 
 <Tip>
+  <p>
+    **Signup tokens**
+  </p>
+
   The output of `tctl tokens ls` includes tokens used for adding users alongside
   tokens used for adding Teleport processes to your cluster.
 </Tip>
@@ -875,9 +879,9 @@ for a Proxy Service instance.
 
 Tokens created via `tctl` can be deleted (revoked) via the `tctl tokens rm`
 command. Copy the second token from the output above and run the following
-command to delete it, assigning the token to TOKEN-TO-DELETE.
+command to delete it, assigning the token to token-to-delete.
 
-```code
+```bash
 $ tctl tokens rm token-to-delete
 # Token abcd123-insecure-do-not-use-this has been deleted
 ```

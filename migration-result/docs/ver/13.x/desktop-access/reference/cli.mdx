@@ -1,7 +1,7 @@
 ---
 title: Desktop Access CLI Reference
 description: CLI reference for Teleport desktop access.
-version: '13.x'
+version: "13.x"
 ---
 
 The following `tctl` commands are used to manage the Teleport Windows Desktop
@@ -11,7 +11,7 @@ Service.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -26,7 +26,7 @@ Service.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh

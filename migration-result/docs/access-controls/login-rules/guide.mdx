@@ -1,7 +1,7 @@
 ---
 title: Set Up Login Rules 
 description: Set up Login Rules to transform user traits
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will walk you through the process of writing, testing, and adding the
@@ -18,7 +18,7 @@ first Login Rule to your Teleport cluster.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -34,7 +34,7 @@ first Login Rule to your Teleport cluster.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -74,7 +74,7 @@ version: v7
 
 Create the role with `tctl`:
 
-```code
+```bash
 $ tctl create loginrule-manager.yaml
 role 'loginrule-manager' has been created
 ```
@@ -86,13 +86,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},loginrule-manager"
        ```
@@ -103,7 +103,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -130,7 +130,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -140,7 +140,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -167,7 +167,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -177,7 +177,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -204,7 +204,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -266,7 +266,7 @@ incoming traits.
 Fetch your user's current traits and store them in `input.json`, then test your
 new Login Rule with that input.
 
-```code
+```bash
 $ tctl get --format json users/username | jq 'first.spec.traits' > input.json
 $ tctl login_rule test --resource-file my_rule.yaml input.json
 access:
@@ -285,7 +285,7 @@ Make sure that all expected traits are present in the output.
 
 Use the following command to create the Login Rule in your cluster:
 
-```code
+```bash
 $ tctl create my_rule.yaml
 ```
 
@@ -295,7 +295,7 @@ As a final step, log out of your cluster, then log in again and make sure your u
 expected traits and roles.
 You can check the traits and roles with the following command:
 
-```code
+```bash
 $ tctl get --format json users/username | jq '{traits: first.spec.traits, roles: first.spec.roles}'
 {
   "traits": {
@@ -328,7 +328,7 @@ provider and how they are being mapped by your Login Rules.
 Run the following command to debug with a connector currently installed in your
 cluster.
 
-```code
+```bash
 $ tctl get connector/SSO connector name --with-secrets | tctl sso test
 ```
 
@@ -340,7 +340,7 @@ To learn more about the Login Rule expression syntax, check out the
 Learn about the `tctl login_rule test` command by running the help command or
 checking the [reference page](/docs/reference/cli/tctl#tctl-login_rule-test).
 
-```code
+```bash
 $ tctl help login_rule test
 ```
 

@@ -2,7 +2,7 @@
 title: Getting Started with Teleport Application Access
 description: Getting started with Teleport application access.
 videoBanner: cvW4b96aPL0
-version: '14.x'
+version: "14.x"
 ---
 
 This tutorial demonstrates how to configure secure access to an application
@@ -28,7 +28,7 @@ For this tutorial, verify your environment meets the following requirements:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -37,7 +37,7 @@ For this tutorial, verify your environment meets the following requirements:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -59,7 +59,7 @@ For this tutorial, verify your environment meets the following requirements:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -83,7 +83,7 @@ For this tutorial, verify your environment meets the following requirements:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -106,7 +106,7 @@ For this tutorial, verify your environment meets the following requirements:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -123,7 +123,7 @@ For this tutorial, verify your environment meets the following requirements:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -203,7 +203,7 @@ you will run the Teleport Application Service. For example, you can generate the
 invitation token by running the following command on a server where the Teleport Auth
 Service runs:
 
-```code
+```bash
 $ tctl tokens add \
     --type=app \
     --app-name=grafana \
@@ -226,7 +226,7 @@ appropriate steps.
 
     2. Start Grafana by running the following command:
 
-       ```code
+       ```bash
        $ docker run --detach --name grafana --publish 3000:3000 grafana/grafana
        ```
 
@@ -236,7 +236,7 @@ appropriate steps.
        Under the `[server]` section, uncomment the `domain` key and set the value
        to the address for your Teleport cluster. For example:
 
-       ```code
+       ```bash
        # The public facing domain name used to access grafana from a browser
        domain = teleport.example.com
        ```
@@ -244,7 +244,7 @@ appropriate steps.
        If you can't edit this file in the container, you can use the `sed` command to edit the file.
        For example:
 
-       ```code
+       ```bash
        $ docker exec --user 0 grafana sed -i \
          's/;domain = localhost/domain = teleport.example.com/g' \
          /etc/grafana/grafana.ini
@@ -256,7 +256,7 @@ appropriate steps.
     at `http://example-grafana.example-grafana.svc.cluster.local` in the
     Kubernetes cluster.
 
-    ```code
+    ```bash
     $ helm repo add grafana https://grafana.github.io/helm-charts
     $ helm repo update
     $ helm install example-grafana grafana/grafana \
@@ -281,7 +281,7 @@ appropriate steps.
                The following command updates the repository for the package manager on the
                local operating system and installs the provided Teleport version:
 
-               ```code
+               ```bash
                $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
                ```
              </Tab>
@@ -291,7 +291,7 @@ appropriate steps.
                  <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
                    Add the Teleport repository to your repository list:
 
-                   ```code
+                   ```bash
                    # Download Teleport's PGP public key
                    $ sudo curl https://apt.releases.teleport.dev/gpg \
                    -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -313,7 +313,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for cloud.
@@ -336,7 +336,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for cloud.
@@ -359,7 +359,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport Zypper repository for cloud.
@@ -419,7 +419,7 @@ appropriate steps.
              <Tab title="Teleport Enterprise">
                <Tabs>
                  <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-                   ```code
+                   ```bash
                    # Download Teleport's PGP public key
                    $ sudo curl https://apt.releases.teleport.dev/gpg \
                    -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -437,13 +437,13 @@ appropriate steps.
 
                    For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-                   ```code
+                   ```bash
                    $ sudo apt-get install teleport-ent-fips
                    ```
                  </Tab>
 
                  <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for v14. You'll need to update this
@@ -461,13 +461,13 @@ appropriate steps.
 
                    For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-                   ```code
+                   ```bash
                    $ sudo yum install teleport-ent-fips
                    ```
                  </Tab>
 
                  <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport Zypper repository for v14. You'll need to update this
@@ -485,13 +485,13 @@ appropriate steps.
 
                    For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-                   ```code
+                   ```bash
                    $ sudo yum install teleport-ent-fips
                    ```
                  </Tab>
 
                  <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for v14. You'll need to update this
@@ -511,13 +511,13 @@ appropriate steps.
 
                    For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-                   ```code
+                   ```bash
                    $ sudo dnf install teleport-ent-fips
                    ```
                  </Tab>
 
                  <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport Zypper repository.
@@ -533,7 +533,7 @@ appropriate steps.
 
                    For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-                   ```code
+                   ```bash
                    $ sudo zypper install teleport-ent-fips
                    ```
                  </Tab>
@@ -543,7 +543,7 @@ appropriate steps.
                    value (`amd64`, `arm64`, or `arm`). All example commands using this variable
                    will update after one is filled out.
 
-                   ```code
+                   ```bash
                    $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
                    # <checksum> <filename>
                    $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -557,7 +557,7 @@ appropriate steps.
                    For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
                    will be slightly different:
 
-                   ```code
+                   ```bash
                    $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
                    # <checksum> <filename>
                    $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -587,7 +587,7 @@ appropriate steps.
                  <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
                    Add the Teleport repository to your repository list:
 
-                   ```code
+                   ```bash
                    # Download Teleport's PGP public key
                    $ sudo curl https://apt.releases.teleport.dev/gpg \
                    -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -609,7 +609,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for cloud.
@@ -632,7 +632,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport YUM repository for cloud.
@@ -655,7 +655,7 @@ appropriate steps.
                  </Tab>
 
                  <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-                   ```code
+                   ```bash
                    # Source variables about OS version
                    $ source /etc/os-release
                    # Add the Teleport Zypper repository for cloud.
@@ -716,7 +716,7 @@ appropriate steps.
     2. Create the configuration file for Grafana at `/etc/app_config.yaml`
        with a command similar to the following:
 
-       ```code
+       ```bash
        $ sudo teleport configure \
          --output=file \
          --proxy=teleport.example.com:443 \
@@ -741,7 +741,7 @@ appropriate steps.
       <Tab title="Package Manager">
         On the host where you will run the Teleport Application Service, enable and start Teleport:
 
-        ```code
+        ```bash
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
         ```
@@ -751,7 +751,7 @@ appropriate steps.
         On the host where you will run the Teleport Application Service, create a systemd service
         configuration for Teleport, enable the Teleport service, and start Teleport:
 
-        ```code
+        ```bash
         $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
@@ -768,21 +768,21 @@ appropriate steps.
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository so you can upgrade to all
     available releases:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
 
     Install the `teleport-kube-agent` Helm chart into your Kubernetes cluster to proxy Grafana
     with a command similar to the following:
 
-    ```code
+    ```bash
     $ JOIN_TOKEN=$(cat /tmp/token)
     $ helm install teleport-kube-agent teleport/teleport-kube-agent \
       --create-namespace \
@@ -805,7 +805,7 @@ appropriate steps.
     Make sure that the Teleport agent pod is running. You should see one
     `teleport-kube-agent` pod with a single ready container:
 
-    ```code
+    ```bash
     $ kubectl -n teleport-agent get pods
     NAME                    READY   STATUS    RESTARTS   AGE
     teleport-kube-agent-0   1/1     Running   0          32s
@@ -821,7 +821,7 @@ Teleport has a built-in role called `access` that allows users to access cluster
 
 To assign to the `access` role to a new local user named `alice`, run the following command:
 
-```code
+```bash
 $ tctl users add --roles=access alice
 ```
 

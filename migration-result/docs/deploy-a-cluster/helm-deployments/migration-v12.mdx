@@ -1,7 +1,7 @@
 ---
 title: Migrating to teleport-cluster v12
 description: How to upgrade to teleport-cluster Helm chart version 12
-version: '15.x'
+version: "15.x"
 ---
 
 This guide covers the major changes of the `teleport-cluster` v12 chart
@@ -30,6 +30,10 @@ The main changes in version 12 of the `teleport-cluster` chart are:
   a TLS certificate; Auth replication requires using [HA storage backends](/docs/reference/backends).
 
 <Warning>
+  <p>
+    **Version compatibility**
+  </p>
+
   The chart has always been versioned with Teleport but was often compatible with
   the previous Teleport major version. This is not the case for v12. Using the chart
   v12 requires at least Teleport v12.

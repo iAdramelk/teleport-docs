@@ -1,7 +1,7 @@
 ---
 title: Using Machine ID with GitLab CI
 description: How to use Machine ID to SSH into Teleport nodes from GitLab CI
-version: '13.x'
+version: "13.x"
 ---
 
 <Accordion title="Version warning">
@@ -25,11 +25,11 @@ control.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -42,7 +42,7 @@ control.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -62,7 +62,7 @@ control.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -79,7 +79,7 @@ control.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -96,7 +96,7 @@ control.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -110,7 +110,7 @@ control.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -125,7 +125,7 @@ control.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -195,7 +195,7 @@ on the
 
 Apply this to your Teleport cluster using `tctl`:
 
-```code
+```bash
 $ tctl create -f gitlab-token.yaml
 ```
 
@@ -213,7 +213,7 @@ From your workstation enter the following command, replacing the`ci-user`
 value with a Linux user on the host that you want your GitHub Actions flow to
 be able to connect to:
 
-```code
+```bash
 $ tctl bots add gitlab-demo --roles=access --token=gitlab-demo --logins=ci-user
 ```
 

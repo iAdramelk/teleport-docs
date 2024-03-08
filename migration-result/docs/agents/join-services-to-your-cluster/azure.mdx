@@ -1,7 +1,7 @@
 ---
 title: Joining Services via Azure Managed Identity
 description: Use the Azure join method to join Teleport services to your Teleport cluster on Azure
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to use the **Azure join method** to configure
@@ -21,7 +21,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -30,7 +30,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -52,7 +52,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -76,7 +76,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -99,7 +99,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -120,7 +120,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -275,6 +275,10 @@ look up the virtual machine. No other permissions are required.
         />
 
     <Warning>
+      <p>
+        **IMPORTANT**
+      </p>
+
       As part of authentication, Teleport will be able to do anything allowed by the
       identity. If you use a managed identity other than the one created in this
       guide, we strongly recommend limiting its permissions and scope.
@@ -363,7 +367,7 @@ look up the virtual machine. No other permissions are required.
 
     Then run the following commands to create the custom role and managed identity:
 
-    ```code
+    ```bash
     $ DEPLOY_OUTPUT=$(az deployment group create \
     --resource-group <your-resource-group> \
     --template-file teleport-create-identity.json)
@@ -439,7 +443,7 @@ look up the virtual machine. No other permissions are required.
     Run the following command to assign your custom role to your managed identity
     and assign the identity to your virtual machines:
 
-    ```code
+    ```bash
     $ az deployment group create \
     --resource-group <your-resource-group> \
     --template-file teleport-assign-identity.json \
@@ -490,7 +494,7 @@ use, as long as you use the same value for `join_params.token_name` in Step 3.
 
 Run the following command to create the token:
 
-```code
+```bash
 $ tctl create -f token.yaml
 ```
 
@@ -534,7 +538,7 @@ your Teleport instance.
   <Tab title="Package Manager">
     On the host where you will run your Teleport instance, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -544,7 +548,7 @@ your Teleport instance.
     On the host where you will run your Teleport instance, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport

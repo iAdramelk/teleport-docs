@@ -1,7 +1,7 @@
 ---
 title: Audit Events and Records
 description: Reference of Teleport Audit Events and Session Records
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport logs cluster activity by emitting various events into its audit log.
@@ -57,7 +57,7 @@ There are two components of the audit log:
     stored in Teleport's data dir under the `log` directory. This is usually
     `/var/lib/teleport/log`. Each day is represented as a file:
 
-    ```code
+    ```bash
     $ ls -l /var/lib/teleport/log/
 
     # total 104
@@ -160,13 +160,13 @@ For desktop sessions the recording includes the contents of the screen.
 
     For example, replay a session via CLI:
 
-    ```code
+    ```bash
     $ tsh play 4c146ec8-eab6-11e6-b1b3-40167e68e931
     ```
 
     Print the session events in JSON to stdout:
 
-    ```code
+    ```bash
     $ tsh play 4c146ec8-eab6-11e6-b1b3-40167e68e931 --format=json
     ```
   </Tab>
@@ -180,13 +180,13 @@ For desktop sessions the recording includes the contents of the screen.
 
     For example, replay a session via CLI:
 
-    ```code
+    ```bash
     $ tsh play 4c146ec8-eab6-11e6-b1b3-40167e68e931
     ```
 
     Print the session events in JSON to stdout:
 
-    ```code
+    ```bash
     $ tsh play 4c146ec8-eab6-11e6-b1b3-40167e68e931 --format=json
     ```
   </Tab>

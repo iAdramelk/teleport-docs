@@ -1,7 +1,7 @@
 ---
 title: Teleport Access Requests with Email
 description: How to set up the Teleport email plugin to notify users when another user requests elevated privileges.
-version: '13.x'
+version: "13.x"
 ---
 
 This guide will explain how to set up Teleport to send Just-in-Time Access
@@ -23,7 +23,7 @@ letting you implement security best practices without compromising productivity.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -40,7 +40,7 @@ letting you implement security best practices without compromising productivity.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -55,6 +55,10 @@ letting you implement security best practices without compromising productivity.
 - Either a Linux host or Kubernetes cluster where you will run the email plugin.
 
 <Warning>
+  <p>
+    **Protecting your email account**
+  </p>
+
   The Teleport plugin needs to use a username and password to authenticate to your
   SMTP service. To mitigate the risk of these credentials being leaked, you should
   set up a dedicated email account for the Teleport plugin and rotate the password
@@ -65,7 +69,7 @@ letting you implement security best practices without compromising productivity.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -80,7 +84,7 @@ letting you implement security best practices without compromising productivity.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -127,7 +131,7 @@ spec:
 
 Create the roles you defined:
 
-```code
+```bash
 $ tctl create -f editor-request-rbac.yaml
 role 'editor-reviewer' has been created
 role 'editor-requester' has been created
@@ -143,7 +147,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -159,7 +163,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -169,7 +173,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -196,7 +200,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -206,7 +210,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -233,7 +237,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -243,7 +247,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -270,7 +274,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -281,7 +285,7 @@ commands for your authentication provider:
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor-requester 
 ```
 
@@ -309,7 +313,7 @@ review the request using the Teleport plugin.
     plugins from source. You can run the plugin from a remote host or your local
     development machine.
 
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-access-email-v13.3.8-linux-amd64-bin.tar.gz
     $ tar -xzf teleport-access-email-v13.3.8-linux-amd64-bin.tar.gz
     $ cd teleport-access-email
@@ -318,7 +322,7 @@ review the request using the Teleport plugin.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-email version
     teleport-email v13.3.8 git:teleport-email-v13.3.8-fffffffff go1.21
     ```
@@ -328,13 +332,13 @@ review the request using the Teleport plugin.
     We currently only provide Docker images for `linux-amd64`.
     Pull the Docker image for the latest access request plugin by running the following command:
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-email:13.3.8
     ```
 
     Make sure the plugin is installed by running the following command:
 
-    ```code
+    ```bash
     $ docker run public.ecr.aws/gravitational/teleport-plugin-email:13.3.8 version
     teleport-email v13.3.8 git:teleport-email-v13.3.8-fffffffff 1.21
     ```
@@ -346,7 +350,7 @@ review the request using the Teleport plugin.
     To install from source you need `git` and `go` installed. If you do not have Go
     installed, visit the Go [downloads page](https://go.dev/dl/).
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/email
     $ make
@@ -356,7 +360,7 @@ review the request using the Teleport plugin.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-email version
     teleport-email v13.3.8 git:teleport-email-v13.3.8-fffffffff go1.21
     ```
@@ -369,13 +373,13 @@ review the request using the Teleport plugin.
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -414,7 +418,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -447,7 +451,7 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
@@ -458,7 +462,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -474,7 +478,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -484,7 +488,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -511,7 +515,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -521,7 +525,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -548,7 +552,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -558,7 +562,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -585,7 +589,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -606,7 +610,7 @@ The following `tctl auth sign` command impersonates the `access-plugin` user,
 generates signed credentials, and writes an identity file to the local
 directory:
 
-```code
+```bash
 $ tctl auth sign --user=access-plugin --out=auth.pem
 ```
 
@@ -621,6 +625,10 @@ endpoint.
 You will refer to this file later when configuring the plugin.
 
 <Note>
+  <p>
+    **Certificate Lifetime**
+  </p>
+
   By default, `tctl auth sign` produces certificates with a relatively short
   lifetime. For production deployments, we suggest using [Machine
   ID](/docs/ver/13.x/machine-id/introduction) to programmatically issue and renew
@@ -633,7 +641,7 @@ You will refer to this file later when configuring the plugin.
   a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
   when logging in:
 
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --ttl=1001h
   ```
 </Note>
@@ -644,7 +652,7 @@ You will refer to this file later when configuring the plugin.
     command into `/var/lib/teleport/plugins/email` for later reference when
     configuring the plugin:
 
-    ```code
+    ```bash
     # create a data directory to hold certificate files for the plugin.
     $ sudo mkdir -p /var/lib/teleport/plugins/email
     $ sudo mv auth.* /var/lib/teleport/plugins/email
@@ -654,7 +662,7 @@ You will refer to this file later when configuring the plugin.
   <Tab title="Kubernetes">
     Create a Kubernetes secret that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=auth.pem teleport-plugin-email-identity
     ```
   </Tab>
@@ -674,7 +682,7 @@ chosen recipients.
     The Teleport email plugin uses a configuration file in TOML format. Generate a
     boilerplate configuration by running the following command:
 
-    ```code
+    ```bash
     $ teleport-email configure | sudo tee /etc/teleport-email.toml
     ```
   </Tab>
@@ -767,7 +775,7 @@ Mailgun or SMTP service.
     1. Write your Mailgun private key to a local file called `mailgun-private-key`.
     2. Create a Kubernetes secret from the file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic mailgun-private-key --from-file=mailgun-private-key
     ```
 
@@ -793,7 +801,7 @@ Mailgun or SMTP service.
     1. Write your SMTP service's password a local file called `smtp-password.txt`.
     2. Create a Kubernetes secret from the file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic smtp-password --from-file=smtp-password
     ```
 
@@ -861,7 +869,7 @@ above, requests for roles aside from `dev` and `dba` will notify
 <Accordion title="Suggested reviewers">
   Users can suggest reviewers when they create an Access Request, e.g.,:
 
-  ```code
+  ```bash
   $ tsh request create --roles=dbadmin --reviewers=alice@example.com,ivan@example.com
   ```
 
@@ -990,13 +998,13 @@ email-based Access Request flow:
 
 <Tabs>
   <Tab title="Executable">
-    ```code
+    ```bash
     $ teleport-email start
     ```
 
     If everything works as expected, the log output should look like this:
 
-    ```code
+    ```bash
     $ teleport-email start
     INFO   Starting Teleport Access Email Plugin (): email/app.go:80
     INFO   Plugin is ready email/app.go:101
@@ -1006,7 +1014,7 @@ email-based Access Request flow:
   <Tab title="Docker">
     Start the plugin:
 
-    ```code
+    ```bash
     $ docker run -v <path-to-config>:/etc/teleport-email.toml public.ecr.aws/gravitational/teleport-plugin-email:13.4.16 start
     ```
   </Tab>
@@ -1014,13 +1022,13 @@ email-based Access Request flow:
   <Tab title="Helm Chart">
     Install the plugin:
 
-    ```code
+    ```bash
     $ helm upgrade --install teleport-plugin-email teleport/teleport-plugin-email --values teleport-email-helm.yaml
     ```
 
     To inspect the plugin's logs, use the following command:
 
-    ```code
+    ```bash
     $ kubectl logs deploy/teleport-plugin-email
     ```
 
@@ -1028,7 +1036,7 @@ email-based Access Request flow:
     `teleport-email-helm.yaml` and executing the `helm upgrade ...` command
     above again. Then you can restart the plugin with the following command:
 
-    ```code
+    ```bash
     $ kubectl rollout restart deployment teleport-plugin-email
     ```
   </Tab>
@@ -1040,7 +1048,7 @@ email-based Access Request flow:
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -1048,7 +1056,7 @@ email-based Access Request flow:
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```
@@ -1077,7 +1085,7 @@ approve or deny the request:
 
   <Tabs>
     <Tab title="As an Admin">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tctl request approve REQUEST_ID
       $ tctl request deny REQUEST_ID
@@ -1085,7 +1093,7 @@ approve or deny the request:
     </Tab>
 
     <Tab title="As a User">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tsh request review --approve REQUEST_ID
       $ tsh request review --deny REQUEST_ID
@@ -1127,7 +1135,7 @@ supported by systemd.
 
 Enable and start the plugin:
 
-```code
+```bash
 $ sudo systemctl enable teleport-email
 $ sudo systemctl start teleport-email
 ```

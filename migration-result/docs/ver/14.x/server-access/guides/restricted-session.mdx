@@ -3,7 +3,7 @@ title: Restricted Sessions for SSH
 description: How restrict what can be performed under an SSH session
 h1: Restricted Sessions for SSH
 videoBanner: DgFZpWszL4M
-version: '14.x'
+version: "14.x"
 ---
 
 With a Restricted Session, Teleport allows the administrator to specify a policy to
@@ -11,6 +11,10 @@ apply to SSH sessions. This policy can restrict access to certain resources. Cur
 Teleport supports network restrictions with more types coming in the future.
 
 <Warning>
+  <p>
+    **Deprecation Warning**
+  </p>
+
   Restricted Sessions for SSH were deprecated in Teleport 14 and will be removed
   in Teleport 15.
 </Warning>
@@ -20,7 +24,7 @@ Teleport supports network restrictions with more types coming in the future.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -29,7 +33,7 @@ Teleport supports network restrictions with more types coming in the future.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -51,7 +55,7 @@ Teleport supports network restrictions with more types coming in the future.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -75,7 +79,7 @@ Teleport supports network restrictions with more types coming in the future.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -98,7 +102,7 @@ Teleport supports network restrictions with more types coming in the future.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -115,7 +119,7 @@ Teleport supports network restrictions with more types coming in the future.
   You can check your kernel version using the `uname` command. The output should look
   something like the following.
 
-  ```code
+  ```bash
   $ uname -r
   # 5.8.17
   ```
@@ -140,7 +144,7 @@ Teleport supports network restrictions with more types coming in the future.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -233,7 +237,7 @@ spec:
 
 Install the policy using `tctl`:
 
-```code
+```bash
 $ tctl create -f netpolicy.yaml
 # network restrictions have been updated
 ```
@@ -249,7 +253,7 @@ IP ranges, be sure to state these within the `allow` section.
 
 ## Step 3/4. Test Restricted Sessions
 
-```code
+```bash
 $ curl -v https://google.com
 # *   Trying 2607:f8b0:4005:809::200e:80...
 # * TCP_NODELAY set

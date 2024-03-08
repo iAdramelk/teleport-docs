@@ -1,7 +1,7 @@
 ---
 title: Health Monitoring
 description: Monitoring health and readiness.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport provides health checking mechanisms in order to verify that it
@@ -18,7 +18,7 @@ them via:
     Start a `teleport` instance with the `--diag-addr` flag set to the local
     address where the diagnostic endpoint will listen:
 
-    ```code
+    ```bash
     $ sudo teleport start  --diag-addr=127.0.0.1:3000
     ```
   </Tab>
@@ -44,7 +44,7 @@ them via:
 <Accordion title="Ensure you can connect to the diagnostic endpoint">
   Verify that Teleport is now serving the diagnostics endpoint:
 
-  ```code
+  ```bash
   $ curl http://127.0.0.1:3000/healthz
   ```
 </Accordion>

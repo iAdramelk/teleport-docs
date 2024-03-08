@@ -1,7 +1,7 @@
 ---
 title: Deploy Login Rules using Kubernetes Operator 
 description: Use Teleport's Kubernetes Operator to deploy Login Rules to your cluster
-version: '14.x'
+version: "14.x"
 ---
 
 This guide will explain how to:
@@ -24,7 +24,7 @@ This guide is applicable if you self-host Teleport in Kubernetes using the
 
 - Validate Kubernetes connectivity by running the following command:
 
-  ```code
+  ```bash
   $ kubectl cluster-info
   # Kubernetes control plane is running at https://127.0.0.1:6443
   # CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
@@ -34,7 +34,7 @@ This guide is applicable if you self-host Teleport in Kubernetes using the
     Users wanting to experiment locally with the Operator can use [minikube](https://minikube.sigs.k8s.io/docs/start/)
     to start a local Kubernetes cluster:
 
-    ```code
+    ```bash
     $ minikube start
     ```
   </Tip>
@@ -47,7 +47,7 @@ This guide is applicable if you self-host Teleport in Kubernetes using the
   Confirm that the CRD (Custom Resource Definition) for Login Rules has been
   installed with the following command:
 
-  ```code
+  ```bash
   $ kubectl explain TeleportLoginRule.spec
   KIND:     TeleportLoginRule
   VERSION:  resources.teleport.dev/v1
@@ -131,13 +131,13 @@ spec:
 
 Create the Kubernetes resources:
 
-```code
+```bash
 $ kubectl apply -f login-rules.yaml
 ```
 
 List the created Kubernetes resources:
 
-```code
+```bash
 $ kubectl get loginrules
 NAME                             AGE
 example-traits-expression-rule   8m8s
@@ -146,7 +146,7 @@ example-traits-map-rule          8m8s
 
 Check that the Login Rules have been created in Teleport:
 
-```code
+```bash
 $ AUTH_POD=$(kubectl get pods -l app=teleport-cluster -o jsonpath='{.items[0].metadata.name}')
 $ kubectl exec -i $AUTH_POD -c teleport -- tctl get login_rules
 kind: login_rule
@@ -190,7 +190,7 @@ Test the Login Rules by sending some example input traits to the standard input
 of the `tctl login_rule test` command and having it load all Login Rules from
 the cluster.
 
-```code
+```bash
 $ echo '{"groups": ["admins", "ops"], "username": ["Alice"], "logins": ["user", "root"]}' | \
   kubectl exec -i $AUTH_POD -c teleport -- tctl login_rule test --load-from-cluster
 groups:
@@ -223,13 +223,13 @@ Edit the `example-traits-map-rule` to add an extra login `example` login.
 
 Apply the update to the Kubernetes resource:
 
-```code
+```bash
 $ kubectl apply -f login-rules.yaml
 ```
 
 Test the Login Rules again to see the extra `example` login:
 
-```code
+```bash
 $ echo '{"groups": ["admins", "ops"], "username": ["Alice"], "logins": ["user", "root"]}' | \
   kubectl exec -i $AUTH_POD -c teleport -- tctl login_rule test --load-from-cluster
 groups:

@@ -1,7 +1,7 @@
 ---
 title: Teleport Recording Proxy Mode
 description: Use Recording Proxy Mode to capture OpenSSH server activity
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport Recording Proxy Mode was added to allow Teleport users
@@ -30,11 +30,11 @@ The Teleport Proxy Service should be available to clients and set up with TLS.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -52,7 +52,7 @@ The Teleport Proxy Service should be available to clients and set up with TLS.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -67,7 +67,7 @@ The Teleport Proxy Service should be available to clients and set up with TLS.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -82,7 +82,7 @@ The Teleport Proxy Service should be available to clients and set up with TLS.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -121,6 +121,10 @@ The Teleport Proxy Service should be available to clients and set up with TLS.
 </Accordion>
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -165,9 +169,9 @@ auth_service:
 by the Teleport User CA. Start by exporting the Teleport CA public key.
 
 On your Teleport Node, export the Teleport Certificate Authority certificate
-into a file and update your SSH configuration to trust Teleport's CA. Assign PROXY to the address of your Teleport Proxy Service:
+into a file and update your SSH configuration to trust Teleport's CA. Assign proxy to the address of your Teleport Proxy Service:
 
-```code
+```bash
 $ curl 'https://proxy/webapi/auth/export?type=user' | sed s/cert-authority\ // > teleport_user_ca.pub
 $ sudo mv ./teleport_user_ca.pub /etc/ssh/teleport_user_ca.pub
 $ echo "TrustedUserCAKeys /etc/ssh/teleport_user_ca.pub" | sudo tee -a /etc/ssh/sshd_config
@@ -181,7 +185,7 @@ The next step is to configure host authentication.
 The recommended solution is to ask Teleport to issue valid host certificates for
 all OpenSSH nodes. To generate a host certificate, run this on your Teleport Auth Server:
 
-```code
+```bash
 # Creating host certs, with an array of every host to be accessed.
 # Wildcard certs aren't supported by OpenSSH. The domain must be fully 
 # qualified.
@@ -227,7 +231,7 @@ HostCertificate /etc/ssh/api.example.com-cert.pub
 Now you can use the `tsh ssh` command to log in to any `sshd` node in the
 cluster, and the session will be recorded.
 
-```code
+```bash
 # tsh ssh to use default ssh port:22
 $ tsh ssh --port=22 user@host.example.com
 # Example for a Amazon EC2 Host
@@ -239,7 +243,7 @@ in "recording mode", you have to tell the `ssh` client to use a jump host and
 enable SSH agent forwarding, otherwise, a recording proxy will not be able to
 terminate the SSH connection to record it:
 
-```code
+```bash
 # Note that agent forwarding is enabled twice: one from a client to a proxy
 # (mandatory if using a recording proxy), and then optionally from a proxy
 # to the end server if you want your agent running on the end server
@@ -249,13 +253,17 @@ $ ssh -o "ForwardAgent yes" \
 ```
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   To avoid typing all this and use the usual `ssh user@host.example.com`, users can update their `~/.ssh/config` file.
 </Tip>
 
 Verify that a Teleport certificate is loaded into the agent after
 logging in:
 
-```code
+```bash
 # Login as Joe
 $ tsh login --proxy=proxy.example.com --user=joe
 # see if the certificate is present (look for "teleport:joe") at the end of the cert
@@ -263,6 +271,10 @@ $ ssh-add -L
 ```
 
 <Warning>
+  <p>
+    **GNOME Keyring SSH Agent and GPG Agent**
+  </p>
+
   It is well known that the Gnome Keyring SSH agent, used by many popular Linux desktops like Ubuntu, and `gpg-agent` from GnuPG do not support SSH
   certificates. We recommend using the `ssh-agent` from OpenSSH.
 

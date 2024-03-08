@@ -1,7 +1,7 @@
 ---
 title: Database Cert Authority Rotation
 description: How to rotate Teleport database certificate authorities
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport connects to self-hosted databases using mutual TLS, or mTLS for short.
@@ -17,11 +17,11 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -34,7 +34,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -54,7 +54,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -71,7 +71,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -88,7 +88,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -102,7 +102,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -117,7 +117,7 @@ This guide will explain how to rotate your Teleport cluster's database CAs.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -223,18 +223,22 @@ Initiate manual rotation of the `db` or `db_client` certificate authority:
   then `--type=db_client`.
 </Accordion>
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=init 
 Updated rotation phase to "init". To check status use 'tctl status'
 ```
 
 Use `tctl` to confirm that there is an active rotation in progress:
 
-```code
+```bash
 $ tctl status
 ```
 
 <Warning>
+  <p>
+    **Avoid losing access to databases**
+  </p>
+
   If you are rotating the `db_client` CA and you do not want to lose access to
   your self-hosted databases in the next phase, you should reconfigure your
   databases now.
@@ -250,7 +254,7 @@ $ tctl status
 
 Execute the transition from `init` to `update_clients`:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=update_clients 
 # Updated rotation phase to "update_clients". To check status use 'tctl status'
 ```
@@ -270,7 +274,7 @@ then [roll back](#rollback) to the old certificate authority.
 
 Execute the transition from `update_clients` to `update_servers`:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=update_servers 
 # Updated rotation phase to "update_servers". To check status use 'tctl status'
 ```
@@ -293,7 +297,7 @@ databases after this step.
 
 Execute the transition from `update_servers` to `standby`:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=standby
 # Updated rotation phase to "standby". To check status use 'tctl status'
 ```
@@ -313,7 +317,7 @@ certificate authorities, so consider this a method of last resort.
 
 First, enter the rollback phase with a manual phase transition:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=rollback
 # Updated rotation phase to "rollback". To check status use 'tctl status'
 ```
@@ -324,7 +328,7 @@ phase.
 
 Enter the standby phase manually:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=standby
 # Updated rotation phase to "standby". To check status use 'tctl status'
 ```

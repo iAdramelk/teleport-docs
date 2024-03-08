@@ -1,7 +1,7 @@
 ---
 title: Run Teleport Access Graph on Self-Hosted Clusters
 description: Describes how to deploy Teleport Access Graph on self-hosted clusters.
-version: '15.x'
+version: "15.x"
 ---
 
 Using Access Graph with a self-hosted Teleport cluster requires
@@ -41,14 +41,14 @@ The host CA can be retrieved and saved into a file in one of the following ways:
 
 <Tabs>
   <Tab title="Via curl">
-    ```code
+    ```bash
     $ sudo mkdir /etc/access_graph
     $ curl -s 'https://teleport.example.com/webapi/auth/export?type=tls-host' | sudo tee /etc/access_graph/teleport_host_ca.pem
     ```
   </Tab>
 
   <Tab title="Via tctl">
-    ```code
+    ```bash
     $ sudo mkdir /etc/access_graph
     $ tsh login --proxy=teleport.example.com
     $ tctl get cert_authorities --format=json \

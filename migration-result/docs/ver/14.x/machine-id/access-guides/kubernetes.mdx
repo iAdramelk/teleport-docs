@@ -1,7 +1,7 @@
 ---
 title: Machine ID with Kubernetes Access
 description: How to use Machine ID to access Kubernetes clusters
-version: '14.x'
+version: "14.x"
 ---
 
 This version of the guide uses the v2 `tbot` configuration. This version is only
@@ -20,7 +20,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -29,7 +29,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -51,7 +51,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -75,7 +75,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -98,7 +98,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -114,13 +114,17 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
   the [Kubernetes Access Getting Started Guide](/docs/ver/14.x/kubernetes-access/getting-started).
 
 <Note>
+  <p>
+    **Kubernetes Public Address Required for non-TLS Routing**
+  </p>
+
   For self-hosted Teleport Clusters that have non-TLS routing the Kubernetes public
   address must be set for Machine ID Kubernetes connections.
 
   To confirm the TLS routing mode check the `proxy.tls_routing_enabled` from this
   command with your proxy address:
 
-  ```code
+  ```bash
   $ curl https://teleport.example.com:443/webapi/ping | jq
   ```
 
@@ -145,7 +149,7 @@ used to access a Kubernetes cluster enrolled with your Teleport cluster.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -192,7 +196,7 @@ When configuring this for a production environment, you should consider:
 
 To bind the `editor` group to the `edit` Cluster Role, execute:
 
-```code
+```bash
 $ kubectl create clusterrolebinding teleport-editor-edit \
   --clusterrole=edit \
   --group=editor
@@ -287,7 +291,7 @@ connect to the Kubernetes cluster through the Teleport Proxy.
 To use `kubeconfig.yaml` with `kubectl`, the `--kubeconfig` flag or `KUBECONFIG`
 environment variable can be provided to `kubectl`:
 
-```code
+```bash
 $ kubectl --kubeconfig /opt/machine-id/kubeconfig.yaml get pods -A
 # Or, set the KUBECONFIG environment variable:
 $ export KUBECONFIG=/opt/machine-id/kubeconfig.yaml

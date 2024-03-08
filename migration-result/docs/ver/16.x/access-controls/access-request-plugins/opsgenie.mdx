@@ -1,7 +1,7 @@
 ---
 title: Access Requests with Opsgenie
 description: How to set up Teleport's Opsgenie plugin for privilege elevation approvals.
-version: '16.x'
+version: "16.x"
 ---
 
 With Teleport's Opsgenie integration, engineers can access the infrastructure
@@ -25,7 +25,7 @@ Opsgenie.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -44,7 +44,7 @@ Opsgenie.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -137,7 +137,7 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -145,7 +145,7 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```
@@ -175,7 +175,7 @@ approve or deny the request:
 
   <Tabs>
     <Tab title="As an Admin">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tctl request approve REQUEST_ID
       $ tctl request deny REQUEST_ID
@@ -183,7 +183,7 @@ approve or deny the request:
     </Tab>
 
     <Tab title="As a User">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tsh request review --approve REQUEST_ID
       $ tsh request review --deny REQUEST_ID
@@ -193,6 +193,10 @@ approve or deny the request:
 </Accordion>
 
 <Note>
+  <p>
+    **Auditing Access Requests**
+  </p>
+
   When the Opsgenie plugin sends a notification, anyone who receives the
   notification can follow the enclosed link to an Access Request URL. While users
   must be authorized via their Teleport roles to review Access Request, you

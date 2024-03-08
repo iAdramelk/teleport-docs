@@ -1,7 +1,7 @@
 ---
 title: How to Contribute to Teleport Documentation
 description: Follow this guide to learn how to contribute changes to Teleport documentation.
-version: '13.x'
+version: "13.x"
 ---
 
 We encourage everyone with an interest in improving Teleport documentation
@@ -33,7 +33,7 @@ To set up a local environment for contributing to Teleport documentation:
 
 2. Clone the `gravitational/docs` repository by running the following command:
 
-   ```code
+   ```bash
    $ git clone https://github.com/gravitational/docs --recurse-submodules
    ```
 
@@ -44,19 +44,19 @@ To set up a local environment for contributing to Teleport documentation:
 
 3. Change to the root of the `docs` directory:
 
-   ```code
+   ```bash
    $ cd docs
    ```
 
 4. Update the documentation to the latest version from the master branch:
 
-   ```code
+   ```bash
    $ yarn git-update
    ```
 
 5. Install dependencies:
 
-   ```code
+   ```bash
    $ yarn
    ```
 
@@ -70,20 +70,20 @@ To navigate to a specific version of the documentation:
 
 1. View the versions of the documentation listed in the `content` directory by running the following command:
 
-   ```code
+   ```bash
    $ ls -l content
    ```
 
 2. Change to the directory under `content` that contains the version of documentation you want to update.
    For example, navigate to the directory that corresponds to latest version of Teleport:
 
-   ```code
+   ```bash
    $ cd content/13.x
    ```
 
 3. Switch to the master branch by running the following command:
 
-   ```code
+   ```bash
    $ git switch master
    ```
 
@@ -92,7 +92,7 @@ To navigate to a specific version of the documentation:
 
 4. Create a new branch of `gravitational/teleport` for your changes by running a command similar to the following:
 
-   ```code
+   ```bash
    $ git switch -c my-branch
    ```
 
@@ -129,7 +129,7 @@ To test changes in your local environment:
 
 2. Start the development server by running the following commands:
 
-   ```code
+   ```bash
    $ yarn dev
    ```
 
@@ -137,7 +137,7 @@ To test changes in your local environment:
 
 4. Validate the Markdown syntax by running the following commends:
 
-   ```code
+   ```bash
    # Check your Markdown syntax
    $ yarn markdown-lint
    # markdown-lint, but also checks that external links work
@@ -161,7 +161,7 @@ If you work at Teleport:
 
 1. Add files and commit changes to your local branch periodically with commands similar to the following:
 
-   ```code
+   ```bash
    $ git add <new-file-name>                      # Add a specific new file to be committed
    $ git add -A                                   # Add all changed files to the list of files to be committed
    $ git commit -am "Fix or feature description"  # Add and commit changes with a comment
@@ -170,7 +170,7 @@ If you work at Teleport:
 
 2. Push your branch to `gravitational/teleport` with a command similar to the following:
 
-   ```code
+   ```bash
    $ git push origin my-branch
    ```
 
@@ -198,7 +198,7 @@ To push changes as an external contributor:
 
    Alternatively, you can create a fork from the command-line by running a command similar to the following:
 
-   ```code
+   ```bash
    $ git remote add fork ssh://git@github.com/my-user/teleport
    ```
 
@@ -206,14 +206,14 @@ To push changes as an external contributor:
 
 5. Pull all of the changes from the remote repository into your local fork by running the following command:
 
-   ```code
+   ```bash
    $ git fetch origin
    ```
 
 6. Push changes from your local branch to the remote fork of the [Teleport repository](https://github.com/gravitational/teleport)
    by running a command similar to the following:
 
-   ```code
+   ```bash
    $ git push --set-upstream fork my-branch
    ```
 
@@ -273,7 +273,7 @@ The following methods represent the most common ways to backport changes for Tel
     2. Run the following command to assign the `PR` variable to the ID of your original GitHub pull request and
        the `TO` variable to a comma-separated list of versioned branch names:
 
-       ```code
+       ```bash
        $ PR=0000 TO=branch/v10 make backport
        ```
 
@@ -302,7 +302,7 @@ The following methods represent the most common ways to backport changes for Tel
 
     3. Run the following commands to create a branch for the commit being backported:
 
-       ```code
+       ```bash
        $ git switch branch/v11
        $ git pull
        $ git switch -c my-branch-backport-v11
@@ -314,7 +314,7 @@ The following methods represent the most common ways to backport changes for Tel
 
     5. Add the updated and saved files to the staged list of changes. For example:
 
-       ```code
+       ```bash
        $ git add docs/pages/core-concepts.mdx
        ```
 
@@ -322,20 +322,20 @@ The following methods represent the most common ways to backport changes for Tel
 
     6. Finish the cherry-pick operation by running the following command:
 
-       ```code
+       ```bash
        git cherry-pick --continue
        ```
 
     7. Push the changes for the backport to the fork.
 
-       ```code
+       ```bash
        $ git push origin my-branch-backport-v11
        ```
 
        If you see a warning that prevents you from pushing the backport, retry using the
        following command:
 
-       ```code
+       ```bash
        $ git push --set-upstream origin my-branch-backport-v11
        ```
 
@@ -363,7 +363,7 @@ The following methods represent the most common ways to backport changes for Tel
 
     2. Run the following commands to create a branch for the commit being backported:
 
-       ```code
+       ```bash
        $ git switch branch/v11
        $ git pull
        $ git switch -c my-branch-backport-v11
@@ -372,7 +372,7 @@ The following methods represent the most common ways to backport changes for Tel
 
     3. Push the changes for the backport to the fork.
 
-       ```code
+       ```bash
        $ git push --set-upstream fork my-branch-backport-v11
        ```
 

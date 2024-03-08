@@ -2,7 +2,7 @@
 title: Set up Single Sign-On with GitHub
 description: Setting up GitHub SSO
 videoBanner: XjgN2WWFCX8
-version: '14.x'
+version: "14.x"
 ---
 
 This guide explains how to set up GitHub Single Sign On (SSO) so you can
@@ -26,7 +26,7 @@ Teleport.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -35,7 +35,7 @@ Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -57,7 +57,7 @@ Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -81,7 +81,7 @@ Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -104,7 +104,7 @@ Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -121,7 +121,7 @@ Teleport.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -172,7 +172,7 @@ Update this example command with:
 See [tctl sso configure github](/docs/ver/14.x/reference/cli/tctl#tctl-sso-configure-github)
 for a full reference of flags for this command:
 
-```code
+```bash
 $ tctl sso configure github \
 --id=GITHUB-CLIENT-ID \
 --secret=$(cat client-secret.txt) \
@@ -245,7 +245,7 @@ The contents of `github.yaml` should resemble the following:
   You can add multiple instances of the `--teams-to-roles` flag or edit the connector
   file to define multiple mappings. For example:
 
-  ```code
+  ```bash
   $  tctl sso configure github \
   --id=GITHUB-CLIENT-ID \
   --secret=$(cat client-secret.txt) \
@@ -278,7 +278,7 @@ The contents of `github.yaml` should resemble the following:
   For self-hosted GitHub Enterprise servers, you can specify the server
   instance endpoints with the `--endpoint-url`, `--api-endpoint-url` parameters:
 
-  ```code
+  ```bash
   $ tctl sso configure github \
   --id=GITHUB-CLIENT-ID \
   --secret=$(cat client-secret.txt) \
@@ -301,7 +301,7 @@ The contents of `github.yaml` should resemble the following:
 You can test the connector configuration before applying it to your cluster.
 This is strongly encouraged to avoid interruption to active clusters:
 
-```code
+```bash
 $ cat github.yaml | tctl sso test
 If browser window does not open automatically, open it by clicking on the link:
  http://127.0.0.1:52690/35714f6b-...
@@ -342,7 +342,7 @@ For more details repeat the command with --debug flag.
 
 Finally, create the connector using `tctl`:
 
-```code
+```bash
 $ tctl create -f github.yaml
 authentication connector "github" has been created
 ```
@@ -376,7 +376,7 @@ of Teleport and log in again using GitHub SSO.
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh logout
     # Logged out all users from all proxies.
     $ tsh login --proxy=tele.example.com --auth=github
@@ -386,7 +386,7 @@ of Teleport and log in again using GitHub SSO.
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh logout
     # Logged out all users from all proxies.
     $ tsh login --proxy=mytenant.teleport.sh --auth=github
@@ -414,7 +414,7 @@ You will receive the details of your user session within the CLI:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     > Profile URL:        https://tele.example.com:443
       Logged in as:       jeff
       Cluster:            tele.example.com
@@ -429,7 +429,7 @@ You will receive the details of your user session within the CLI:
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    ```code
+    ```bash
     > Profile URL:        https://tele.example.com:443
       Logged in as:       jeff
       Cluster:            tele.example.com
@@ -444,7 +444,7 @@ You will receive the details of your user session within the CLI:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     > Profile URL:        https://mytenant.teleport.sh:443
       Logged in as:       jeff
       Cluster:            mytenant.teleport.sh
@@ -468,7 +468,7 @@ resource we can make it the default auth type.
 
 Edit the existing `cluster_auth_preference` resource using `tctl`:
 
-```code
+```bash
 $ tctl edit cap
 ```
 
@@ -492,7 +492,7 @@ Cloud workspace.
 
 When you save and close the temporary file, `tctl` will update the resource:
 
-```code
+```bash
 #cluster auth preference has been updated
 ```
 

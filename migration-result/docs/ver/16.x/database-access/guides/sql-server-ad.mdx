@@ -2,7 +2,7 @@
 title: Database Access with Microsoft SQL Server with Active Directory authentication
 description: How to configure Teleport database access with Microsoft SQL Server with Active Directory authentication.
 videoBanner: k2wz79XCexY
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport can provide secure access to Microsoft SQL Server via the  [Teleport Database
@@ -33,7 +33,7 @@ Directory authentication.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -42,7 +42,7 @@ Directory authentication.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -64,7 +64,7 @@ Directory authentication.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -88,7 +88,7 @@ Directory authentication.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -111,7 +111,7 @@ Directory authentication.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -133,7 +133,7 @@ Directory authentication.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -155,7 +155,7 @@ Directory authentication.
   <Tab title="Teleport Team/Community Edition">
     Create a local Teleport user with the built-in `access` role:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access \
       --db-users=\* \
@@ -167,7 +167,7 @@ Directory authentication.
   <Tab title="Teleport Enterprise/Enterprise Cloud">
     Create a local Teleport user with the built-in `access` and `requester` roles:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access,requester \
       --db-users=\* \
@@ -209,14 +209,14 @@ Install necessary packages:
 
 <Tabs>
   <Tab title="Ubuntu">
-    ```code
+    ```bash
     $ sudo apt-get update
     $ sudo apt-get -y install sssd realmd krb5-user samba-common packagekit adcli
     ```
   </Tab>
 
   <Tab title="RHEL / CentOS 7">
-    ```code
+    ```bash
     $ sudo yum -y update
     $ sudo yum -y install sssd realmd krb5-workstation samba-common-tools
     ```
@@ -241,7 +241,7 @@ rdns = false
 
 Join the realm:
 
-```code
+```bash
 $ sudo realm join -v -U admin@EXAMPLE.COM example.com
 ...
  * Successfully enrolled machine in realm
@@ -254,7 +254,7 @@ $ sudo realm join -v -U admin@EXAMPLE.COM example.com
 
 To confirm the node has joined the realm, use the `realm list` command:
 
-```code
+```bash
 $ sudo realm list
 example.com
   type: kerberos
@@ -277,7 +277,7 @@ domain:
 
 <Tabs>
   <Tab title="Ubuntu 18.04">
-    ```code
+    ```bash
     $ curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
     $ sudo curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
     $ sudo apt-get update
@@ -286,7 +286,7 @@ domain:
   </Tab>
 
   <Tab title="Ubuntu 20.04">
-    ```code
+    ```bash
     $ sudo wget -qO /etc/apt/trusted.gpg.d/microsoft.asc https://packages.microsoft.com/keys/microsoft.asc
     $ sudo curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
     $ sudo apt-get update
@@ -295,7 +295,7 @@ domain:
   </Tab>
 
   <Tab title="RHEL / CentOS 7">
-    ```code
+    ```bash
     $ sudo curl -o /etc/yum.repos.d/msprod.repo https://packages.microsoft.com/config/rhel/8/prod.repo
     $ sudo ACCEPT_EULA=Y yum install -y adutil
     ```
@@ -304,14 +304,14 @@ domain:
 
 Log in to Active Directory using the `kinit` command:
 
-```code
+```bash
 $ kinit admin@EXAMPLE.COM
 ```
 
 Use the `adutil keytab create` command to generate keytab entries for each
 Active Directory user that will be connecting to the SQL Server database:
 
-```code
+```bash
 $ adutil keytab create teleport.keytab alice
 $ adutil keytab create teleport.keytab bob
 ```
@@ -320,6 +320,10 @@ You will be prompted to enter each user's password. All keytab entries will
 be merged into the same `teleport.keytab` file.
 
 <Note>
+  <p>
+    **Assign Service Principal Names**
+  </p>
+
   For the `adutil keytab create` command to work, each user account must be
   assigned a Service Principal Name, otherwise the command will not be able
   to determine its `kvno` (key version number).
@@ -327,20 +331,20 @@ be merged into the same `teleport.keytab` file.
   To check if the user has any SPNs assigned, run the following command on the
   Windows machine joined to your Active Directory domain:
 
-  ```code
+  ```bash
   $ setspn -L alice
   ```
 
   To assign an SPN to a user account, use the following command:
 
-  ```code
+  ```bash
   $ setspn -s user/alice alice
   ```
 </Note>
 
 You can verify entries in the keytab file using `klist` command:
 
-```code
+```bash
 $ klist -ke teleport.keytab
 Keytab name: FILE:teleport.keytab
 KVNO Principal
@@ -360,7 +364,7 @@ The Database Service requires a valid auth token to connect to the cluster. Gene
 one by running the following command against your Teleport Auth Service and save
 it in `/tmp/token` on the node that will run the Database Service:
 
-```code
+```bash
 $ tctl tokens add --type=db
 ```
 
@@ -373,7 +377,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
     ```
   </Tab>
@@ -383,7 +387,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -405,7 +409,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -428,7 +432,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -451,7 +455,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -511,7 +515,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -529,13 +533,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -553,13 +557,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v16. You'll need to update this
@@ -577,13 +581,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -603,13 +607,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -625,7 +629,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -635,7 +639,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -649,7 +653,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -679,7 +683,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -701,7 +705,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -724,7 +728,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -747,7 +751,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -816,7 +820,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     point to your Teleport Proxy Service address and `--uri` to the SQL Server
     endpoint.
 
-    ```code
+    ```bash
     $ sudo teleport db configure create \
       -o file \
       --token=/tmp/token \
@@ -836,7 +840,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     point to your Teleport Cloud tenant address and `--uri` to the SQL Server
     endpoint.
 
-    ```code
+    ```bash
     $ sudo teleport db configure create \
       -o file \
       --token=/tmp/token \
@@ -868,7 +872,7 @@ Server. Typically, they take a form of `MSSQLSvc/<name>.<ad-domain>:<port>`.
 For example, an AWS RDS SQL Server named `sqlserver` and joined to an AWS managed
 Active Directory domain `EXAMPLE.COM` will have the following SPNs registered:
 
-```code
+```bash
 $ ldapsearch -x -h example.com -D admin -W -b DC=example,DC=com servicePrincipalName
 ...
 # EC2AMAZ-4KN05DU, RDS, AWS Reserved, example.com
@@ -900,7 +904,7 @@ the Teleport Database Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Database Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -910,7 +914,7 @@ the Teleport Database Service.
     On the host where you will run the Teleport Database Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -942,7 +946,7 @@ list of available databases:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
     $ tsh db ls
     # Name      Description         Labels
@@ -952,7 +956,7 @@ list of available databases:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --user=alice
     $ tsh db ls
     # Name      Description         Labels
@@ -964,7 +968,7 @@ list of available databases:
 
 To retrieve credentials for a database and connect to it:
 
-```code
+```bash
 $ tsh db connect --db-user=teleport sqlserver
 ```
 
@@ -977,7 +981,7 @@ $ tsh db connect --db-user=teleport sqlserver
   the following command to start a local proxy server that you can connect to with
   your SQL Server client:
 
-  ```code
+  ```bash
   $ tsh proxy db --db-user=teleport --tunnel sqlserver
   ```
 
@@ -987,7 +991,7 @@ $ tsh db connect --db-user=teleport sqlserver
 
 To log out of the database and remove credentials:
 
-```code
+```bash
 $ tsh db logout sqlserver
 ```
 
@@ -997,7 +1001,7 @@ $ tsh db logout sqlserver
 
 If your `tsh db connect` error includes the following text, the certificate used by SQL Server is not a known Certificate Authority.
 
-```code
+```bash
 Error message: TLS Handshake failed: x509: certificate signed by unknown authority
 ```
 

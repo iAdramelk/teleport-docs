@@ -1,7 +1,7 @@
 ---
 title: Access Requests with Microsoft Teams
 description: How to set up Teleport's Microsoft Teams plugin for privilege elevation approvals.
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to set up Microsoft Teams to receive Access Request messages
@@ -23,7 +23,7 @@ compromising productivity.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -58,7 +58,7 @@ verify that you can run `tctl` commands using your current credentials.
 
 For example:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com --user=email@example.com
 $ tctl status
 # Cluster  teleport.example.com
@@ -107,7 +107,7 @@ spec:
 
 Create the roles you defined:
 
-```code
+```bash
 $ tctl create -f editor-request-rbac.yaml
 role 'editor-reviewer' has been created
 role 'editor-requester' has been created
@@ -123,13 +123,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},editor-reviewer"
        ```
@@ -140,7 +140,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -167,7 +167,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -177,7 +177,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -204,7 +204,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -214,7 +214,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -241,7 +241,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -252,7 +252,7 @@ commands for your authentication provider:
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor-requester 
 ```
 
@@ -275,7 +275,7 @@ to generate an application archive to upload later in this guide.
     plugins from source. You can run the plugin from a remote host or your local
     development machine.
 
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-access-msteams-v15.0.2-linux-amd64-bin.tar.gz
     $ tar -xzf teleport-access-msteams-v15.0.2-linux-amd64-bin.tar.gz
     $ cd teleport-access-msteams
@@ -284,7 +284,7 @@ to generate an application archive to upload later in this guide.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-msteams version
     teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-fffffffff go1.21
     ```
@@ -294,13 +294,13 @@ to generate an application archive to upload later in this guide.
     We currently only provide Docker images for `linux-amd64`.
     Pull the Docker image for the latest access request plugin by running the following command:
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2
     ```
 
     Make sure the plugin is installed by running the following command:
 
-    ```code
+    ```bash
     $ docker run public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2 version
     teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-api/14.0.0-gd1e081e 1.21
     ```
@@ -312,7 +312,7 @@ to generate an application archive to upload later in this guide.
     To install from source you need `git` and `go` installed. If you do not have Go
     installed, visit the Go [downloads page](https://go.dev/dl/).
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/msteams
     $ make
@@ -322,7 +322,7 @@ to generate an application archive to upload later in this guide.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-msteams version
     teleport-msteams v15.0.2 git:teleport-msteams-v15.0.2-fffffffff go1.21
     ```
@@ -335,13 +335,13 @@ to generate an application archive to upload later in this guide.
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -380,7 +380,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -413,7 +413,7 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
@@ -429,13 +429,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},access-plugin-impersonator"
        ```
@@ -446,7 +446,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -473,7 +473,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -483,7 +483,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -510,7 +510,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -520,7 +520,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -547,7 +547,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -621,7 +621,7 @@ longer-lived identity files with `tctl`:
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=access-plugin --out=identity
     ```
 
@@ -646,7 +646,7 @@ longer-lived identity files with `tctl`:
       a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=60060
       ```
     </Accordion>
@@ -654,7 +654,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on a Linux server, create a data directory
     to hold certificate files for the plugin:
 
-    ```code
+    ```bash
     $ sudo mkdir -p /var/lib/teleport/api-credentials
     $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
@@ -662,7 +662,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on Kubernetes, Create a Kubernetes secret
     that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-msteams-identity
     ```
 
@@ -771,7 +771,7 @@ you are deploying the plugin on a virtual machine or Kubernetes:
 
     Run the following command on your virtual machine:
 
-    ```code
+    ```bash
     $ export AZURE_APPID="your-appid"
     $ export AZURE_TENANTID="your-tenantid"
     $ export AZURE_APPSECRET="your-appsecret"
@@ -847,7 +847,7 @@ you are deploying the plugin on a virtual machine or Kubernetes:
   <Tab title="Kubernetes">
     Run the following command on your local machine:
 
-    ```code
+    ```bash
     $ export AZURE_APPID="your-appid"
     $ export AZURE_TENANTID="your-tenantid"
     $ export AZURE_APPSECRET="your-appsecret"
@@ -894,6 +894,10 @@ you are deploying the plugin on a virtual machine or Kubernetes:
 </Tabs>
 
 <Warning>
+  <p>
+    **Configure command**
+  </p>
+
   The `configure` command is not idempotent. It generates a new Microsoft Teams
   application UUID with each execution. It is not possible to use an `app.zip` and
   a TOML configuration generated by two different executions.
@@ -1013,7 +1017,7 @@ above, requests for roles aside from `dev` and `dba` will notify `alice@example.
 <Accordion title="Suggested reviewers">
   Users can suggest reviewers when they create an Access Request, e.g.,:
 
-  ```code
+  ```bash
   $ tsh request create --roles=dbadmin --reviewers=alice@example.com,ivan@example.com
   ```
 
@@ -1183,7 +1187,7 @@ configured, you can now run the plugin and test the workflow.
 
 Start the plugin in validation mode:
 
-```code
+```bash
 $ teleport-msteams validate <email of your teams account>
 ```
 
@@ -1219,7 +1223,7 @@ plugin and test the workflow.
     will provide debug information to ensure that the plugin can connect to MS Teams
     and your Teleport cluster:
 
-    ```code
+    ```bash
     $ teleport-msteams start -d
     DEBU   DEBUG logging enabled msteams/main.go:120
     INFO   Starting Teleport MS Teams Plugin 15.0.2: msteams/app.go:74
@@ -1237,7 +1241,7 @@ plugin and test the workflow.
   <Tab title="Docker">
     Run the plugin:
 
-    ```code
+    ```bash
     $ docker run -v <path-to-config>:/etc/teleport-msteams.toml public.ecr.aws/gravitational/teleport-plugin-msteams:15.0.2 start
     ```
   </Tab>
@@ -1245,13 +1249,13 @@ plugin and test the workflow.
   <Tab title="Helm Chart">
     Install the plugin:
 
-    ```code
+    ```bash
     $ helm upgrade --install teleport-plugin-msteams teleport/teleport-plugin-msteams --values teleport-msteams-helm.yaml
     ```
 
     To inspect the plugin's logs, use the following command:
 
-    ```code
+    ```bash
     $ kubectl logs deploy/teleport-plugin-msteams
     ```
 
@@ -1259,7 +1263,7 @@ plugin and test the workflow.
     `teleport-msteams-helm.yaml` and executing the `helm upgrade ...` command
     above again. Then you can restart the plugin with the following command:
 
-    ```code
+    ```bash
     $ kubectl rollout restart deployment teleport-plugin-msteams
     ```
   </Tab>
@@ -1274,7 +1278,7 @@ following steps.
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -1282,7 +1286,7 @@ following steps.
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```
@@ -1312,7 +1316,7 @@ approve or deny the request:
 
   <Tabs>
     <Tab title="As an Admin">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tctl request approve REQUEST_ID
       $ tctl request deny REQUEST_ID
@@ -1320,7 +1324,7 @@ approve or deny the request:
     </Tab>
 
     <Tab title="As a User">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tsh request review --approve REQUEST_ID
       $ tsh request review --deny REQUEST_ID
@@ -1333,6 +1337,10 @@ Once the request is resolved, the Microsoft Teams bot will update the Access Req
 to reflect its new status.
 
 <Note>
+  <p>
+    **Auditing Access Requests**
+  </p>
+
   When the Microsoft Teams plugin posts an Access Request notification to a channel, anyone
   with access to the channel can view the notification and follow the link. While
   users must be authorized via their Teleport roles to review Access Requests, you
@@ -1376,7 +1384,7 @@ supported by systemd.
 
 Enable and start the plugin:
 
-```code
+```bash
 $ sudo systemctl enable teleport-msteams
 $ sudo systemctl start teleport-msteams
 ```

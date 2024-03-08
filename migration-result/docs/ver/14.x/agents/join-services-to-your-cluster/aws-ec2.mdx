@@ -1,7 +1,7 @@
 ---
 title: Joining Services via AWS EC2 Identity Document
 description: Use the EC2 join method to add services to your Teleport cluster on AWS
-version: '14.x'
+version: "14.x"
 ---
 
 This guide will explain how to use the **EC2 join method** to configure Teleport
@@ -41,11 +41,11 @@ joining the cluster.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v14.3.6 go1.21
 
@@ -63,7 +63,7 @@ joining the cluster.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -78,7 +78,7 @@ joining the cluster.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -212,6 +212,10 @@ proxy_service:
 ## Step 4/4. Launch your Teleport process
 
 <Note>
+  <p>
+    **IMPORTANT**
+  </p>
+
   The data directory (`/var/lib/teleport` by default) must be empty prior to
   launching the Teleport process. If this Teleport process had previously joined
   by another method (e.g.  token or IAM) the host UUID will not match the

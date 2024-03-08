@@ -2,7 +2,7 @@
 title: Getting Started with Desktop Access
 description: Passwordless access to Windows systems for local users
 videoBanner: 9DyKQbg4ORc
-version: '13.x'
+version: "13.x"
 ---
 
 This guide will help you configure Teleport to provide secure, passwordless access
@@ -35,7 +35,7 @@ to Windows desktops. This configuration does not require an Active Directory dom
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -52,7 +52,7 @@ to Windows desktops. This configuration does not require an Active Directory dom
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -70,7 +70,7 @@ to Windows desktops. This configuration does not require an Active Directory dom
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -85,7 +85,7 @@ to Windows desktops. This configuration does not require an Active Directory dom
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -107,7 +107,7 @@ to your Windows system, and prepare it for passwordless access through Teleport.
 Export the Teleport user certificate authority by running the following from
 `cmd.exe` on your Windows system:
 
-```code
+```bash
 $ curl -o teleport.cer https://teleport-proxy.example.com/webapi/auth/export?type=windows
 ```
 
@@ -119,12 +119,16 @@ Run the installer. When prompted, select the Teleport certificate file from the 
 Once complete, reboot the system.
 
 <Tip>
+  <p>
+    **Headless Installation**
+  </p>
+
   The Teleport Windows Auth Setup can be run in a shell environment with elevated
   privileges. You can use this to automate installation, uninstallation, and
   certificate updates. The following command will install the Teleport Certificate,
   load the required DLL, disable NLA, and reboot the Windows machine:
 
-  ```code
+  ```bash
   $ teleport-windows-auth-setup.exe install --cert=teleport.cer -r
   Teleport Authentication Package installed
   ```
@@ -137,7 +141,7 @@ Once complete, reboot the system.
 On your local system, authenticated to your Teleport cluster, generate a
 short-lived join token:
 
-```code
+```bash
 $ tctl tokens add --type=windowsdesktop
 The invite token: abcd123-insecure-do-not-use-this
 This token will expire in 60 minutes.
@@ -154,7 +158,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -172,13 +176,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -196,13 +200,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -220,13 +224,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -246,13 +250,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -268,7 +272,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -278,7 +282,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -292,7 +296,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -311,7 +315,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -333,7 +337,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -356,7 +360,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -379,7 +383,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -491,7 +495,7 @@ the Teleport Desktop Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Desktop Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -501,7 +505,7 @@ the Teleport Desktop Service.
     On the host where you will run the Teleport Desktop Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -536,13 +540,17 @@ You can restrict access to specific hosts by defining values for
 to in `windows_desktop_logins`.
 
 <Warning>
+  <p>
+    **RBAC Configuration**
+  </p>
+
   Ensure that each Teleport user is only assigned Windows logins that they should
   be allowed to access.
 </Warning>
 
 Apply the new role to your cluster:
 
-```code
+```bash
 $ tctl create -f windows-desktop-admins.yaml
 ```
 
@@ -553,7 +561,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -569,7 +577,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -579,7 +587,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -606,7 +614,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -616,7 +624,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -643,7 +651,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -653,7 +661,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -680,7 +688,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 

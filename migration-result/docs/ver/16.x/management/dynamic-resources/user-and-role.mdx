@@ -1,7 +1,7 @@
 ---
 title: Managing Users And Roles With IaC
 description: Use infrastructure-as-code tooling to create Teleport users and roles.
-version: '16.x'
+version: "16.x"
 ---
 
 In this guide, you will see how to create users and grant them roles through
@@ -24,7 +24,7 @@ To follow this guide, you must have:
     <Tabs>
       <Tab title="Teleport Community Edition">
         - A running Teleport cluster. For details on how to set this up, see the
-          [Getting Started](/docs/ver/16.x/index) guide.
+          [Getting Started](/docs/ver/16.x) guide.
 
         - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -33,7 +33,7 @@ To follow this guide, you must have:
         To check version information, run the `tctl version` and `tsh version` commands.
         For example:
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
           
@@ -55,7 +55,7 @@ To follow this guide, you must have:
         To check version information, run the `tctl version` and `tsh version` commands.
         For example:
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
           
@@ -79,7 +79,7 @@ To follow this guide, you must have:
         To check version information, run the `tctl version` and `tsh version` commands.
         For example:
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
           
@@ -102,7 +102,7 @@ To follow this guide, you must have:
         To check version information, run the `tctl version` and `tsh version` commands.
         For example:
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
           
@@ -124,7 +124,7 @@ To follow this guide, you must have:
     You must also set the namespace in which you deployed the operator as this is
     the namespace where you will deploy the CustomResources:
 
-    ```code
+    ```bash
     # for operators deployed with the `teleport-cluster` Helm chart
     $ export OPERATOR_NAMESPACE="teleport-cluster"
 
@@ -370,7 +370,7 @@ We will create 2 users:
 
 <Tabs>
   <Tab title="tctl">
-    ```code
+    ```bash
     $ tctl create -f roles.yaml
     role 'manager' has been created
     role 'engineer' has been created
@@ -387,7 +387,7 @@ We will create 2 users:
   </Tab>
 
   <Tab title="Kubernetes Operator">
-    ```code
+    ```bash
     $ kubectl apply -n "$OPERATOR_NAMESPACE" -f roles.yaml
     teleportrolev7.resources.teleport.dev/manager created
     teleportrolev7.resources.teleport.dev/engineer created
@@ -399,7 +399,7 @@ We will create 2 users:
 
     List the created Kubernetes resources:
 
-    ```code
+    ```bash
     $ kubectl get teleportrolev7 -n "$OPERATOR_NAMESPACE"
     # NAME       AGE
     # engineer   10m
@@ -413,7 +413,7 @@ We will create 2 users:
   </Tab>
 
   <Tab title="Terraform">
-    ```code
+    ```bash
     $ terraform plan
     [...]
     Plan: 4 to add, 0 to change, 0 to destroy.
@@ -449,7 +449,7 @@ created and granted the correct roles.
   </Tab>
 
   <Tab title="Via CLI">
-    ```code
+    ```bash
     $ tctl users ls
     User                          Roles
     ----------------------------- -------------------------
@@ -502,7 +502,7 @@ password/MFA.
 
 You can manually reset a user password via `tctl` by doing:
 
-```code
+```bash
 $ tctl users reset alice
 User "alice" has been reset. Share this URL with the user to complete password reset, link is valid for 8h:
 https://teleport.example.com:443/web/reset/05b420fdc784597cbbb1d2ba65697cd8
@@ -525,6 +525,10 @@ a secure channel. This channel will depend on your organization. It is usually a
 direct message or an email.
 
 <Tip>
+  <p>
+    **For Terraform users**
+  </p>
+
   You can trigger your custom script on Terraform resource creation with
   [the `local-exec` provisioner](https://developer.hashicorp.com/terraform/language/resources/provisioners/local-exec).
 

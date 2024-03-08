@@ -2,7 +2,7 @@
 title: Visual Studio Code
 description: How to use Visual Studio Code's Remote Development plugin with Teleport
 h1: Remote Development With Visual Studio Code
-version: '14.x'
+version: "14.x"
 ---
 
 This guide explains how to use Teleport and Visual Studio Code's remote SSH extension.
@@ -12,7 +12,7 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -21,7 +21,7 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -43,7 +43,7 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -67,7 +67,7 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -90,7 +90,7 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -120,9 +120,9 @@ This guide explains how to use Teleport and Visual Studio Code's remote SSH exte
 
 ## Step 1/3. First-time setup
 
-Configure your local SSH client to access Teleport Nodes. Replace TELEPORT.EXAMPLE.COM with the address of your Teleport Proxy Service (e.g., `mytenant.teleport.sh` for Teleport Cloud users), and replace ALICE with your Teleport user.
+Configure your local SSH client to access Teleport Nodes. Replace teleport.example.com with the address of your Teleport Proxy Service (e.g., `mytenant.teleport.sh` for Teleport Cloud users), and replace alice with your Teleport user.
 
-```code
+```bash
 # log in to your proxy:
 $ tsh login --proxy teleport.example.com --user alice
 
@@ -146,7 +146,7 @@ in the path below:
       shell redirection may write the file with the incorrect encoding. To
       ensure it's written properly, try the following:
 
-      ```code
+      ```bash
       $ tsh.exe config | out-file .ssh\config -encoding utf8 -append
       ```
     </Warning>
@@ -155,7 +155,7 @@ in the path below:
 
 You should be able to connect to the desired node using following command, replacing `user` with the username you would like to assume on the node.
 
-```code
+```bash
 $ ssh user@example-node.teleport.example.com
 ```
 

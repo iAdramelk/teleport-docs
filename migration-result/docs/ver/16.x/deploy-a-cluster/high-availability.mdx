@@ -2,7 +2,7 @@
 title: "Deploying a High Availability Teleport Cluster"
 description: "Deploying a High Availability Teleport Cluster"
 tocDepth: 3
-version: '16.x'
+version: "16.x"
 ---
 
 When deploying Teleport in production, you should design your deployment to
@@ -170,6 +170,10 @@ the Auth Service checks that the table or collection exists on startup. If it
 does not, the Auth Service attempts to create it.
 
 <Note>
+  <p>
+    **Required permissions**
+  </p>
+
   Make sure you configure your cloud provider's RBAC solution (e.g., AWS or Google
   Cloud IAM) so that your Auth Service instances have permissions to read from and
   write to your chosen key/value store.
@@ -197,6 +201,10 @@ The Auth Service will check that the bucket exists on startup. If it does not,
 the Auth Service attempts to create it.
 
 <Note>
+  <p>
+    **Required permissions**
+  </p>
+
   In your cloud provider's RBAC solution, your Auth Service instances need
   permissions to get buckets as well as to create, get, list, and update objects.
 
@@ -276,6 +284,10 @@ application with Teleport:
 | CNAME       | \*.teleport.example.com | The domain name of your load balancer |
 
 <Note>
+  <p>
+    **Required permissions**
+  </p>
+
   If you are using Let's Encrypt to provide TLS credentials to your Teleport
   instances, the TLS credential system we mentioned earlier needs permissions to
   manage DNS records in order to satisfy Let's Encrypt's DNS-01 challenge.

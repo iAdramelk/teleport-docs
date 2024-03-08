@@ -1,7 +1,7 @@
 ---
 title: Setting up the Okta Service as a Hosted Integration
 description: How to set up the Okta Service as a hosted integration
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport can import and grant access to resources from an Okta organizations,
@@ -24,7 +24,7 @@ integration.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -40,7 +40,7 @@ integration.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com

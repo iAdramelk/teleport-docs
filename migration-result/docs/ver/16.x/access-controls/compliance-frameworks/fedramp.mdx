@@ -1,7 +1,7 @@
 ---
 title: FedRAMP Compliance for Infrastructure Access
 description: How to configure SSH, Kubernetes, database, and web app access to be FedRAMP compliant, including support for FIPS 140-2.
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport provides the foundation to meet FedRAMP requirements for the purposes of accessing infrastructure.
@@ -39,7 +39,7 @@ your operating environment and package manager or from compressed archive (tarba
 
 For example, you can download and install from the compressed archive by running the following commands:
 
-```code
+```bash
 $ curl https://cdn.teleport.dev/teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
 <checksum> <filename>
 $ curl -O https://cdn.teleport.dev/teleport-ent-16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -57,7 +57,7 @@ installed in the `/usr/local/bin` directory. You can verify you have FIPS-compli
 binaries installed by running the `teleport version` command and verifying that
 the `X:boringcrypto` library is listed. For example:
 
-```code
+```bash
 $ teleport version
 Teleport Enterprise 16.0.0-dev api/14.0.0-gd1e081e 1.22 X:boringcrypto
 ```
@@ -140,7 +140,7 @@ proxy_service:
 Download the `systemd` service unit file from the [examples directory](https://github.com/gravitational/teleport/tree/branch/v16/examples/systemd/fips)
 on GitHub and save it as `/etc/systemd/system/teleport.service` on both servers.
 
-```code
+```bash
 # run this on both servers:
 $ sudo systemctl daemon-reload
 $ sudo systemctl enable teleport

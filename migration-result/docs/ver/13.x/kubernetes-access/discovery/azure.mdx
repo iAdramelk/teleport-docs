@@ -1,7 +1,7 @@
 ---
 title: Teleport AKS Auto-Discovery
 description: Auto-Discovery of AKS clusters in Azure cloud.
-version: '13.x'
+version: "13.x"
 ---
 
 AKS Auto-Discovery can automatically
@@ -30,11 +30,11 @@ communications between users and the API servers of these clusters.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -47,7 +47,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -67,7 +67,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -84,7 +84,7 @@ communications between users and the API servers of these clusters.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -101,7 +101,7 @@ communications between users and the API servers of these clusters.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -303,7 +303,7 @@ Kubernetes services to join the cluster. Generate one by running the following
 command against your Teleport Auth Service and save it in `/tmp/token` on the
 machine that will run Kubernetes Auto-Discovery:
 
-```code
+```bash
 $ tctl tokens add --type=discovery,kube
 ```
 

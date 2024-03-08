@@ -2,7 +2,7 @@
 title: "Introduction to Teleport Team"
 description: "Teleport Team makes it easy for small organizations set up secure role-based access control for their infrastructure."
 tocDepth: 3
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport Team helps small organizations provide secure access to their infrastructure, with
@@ -64,7 +64,7 @@ To spin up a new server using Docker:
 2. Start a Docker container on your workstation to prepare a server that you want enroll
    as a resource in your Teleport Team cluster:
 
-   ```code
+   ```bash
    $ docker run --interactive --tty ubuntu:22.04 /bin/bash
    ```
 
@@ -72,7 +72,7 @@ To spin up a new server using Docker:
 
 3. Run the following command to install `curl` and `telnet` from the package management repository:
 
-   ```code
+   ```bash
    $ apt update && apt install -y curl telnet
    ```
 
@@ -113,7 +113,7 @@ To install the Teleport SSH Service on your server:
 6. In the terminal with the container shell session, alias `sudo` by running
    the following command:
 
-   ```code
+   ```bash
    $ alias sudo=""
    ```
 
@@ -186,14 +186,14 @@ To access the server using commands in a terminal:
 2. Sign in to your Teleport Team cluster by running the `tsh login` command  with the URL
    of your cluster and the name of your Teleport user:
 
-   ```code
+   ```bash
    $ tsh login --proxy=mytenant.teleport.sh --user=username
    ```
 
    When prompted, authenticate using your password, authenticator app, or hardware key.
    The command displays information about your Teleport Team cluster and account. For example:
 
-   ```code
+   ```bash
    > Profile URL:      https://mytenant.teleport.sh:443
      Logged in as:       admin@teleport.example.com
      Cluster:            mytenant.teleport.sh
@@ -206,13 +206,13 @@ To access the server using commands in a terminal:
 
 3. List the servers your Teleport user can access.
 
-   ```code
+   ```bash
    $ tsh ls
    ```
 
    You should see the name of the container you just registered. For example:
 
-   ```code
+   ```bash
    Node Name    Address    Labels
    ------------ ---------- ----------------------------------------------------------------------------------------
    node-name ⟵ Tunnel   hostname=node-name
@@ -220,7 +220,7 @@ To access the server using commands in a terminal:
 
 4. Access your server as the `root` user:
 
-   ```code
+   ```bash
    $ tsh ssh root@node-name
    ```
 

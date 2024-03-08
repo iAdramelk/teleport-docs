@@ -2,7 +2,7 @@
 title: SAML IdP Attribute Mapping
 description: How to map user attributes to custom SAML response
 h1: SAML Attribute Mapping
-version: '16.x'
+version: "16.x"
 ---
 
 Attribute mapping configures Teleport SAML Identity Provider to assert custom user attributes in SAML response.
@@ -49,7 +49,7 @@ spec:
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.22
 
@@ -65,7 +65,7 @@ spec:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -81,7 +81,7 @@ spec:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.22
 
@@ -96,7 +96,7 @@ spec:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -272,7 +272,7 @@ Attribute mapping can be tested using `tctl idp saml test-attribute-mapping` com
 E.g.:
 Test with user name and service provider spec file:
 
-```code
+```bash
 # test with username and service provider file
 $ tctl idp saml test-attribute-mapping --user user1 --sp sp.yml
 User: user1
@@ -286,12 +286,12 @@ groups         okta-admin, dev-sso, dev-rdp
 
 Test with user spec file and service provider spec file:
 
-```code
+```bash
 $ tctl idp saml test-attribute-mapping --user user.yml --sp sp.yml
 ```
 
 Print result in format of choice.
 
-```code
+```bash
 $ tctl idp saml test-attribute-mapping --user user.yml --sp sp.yml --format (json/yaml)
 ```

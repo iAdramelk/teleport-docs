@@ -1,7 +1,7 @@
 ---
 title: Database Access GUI Clients
 description: How to configure graphical database clients for Teleport database access.
-version: '16.x'
+version: "16.x"
 ---
 
 This guide describes how to configure popular graphical database clients to
@@ -14,7 +14,7 @@ work with Teleport.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -23,7 +23,7 @@ work with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -45,7 +45,7 @@ work with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -69,7 +69,7 @@ work with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -92,7 +92,7 @@ work with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -109,7 +109,7 @@ work with Teleport.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -145,7 +145,7 @@ work with Teleport.
         You can optionally specify the database name and the user to use by default
         when connecting to the database:
 
-        ```code
+        ```bash
         $ tsh proxy db --db-user=my-database-user --db-name=my-schema --tunnel <database-name>
         ```
 
@@ -159,7 +159,7 @@ work with Teleport.
         the following command to start a local TLS proxy your GUI database client will
         be connecting to:
 
-        ```code
+        ```bash
         $ tsh proxy db <database-name>
         Started DB proxy on 127.0.0.1:61740
 
@@ -178,7 +178,7 @@ work with Teleport.
         If you're not using TLS routing, run the following command to see the database
         connection information:
 
-        ```code
+        ```bash
         # View configuration for the database you're logged in to.
         $ tsh db config
         # View configuration for the specific database when you're logged into multiple.
@@ -209,7 +209,7 @@ work with Teleport.
     Use the following command to start a local TLS proxy your GUI database client
     will be connecting to:
 
-    ```code
+    ```bash
     $ tsh proxy db <database-name>
     Started DB proxy on 127.0.0.1:61740
 

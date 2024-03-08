@@ -2,7 +2,7 @@
 title: Configure access for Active Directory manually
 description: Explains how to manually connect Teleport to an Active Directory domain.
 videoBanner: YvMqgcq0MTQ
-version: '14.x'
+version: "14.x"
 ---
 
 You can configure access for Active Directory users through the
@@ -30,7 +30,7 @@ To complete the steps in this guide, verify your environment meets the following
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v14.3.6 go1.21
 
@@ -62,7 +62,7 @@ To complete the steps in this guide, verify your environment meets the following
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -243,7 +243,7 @@ To export the Teleport user CA certificate:
 2. Open PowerShell and download the Teleport user certificate authority by running the following
    command and replacing `teleport.example.com` with the address of your Teleport cluster:
 
-   ```code
+   ```bash
    $ curl -o user-ca.cer https://teleport.example.com/webapi/auth/export?type=windows
    ```
 
@@ -524,7 +524,7 @@ To configure Teleport to protect access to Windows desktops:
        The following command updates the repository for the package manager on the
        local operating system and installs the provided Teleport version:
 
-       ```code
+       ```bash
        $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
        ```
      </Tab>
@@ -534,7 +534,7 @@ To configure Teleport to protect access to Windows desktops:
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -556,7 +556,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -579,7 +579,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -602,7 +602,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -662,7 +662,7 @@ To configure Teleport to protect access to Windows desktops:
      <Tab title="Teleport Enterprise">
        <Tabs>
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -680,13 +680,13 @@ To configure Teleport to protect access to Windows desktops:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo apt-get install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v14. You'll need to update this
@@ -704,13 +704,13 @@ To configure Teleport to protect access to Windows desktops:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for v14. You'll need to update this
@@ -728,13 +728,13 @@ To configure Teleport to protect access to Windows desktops:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v14. You'll need to update this
@@ -754,13 +754,13 @@ To configure Teleport to protect access to Windows desktops:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo dnf install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository.
@@ -776,7 +776,7 @@ To configure Teleport to protect access to Windows desktops:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo zypper install teleport-ent-fips
            ```
          </Tab>
@@ -786,7 +786,7 @@ To configure Teleport to protect access to Windows desktops:
            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
            will update after one is filled out.
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -800,7 +800,7 @@ To configure Teleport to protect access to Windows desktops:
            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
            will be slightly different:
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -830,7 +830,7 @@ To configure Teleport to protect access to Windows desktops:
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -852,7 +852,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -875,7 +875,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -898,7 +898,7 @@ To configure Teleport to protect access to Windows desktops:
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -960,7 +960,7 @@ To configure Teleport to protect access to Windows desktops:
 
 3. Generate an invitation token for the cluster with the following command:
 
-   ```code
+   ```bash
    $ tctl tokens add --type=windowsdesktop
    ```
 
@@ -1008,7 +1008,7 @@ To configure Teleport to protect access to Windows desktops:
      <Tab title="Package Manager">
        On the host where you will run the Teleport Desktop Service, enable and start Teleport:
 
-       ```code
+       ```bash
        $ sudo systemctl enable teleport
        $ sudo systemctl start teleport
        ```
@@ -1018,7 +1018,7 @@ To configure Teleport to protect access to Windows desktops:
        On the host where you will run the Teleport Desktop Service, create a systemd service
        configuration for Teleport, enable the Teleport service, and start Teleport:
 
-       ```code
+       ```bash
        $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
        $ sudo systemctl enable teleport
        $ sudo systemctl start teleport
@@ -1054,7 +1054,7 @@ To create a role for accessing Windows desktops:
 
 2. Create the role:
 
-   ```code
+   ```bash
    $ tctl create -f windows-desktop-admins.yaml
    ```
 
@@ -1065,7 +1065,7 @@ To create a role for accessing Windows desktops:
      <Tab title="Local User">
        1. Retrieve your local user's configuration resource:
 
-          ```code
+          ```bash
           $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
           ```
 
@@ -1081,7 +1081,7 @@ To create a role for accessing Windows desktops:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f out.yaml
           ```
 
@@ -1091,7 +1091,7 @@ To create a role for accessing Windows desktops:
      <Tab title="GitHub">
        1. Retrieve your `github` authentication connector:
 
-          ```code
+          ```bash
           $ tctl get github/github --with-secrets > github.yaml
           ```
 
@@ -1118,7 +1118,7 @@ To create a role for accessing Windows desktops:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f github.yaml
           ```
 
@@ -1128,7 +1128,7 @@ To create a role for accessing Windows desktops:
      <Tab title="SAML">
        1. Retrieve your `saml`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get --with-secrets saml/mysaml > saml.yaml
           ```
 
@@ -1155,7 +1155,7 @@ To create a role for accessing Windows desktops:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f saml.yaml
           ```
 
@@ -1165,7 +1165,7 @@ To create a role for accessing Windows desktops:
      <Tab title="OIDC">
        1. Retrieve your `oidc`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get oidc/myoidc --with-secrets > oidc.yaml
           ```
 
@@ -1192,7 +1192,7 @@ To create a role for accessing Windows desktops:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f oidc.yaml
           ```
 

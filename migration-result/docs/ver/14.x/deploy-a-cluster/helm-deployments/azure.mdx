@@ -1,7 +1,7 @@
 ---
 title: Running an HA Teleport cluster using Microsoft Azure, AKS, and Helm
 description: Install and configure an HA Teleport cluster using a Microsoft Azure AKS cluster.
-version: '14.x'
+version: "14.x"
 ---
 
 In this guide, we'll go through how to set up a High Availability Teleport
@@ -10,6 +10,10 @@ Microsoft Azure managed services (Kubernetes Services, Database for PostgreSQL,
 Blob Storage).
 
 <Tip>
+  <p>
+    **Have an existing Teleport cluster?**
+  </p>
+
   If you are already running Teleport on another platform, you can use your
   existing Teleport deployment to access your Kubernetes cluster. [Follow our
   guide](/docs/ver/14.x/kubernetes-access/getting-started) to connect your Kubernetes
@@ -33,7 +37,7 @@ Teleport's charts require the use of Helm version 3. You can [install Helm 3 by 
 
 Throughout this guide, we will assume that you have the `helm` and `kubectl` binaries available in your `PATH`:
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -88,7 +92,7 @@ to authenticate Teleport to PostgreSQL and Blob Storage, so you'll need to
 cluster](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#update-an-existing-aks-cluster)
 if they're not enabled already:
 
-```code
+```bash
 $ az aks update --resource-group aks-rg --name aks-name --enable-oidc-issuer --enable-workload-identity
 ```
 
@@ -98,14 +102,14 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -114,13 +118,13 @@ $ helm repo update
 For convenience, we'll create all the resources necessary in a brand new
 resource group; if you want to use an existing one, you can skip this step.
 
-```code
+```bash
 $ az group create --name teleport-rg --location region
 ```
 
 We're going to need a Managed Identity for Teleport to use these services.
 
-```code
+```bash
 $ az identity create --resource-group teleport-rg --name teleport-id
 ```
 
@@ -133,7 +137,7 @@ cluster is using, instead.
 Depending on your region, you might be able to use `ZoneRedundant` high
 availability, or you might have to use `SameZone` high availability.
 
-```code
+```bash
 $ az postgres flexible-server create --resource-group teleport-rg --name teleport-pg \
     --active-directory-auth Enabled --password-auth Disabled \
     --version 15 --high-availability SameZone --public-access All
@@ -149,7 +153,7 @@ Teleport will store session recordings in a Blob Storage account. Optionally,
 access can be restricted to just the AKS outbound address, or the account can be
 made part of the virtual network that the AKS cluster is using.
 
-```code
+```bash
 $ az storage account create --resource-group teleport-rg --name teleport-blob \
     --allow-blob-public-access false
 $ az role assignment create --role "Storage Blob Data Owner" --assignee-principal-type ServicePrincipal \
@@ -160,7 +164,7 @@ $ az role assignment create --role "Storage Blob Data Owner" --assignee-principa
 We'll use Workload Identity to authenticate to those services, so we'll add
 federated credentials for the Teleport service account used by the Auth Service.
 
-```code
+```bash
 $ az identity federated-credential create --resource-group teleport-rg --identity-name teleport-id \
     --name aks --audience api://AzureADTokenExchange \
     --subject system:serviceaccount:teleport-ns:teleport-release \
@@ -187,7 +191,7 @@ $ az identity federated-credential create --resource-group teleport-rg --identit
   Create a secret from your license file. Teleport will automatically discover
   this secret as long as your file is named `license.pem`.
 
-  ```code
+  ```bash
   $ kubectl create namespace teleport-ns
   $ kubectl -n teleport-ns create secret generic license --from-file=license.pem
   ```
@@ -197,7 +201,7 @@ Now we'll configure the `teleport-cluster` Helm chart to use the `azure` mode.
 
 First get the client ID for the `teleport-id` identity:
 
-```code
+```bash
 $ az identity show --resource-group teleport-rg --name teleport-id --query clientId -o tsv
 teleport-client-id-uuid-123456789012
 ```
@@ -264,7 +268,7 @@ Then create a file called `azure-values.yaml` containing the values you've selec
 
 Install the chart with the values from your `azure-values.yaml` file using this command:
 
-```code
+```bash
 $ helm install teleport-release teleport/teleport-cluster \
     --create-namespace --namespace teleport-ns \
     --values azure-values.yaml
@@ -276,7 +280,7 @@ $ helm install teleport-release teleport/teleport-cluster \
 
 Once the chart is installed, you can use `kubectl` commands to view the deployment:
 
-```code
+```bash
 $ kubectl --namespace teleport-ns get all
 
 NAME                                 READY   STATUS    RESTARTS   AGE
@@ -306,7 +310,7 @@ We'll now set up DNS `A` records for `teleport.example.com` and
 `*.teleport.example.com`, using your Azure DNS zone rooted at `example.com`. If
 you're using a different DNS hosting service, follow their instructions instead.
 
-```code
+```bash
 $ PREFIX=teleport
 $ ZONE=example.com
 $ ZONE_RG=dns-rg
@@ -322,7 +326,7 @@ so we can run the command using `kubectl`:
 
 <Tabs>
   <Tab title="Open Source">
-    ```code
+    ```bash
     $ kubectl --namespace teleport-ns exec deploy/teleport-release-auth -- tctl users add test --roles=access,editor
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -333,7 +337,7 @@ so we can run the command using `kubectl`:
   </Tab>
 
   <Tab title="Enterprise">
-    ```code
+    ```bash
     $ kubectl --namespace teleport-ns exec deploy/teleport-release-auth -- tctl users add test --roles=access,editor,reviewer
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -360,7 +364,7 @@ version of Teleport. You can make sure that the repo is up to date by running `h
 
 If you want to use a different version of Teleport, pass the `--version` argument to Helm:
 
-```code
+```bash
 $ helm upgrade --version 14.0.0 \
   teleport-release teleport/teleport-cluster \
   --namespace teleport-ns \
@@ -375,7 +379,7 @@ Here's an example where we set the chart to use 3 replicas:
 
     Upgrade the deployment with the values from your `azure-values.yaml` file using this command:
 
-    ```code
+    ```bash
     $ helm upgrade teleport-release teleport/teleport-cluster \
       --namespace teleport-ns \
       -f azure-values.yaml
@@ -385,7 +389,7 @@ Here's an example where we set the chart to use 3 replicas:
   <Tab title="Using --set via CLI">
     Run this command, editing your command line parameters as appropriate:
 
-    ```code
+    ```bash
     $ helm upgrade teleport-release teleport/teleport-cluster \
       --namespace teleport-ns \
       --set highAvailability.replicaCount=3
@@ -402,7 +406,7 @@ Here's an example where we set the chart to use 3 replicas:
 
 To uninstall the `teleport-cluster` chart, use `helm uninstall`. For example:
 
-```code
+```bash
 $ helm --namespace teleport-ns uninstall teleport-release
 ```
 

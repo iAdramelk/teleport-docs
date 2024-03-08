@@ -2,7 +2,7 @@
 title: EC2 Tags as Teleport Node Labels
 description: How to set up Teleport Node labels based on EC2 tags
 h1: Sync EC2 Tags and Teleport Node Labels
-version: '13.x'
+version: "13.x"
 ---
 
 When running on an AWS EC2 instance, Teleport will automatically detect and import EC2 tags as
@@ -30,11 +30,11 @@ fakehost.example.com 127.0.0.1:3022 env=example,hostname=ip-172-31-53-70,aws/Nam
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -47,7 +47,7 @@ fakehost.example.com 127.0.0.1:3022 env=example,hostname=ip-172-31-53-70,aws/Nam
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -67,7 +67,7 @@ fakehost.example.com 127.0.0.1:3022 env=example,hostname=ip-172-31-53-70,aws/Nam
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -84,7 +84,7 @@ fakehost.example.com 127.0.0.1:3022 env=example,hostname=ip-172-31-53-70,aws/Nam
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -101,7 +101,7 @@ fakehost.example.com 127.0.0.1:3022 env=example,hostname=ip-172-31-53-70,aws/Nam
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -121,6 +121,10 @@ via the AWS console or the AWS CLI. See the [AWS documentation](https://docs.aws
 for more details.
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   Only instances that are running on the [Nitro system](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances)
   will update their tags while running. All other instance types [must be restarted](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#work-with-tags-in-IMDS)
   to update tags.
@@ -149,7 +153,7 @@ To modify an existing instance to enable instance metadata tags:
 
 To modify the instance at launch:
 
-```code
+```bash
 $ aws ec2 run-instances \
     --image-id <image-id> \
     --instance-type <instance-type> \
@@ -159,7 +163,7 @@ $ aws ec2 run-instances \
 
 To modify a running instance:
 
-```code
+```bash
 $ aws ec2 modify-instance-metadata-options \
     --instance-id i-123456789example \
     --instance-metadata-tags enabled

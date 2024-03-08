@@ -1,7 +1,7 @@
 ---
 title: Amazon Athena Access
 description: How to access Amazon Athena with Teleport
-version: '13.x'
+version: "13.x"
 ---
 
 You can set up secure access to Amazon Athena using Teleport's support for the
@@ -24,11 +24,11 @@ This guide will help you to:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -41,7 +41,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -61,7 +61,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -78,7 +78,7 @@ This guide will help you to:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -95,7 +95,7 @@ This guide will help you to:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -109,7 +109,7 @@ This guide will help you to:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -124,7 +124,7 @@ This guide will help you to:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -137,12 +137,20 @@ This guide will help you to:
   </Tabs>
 
 <Tip>
+  <p>
+    **Not yet a Teleport user?**
+  </p>
+
   If you have not yet deployed the Auth Service and Proxy Service, you should follow one of our [getting started guides](/docs/ver/13.x/application-access/getting-started) or try our Teleport application access [interactive learning track](https://play.instruqt.com/teleport/invite/rgvuva4gzkon).
 </Tip>
 
 We will assume your Teleport cluster is accessible at `teleport.example.com` and `*.teleport.example.com`. You can substitute the address of your Teleport Proxy Service. (For Teleport Cloud customers, this will be similar to `mytenant.teleport.sh`.)
 
 <Note>
+  <p>
+    **Application Access and DNS**
+  </p>
+
   Teleport assigns a subdomain to each application you configure for Application
   Access. For example, if you enroll Grafana as a resource, Teleport assigns the resource
   to the `grafana.teleport.example.com` subdomain.
@@ -192,9 +200,9 @@ There are several methods to create an IAM role:
   </Tab>
 
   <Tab title="Using AWS CLI">
-    Create a file with the following trust policy. Replace AWS-ACCOUNT-ID with your AWS Account ID:
+    Create a file with the following trust policy. Replace aws-account-id with your AWS Account ID:
 
-    ```code
+    ```bash
     $ cat > trust-relationship.json <<EOF
     {
       "Version": "2012-10-17",
@@ -213,21 +221,21 @@ There are several methods to create an IAM role:
 
     Create an IAM role with name `ExampleTeleportAthenaRole`:
 
-    ```code
+    ```bash
     $ aws iam create-role --role-name ExampleTeleportAthenaRole --assume-role-policy-document file://trust-relationship.json
     ```
 
     Attach managed policy `AmazonAthenaFullAccess` to the role:
 
-    ```code
+    ```bash
     $ aws iam attach-role-policy --role-name ExampleTeleportAthenaRole --policy-arn arn:aws:iam::aws:policy/AmazonAthenaFullAccess
     ```
   </Tab>
 
   <Tab title="Using Terraform">
-    Add the following resources to your Terraform deployment. Replace AWS-ACCOUNT-ID with your AWS Account ID:
+    Add the following resources to your Terraform deployment. Replace aws-account-id with your AWS Account ID:
 
-    ```code
+    ```bash
     $ cat > teleport_iam_role_ExampleTeleportAthenaRole.tf <<EOF
     resource "aws_iam_role" "teleport-ExampleTeleportAthenaRole" {
       name = "ExampleTeleportAthenaRole"
@@ -256,6 +264,10 @@ There are several methods to create an IAM role:
 </Tabs>
 
 <Note>
+  <p>
+    **Apply least-privilege permissions**
+  </p>
+
   `AmazonAthenaFullAccess` may provide too much access for your intentions. To
   use a different IAM policy to reduce permissions, see [Identity and access
   management in
@@ -272,7 +284,7 @@ You can do this by creating a Teleport role with the `aws_role_arns` field
 listing the IAM role ARN created in the previous step. Create a file called
 `aws-athena-access.yaml` with the following content:
 
-```code
+```bash
 $ cat > aws-athena-access.yaml <<EOF
 kind: role
 version: v5
@@ -287,7 +299,7 @@ spec:
 EOF
 ```
 
-Remember to replace AWS-ACCOUNT-ID with your AWS Account ID.
+Remember to replace aws-account-id with your AWS Account ID.
 
 <Accordion title="Templating &#x22;aws_role_arns&#x22; in role definitions">
   The `aws_role_arns` field supports template variables so they can be populated
@@ -360,7 +372,7 @@ Remember to replace AWS-ACCOUNT-ID with your AWS Account ID.
 
 Create the new role:
 
-```code
+```bash
 $ tctl create -f aws-athena-access.yaml
 ```
 
@@ -371,7 +383,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -387,7 +399,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -397,7 +409,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -424,7 +436,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -434,7 +446,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -461,7 +473,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -471,7 +483,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -498,7 +510,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -514,7 +526,7 @@ A join token is required to authorize a Teleport Application Service instance
 to join the cluster. Generate a short-lived join token and save the output of
 the command:
 
-```code
+```bash
 $ tctl tokens add \
     --type=app \
     --app-name=aws \
@@ -525,6 +537,10 @@ On the host where you will run the Teleport Application Service, copy the token
 to a file called `/tmp/token`.
 
 <Tip>
+  <p>
+    **non-standard AWS regions**
+  </p>
+
   Replace `https://console.aws.amazon.com` with
   `https://console.amazonaws-us-gov.com` for AWS GovCloud (US) regions or
   `https://console.amazonaws.cn` for AWS China regions.
@@ -540,7 +556,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -550,7 +566,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -572,7 +588,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -595,7 +611,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -618,7 +634,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -676,7 +692,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -694,13 +710,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -718,13 +734,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -742,13 +758,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -768,13 +784,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -790,7 +806,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -800,7 +816,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -814,7 +830,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -844,7 +860,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -866,7 +882,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -889,7 +905,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -912,7 +928,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -1053,7 +1069,7 @@ the Teleport Application Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Application Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -1063,7 +1079,7 @@ the Teleport Application Service.
     On the host where you will run the Teleport Application Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -1075,6 +1091,10 @@ You can check the status of the Teleport Application Service with `systemctl sta
 and view its logs with `journalctl -fu teleport`.
 
 <Warning>
+  <p>
+    **non-standard AWS regions**
+  </p>
+
   For non-standard AWS regions such as AWS GovCloud (US) regions and AWS China
   regions, please set the corresponding region in the `AWS_REGION` environment
   variable or in the AWS credentials file so that the Application Service can use
@@ -1132,7 +1152,7 @@ federated login and the name of your assumed IAM role is
 
 Log into the previously configured AWS app on your desktop:
 
-```code
+```bash
 $ tsh apps login --aws-role ExampleTeleportAthenaRole aws
 Logged into AWS app aws. Example AWS CLI command:
 
@@ -1146,13 +1166,13 @@ ExampleTeleportDynamoDBRole` or a full role ARN like
 
 Now you can use the `tsh aws` command like the native `aws` command-line tool:
 
-```code
+```bash
 $ tsh aws athena list-work-groups
 ```
 
 To log out of the `aws` application and remove credentials:
 
-```code
+```bash
 $ tsh apps logout aws
 ```
 
@@ -1161,7 +1181,7 @@ $ tsh apps logout aws
 First, log into the previously configured AWS app if you haven't already done
 so:
 
-```code
+```bash
 $ tsh apps login --aws-role ExampleTeleportAthenaRole aws
 ```
 
@@ -1171,7 +1191,7 @@ Connect to Athena with the ODBC or JDBC driver:
   <Tab title="Connect with ODBC">
     Start a local HTTPS proxy:
 
-    ```code
+    ```bash
     $ tsh proxy aws --port 8443 --format athena-odbc
     Started AWS proxy on http://127.0.0.1:8443.
 
@@ -1197,7 +1217,7 @@ Connect to Athena with the ODBC or JDBC driver:
   <Tab title="Connect with JDBC">
     Start a local HTTPS proxy:
 
-    ```code
+    ```bash
     $ tsh proxy aws --port 8443 --format athena-jdbc
     Started AWS proxy on http://127.0.0.1:8443.
 
@@ -1231,7 +1251,7 @@ Connect to Athena with the ODBC or JDBC driver:
   <Tab title="Connect with DBeaver">
     Start a local HTTPS proxy:
 
-    ```code
+    ```bash
     $ tsh proxy aws --port 8443 --format athena-jdbc
     Started AWS proxy on http://127.0.0.1:8443.
 
@@ -1272,6 +1292,10 @@ Connect to Athena with the ODBC or JDBC driver:
 </Tabs>
 
 <Tip>
+  <p>
+    **useful environment variables**
+  </p>
+
   By default, `tsh proxy aws` generates random AWS credentials for local
   communication for best security and uses several placeholders in the generated
   instructions. The following environment variables can be set to overwrite
@@ -1285,6 +1309,10 @@ Connect to Athena with the ODBC or JDBC driver:
 </Tip>
 
 <Note>
+  <p>
+    **Expired local certificate**
+  </p>
+
   `tsh proxy aws` generates a local certificate authority (CA) for local
   communication. The local CA may expire after a new `tsh login` session and a
   new CA will be generated. Make sure your Java Keystore is up-to-date by
@@ -1293,7 +1321,7 @@ Connect to Athena with the ODBC or JDBC driver:
 
 To log out of the `aws` application and remove credentials:
 
-```code
+```bash
 $ tsh apps logout aws
 ```
 

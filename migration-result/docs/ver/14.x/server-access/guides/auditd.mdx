@@ -2,7 +2,7 @@
 title: Configure SSH with the Linux Auditing System
 description: How to configure Teleport SSH with auditd (Linux Auditing System).
 h1: Linux Auditing System (auditd)
-version: '14.x'
+version: "14.x"
 ---
 
 You can configure Teleport's SSH Service to integrate with the Linux Auditing System (auditd).
@@ -12,7 +12,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -21,7 +21,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -43,7 +43,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -67,7 +67,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -90,7 +90,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -110,7 +110,7 @@ You can configure Teleport's SSH Service to integrate with the Linux Auditing Sy
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com

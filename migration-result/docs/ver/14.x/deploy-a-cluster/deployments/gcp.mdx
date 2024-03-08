@@ -1,7 +1,7 @@
 ---
 title: Running Teleport on GCP
 description: How to install and configure Teleport on GCP
-version: '14.x'
+version: "14.x"
 ---
 
 We've created this guide to give customers an overview of how to deploy a
@@ -94,6 +94,10 @@ teleport:
 ```
 
 <Warning>
+  <p>
+    **Table Names**
+  </p>
+
   Be careful to ensure that `Example_FIRESTORE_CLUSTER_STATE` and `Example_FIRESTORE_AUDIT_LOGS`
   refer to *different* Firestore collections. The schema is different for each, and using the same
   collection for both types of data will result in errors.
@@ -153,7 +157,7 @@ includedPermissions:
 
 Create the role using this file:
 
-```code
+```bash
 $ gcloud iam roles create teleport_auth_role \
     --project Example_GCP_PROJECT \
     --file teleport_auth_role.yaml \
@@ -163,7 +167,7 @@ $ gcloud iam roles create teleport_auth_role \
 Note the `name` field in the output which is the fully qualified name for the
 custom role and must be used in later steps.
 
-```code
+```bash
 $ export IAM_ROLE=<role name output from above>
 ```
 
@@ -171,7 +175,7 @@ If you don't already have a GCP service account for your Teleport Auth Server
 you can create one with the following command, otherwise use your existing
 service account.
 
-```code
+```bash
 $ gcloud iam service-accounts create teleport-auth-server \
     --description="Service account for Teleport Auth Server" \
     --display-name="Teleport Auth Server" \
@@ -181,13 +185,13 @@ $ gcloud iam service-accounts create teleport-auth-server \
 Note the `email` field in the output, this must be used as the identifier for
 the service account.
 
-```code
+```bash
 $ export SERVICE_ACCOUNT=<email output from above command>
 ```
 
 Lastly, bind the required IAM roles to your newly created service account.
 
-```code
+```bash
 # our custom IAM role allows Teleport to create the GCS
 # bucket for session recordings if it doesn't already exist
 $ gcloud projects add-iam-policy-binding Example_GCP_PROJECT \

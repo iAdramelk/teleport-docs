@@ -1,7 +1,7 @@
 ---
 title: Getting Started with Access Lists
 description: Learn how to use Access Lists to manage and audit long lived access to Teleport resources.
-version: '14.x'
+version: "14.x"
 ---
 
 This guide will help you:
@@ -21,7 +21,7 @@ This guide will help you:
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -38,7 +38,7 @@ This guide will help you:
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -53,7 +53,7 @@ This guide will help you:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com

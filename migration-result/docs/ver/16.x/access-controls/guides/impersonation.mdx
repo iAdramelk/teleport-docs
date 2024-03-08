@@ -1,7 +1,7 @@
 ---
 title: Impersonating Teleport Users
 description: How to issue short-lived certs on behalf of Teleport users using impersonation.
-version: '16.x'
+version: "16.x"
 ---
 
 Sometimes users need to create short-lived certificates for non-interactive
@@ -17,7 +17,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -26,7 +26,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -48,7 +48,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -72,7 +72,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -95,7 +95,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -112,7 +112,7 @@ non-interactive CI/CD user Jenkins and a security scanner.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -163,7 +163,7 @@ spec:
 
 Create the resources:
 
-```code
+```bash
 $ tctl create -f jenkins.yaml
 ```
 
@@ -202,7 +202,7 @@ spec:
 
 Create the `role` resource:
 
-```code
+```bash
 $ tctl create -f impersonator.yaml
 ```
 
@@ -210,11 +210,15 @@ Next, create an interactive user named `alice` and assign the impersonator role 
 that `alice` can impersonate `jenkins`.
 
 <Note>
+  <p>
+    **Access Role**
+  </p>
+
   We also assign the preset `access` role that allows users to access clusters for
   Alice's convenience.
 </Note>
 
-```code
+```bash
 $ tctl users add alice  --roles=impersonator,access
 ```
 
@@ -224,14 +228,14 @@ Alice can log in using `tsh` and issue a cert for `jenkins`:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=proxy.example.com --user=alice --auth=local
     $ tctl auth sign --user=jenkins --format=openssh --out=jenkins --ttl=240h
     ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --user=alice --auth=local
     $ tctl auth sign --user=jenkins --format=openssh --out=jenkins --ttl=240h
     ```
@@ -240,7 +244,7 @@ Alice can log in using `tsh` and issue a cert for `jenkins`:
 
 Here is an example of how Alice can use the keys:
 
-```code
+```bash
 # Start a fresh SSH agent for this session
 $ eval $(ssh-agent)
 # Adds cert to the agent
@@ -250,6 +254,10 @@ $ ssh -J jenkins@teleport.localhost:3023 -p 3022 jenkins@127.0.0.1
 ```
 
 <Note>
+  <p>
+    **Audit**
+  </p>
+
   Teleport's `session.start` event will capture an action done
   by `alice` who is impersonating `jenkins`.
 
@@ -314,7 +322,7 @@ spec:
       '*': '*'
 ```
 
-```code
+```bash
 $ tctl create -f security-impersonator.yaml
 $ tctl users update alice --set-roles=security-impersonator,access
 ```
@@ -354,7 +362,7 @@ Even though this role was created after Alice's user was configured, Alice can
 issue certificates for the `security-scanner` user because it is labeled with
 the `group: security` label.
 
-```code
+```bash
 $ tctl auth sign --user=security-scanner --format=openssh --out=security-scanner --ttl=10h
 ```
 
@@ -414,7 +422,7 @@ Alice will need to log in again to receive the newly updated traits:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     # Once Alice logs in again, she will receive a new certificate with updated roles.
     $ tsh login --proxy=teleport.example.com --user=alice --auth=local
     # Alice can now get a certificate for the security scanner
@@ -423,7 +431,7 @@ Alice will need to log in again to receive the newly updated traits:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # Once Alice logs in again, she will receive a new certificate with updated roles.
     $ tsh login --proxy=mytenant.teleport.sh --user=alice --auth=local
     # Alice can now get a certificate for the security scanner

@@ -1,7 +1,7 @@
 ---
 title: Deploy Login Rules via Terraform 
 description: Use Teleport's Terraform Provider to deploy Login Rules to your cluster
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to:
@@ -20,7 +20,7 @@ This guide will explain how to:
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -36,7 +36,7 @@ This guide will explain how to:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -50,7 +50,7 @@ This guide will explain how to:
 
 - [Terraform >= 1.0.0+](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 
-  ```code
+  ```bash
   $ terraform version
   # Terraform v1.0.0
   ```
@@ -94,7 +94,7 @@ version: v7
 
 Create the role with `tctl`:
 
-```code
+```bash
 $ tctl create loginrule-manager.yaml
 role 'loginrule-manager' has been created
 ```
@@ -106,13 +106,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},loginrule-manager"
        ```
@@ -123,7 +123,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -150,7 +150,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -160,7 +160,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -187,7 +187,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -197,7 +197,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -224,7 +224,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -330,7 +330,7 @@ resource "teleport_login_rule" "terraform-test-expression-rule" {
 
 Init Terraform and apply the configuration:
 
-```code
+```bash
 $ terraform init
 $ terraform apply
 ```
@@ -339,7 +339,7 @@ $ terraform apply
 
 Double-check that the new Login Rules are now available in your cluster:
 
-```code
+```bash
 $ tctl get login_rules
 kind: login_rule
 metadata:
@@ -384,7 +384,7 @@ currently installed in the cluster.
 You can send example traits to the standard input of the command, and it will
 print the final traits after transformation by the Login Rules.
 
-```code
+```bash
 $ echo '{"groups": ["admins", "ops"], "username": ["Alice"], "logins": ["user", "root"]}' | \
   tctl login_rule test --load-from-cluster
 groups:

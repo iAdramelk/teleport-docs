@@ -1,6 +1,6 @@
 ---
 title: Run Teleport Access Graph on Self-Hosted Clusters with Helm
-version: '16.x'
+version: "16.x"
 ---
 
 Using Access Graph with a self-hosted Teleport cluster requires
@@ -44,14 +44,14 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -64,7 +64,7 @@ The host CA can be retrieved in one of the following ways:
 
 <Tabs>
   <Tab title="Via curl">
-    ```code
+    ```bash
     $ curl 'https://teleport.example.com/webapi/auth/export?type=tls-host'
     -----BEGIN CERTIFICATE-----
     MIIDqjCCApKgAwIBAgIQMIK8/WiQ/rUOrjlmB0IHVTANBgkqhkiG9w0BAQsFADBv
@@ -74,7 +74,7 @@ The host CA can be retrieved in one of the following ways:
   </Tab>
 
   <Tab title="Via tctl">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com
     $ tctl get cert_authorities --format=json \
         | jq -r '.[] | select(.spec.type == "host") | .spec.active_keys.tls[].cert' \
@@ -91,7 +91,7 @@ Then, create the namespace and required secrets for the TAG deployment.
 You can skip the final command if you are instead using cert-manager to issue the certificate,
 or otherwise have already provisioned the TLS certificate for Teleport Access Graph in your Kubernetes cluster.
 
-```code
+```bash
 $ kubectl create namespace teleport-access-graph 
 $ kubectl -n teleport-access-graph create secret generic teleport-access-graph-postgres \
     --from-literal uri="postgres://access_graph_user:my_password@db.example.com:5432/access_graph_db?sslmode=require"
@@ -153,7 +153,7 @@ clusterHostCAs:
 
 Finally, deploy the TAG service using Helm:
 
-```code
+```bash
 $ helm install -n teleport-access-graph -f tag-values.yaml --version 1.13.0 teleport-access-graph teleport/teleport-access-graph
 $ kubectl -n teleport-access-graph rollout status deployment/teleport-access-graph # Wait for the deployment to succeed
 ```
@@ -172,7 +172,7 @@ the Auth Service configuration needs to be updated with:
 
 Create a ConfigMap containing the CA certificate as follows:
 
-```code
+```bash
 $ kubectl -n teleport-cluster-namespace create configmap teleport-access-graph-ca \
     --from-file=ca.pem=./certs/ca.crt
 ```
@@ -211,7 +211,7 @@ If not using the `teleport-cluster` Helm chart, you will need to do the equivale
 Finally, redeploy the Helm chart (assuming the values are stored in `values-teleport.yaml`).
 Once the Auth Service changes succeed, restart the Proxy Service.
 
-```code
+```bash
 $ helm upgrade -n teleport-cluster-namespace -f values-teleport.yaml \
   --version <version> teleport-cluster-deployment-name teleport/teleport-cluster
 $ kubectl -n teleport-cluster-namespace rollout status deployment/teleport-auth   # Wait for the deployment to succeed

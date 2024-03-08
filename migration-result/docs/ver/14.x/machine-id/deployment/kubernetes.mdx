@@ -1,7 +1,7 @@
 ---
 title: Deploying Machine ID on Kubernetes
 description: How to install and configure Machine ID on Kubernetes
-version: '14.x'
+version: "14.x"
 ---
 
 This guide shows you how to deploy the Machine ID daemon `tbot`, on a Kubernetes
@@ -47,7 +47,7 @@ cluster's public signing key.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -56,7 +56,7 @@ cluster's public signing key.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -78,7 +78,7 @@ cluster's public signing key.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -102,7 +102,7 @@ cluster's public signing key.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -125,7 +125,7 @@ cluster's public signing key.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -142,7 +142,7 @@ cluster's public signing key.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -219,7 +219,7 @@ roleRef:
 
 Apply this file to your Kubernetes cluster:
 
-```code
+```bash
 $ kubectl apply -f ./k8s-rbac.yaml
 ```
 
@@ -246,7 +246,7 @@ spec:
 
 Use `tctl` to apply this file:
 
-```code
+```bash
 $ tctl create -f bot-role.yaml
 ```
 
@@ -259,7 +259,7 @@ presented by `tbot` is signed legitimately by the Kubernetes cluster.
 
 Run the following commands to determine the JWKS formatted public key:
 
-```code
+```bash
 $ kubectl proxy -p 8080
 $ curl http://localhost:8080/openid/v1/jwks
 {"keys":[--snip--]}%
@@ -295,13 +295,13 @@ spec:
 
 Use `tctl` to apply this file:
 
-```code
+```bash
 $ tctl create -f bot-token.yaml
 ```
 
 Create the bot, specifying the token and role that you have created:
 
-```code
+```bash
 $ tctl bots add example --token example-bot --roles example-bot
 ```
 
@@ -340,7 +340,7 @@ data:
 
 Apply this file to your Kubernetes cluster:
 
-```code
+```bash
 $ kubectl apply -f k8s-deployment-config.yaml
 ```
 
@@ -424,13 +424,13 @@ of deployments to your clusters (e.g customizing labels).
 
 Apply this file to your Kubernetes cluster:
 
-```code
+```bash
 $ kubectl apply -f ./k8s-deployment.yaml
 ```
 
 Use `kubectl` to verify that the deployment is healthy:
 
-```code
+```bash
 $ kubectl describe deployment/tbot
 $ kubectl logs deployment/tbot
 ```

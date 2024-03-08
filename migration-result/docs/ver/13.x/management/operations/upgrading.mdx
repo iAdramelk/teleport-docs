@@ -1,7 +1,7 @@
 ---
 title: Upgrading a Teleport Cluster
 description: This guide shows you the correct order in which to upgrade Teleport components when rolling out a new Teleport release in your cluster.
-version: '13.x'
+version: "13.x"
 ---
 
 This guide demonstrates how to upgrade all of the components in your Teleport cluster.
@@ -32,7 +32,7 @@ use.
   command, where `mytenant` is the name of your Teleport Team or Teleport
   Enterprise Cloud tenant:
 
-  ```code
+  ```bash
   $ curl -s https://mytenant.teleport.sh/webapi/ping | jq '.server_version'
   ```
 
@@ -88,6 +88,10 @@ Back up before upgrading. We have more instructions in [Backing up Teleport](/do
     you reach your target major version number.
 
     <Warning>
+      <p>
+        **Warning**
+      </p>
+
       If several Auth Service instances are running in the High Availability configuration
       (for example, in an AWS Auto Scaling group), you must shrink the group to
       **just one Auth Service** before performing an upgrade.

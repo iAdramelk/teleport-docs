@@ -1,7 +1,7 @@
 ---
 title: Ansible
 description: Using Teleport with Ansible
-version: '13.x'
+version: "13.x"
 ---
 
 Ansible uses the OpenSSH client by default. Teleport supports SSH protocol and
@@ -15,11 +15,11 @@ and run a sample ansible playbook.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -32,7 +32,7 @@ and run a sample ansible playbook.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -52,7 +52,7 @@ and run a sample ansible playbook.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -69,7 +69,7 @@ and run a sample ansible playbook.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -86,7 +86,7 @@ and run a sample ansible playbook.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -103,7 +103,7 @@ and run a sample ansible playbook.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -118,7 +118,7 @@ and run a sample ansible playbook.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -134,13 +134,13 @@ and run a sample ansible playbook.
 
 Log into Teleport with `tsh`:
 
-```code
+```bash
 $ tsh login --proxy=example.com
 ```
 
 Generate `openssh` configuration using `tsh config` shortcut:
 
-```code
+```bash
 $ tsh config > ssh.cfg
 ```
 
@@ -153,7 +153,7 @@ $ tsh config > ssh.cfg
 
 Create a folder `ansible` where we will collect all generated files:
 
-```code
+```bash
 $ mkdir -p ansible
 $ cd ansible
 ```
@@ -175,7 +175,7 @@ You can create an inventory file `hosts` manually or use a script below to gener
 cluster name (e.g. `teleport.example.com` or in the form `mytenant.teleport.sh` for Teleport Enterprise Cloud)
 and this script will generate the host names to match the `openssh` configuration:
 
-```code
+```bash
 $ tsh ls --format=json | jq '.[].spec.hostname + ".teleport.example.com"' > hosts
 ```
 
@@ -196,7 +196,7 @@ to a valid SSH username that works with the target host and is allowed by Telepo
 
 From the folder `ansible`, run the ansible playbook:
 
-```code
+```bash
 $ ansible-playbook playbook.yaml 
 
 # PLAY [all] *****************************************************************************************************************************************
@@ -230,12 +230,12 @@ You can examine and tweak patterns matching the inventory hosts in `ssh.cfg`.
 
 Try the SSH connection using `ssh.cfg` with verbose mode to inspect the error:
 
-```code
+```bash
 $ ssh -vvv -F ./ssh.cfg root@example.host
 ```
 
 If `ssh` works, try running the playbook with verbose mode on:
 
-```code
+```bash
 $ ansible-playbook -vvvv playbook.yaml
 ```

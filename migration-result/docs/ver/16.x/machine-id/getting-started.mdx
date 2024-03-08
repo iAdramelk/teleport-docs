@@ -1,7 +1,7 @@
 ---
 title: Machine ID Getting Started Guide
 description: Getting started with Teleport Machine ID
-version: '16.x'
+version: "16.x"
 ---
 
 In this getting started guide, you will configure Machine ID to issue
@@ -25,7 +25,7 @@ ID](/docs/ver/16.x/machine-id/deployment) guides.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -34,7 +34,7 @@ ID](/docs/ver/16.x/machine-id/deployment) guides.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -56,7 +56,7 @@ ID](/docs/ver/16.x/machine-id/deployment) guides.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -80,7 +80,7 @@ ID](/docs/ver/16.x/machine-id/deployment) guides.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -103,7 +103,7 @@ ID](/docs/ver/16.x/machine-id/deployment) guides.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -121,7 +121,7 @@ verify that you can run `tctl` commands using your current credentials.
 
 For example:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com --user=email@example.com
 $ tctl status
 # Cluster  teleport.example.com
@@ -156,7 +156,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
     ```
   </Tab>
@@ -166,7 +166,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -188,7 +188,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -211,7 +211,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -234,7 +234,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -294,7 +294,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -312,13 +312,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -336,13 +336,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v16. You'll need to update this
@@ -360,13 +360,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -386,13 +386,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -408,7 +408,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -418,7 +418,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -432,7 +432,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -462,7 +462,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -484,7 +484,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -507,7 +507,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -530,7 +530,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -606,7 +606,7 @@ on your system.
   </Tab>
 </Tabs>
 
-```code
+```bash
 $ tctl get roles --format=text
 ```
 
@@ -636,7 +636,7 @@ allow the bot to access on hosts. For our example, we will be using `root`.
 
 <Tabs>
   <Tab title="Token-based Joining">
-    ```code
+    ```bash
     $ tctl bots add robot --roles=access --logins=root
     ```
   </Tab>
@@ -692,7 +692,7 @@ the foreground to better understand how it works.
 
 <Tabs>
   <Tab title="Token-based Joining">
-    ```code
+    ```bash
     $ export TELEPORT_ANONYMOUS_TELEMETRY=1
     $ sudo tbot start \
        --data-dir=/var/lib/teleport/bot \
@@ -704,7 +704,7 @@ the foreground to better understand how it works.
   </Tab>
 
   <Tab title="IAM Method">
-    ```code
+    ```bash
     $ export TELEPORT_ANONYMOUS_TELEMETRY=1
     $ sudo tbot start \
        --data-dir=/var/lib/teleport/bot \
@@ -745,7 +745,7 @@ Replace the following fields with values from your own cluster.
 Now that Machine ID has successfully started, let's investigate the
 `/opt/machine-id` directory to see what was written to disk.
 
-```code
+```bash
 $ tree /opt/machine-id
 machine-id
 ├── identity
@@ -773,7 +773,7 @@ applications and tools.
 To use Machine ID, find a host that you want to connect to within your cluster
 using `tsh ls`. You might see output like the following on your system.
 
-```code
+```bash
 $ tsh ls
 Node Name Address        Labels
 --------- -------------- -----------------------------
@@ -800,7 +800,7 @@ node-name  127.0.0.1:3022 arch=x86_64,group=api-servers
 To use Machine ID with the OpenSSH integration, run the following command to
 connect to `node-name` within cluster `example.com`.
 
-```code
+```bash
 $ ssh -F /opt/machine-id/ssh_config root@node-name.example.com
 ```
 
@@ -809,23 +809,27 @@ with your proxy address.
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh ssh --proxy=teleport.example.com -i /opt/machine-id/identity root@node-name
     ```
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh ssh --proxy=mytenant.teleport.sh -i /opt/machine-id/identity root@node-name
     ```
   </Tab>
 </Tabs>
 
 <Note>
+  <p>
+    **Roles must have logins defined**
+  </p>
+
   The below error can occur when the bot does not have permission to log in to
   a node as the requested user:
 
-  ```code
+  ```bash
   $ ssh -F /opt/machine-id/ssh_config root@node-name.example.com
   root@node-name: Permission denied (publickey).
   kex_exchange_identification: Connection closed by remote host

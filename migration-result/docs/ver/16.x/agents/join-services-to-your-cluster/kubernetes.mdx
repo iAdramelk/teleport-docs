@@ -1,7 +1,7 @@
 ---
 title: Joining Services via Kubernetes ServiceAccount Token
 description: Use Kubernetes ServiceAccount tokens to join services running in the same Kubernetes cluster as the Auth Service.
-version: '16.x'
+version: "16.x"
 ---
 
 This guide will explain how to use the **Kubernetes join method** to configure
@@ -92,13 +92,13 @@ Follow the instructions below to create the token depending on whether you have 
 
     Create the token:
 
-    ```code
+    ```bash
     $ tctl create token.yaml
     ```
 
     Finally, validate the token was created:
 
-    ```code
+    ```bash
     $ tctl get token/kubernetes-token
 
     kind: token
@@ -116,7 +116,7 @@ Follow the instructions below to create the token depending on whether you have 
   <Tab title="Using tctl on the Auth Service as an admin">
     Retrieve the name and namespace of the Auth Service deployment:
 
-    ```code
+    ```bash
     $ kubectl get namespaces
     NAME              STATUS   AGE
     cert-manager      Active   40d
@@ -136,13 +136,13 @@ Follow the instructions below to create the token depending on whether you have 
     Then run the following command to execute the `tctl create` command from inside
     one of the Auth Service pods:
 
-    ```code
+    ```bash
     $ kubectl exec -i -n teleport deployment/teleport-auth -- tctl create < token.yaml
     ```
 
     Finally, validate the token was successfully created:
 
-    ```code
+    ```bash
     $ kubectl exec -i -n teleport deployment/teleport-auth tctl get token/kubernetes-token
 
     kind: token
@@ -165,7 +165,7 @@ publicly. Instead, we will manage access to this application with the Teleport
 Application Service, which we will register with Teleport using the Kubernetes
 join method.
 
-```code
+```bash
 $ kubectl create namespace demo-app
 namespace/demo-app created
 
@@ -178,7 +178,7 @@ service/demo-app exposed
 
 Validate the application pods are running and ready with the following command:
 
-```code
+```bash
 $ kubectl get pods -n demo-app
 NAME                        READY   STATUS    RESTARTS   AGE
 demo-app-7664d59cb8-bv888   1/1     Running   0          67s
@@ -222,13 +222,13 @@ The `teleport-kube-agent` chart that you will install in this section will take 
 
 Deploy the Teleport Application Service by running the following command:
 
-```code
+```bash
 $ helm install teleport-app-service teleport/teleport-kube-agent -n teleport-agent --create-namespace -f values.yaml
 ```
 
 Then, validate the pod is running after a couple of seconds:
 
-```code
+```bash
 $ kubectl get pods -n teleport-agent
 NAME                  READY   STATUS    RESTARTS   AGE
 teleport-app-service-0   1/1     Running   0          23s
@@ -237,7 +237,7 @@ teleport-app-service-0   1/1     Running   0          23s
 Finally, validate you can see the application in the Teleport Web UI, or using
 the command line:
 
-```code
+```bash
 $ tsh apps ls
 Application Description Type Public Address       Labels              
 ----------- ----------- ---- -------------------- ------------------- 
@@ -249,7 +249,7 @@ demo-app                HTTP teleport.example.com teleport.dev/origin
 Uninstall the `teleport-app-service` Helm release and delete both the `demo-app`
 and `teleport-agent` namespaces.
 
-```code
+```bash
 $ helm delete -n teleport-agent teleport-app-service
 release "teleport-app-service" uninstalled
 

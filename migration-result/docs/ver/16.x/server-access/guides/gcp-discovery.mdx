@@ -1,7 +1,7 @@
 ---
 title: Automatically Discover GCP Compute Instances
 description: How to configure Teleport to automatically enroll GCP compute instances.
-version: '16.x'
+version: "16.x"
 ---
 
 The Teleport Discovery Service can connect to GCP and automatically
@@ -14,7 +14,7 @@ start it and join the cluster.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -23,7 +23,7 @@ start it and join the cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -45,7 +45,7 @@ start it and join the cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -69,7 +69,7 @@ start it and join the cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -92,7 +92,7 @@ start it and join the cluster.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -113,7 +113,7 @@ start it and join the cluster.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -162,7 +162,7 @@ spec:
 Add your instance's project ID(s) to the `project_ids` field.
 Add the token to the Teleport cluster with:
 
-```code
+```bash
 $ tctl create -f token.yaml
 ```
 
@@ -223,7 +223,7 @@ discover instances.
 
     Then run the following command to create the role:
 
-    ```code
+    ```bash
     $ gcloud iam roles create teleport_discovery \
     --project=project_id \
     --file=teleport-discovery-role.yaml
@@ -231,7 +231,7 @@ discover instances.
 
     Run the following command to create the service account:
 
-    ```code
+    ```bash
     $ gcloud iam service-accounts create teleport-discovery \
     --description="A service account to enable Teleport to discover GCP compute instances" \
     --display-name="teleport-discovery"
@@ -239,7 +239,7 @@ discover instances.
 
     Run the following command to add the new role to the new service account:
 
-    ```code
+    ```bash
     $ gcloud projects add-iam-policy-binding project_id \
     --member="serviceAccount:teleport-discovery@project_id.iam.gserviceaccount.com" \
     --role="projects/project_id/roles/teleport_discovery"
@@ -254,7 +254,7 @@ it. No permissions are required on the service account. To check if an instance
 has a service account, run the following command and confirm that there is
 at least one entry under `serviceAccounts`:
 
-```code
+```bash
 $ gcloud compute instances describe --format="yaml(name,serviceAccounts)" instance_name
 ```
 
@@ -265,7 +265,7 @@ must be enabled on instances to be discovered so Teleport can access their SSH
 host keys. Enable guest attributes by setting `enable-guest-attributes` to
 `TRUE` in the instance's metadata.
 
-```code
+```bash
 $ gcloud compute instances add-metadata instance_name \
 --metadata=enable-guest-attributes=True
 ```
@@ -289,7 +289,7 @@ the host keys to the guest attributes below:
 
     Run the following command to add the host keys as part of a startup script:
 
-    ```code
+    ```bash
     $ gcloud compute instances add-metadata instance_name \
     --metadata-from-file=startup-script="add-host-keys.sh"
     ```
@@ -298,7 +298,7 @@ the host keys to the guest attributes below:
   <Tab title="SSH">
     Run the following command to add the host keys over SSH:
 
-    ```code
+    ```bash
     $ gcloud compute ssh instance_name \
     --command='for file in /etc/ssh/ssh_host_*_key.pub; do KEY_TYPE=$(awk '\''{print $1}'\'' $file); KEY=$(awk '\''{print $2}'\''  $file); curl -X PUT --data "$KEY" "http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/$KEY_TYPE" -H "Metadata-Flavor: Google"; done'
     ```
@@ -321,7 +321,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
     ```
   </Tab>
@@ -331,7 +331,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -353,7 +353,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -376,7 +376,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -399,7 +399,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -459,7 +459,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -477,13 +477,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -501,13 +501,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v16. You'll need to update this
@@ -525,13 +525,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v16. You'll need to update this
@@ -551,13 +551,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -573,7 +573,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -583,7 +583,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -597,7 +597,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -627,7 +627,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -649,7 +649,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -672,7 +672,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -695,7 +695,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -759,7 +759,7 @@ If you are running the Discovery Service on its own host, the service requires a
 valid invite token to connect to the cluster. Generate one by running the
 following command against your Teleport Auth Service:
 
-```code
+```bash
 $ tctl tokens add --type=discovery
 ```
 
@@ -823,7 +823,7 @@ for details on alternate methods.
 To customize the default installer script, execute the following command on
 your workstation:
 
-```code
+```bash
 $ tctl get installer/default-installer > teleport-default-installer.yaml
 ```
 
@@ -833,7 +833,7 @@ change what gets executed when enrolling discovered instances.
 After making the desired changes to the default installer, the
 resource can be updated by executing:
 
-```code
+```bash
 $ tctl create -f teleport-default-installer.yaml
 ```
 

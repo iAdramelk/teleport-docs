@@ -1,7 +1,7 @@
 ---
 title: AWS Database Auto-Discovery
 description: How to configure Teleport to discover AWS-hosted databases.
-version: '16.x'
+version: "16.x"
 ---
 
 Database discovery involves two components.
@@ -22,7 +22,7 @@ discover AWS-hosted databases automatically.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -31,7 +31,7 @@ discover AWS-hosted databases automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -53,7 +53,7 @@ discover AWS-hosted databases automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -77,7 +77,7 @@ discover AWS-hosted databases automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -100,7 +100,7 @@ discover AWS-hosted databases automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -124,7 +124,7 @@ Generate a join token by running the following command against your Teleport
 Auth Service and save it in `/tmp/token` on the host that will run the
 Discovery Service.
 
-```code
+```bash
 $ tctl tokens add --type=discovery
 ```
 
@@ -239,7 +239,7 @@ or manual mode:
     Use this command to bootstrap the permissions automatically with YAML
     configuration file of the Discovery Service:
 
-    ```code
+    ```bash
     $ teleport discovery bootstrap \
       --attach-to-role arn:aws:iam::aws-account-id:role/iam-role-name \
       --policy-name TeleportDatabaseDiscovery \
@@ -251,7 +251,7 @@ or manual mode:
     Use the following command to display the required IAM policies that you need
     to create in your AWS console:
 
-    ```code
+    ```bash
     $ teleport discovery bootstrap --manual \
       --attach-to-role arn:aws:iam::aws-account-id:role/iam-role-name \
       --policy-name TeleportDatabaseDiscovery \
@@ -290,7 +290,7 @@ the Discovery Service.
   <Tab title="Package Manager">
     On the host where you will run the Discovery Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -300,7 +300,7 @@ the Discovery Service.
     On the host where you will run the Discovery Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport

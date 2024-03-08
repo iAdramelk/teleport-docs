@@ -2,7 +2,7 @@
 title: Connect a Kubernetes Cluster to Teleport
 description: Connecting a Kubernetes cluster to Teleport
 videoBanner: 3AUGrOZ5me0
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will show you how to register a Kubernetes cluster with
@@ -23,11 +23,11 @@ Kubernetes and registers the cluster automatically.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -40,7 +40,7 @@ Kubernetes and registers the cluster automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -60,7 +60,7 @@ Kubernetes and registers the cluster automatically.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -77,7 +77,7 @@ Kubernetes and registers the cluster automatically.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -94,7 +94,7 @@ Kubernetes and registers the cluster automatically.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -109,7 +109,7 @@ Kubernetes and registers the cluster automatically.
 
   Verify that Helm and Kubernetes are installed and up to date.
 
-  ```code
+  ```bash
   $ helm version
   # version.BuildInfo{Version:"v3.4.2"}
 
@@ -122,7 +122,7 @@ Kubernetes and registers the cluster automatically.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -137,7 +137,7 @@ Kubernetes and registers the cluster automatically.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -164,7 +164,7 @@ Kubernetes cluster to a Teleport cluster:
 In order to start the Teleport Kubernetes Service, we will need to request a
 join token from the Teleport Auth Service:
 
-```code
+```bash
 # Create a join token for the Teleport Kubernetes Service to authenticate
 $ TOKEN=$(tctl tokens add --type=kube --ttl=1h --format=text)
 $ echo $TOKEN
@@ -179,13 +179,13 @@ $ echo $TOKEN
 
 To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 To update the cache of charts from the remote repository, run `helm repo update`:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -195,7 +195,7 @@ $ helm repo update
     commands, assigning `PROXY_ADDR` to the address of your Auth Service or Proxy
     Service.
 
-    ```code
+    ```bash
     $ PROXY_ADDR=teleport.example.com:443
     $ CLUSTER=cookie
     # Create the values.yaml file
@@ -222,7 +222,7 @@ $ helm repo update
     commands, assigning `PROXY_ADDR` to the address of your Auth Service or Proxy
     Service.
 
-    ```code
+    ```bash
     $ PROXY_ADDR=teleport.example.com:443
     $ CLUSTER=cookie
     # Create the values.yaml file
@@ -249,7 +249,7 @@ $ helm repo update
     Switch `kubectl` to the Kubernetes cluster `cookie` and run the following
     commands, assigning `PROXY_ADDR` to the address of your Teleport Cloud tenant.
 
-    ```code
+    ```bash
     $ PROXY_ADDR=mytenant.teleport.sh:443
 
     # Install Kubernetes agent. It dials back to the Teleport cluster at $PROXY_ADDR
@@ -278,7 +278,7 @@ $ helm repo update
 Make sure that the Teleport agent pod is running. You should see one Teleport
 agent pod pod with a single ready container:
 
-```code
+```bash
 $ kubectl -n teleport-agent get pods
 NAME               READY   STATUS    RESTARTS   AGE
 teleport-agent-0   1/1     Running   0          32s
@@ -294,7 +294,7 @@ Teleport role that grants access to the cluster you plan to interact with.
 
 Run the following command to get the Kubernetes user for your current context:
 
-```code
+```bash
 $ kubectl config view \
 -o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
 ```
@@ -325,7 +325,7 @@ spec:
 
 Apply your changes:
 
-```code
+```bash
 $ tctl create -f kube-access.yaml
 ```
 
@@ -336,7 +336,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -352,7 +352,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -362,7 +362,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -389,7 +389,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -399,7 +399,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -426,7 +426,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -436,7 +436,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -463,7 +463,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -506,7 +506,7 @@ roleRef:
 
 Apply the `ClusterRoleBinding` with `kubectl`:
 
-```code
+```bash
 $ kubectl apply -f viewers-bind.yaml
 ```
 
@@ -517,7 +517,7 @@ Log out of Teleport and log in again.
 List connected clusters using `tsh kube ls` and switch between
 them using `tsh kube login`:
 
-```code
+```bash
 $ tsh kube ls
 
 # Kube Cluster Name Selected

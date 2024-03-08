@@ -1,7 +1,7 @@
 ---
 title: "How to Review Teleport Documentation Changes"
 description: "In this guide, we will show you how to set up your environment so you can review pull requests that propose changes to the Teleport documentation."
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport uses GitHub pull requests to manage documentation changes. You can set
@@ -21,14 +21,14 @@ version of Teleport:
 
 Clone the `gravitational/docs` repository:
 
-```code
+```bash
 $ git clone https://github.com/gravitational/docs
 ```
 
 Navigate to the root of your local clone of the `gravitational/docs` repository
 and run the following command to populate the `content` directory:
 
-```code
+```bash
 $ yarn git-update
 ```
 
@@ -37,21 +37,21 @@ $ yarn git-update
 Navigate to the directory under `content` that corresponds to the latest
 released version of Teleport.
 
-```code
+```bash
 $ cd content/13.x
 ```
 
 Docs PRs fall within `gravitational/teleport`. Check out the branch associated
 with the PR:
 
-```code
+```bash
 $ git switch branch-name
 ```
 
 Navigate to the root of your `gravitational/docs` clone and run the following
 command to start the development server:
 
-```code
+```bash
 $ yarn dev
 ```
 

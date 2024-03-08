@@ -1,7 +1,7 @@
 ---
 title: Configure Single Sign-On
 description: How to set up single sign-on (SSO) for SSH using Teleport
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport users can log in to servers, Kubernetes clusters, databases, web
@@ -48,7 +48,7 @@ information about the temporary user.
 
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       # Log in to your cluster with tsh so you can use tctl remotely
       $ tsh login --proxy=proxy.example.com --user=myuser
       $ tctl get users/<username>
@@ -56,7 +56,7 @@ information about the temporary user.
     </Tab>
 
     <Tab title="Teleport Enterprise Cloud">
-      ```code
+      ```bash
       # Log in to your cluster with tsh so you can use tctl remotely
       $ tsh login --proxy=mytenant.teleport.sh --user=myuser
       $ tctl get users
@@ -135,7 +135,7 @@ your SSO provider to determine how to configure role mapping.)
   To inspect the contents of an X.509 certificate issued for your user after you
   sign in to Teleport via SSO, run the following commands:
 
-  ```code
+  ```bash
   $ TELEPORT_CLUSTER=<your cluster>
   $ SSO_USER=<your username within your SSO provider>
   $ openssl x509 -text -in ~/.tsh/keys/${TELEPORT_CLUSTER}/${SSO_USER}-x509.pem | grep "Subject:"
@@ -144,7 +144,7 @@ your SSO provider to determine how to configure role mapping.)
   You can inspect an SSH certificate issued for your Teleport user with the
   following command:
 
-  ```code
+  ```bash
   $ ssh-keygen -L -f ~/.tsh/keys/${TELEPORT_CLUSTER}/${SSO_USER}-ssh/${TELEPORT_CLUSTER}-cert.pub
   ```
 </Accordion>
@@ -171,7 +171,7 @@ login will fail.
 Users can log in to Teleport via your SSO provider by executing a command
 similar to the following, using the `--auth` flag to specify the provider:
 
-```code
+```bash
 # This command will automatically open the default web browser and take a user
 # through the login process with an SSO provider
 $ tsh login --proxy=proxy.example.com --auth=github
@@ -273,7 +273,7 @@ The following authentication connectors are supported:
 
         Create the resource:
 
-        ```code
+        ```bash
         # Log in to your cluster with tsh so you can run tctl commands.
         $ tsh login --proxy=mytenant.teleport.sh --user=myuser
         $ tctl create -f cap.yaml
@@ -616,7 +616,7 @@ The following authentication connectors are supported:
 
 Create the connector:
 
-```code
+```bash
 $ tctl create -f connector.yaml
 ```
 
@@ -699,7 +699,7 @@ administrator can define and create multiple connector resources using
 
 To see all configured connectors, execute this command on the Auth Server:
 
-```code
+```bash
 $ tctl get connectors
 ```
 
@@ -709,7 +709,7 @@ as described in the [Resources Reference](/docs/reference/resources).
 If multiple authentication connectors exist, the clients must supply a
 connector name to `tsh login` via `--auth` argument:
 
-```code
+```bash
 # use "okta" SAML connector:
 $ tsh --proxy=proxy.example.com login --auth=okta
 

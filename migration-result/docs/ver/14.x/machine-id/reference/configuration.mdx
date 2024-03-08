@@ -1,7 +1,7 @@
 ---
 title: Machine ID Configuration Reference
 description: Configuration reference for Teleport Machine ID.
-version: '14.x'
+version: "14.x"
 ---
 
 This reference documents the various options that can be configured in the `tbot`
@@ -11,7 +11,7 @@ configuring `tbot` using CLI parameters alone.
 To configure `tbot` to use a configuration file, specify the path with the `-c`
 flag:
 
-```code
+```bash
 $ tbot -c ./tbot.yaml
 ```
 
@@ -124,7 +124,7 @@ If no configuration file is provided, a simple configuration is used based
 on the provided CLI flags. Given the following sample CLI from
 `tctl bots add ...`:
 
-```code
+```bash
 $ tbot start \
    --destination-dir=./tbot-user \
    --token=00000000000000000000000000000000 \

@@ -2,7 +2,7 @@
 title: Server Access Getting Started Guide
 description: Getting started with Teleport server access.
 videoBanner: LnaRP0xKWRI
-version: '13.x'
+version: "13.x"
 ---
 
 You can protect a server with Teleport by running the Teleport SSH Service on
@@ -34,11 +34,11 @@ that a user intends to access.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -51,7 +51,7 @@ that a user intends to access.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -71,7 +71,7 @@ that a user intends to access.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -88,7 +88,7 @@ that a user intends to access.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -105,7 +105,7 @@ that a user intends to access.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -121,7 +121,7 @@ that a user intends to access.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -136,7 +136,7 @@ that a user intends to access.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -187,7 +187,7 @@ that a user intends to access.
 
    <Tabs dropdownView dropdownCaption="Teleport Edition">
      <Tab title="Teleport Community Edition">
-       ```code
+       ```bash
        $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
        ```
      </Tab>
@@ -197,7 +197,7 @@ that a user intends to access.
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -219,7 +219,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -242,7 +242,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -265,7 +265,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -323,7 +323,7 @@ that a user intends to access.
      <Tab title="Teleport Enterprise">
        <Tabs>
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -341,13 +341,13 @@ that a user intends to access.
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo apt-get install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v13. You'll need to update this
@@ -365,13 +365,13 @@ that a user intends to access.
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -389,13 +389,13 @@ that a user intends to access.
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v13. You'll need to update this
@@ -415,13 +415,13 @@ that a user intends to access.
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo dnf install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository.
@@ -437,7 +437,7 @@ that a user intends to access.
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo zypper install teleport-ent-fips
            ```
          </Tab>
@@ -447,7 +447,7 @@ that a user intends to access.
            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
            will update after one is filled out.
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -461,7 +461,7 @@ that a user intends to access.
            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
            will be slightly different:
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -491,7 +491,7 @@ that a user intends to access.
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -513,7 +513,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -536,7 +536,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -559,7 +559,7 @@ that a user intends to access.
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -627,14 +627,14 @@ Teleport cluster:
 
 <Tabs>
   <Tab title="Linux">
-    ```code
+    ```bash
     Let's save the token to a file
     $ tctl tokens add --type=node --format=text > token.file
     ```
   </Tab>
 
   <Tab title="macOS">
-    ```code
+    ```bash
     Let's save the token to a file
     $ tctl tokens add --type=node --format=text > token.file
     ```
@@ -647,6 +647,10 @@ server.
 `> token.file` indicates that you'd like to save the output to a file name `token.file`.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   This helps to minimize the direct sharing of tokens even when they are dynamically generated.
 </Tip>
 
@@ -661,7 +665,7 @@ Teleport's SSH Service.
     Change `tele.example.com` to the address of your Teleport Proxy Service. Assign
     the `--token` flag to the path where you saved `token.file`.
 
-    ```code
+    ```bash
     # Generate config
     $ sudo teleport node configure \
        --output=file:///etc/teleport.yaml \
@@ -674,7 +678,7 @@ Teleport's SSH Service.
     Change `mytenant.teleport.sh` to your Teleport Cloud tenant address. Assign the
     `--token` flag to the path where you saved `token.file`.
 
-    ```code
+    ```bash
     # Generate config
     $ sudo teleport node configure \
        --output=file:///etc/teleport.yaml \
@@ -696,7 +700,7 @@ the Teleport SSH Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport SSH Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -706,7 +710,7 @@ the Teleport SSH Service.
     On the host where you will run the Teleport SSH Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -721,7 +725,7 @@ and view its logs with `journalctl -fu teleport`.
 
 Run the following command to create a user that can access the Teleport Web UI:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor,access,reviewer --logins=root,ubuntu,ec2-user
 ```
 
@@ -729,6 +733,10 @@ This will generate an initial login link where you can create a password and set
 up multi-factor authentication for `myuser`.
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   We've only given `myuser` the roles `editor` and `access` according to the
   Principle of Least Privilege.
 </Note>
@@ -752,7 +760,7 @@ We can use `tsh` to SSH into the cluster:
     On your local machine, log in to your cluster through `tsh`, assigning the
     `--proxy` flag to the address of your Teleport Proxy Service:
 
-    ```code
+    ```bash
     # Log in through tsh
     $ tsh login --proxy=tele.example.com --user=myuser
     ```
@@ -762,7 +770,7 @@ We can use `tsh` to SSH into the cluster:
     On your local machine, log in to your cluster through `tsh`, assigning the
     `--proxy` flag to the address of your Teleport Cloud tenant:
 
-    ```code
+    ```bash
     # Log in through tsh
     $ tsh login --proxy=mytenant.teleport.sh:443 --user=myuser
     ```
@@ -813,7 +821,7 @@ previously.
 `myuser` can now execute the following to find the cluster's server names,
 which are used for establishing SSH connections:
 
-```code
+```bash
 # Display cluster resources
 $ tsh ls
 ```
@@ -831,7 +839,7 @@ ip-172-31-41-144 127.0.0.1:3022 env=example, hostname=ip-172-31-41-144
 
 `myuser` can SSH into the bastion host server by running the following command locally:
 
-```code
+```bash
 # Use tsh to ssh into a server
 $ tsh ssh root@ip-172-31-41-144
 ```
@@ -851,7 +859,7 @@ into a server using a third-party tool. Compare the two equivalent commands:
 
 <Tabs>
   <Tab title="tsh">
-    ```code
+    ```bash
     $ tsh ssh root@ip-172-31-41-144
     ```
   </Tab>
@@ -860,7 +868,7 @@ into a server using a third-party tool. Compare the two equivalent commands:
     To use the `ssh` client generate a SSH configuration file and postfix
     the cluster name after the node name.
 
-    ```code
+    ```bash
     $ tsh config > ssh_config_teleport
     $ ssh -F ssh_config_teleport root@ip-172-31-41-144.example.teleport.sh
     ```
@@ -881,7 +889,7 @@ traverse the Linux file system, and execute commands.
 
 Execute the following command within your bastion host console:
 
-```code
+```bash
 # List servers
 $ tctl nodes ls
 ```
@@ -899,7 +907,7 @@ ip-172-31-41-144 f3d2a65f-3fa7-451d-b516-68d189ff9ae5 127.0.0.1:3022 env=example
 Note the "Labels" column on the farthest side. `myuser` can query all
 resources with a shared label using the command:
 
-```code
+```bash
 # Query all servers with a label
 $ tsh ls env=example
 ```
@@ -917,7 +925,7 @@ that label since it remains unchanged.
 simplifying repeated operations. For example, the following command will execute
 the `ls` command on each server and display the results in your terminal:
 
-```code
+```bash
 # Run the ls command on all servers with a label
 $ tsh ssh root@env=example ls
 ```

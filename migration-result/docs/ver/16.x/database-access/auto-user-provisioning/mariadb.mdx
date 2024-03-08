@@ -1,7 +1,7 @@
 ---
 title: MariaDB Automatic User Provisioning 
 description: Configure automatic user provisioning for MariaDB.
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport can automatically create users in your database, removing the need for
@@ -16,6 +16,10 @@ database accounts for all users.
 - Ability to connect to and create user accounts in the target database.
 
 <Note>
+  <p>
+    **Supported versions**
+  </p>
+
   Automatic user provisioning is not compatible with MariaDB versions lower than
   10.3.3 or 10.2.11.
 </Note>
@@ -59,6 +63,10 @@ This schema is also used to store custom user attributes and stored procedures.
     name in the last two lines if you wish to use another database name.
 
     <Warning>
+      <p>
+        **Role Admin**
+      </p>
+
       In order for the admin user to grant a role to a database user, they must be
       the "Admin" of the role.
 
@@ -95,6 +103,10 @@ This schema is also used to store custom user attributes and stored procedures.
     name in the last two lines if you wish to use another database name.
 
     <Warning>
+      <p>
+        **Role Admin**
+      </p>
+
       In order for the admin user to grant a role to a database user, they must be
       the "Admin" of the role.
 
@@ -162,6 +174,10 @@ Next, configure the database admin user in the Teleport database configuration:
 </Tabs>
 
 <Tip>
+  <p>
+    **Auto-discovered databases**
+  </p>
+
   For auto-discovered cloud databases, the name of the admin user is taken from
   the `teleport.dev/db-admin` label, and the default database is taken from the
   `teleport.dev/db-admin-default-database` label.
@@ -246,12 +262,16 @@ exists in the database and is not managed by Teleport (i.e. not assigned the
 
 Now, log into your Teleport cluster and connect to the database:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com
 $ tsh db connect --db-name <database> example
 ```
 
 <Note>
+  <p>
+    **Database Username**
+  </p>
+
   When connecting to a database with user provisioning enabled, the Database
   Service expects your Teleport username will be used as the database username .
 
@@ -270,7 +290,7 @@ use the command `tsh db ls -v`. By default, all database roles will be assigned
 to your auto-provisioned database user. You can optionally select a subset of
 the database roles with `--db-roles`:
 
-```code
+```bash
 $ tsh db connect --db-name <database> --db-roles reader example
 ```
 

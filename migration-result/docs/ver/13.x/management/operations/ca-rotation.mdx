@@ -1,7 +1,7 @@
 ---
 title: Cert Authority Rotation
 description: How to rotate Teleport's certificate authority
-version: '13.x'
+version: "13.x"
 ---
 
 ## Prerequisites
@@ -9,11 +9,11 @@ version: '13.x'
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -26,7 +26,7 @@ version: '13.x'
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -46,7 +46,7 @@ version: '13.x'
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -63,7 +63,7 @@ version: '13.x'
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -80,7 +80,7 @@ version: '13.x'
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -94,7 +94,7 @@ version: '13.x'
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -109,7 +109,7 @@ version: '13.x'
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -132,6 +132,10 @@ change after each `host` CA rotation. Make sure you use the *new* CA pin when ad
 Teleport services after `host` CA rotation.
 
 <Warning>
+  <p>
+    **Exported CAs**
+  </p>
+
   Teleport signs Windows Desktop client certificates with the `user` certificate
   authority.
   If the `user` CA is rotated, the new CA certificate must be exported and
@@ -181,7 +185,7 @@ following order:
 Administrators can abort the rotation and revert all changes any time before
 the rotation is completed by entering the `rollback` phase.
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=rollback 
 ```
 
@@ -208,14 +212,14 @@ of the cluster.
 
 Initiate the manual rotation of host certificate authorities:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=init 
 Updated rotation phase to "init". To check status use 'tctl status'
 ```
 
 Use `tctl` to confirm that there is an active rotation in progress:
 
-```code
+```bash
 $ tctl status
 # Cluster  acme.cluster
 # Version  13.4.16
@@ -227,7 +231,7 @@ $ tctl status
 
 Check the status of connected nodes:
 
-```code
+```bash
 # Check rotation status of the nodes
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {
@@ -242,6 +246,10 @@ In this example, the node named `terminal` has updated its status to phase
 transitions.
 
 <Warning>
+  <p>
+    **Rotation warning**
+  </p>
+
   If some nodes are offline during rotation or have failed to update the status,
   you will lose connectivity after the transition `update_servers` -> `standby`.
   Make sure that all nodes are up to date with the transitions before
@@ -252,7 +260,7 @@ transitions.
 
 Execute the transition from `init` to `update_clients`:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=update_clients
 # Updated rotation phase to "update_clients". To check status use 'tctl status'
 $ tctl status
@@ -268,7 +276,7 @@ $ tctl status
 
 Verify that nodes have caught up and now see the current cluster state:
 
-```code
+```bash
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {
   "hostname": "terminal",
@@ -282,7 +290,7 @@ $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: 
 Now that all nodes have caught up, execute the transition from `update_clients`
 to `update_servers`:
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=update_servers
 # Updated rotation phase to "update_servers". To check status use 'tctl status'
 
@@ -300,7 +308,7 @@ $ tctl status
 
 Verify that nodes have caught up:
 
-```code
+```bash
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {
   "hostname": "terminal",
@@ -313,7 +321,7 @@ $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: 
 
 Before wrapping up, verify that you have not lost any nodes and can connect to them, for example:
 
-```code
+```bash
 $ tsh ssh hello@terminal
 ```
 
@@ -323,13 +331,13 @@ $ tsh ssh hello@terminal
   authority.
 </Warning>
 
-```code
+```bash
 $ tctl auth rotate --manual --type=type --phase=standby
 ```
 
 Verify that the rotation has completed with `tctl`:
 
-```code
+```bash
 $ tctl status
 Cluster  acme.cluster
 Version  13.4.16
@@ -341,7 +349,7 @@ CA pin   sha256:hash
 
 Nodes should catch up and be on standby:
 
-```code
+```bash
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {
   "hostname": "terminal",
@@ -361,7 +369,7 @@ $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: 
 You can trigger semi-automatic rotation by omitting the `--manual` and `--phase`
 flags.
 
-```code
+```bash
 $ tctl auth rotate --type=host
 ```
 
@@ -371,7 +379,7 @@ certificate authority work.
 
 You can customize grace period and CA type with additional flags:
 
-```code
+```bash
 # Rotate only user certificates with a grace period of 200 hours:
 $ tctl auth rotate --type=user --grace-period=200h
 
@@ -399,7 +407,7 @@ users will no longer be allowed to SSH into them.
 
 Check the cluster status:
 
-```code
+```bash
 $ tctl status
 Cluster  acme.cluster
 Version  13.4.16
@@ -408,7 +416,7 @@ Host CA  initialized (mode: manual, started: Sep 20 2023 01:44:36 UTC, ending: S
 
 Check the status of individual nodes:
 
-```code
+```bash
 # Check rotation status of the nodes
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {
@@ -427,7 +435,7 @@ Rollback must be performed before the rotation enters `standby` state.
 
 First, enter the rollback phase with a manual phase transition:
 
-```code
+```bash
 $ tctl auth rotate --phase=rollback --type=type --manual
 # Updated rotation phase to "rollback". To check status use 'tctl status'
 ```
@@ -435,7 +443,7 @@ $ tctl auth rotate --phase=rollback --type=type --manual
 Make sure that any nodes which have already updated have caught up and entered
 the `rollback` phase.
 
-```code
+```bash
 # Check rotation status of the nodes
 $ tctl get nodes --format=json | jq '.[] | {hostname: .spec.hostname, rotation: .spec.rotation.state, phase: .spec.rotation.phase}'
 {

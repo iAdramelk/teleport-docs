@@ -2,7 +2,7 @@
 title: Database Access with Redshift on AWS
 description: How to configure Teleport database access with AWS Redshift PostgreSQL.
 videoBanner: UFhT52d5bYg
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport can provide secure access to AWS Redshift via the  [Teleport Database
@@ -30,11 +30,11 @@ In this guide, you will:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -47,7 +47,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -67,7 +67,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -84,7 +84,7 @@ In this guide, you will:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -101,7 +101,7 @@ In this guide, you will:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -120,7 +120,7 @@ In this guide, you will:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -135,7 +135,7 @@ In this guide, you will:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -157,7 +157,7 @@ In this guide, you will:
   <Tab title="Teleport Team/Community Edition">
     Create a local Teleport user with the built-in `access` role:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access \
       --db-users=\* \
@@ -169,7 +169,7 @@ In this guide, you will:
   <Tab title="Teleport Enterprise/Enterprise Cloud">
     Create a local Teleport user with the built-in `access` and `requester` roles:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access,requester \
       --db-users=\* \
@@ -198,7 +198,7 @@ The Database Service requires a valid auth token to connect to the cluster. Gene
 one by running the following command against your Teleport Auth Service and save
 it in `/tmp/token` on the node that will run the Database Service:
 
-```code
+```bash
 $ tctl tokens add --type=db
 ```
 
@@ -219,7 +219,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -229,7 +229,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -251,7 +251,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -274,7 +274,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -297,7 +297,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -355,7 +355,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -373,13 +373,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -397,13 +397,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -421,13 +421,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -447,13 +447,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -469,7 +469,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -479,7 +479,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -493,7 +493,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -523,7 +523,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -545,7 +545,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -568,7 +568,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -591,7 +591,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -651,7 +651,7 @@ On the node that is running the Database Service, create a configuration file:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ sudo teleport db configure create \
        -o file \
        --proxy=teleport.example.com:3080 \
@@ -661,7 +661,7 @@ On the node that is running the Database Service, create a configuration file:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ sudo teleport db configure create \
        -o file \
        --proxy=mytenant.teleport.sh:443 \
@@ -754,7 +754,7 @@ this command in automatic or manual mode:
     your Teleport Database Service runs as an IAM user (for example, uses an AWS
     credentials file).
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user TeleportUser
     ```
   </Tab>
@@ -764,7 +764,7 @@ this command in automatic or manual mode:
     your Teleport Database Service runs as an IAM role (for example, on an EC2
     instance with an attached IAM role).
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role TeleportRole
     ```
   </Tab>
@@ -772,7 +772,7 @@ this command in automatic or manual mode:
   <Tab title="Manual / IAM User">
     Use this command to display required IAM policies which you will then create in your AWS console:
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-user arn:aws:iam::123456789012:user/TeleportUser
     ```
   </Tab>
@@ -780,7 +780,7 @@ this command in automatic or manual mode:
   <Tab title="Manual / IAM Role">
     Use this command to display required IAM policies which you will then create in your AWS console:
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-role arn:aws:iam::123456789012:role/TeleportRole
     ```
   </Tab>
@@ -814,7 +814,7 @@ the Database Service.
   <Tab title="Package Manager">
     On the host where you will run the Database Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -824,7 +824,7 @@ the Database Service.
     On the host where you will run the Database Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -848,7 +848,7 @@ may not propagate immediately and can take a few minutes to come into effect.
     registered databases. Replace `--proxy` with the address of your Teleport Proxy
     Service.
 
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
     $ tsh db ls
     # Name        Description                    Labels
@@ -862,7 +862,7 @@ may not propagate immediately and can take a few minutes to come into effect.
     registered databases. Replace `--proxy` with the address of your Teleport Cloud
     tenant.
 
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --user=alice
     $ tsh db ls
     # Name        Description                    Labels
@@ -873,23 +873,31 @@ may not propagate immediately and can take a few minutes to come into effect.
 </Tabs>
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   You can override the database name by applying the `TeleportDatabaseName` AWS tag to the resource. The value of the tag will be used as the database name.
 </Note>
 
 To retrieve credentials for a database and connect to it:
 
-```code
+```bash
 $ tsh db connect --db-user=awsuser --db-name=dev my-redshift
 ```
 
 <Note>
+  <p>
+    **Database users must exist**
+  </p>
+
   Teleport does not currently use the auto-create option when generating
   tokens for Redshift databases. Users must exist in the database.
 </Note>
 
 To log out of the database and remove credentials:
 
-```code
+```bash
 $ tsh db logout my-redshift
 ```
 
@@ -917,7 +925,7 @@ The Teleport Database Service needs connectivity to your database endpoints. Tha
 enabling inbound traffic on the database from the Database Service on the same VPC or routing rules from another VPC. Using the `nc`
 program you can verify connections to databases:
 
-```code
+```bash
 $ nc -zv postgres-instance-1.sadas.us-east-1.rds.amazonaws.com 5432
 # Connection to postgres-instance-1.sadas.us-east-1.rds.amazonaws.com (172.31.24.172) 5432 port [tcp/postgresql] succeeded!
 ```
@@ -1055,7 +1063,7 @@ generally required:
 
 You can test the trust relationship by running this AWS CLI command as `role1`:
 
-```code
+```bash
 aws sts assume-role --role-arn arn:aws:iam::111111111111:role/role2 --role-session-name test-trust-relationship
 ```
 

@@ -2,7 +2,7 @@
 title: Teleport Authentication with Google Workspace (G Suite)
 description: How to configure Teleport access with Google Workspace (formerly known as G Suite)
 videoBanner: WTLWc6nnPfk
-version: '13.x'
+version: "13.x"
 ---
 
 This guide explains how to configure [Google Workspace](https://workspace.google.com/)
@@ -41,7 +41,7 @@ Before you get started, verify the following:
         You can download these tools by visiting your [Teleport account](https://teleport.sh).
         You can verify the tools you have installed by running the following commands:
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport Enterprise v13.4.16 go1.21
 
@@ -58,7 +58,7 @@ Before you get started, verify the following:
       - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
         To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-        ```code
+        ```bash
         $ tctl version
         # Teleport Enterprise v14.3.6 go1.21
 
@@ -72,7 +72,7 @@ Before you get started, verify the following:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -87,7 +87,7 @@ Before you get started, verify the following:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -370,7 +370,7 @@ your client secret.
     The following command defines the service account by embedding JSON in the command used to create the connector resource.
     With this method, you don't have to provide the JSON file to all of the hosts running the Teleport Auth Service.
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
     --secret $( cat client-secret.txt) \
     --claims-to-roles groups,auditor@example.com,auditor \
@@ -442,7 +442,7 @@ your client secret.
     You can use this method for self-hosted Teleport Auth Service instances if you can
     make the JSON file available to all hosts running the Teleport Auth Service.
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
     --secret $( cat client-secret.txt) \
     --google-acc-uri <PATH/TO/SERVICE-ACCOUNT-KEY>.json \
@@ -502,7 +502,7 @@ resource configuration file. For more information about viewing audit logs, see
 
 To test the connector, run the following command:
 
-```code
+```bash
 $ cat gworkspace-connector.yaml | tctl sso test
 ```
 
@@ -512,7 +512,7 @@ information.
 
 To create the connector using the `tctl` tool, run the following command:
 
-```code
+```bash
 $ tctl create -f gworkspace-connector.yaml
 ```
 
@@ -521,7 +521,7 @@ $ tctl create -f gworkspace-connector.yaml
 After you create the connector, the Teleport Web UI displays a new sign-in option, **Login with Google**.
 To sign in from the command-line:
 
-```code
+```bash
 $ tsh --proxy=proxy.example.com login --auth=google
 ```
 
@@ -561,7 +561,7 @@ Follow the instructions for your Teleport edition:
 
     Create a resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>

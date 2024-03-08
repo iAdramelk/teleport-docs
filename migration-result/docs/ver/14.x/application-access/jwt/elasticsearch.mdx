@@ -1,7 +1,7 @@
 ---
 title: Using JWT authentication with Elasticsearch
 description: How to use JWT authentication with Elasticsearch
-version: '14.x'
+version: "14.x"
 ---
 
 This guide will help you configure Elasticsearch [JWT authentication](https://www.elastic.co/guide/en/elasticsearch/reference/current/jwt-realm.html)
@@ -12,7 +12,7 @@ with Teleport.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -21,7 +21,7 @@ with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -43,7 +43,7 @@ with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -67,7 +67,7 @@ with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -90,7 +90,7 @@ with Teleport.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -107,7 +107,7 @@ with Teleport.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -153,6 +153,10 @@ Let's take a closer look at the parameters and their values:
   use to connect to Elasticsearch.
 
 <Note>
+  <p>
+    **Elasticsearch role mapping**
+  </p>
+
   Note that when using JWT authentication, you cannot map user roles using the
   standard Elasticsearch `role_mapping.yml` file. Instead, you need to set the
   role mapping using the API. See [JWT realm authorization](https://www.elastic.co/guide/en/elasticsearch/reference/current/jwt-realm.html#jwt-authorization)
@@ -188,7 +192,7 @@ template variable with a Teleport-signed JWT token in each request.
 Log into your Teleport cluster with `tsh login` and make sure your Elasticsearch
 application is available:
 
-```code
+```bash
 $ tsh apps ls
 Application Description   Public Address               Labels
 ----------- ------------- ---------------------------- -------------------------------
@@ -197,14 +201,14 @@ elastic                   elastic.teleport.example.com
 
 Fetch a short-lived X.509 certificate for Elasticsearch:
 
-```code
+```bash
 $ tsh apps login elastic
 ```
 
 Then you can use the `curl` command to communicate with the Elasticsearch API,
 which will authenticate you as your Teleport user:
 
-```code
+```bash
 $ curl \
   --cacert ~/.tsh/keys/teleport.example.com/cas/root.pem \
   --cert ~/.tsh/keys/teleport.example.com/alice-app/example-cluster/elastic-x509.pem \

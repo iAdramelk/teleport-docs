@@ -1,7 +1,7 @@
 ---
 title: Automatically Register Resources with Teleport
 description: Learn how to use the Teleport API to start agents automatically when you add resources to your infrastructure.
-version: '13.x'
+version: "13.x"
 ---
 
 You can use Teleport's API to automatically register resources in your
@@ -39,11 +39,11 @@ Automatic registration consists of the following steps:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -56,7 +56,7 @@ Automatic registration consists of the following steps:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -76,7 +76,7 @@ Automatic registration consists of the following steps:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -93,7 +93,7 @@ Automatic registration consists of the following steps:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -110,7 +110,7 @@ Automatic registration consists of the following steps:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -137,7 +137,7 @@ Automatic registration consists of the following steps:
 
 Download the source code for our minimal API client:
 
-```code
+```bash
 $ git clone https://github.com/gravitational/teleport
 $ cd examples/service-discovery-api-client
 ```
@@ -193,7 +193,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f register-apps.yaml
 role 'register-apps' has been created
 user "register-apps" has been created
@@ -229,7 +229,7 @@ spec:
 
 Create the `register-apps-impersonator` role:
 
-```code
+```bash
 $ tctl create -f register-apps-impersonator.yaml
 role 'register-apps-impersonator' has been created
 ```
@@ -241,7 +241,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -257,7 +257,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -267,7 +267,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -294,7 +294,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -304,7 +304,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -331,7 +331,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -341,7 +341,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -368,7 +368,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -389,7 +389,7 @@ The following `tctl auth sign` command impersonates the `register-apps` user,
 generates signed credentials, and writes an identity file to the local
 directory:
 
-```code
+```bash
 $ tctl auth sign --user=register-apps --out=auth.pem
 ```
 
@@ -417,6 +417,10 @@ management API with Teleport. It does so by:
   deregister the RabbitMQ API endpoint.
 
 <Tip>
+  <p>
+    **Dynamic registration**
+  </p>
+
   While the client application launches a new Application Service instance to
   proxy every instance of the target application, you can also proxy multiple
   applications through the same Application Service instance.
@@ -893,6 +897,10 @@ While Teleport deregisters stale Application Service records automatically, this
 can take some time after stopping an Application Service instance.
 
 <Tip>
+  <p>
+    **Changing a resource's TTL**
+  </p>
+
   You can change the interval that Teleport will use to check the availability of
   a resource before de-registering it from its backend. To do so, use the
   `SetExpiry` method of the `types.Resource` interface.
@@ -1087,13 +1095,13 @@ solution.
 Make sure you have pulled the Teleport container image so the application can
 create containers based on it:
 
-```code
+```bash
 $ docker image pull public.ecr.aws/gravitational/teleport-distroless:13.4.16
 ```
 
 In your project directory, run the following command:
 
-```code
+```bash
 $ go run main.go
 Starting the application
 Connected to Teleport
@@ -1102,7 +1110,7 @@ Connected to the Docker daemon
 
 In a new terminal, run three new RabbitMQ containers:
 
-```code
+```bash
 $ for i in {1..3}; do docker run -d rabbitmq:3-management; done;
 ```
 
@@ -1120,7 +1128,7 @@ Started an Application Service container to proxy URL: http://172.17.0.2:15672
 
 Verify that the RabbitMQ instances are registered with Teleport:
 
-```code
+```bash
 $ tsh apps ls
 Application         Description Type Public Address           Labels
 ------------------- ----------- ---- ------------------------ -------------------
@@ -1131,7 +1139,7 @@ rabbitmq-172-17-0-4             HTTP rabbitmq-172-17-0-4.3... teleport.dev/origi
 
 Next, stop one of your RabbitMQ containers:
 
-```code
+```bash
 $ docker stop $(docker ps --filter "ancestor=rabbitmq:3-management" -q --last 1)
 ```
 

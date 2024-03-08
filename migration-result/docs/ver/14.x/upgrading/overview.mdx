@@ -1,7 +1,7 @@
 ---
 title: Upgrading Compatibility Overview
 description: Provides a high-level description of how to upgrade the components in your Teleport cluster. Read this guide before following upgrade instructions for your environment.
-version: '14.x'
+version: "14.x"
 ---
 
 Since Teleport is a distributed system with a number of services that run on
@@ -37,7 +37,7 @@ Services for you. You can determine the current version of these services by
 running the following command, where `mytenant` is the name of your Teleport
 Team or Teleport Enterprise Cloud tenant:
 
-```code
+```bash
 $ curl -s https://mytenant.teleport.sh/webapi/ping | jq '.server_version'
 ```
 

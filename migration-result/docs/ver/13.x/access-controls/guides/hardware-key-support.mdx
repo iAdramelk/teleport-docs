@@ -1,12 +1,16 @@
 ---
 title: Hardware Key Support
 description: Hardware Key Support
-version: '13.x'
+version: "13.x"
 ---
 
 ## Introduction
 
 <Warning>
+  <p>
+    **Enterprise**
+  </p>
+
   Hardware Key Support requires Teleport Enterprise.
 </Warning>
 
@@ -29,10 +33,18 @@ Additionally, you can configure this feature to require a touch for every Telepo
 like `tctl edit`. With touch required, hardware key support provides better security than per-session MFA.
 
 <Note>
+  <p>
+    **touch caching**
+  </p>
+
   A user's touch is cached on the hardware security key for 15 seconds to prevent excessive touch prompts.
 </Note>
 
 <Warning>
+  <p>
+    **Compatibility Issues**
+  </p>
+
   Hardware key support provides the best security available.
   However, there are some limitations in the services that support hardware keys.
 
@@ -73,7 +85,7 @@ like `tctl edit`. With touch required, hardware key support provides better secu
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -90,7 +102,7 @@ like `tctl edit`. With touch required, hardware key support provides better secu
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -103,6 +115,10 @@ like `tctl edit`. With touch required, hardware key support provides better secu
 - A series 5+ YubiKey
 
 <Note>
+  <p>
+    **PIV support**
+  </p>
+
   Hardware key support requires users to use a PIV-compatible hardware key.
   Currently, this feature is only guaranteed to support YubiKey series 5+.
 
@@ -120,7 +136,7 @@ like `tctl edit`. With touch required, hardware key support provides better secu
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -135,7 +151,7 @@ like `tctl edit`. With touch required, hardware key support provides better secu
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -163,7 +179,7 @@ spec:
 
 You can also enforce hardware key support cluster-wide by updating your Teleport configuration:
 
-```code
+```bash
 $ tctl edit cap
 ```
 
@@ -197,7 +213,7 @@ The first time users sign in with their hardware key they might be required to i
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ tsh login --user=dev --proxy=proxy.example.com:3080
     # Enter password for Teleport user dev:
     # Unmet private key policy "hardware_key_touch".
@@ -213,7 +229,7 @@ The first time users sign in with their hardware key they might be required to i
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    ```code
+    ```bash
     $ tsh login --user=dev --proxy=proxy.example.com:3080
     # Enter password for Teleport user dev:
     # Unmet private key policy "hardware_key_touch".
@@ -228,7 +244,7 @@ The first time users sign in with their hardware key they might be required to i
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --user=dev --proxy=proxy.example.com:3080
     # Enter password for Teleport user dev:
     # Unmet private key policy "hardware_key_touch".
@@ -246,7 +262,7 @@ The first time users sign in with their hardware key they might be required to i
 Affected users with existing sessions that aren't backed by a hardware key are prompted to sign in again
 on their next request. For example:
 
-```code
+```bash
 $ tsh clusters
 # Unmet private key policy "hardware_key_touch"
 # Relogging in with hardware-backed private key.
@@ -306,7 +322,7 @@ For example, if you have `second_factor: webauthn` set in your `cluster_auth_pre
 and `require_session_mfa: hardware_key_touch` set on your role,
 you'll see the following output when you first sign in:
 
-```code
+```bash
 $ tsh login --user=dev --proxy=root.example.com:3080
 
 # First login as usual, as the unauthenticated client has no way of inferring

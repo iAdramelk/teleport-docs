@@ -1,7 +1,7 @@
 ---
 title: Database Access Architecture
 description: How Teleport enables secure access to databases.
-version: '16.x'
+version: "16.x"
 ---
 
 This section provides an overview of how Teleport enables secure access to
@@ -45,6 +45,10 @@ the databases it's connected to. As long as it can dial back to the cluster's
 Proxy Service, it can be located behind a firewall.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   You can have multiple Database Services connected to the cluster. Each
   Database Service can be also connected to multiple databases.
 </Tip>
@@ -91,6 +95,10 @@ provides the database client with this client certificate to authenticate with
 the Proxy Service.
 
 <Note>
+  <p>
+    **SSL**
+  </p>
+
   Many database clients/servers refer to these certificates as SSL which is
   legacy terminology. In Teleport documentation we most often refer to them as
   TLS or x509 certificates.

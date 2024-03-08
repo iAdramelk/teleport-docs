@@ -1,7 +1,7 @@
 ---
 title: Use Teleport's SAML Provider to authenticate with Grafana
 description: Configure Grafana to use identities provided by Teleport.
-version: '16.x'
+version: "16.x"
 ---
 
 Grafana is an open source observability platform. Their enterprise version supports
@@ -26,7 +26,7 @@ not just those running behind the Teleport App Service.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.22
 
@@ -42,7 +42,7 @@ not just those running behind the Teleport App Service.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -58,7 +58,7 @@ not just those running behind the Teleport App Service.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/16.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.22
 
@@ -73,7 +73,7 @@ not just those running behind the Teleport App Service.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -106,7 +106,7 @@ spec:
 
 Create it with `tctl`:
 
-```code
+```bash
 $ tctl create sp-manager.yaml
 role 'saml-idp-service-provider-manager' has been created
 ```
@@ -118,13 +118,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},saml_idp_service_provider"
        ```
@@ -135,7 +135,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -162,7 +162,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -172,7 +172,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -199,7 +199,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -209,7 +209,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -236,7 +236,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -253,7 +253,7 @@ it in an easy to remember file name like `teleport-metadata.xml`.
 
 Encode the metadata using `base64` to provide to the Grafana config:
 
-```code
+```bash
 $ cat teleport-metadata.xml | base64
 ```
 
@@ -310,7 +310,7 @@ version: v1
 
 Add the service provider definition to Teleport:
 
-```code
+```bash
 $ tctl create grafana-sp.yaml
 ```
 

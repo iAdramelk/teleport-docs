@@ -1,7 +1,7 @@
 ---
 title: Running an HA Teleport cluster using GCP, GKE, and Helm
 description: Install and configure an HA Teleport cluster using a Google Cloud GKE cluster.
-version: '14.x'
+version: "14.x"
 ---
 
 In this guide, we'll go through how to set up a High Availability Teleport cluster with multiple replicas in Kubernetes
@@ -29,7 +29,7 @@ Teleport's charts require the use of Helm version 3. You can [install Helm 3 by 
 
 Throughout this guide, we will assume that you have the `helm` and `kubectl` binaries available in your `PATH`:
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -70,18 +70,22 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   >
 
   The steps below apply to Google Cloud Google Kubernetes Engine (GKE) Standard deployments.
@@ -209,7 +213,7 @@ Find the path where the JSON private key was just saved (likely your browser's d
 Use `kubectl` to create the `teleport` namespace, set its security policy, and
 create the secret using the path to the JSON private key:
 
-```code
+```bash
 $ kubectl create namespace teleport
 namespace/teleport created
 $ kubectl label namespace teleport 'pod-security.kubernetes.io/enforce=baseline'
@@ -241,7 +245,7 @@ Teleport pod, and automatically renewed and kept up to date by `cert-manager`.
 If you do not have `cert-manager` already configured in the Kubernetes cluster where you are installing Teleport,
 you should add the Jetstack Helm chart repository which hosts the `cert-manager` chart, and install the chart:
 
-```code
+```bash
 $ helm repo add jetstack https://charts.jetstack.io
 $ helm repo update
 $ helm install cert-manager jetstack/cert-manager \
@@ -295,7 +299,7 @@ EOF
 
 After you have created the `Issuer` and updated the values, add it to your cluster using `kubectl`:
 
-```code
+```bash
 $ kubectl --namespace teleport create -f gcp-issuer.yaml
 ```
 
@@ -319,7 +323,7 @@ $ kubectl --namespace teleport create -f gcp-issuer.yaml
   Create a secret from your license file. Teleport will automatically discover
   this secret as long as your file is named `license.pem`.
 
-  ```code
+  ```bash
   $ kubectl -n teleport create secret generic license --from-file=license.pem
   ```
 </Accordion>
@@ -381,7 +385,7 @@ it:
 
 Install the chart with the values from your `gcp-values.yaml` file using this command:
 
-```code
+```bash
 $ helm install teleport teleport/teleport-cluster \
   --create-namespace \
   --namespace teleport \
@@ -394,7 +398,7 @@ $ helm install teleport teleport/teleport-cluster \
 
 Once the chart is installed, you can use `kubectl` commands to view the deployment:
 
-```code
+```bash
 $ kubectl --namespace teleport get all
 
 NAME                                 READY   STATUS    RESTARTS   AGE
@@ -446,7 +450,7 @@ You'll need to set up a DNS `A` record for `teleport.example.com`.
 
 Here's how to do this using Google Cloud DNS:
 
-```code
+```bash
 # Change these parameters if you altered them above
 $ NAMESPACE=teleport
 $ RELEASE_NAME=teleport
@@ -469,7 +473,7 @@ so we can run the command using `kubectl`:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ kubectl --namespace teleport exec deploy/teleport-auth -- tctl users add test --roles=access,editor
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -480,7 +484,7 @@ so we can run the command using `kubectl`:
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ kubectl --namespace teleport exec deploy/teleport-auth -- tctl users add test --roles=access,editor,reviewer
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -515,7 +519,7 @@ Here's an example where we set the chart to use 3 replicas:
 
     Upgrade the deployment with the values from your `gcp-values.yaml` file using this command:
 
-    ```code
+    ```bash
     $ helm upgrade teleport teleport/teleport-cluster \
       --namespace teleport \
       -f gcp-values.yaml
@@ -525,7 +529,7 @@ Here's an example where we set the chart to use 3 replicas:
   <Tab title="Using --set via CLI">
     Run this command, editing your command line parameters as appropriate:
 
-    ```code
+    ```bash
     $ helm upgrade teleport teleport/teleport-cluster \
       --namespace teleport \
       --set highAvailability.replicaCount=3
@@ -542,7 +546,7 @@ Here's an example where we set the chart to use 3 replicas:
 
 To uninstall the `teleport-cluster` chart, use `helm uninstall <release-name>`. For example:
 
-```code
+```bash
 $ helm --namespace teleport uninstall teleport
 ```
 
@@ -550,7 +554,7 @@ $ helm --namespace teleport uninstall teleport
 
 If you want to remove the `cert-manager` installation later, you can use this command:
 
-```code
+```bash
 $ helm --namespace cert-manager uninstall cert-manager
 ```
 

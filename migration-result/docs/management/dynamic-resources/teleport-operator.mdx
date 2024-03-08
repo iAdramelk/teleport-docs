@@ -1,7 +1,7 @@
 ---
 title: Teleport Kubernetes Operator
 description: Easily manage Teleport resources from Kubernetes
-version: '15.x'
+version: "15.x"
 ---
 
 The Teleport Kubernetes Operator provides a way for Kubernetes users to manage some Teleport resources through
@@ -62,7 +62,7 @@ If an error happens and the reconciliation loop is not successful, an item in
 `status.conditions` will describe what went wrong. This allows users to diagnose
 errors by inspecting Kubernetes resources with `kubectl`:
 
-```code
+```bash
 $ kubectl describe teleportusers myuser
 ```
 
@@ -96,12 +96,12 @@ the issue, check the operator logs:
 1. Check if the CR is in the same namespace as the operator. The operator only
    watches for resource in its own namespace.
 2. Check if the operator pods are running and healthy:
-   ```code
+   ```bash
    kubectl get pods -n "$OPERATOR_NAMESPACE"`
    ```
 3. Check the operator logs:
 
-   ```code
+   ```bash
    $ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME> -n "$OPERATOR_NAMESPACE"
    ```
 
@@ -144,7 +144,7 @@ To resolve this lock, you can either:
 
   For example, if the role is named `my-role`:
 
-  ```code
+  ```bash
   kubectl patch TeleportRole my-role -p '{"metadata":{"finalizers":null}}' --type=merge
   ```
 

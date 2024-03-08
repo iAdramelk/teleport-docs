@@ -1,7 +1,7 @@
 ---
 title: Dynamic Kubernetes Cluster Registration
 description: Register and unregister Kubernetes clusters without restarting a Teleport Kubernetes Service instance.
-version: '14.x'
+version: "14.x"
 ---
 
 With dynamic Kubernetes cluster registration, you can manage the Kubernetes
@@ -21,7 +21,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -30,7 +30,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -52,7 +52,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -76,7 +76,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -99,7 +99,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -127,7 +127,7 @@ registration, then create, list, update, and delete Kubernetes clusters via
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -155,7 +155,7 @@ Teleport cluster.
 Establish trust between your Teleport cluster and your new Kubernetes Service
 instance by creating a join token:
 
-```code
+```bash
 $ tctl tokens add --type=kube --ttl=1h --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -174,7 +174,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
     ```
   </Tab>
@@ -184,7 +184,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -206,7 +206,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -229,7 +229,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -252,7 +252,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -312,7 +312,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -330,13 +330,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -354,13 +354,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v14. You'll need to update this
@@ -378,13 +378,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -404,13 +404,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -426,7 +426,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -436,7 +436,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -450,7 +450,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -480,7 +480,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -502,7 +502,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -525,7 +525,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -548,7 +548,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -613,7 +613,7 @@ following command to create a base configuration for your Teleport instance,
 assigning `PROXY_SERVICE` to the host and port of your Teleport Proxy Service or
 Teleport Cloud tenant and `TOKEN` to the join token we created earlier:
 
-```code
+```bash
 # e.g., teleport.example.com:443
 $ PROXY_SERVICE=proxy-addr
 # e.g., abcd123-insecure-do-not-use-this;
@@ -684,7 +684,7 @@ the Teleport Kubernetes Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Kubernetes Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -694,7 +694,7 @@ the Teleport Kubernetes Service.
     On the host where you will run the Teleport Kubernetes Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -719,14 +719,14 @@ like to enable access to.
 
 Retrieve all available contexts:
 
-```code
+```bash
 $ kubectl config get-contexts
 ```
 
 Switch to your context, replacing `CONTEXT_NAME` with the name of your chosen
 context:
 
-```code
+```bash
 $ kubectl config use-context CONTEXT_NAME
 Switched to context CONTEXT_NAME
 ```
@@ -739,7 +739,7 @@ Teleport role that grants access to the cluster you plan to interact with.
 
 Run the following command to get the Kubernetes user for your current context:
 
-```code
+```bash
 $ kubectl config view \
 -o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
 ```
@@ -770,7 +770,7 @@ spec:
 
 Apply your changes:
 
-```code
+```bash
 $ tctl create -f kube-access.yaml
 ```
 
@@ -781,7 +781,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -797,7 +797,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -807,7 +807,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -834,7 +834,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -844,7 +844,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -871,7 +871,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -881,7 +881,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -908,7 +908,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -951,7 +951,7 @@ roleRef:
 
 Apply the `ClusterRoleBinding` with `kubectl`:
 
-```code
+```bash
 $ kubectl apply -f viewers-bind.yaml
 ```
 
@@ -989,7 +989,7 @@ version: v5
 
 Create the role:
 
-```code
+```bash
 $ tctl create -f kube-manager.yaml
 ```
 
@@ -1000,7 +1000,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -1016,7 +1016,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -1026,7 +1026,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -1053,7 +1053,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -1063,7 +1063,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -1090,7 +1090,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -1100,7 +1100,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -1127,7 +1127,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -1150,7 +1150,7 @@ Kubernetes context to one based on your Teleport cluster, so make sure you
 update your Kubernetes context to match the cluster you would like to connect to
 Teleport:
 
-```code
+```bash
 $ kubectl config get-contexts
 # Assign CONTEXT_NAME to your chosen context
 $ kubectl config use-context CONTEXT_NAME
@@ -1159,7 +1159,7 @@ $ kubectl config use-context CONTEXT_NAME
 On your workstation, download Teleport's `get-kubeconfig.sh` script, which you
 will use to generate the kubeconfig:
 
-```code
+```bash
 $ curl -OL \
 https://raw.githubusercontent.com/gravitational/teleport/v14.3.6/examples/k8s-auth/get-kubeconfig.sh
 ```
@@ -1180,7 +1180,7 @@ called `kubeconfig` in the directory where you run the script.
 
 Run the `get-kubeconfig.sh` script:
 
-```code
+```bash
 $ bash get-kubeconfig.sh
 ```
 
@@ -1215,7 +1215,7 @@ Since `spec.kubeconfig` must be a base64-encoded string, convert the kubeconfig
 file to base64, then indent it and add it to the `kube_cluster.yaml` resource
 definition using the following command:
 
-```code
+```bash
 $ printf "    %s" $(cat kubeconfig | base64) >> kube_cluster.yaml
 ```
 
@@ -1275,7 +1275,7 @@ $ printf "    %s" $(cat kubeconfig | base64) >> kube_cluster.yaml
 
 To create the `kube_cluster` resource, run the following command:
 
-```code
+```bash
 $ tctl create kube_cluster.yaml
 kubernetes cluster "mycluster" has been created
 ```
@@ -1290,7 +1290,7 @@ will register that cluster and enable access to it via Teleport.
 As a result, you should now see the cluster you registered above when you run
 `tsh kube ls`:
 
-```code
+```bash
 $ tsh kube ls
  Kube Cluster Name Labels                      Selected
  ----------------- --------------------------- --------
@@ -1302,7 +1302,7 @@ registered dynamically.
 
 You can also log in to the cluster you just registered:
 
-```code
+```bash
 $ tsh kube login mycluster
 Logged into kubernetes cluster "mycluster". Try 'kubectl version' to test the
 connection.
@@ -1312,7 +1312,7 @@ connection.
 
 You can list `kube_cluster` resources with the following command:
 
-```code
+```bash
 $ tctl get kube_clusters
 ```
 
@@ -1321,7 +1321,7 @@ $ tctl get kube_clusters
 To update the `kube_cluster` resource you created earlier, execute the following
 command to retrieve the resource as it exists on the Auth Service's backend:
 
-```code
+```bash
 $ tctl get kube_clusters/mycluster > kube_cluster.yaml
 ```
 
@@ -1344,14 +1344,14 @@ Edit the `kube_cluster.yaml` file to add a label to your `kube_cluster`:
 
 Update the resource:
 
-```code
+```bash
 $ tctl create -f kube_cluster.yaml
 kubernetes cluster "mycluster" has been updated
 ```
 
 You should now see the updated labels:
 
-```code
+```bash
 $ tsh kube ls
  Kube Cluster Name Labels                               Selected
  ----------------- ------------------------------------ --------
@@ -1369,14 +1369,14 @@ $ tsh kube ls
 To delete the `kube_cluster` resource you created earlier, run the following
 command:
 
-```code
+```bash
 $ tctl rm kube_clusters/mycluster
 kubernetes cluster "mycluster" has been deleted
 ```
 
 This will unregister the Kubernetes cluster from Teleport:
 
-```code
+```bash
 $ tsh kube ls
 Kube Cluster Name Labels Selected
 ----------------- ------ --------

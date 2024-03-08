@@ -1,7 +1,7 @@
 ---
 title: Run the PagerDuty Access Request Plugin
 description: How to set up Teleport's PagerDuty plugin for privilege elevation approvals.
-version: '14.x'
+version: "14.x"
 ---
 
 With Teleport's PagerDuty integration, engineers can access the infrastructure
@@ -47,7 +47,7 @@ PagerDuty.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -64,7 +64,7 @@ PagerDuty.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -94,7 +94,7 @@ your infrastructure.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -193,7 +193,7 @@ the request.
 
 Create the roles you defined:
 
-```code
+```bash
 $ tctl create -f editor-request-rbac.yaml
 role 'editor-reviewer' has been created
 role 'editor-requester' has been created
@@ -235,7 +235,7 @@ on-call team for `My Critical Service`.
 
 Create the resources:
 
-```code
+```bash
 $ tctl create -f demo-role-requester.yaml;
 ```
 
@@ -329,7 +329,7 @@ request contains an annotation with the key `pagerduty_services` and the value
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -364,7 +364,7 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
@@ -384,7 +384,7 @@ earlier.
 
 Retrieve your user definition:
 
-```code
+```bash
 $ TELEPORT_USER=$(tsh status --format=json | jq -r .active.username)
 $ tctl get users/${TELEPORT_USER?} > myuser.yaml
 ```
@@ -403,7 +403,7 @@ Edit `myuser.yaml` to include the roles you just created:
 
 Apply your changes:
 
-```code
+```bash
 $ tctl create -f myuser.yaml
 ```
 
@@ -417,7 +417,7 @@ Create a user called `myuser` who has the `editor-requester` role. Later in this
 guide, you will create an Access Request as this user to test the PagerDuty
 plugin:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor-requester
 ```
 
@@ -433,7 +433,7 @@ Teleport cluster.
     plugins from source. You can run the plugin from a remote host or your local
     development machine.
 
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-access-pagerduty-v14.3.3-linux-amd64-bin.tar.gz
     $ tar -xzf teleport-access-pagerduty-v14.3.3-linux-amd64-bin.tar.gz
     $ cd teleport-access-pagerduty
@@ -442,7 +442,7 @@ Teleport cluster.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-pagerduty version
     teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-fffffffff go1.21
     ```
@@ -452,13 +452,13 @@ Teleport cluster.
     We currently only provide Docker images for `linux-amd64`.
     Pull the Docker image for the latest access request plugin by running the following command:
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.3
     ```
 
     Make sure the plugin is installed by running the following command:
 
-    ```code
+    ```bash
     $ docker run public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.3 version
     teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-api/14.0.0-gd1e081e 1.21
     ```
@@ -470,7 +470,7 @@ Teleport cluster.
     To install from source you need `git` and `go` installed. If you do not have Go
     installed, visit the Go [downloads page](https://go.dev/dl/).
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/pagerduty
     $ make
@@ -480,7 +480,7 @@ Teleport cluster.
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-pagerduty version
     teleport-pagerduty v14.3.3 git:teleport-pagerduty-v14.3.3-fffffffff go1.21
     ```
@@ -493,13 +493,13 @@ Teleport cluster.
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -568,7 +568,7 @@ longer-lived identity files with `tctl`:
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=access-plugin --out=identity
     ```
 
@@ -593,7 +593,7 @@ longer-lived identity files with `tctl`:
       a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=60060
       ```
     </Accordion>
@@ -601,7 +601,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on a Linux server, create a data directory
     to hold certificate files for the plugin:
 
-    ```code
+    ```bash
     $ sudo mkdir -p /var/lib/teleport/api-credentials
     $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
@@ -609,7 +609,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on Kubernetes, Create a Kubernetes secret
     that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-pagerduty-identity
     ```
 
@@ -649,7 +649,7 @@ your environment.
     the host where you will run the PagerDuty plugin, generate a boilerplate config
     by running the following commands:
 
-    ```code
+    ```bash
     $ teleport-pagerduty configure > teleport-pagerduty.toml
     $ sudo mv teleport-pagerduty.toml /etc
     ```
@@ -798,7 +798,7 @@ The final configuration should resemble the following:
     The `-d` flag will provide debug information to ensure that the plugin can
     connect to PagerDuty and your Teleport cluster:
 
-    ```code
+    ```bash
     $ teleport-pagerduty start -d
     # DEBU   DEBUG logging enabled logrus/exported.go:117
     # INFO   Starting Teleport Access PagerDuty extension 0.1.0-dev.1: pagerduty/main.go:124
@@ -815,7 +815,7 @@ The final configuration should resemble the following:
   <Tab title="Docker">
     Run the plugin:
 
-    ```code
+    ```bash
     $ docker run -v <path-to-config>:/etc/teleport-pagerduty.toml public.ecr.aws/gravitational/teleport-plugin-pagerduty:14.3.6 start
     ```
   </Tab>
@@ -823,13 +823,13 @@ The final configuration should resemble the following:
   <Tab title="Helm Chart">
     After modifying your configuration, run the bot with the following command:
 
-    ```code
+    ```bash
     $ helm upgrade --install teleport-plugin-pagerduty teleport/teleport-plugin-pagerduty --values teleport-pagerduty-values.yaml
     ```
 
     To inspect the plugin's logs, use the following command:
 
-    ```code
+    ```bash
     $ kubectl logs deploy/teleport-plugin-pagerduty
     ```
 
@@ -837,7 +837,7 @@ The final configuration should resemble the following:
     `teleport-pagerduty-helm.yaml` and executing the `helm upgrade ...` command
     above again. Then you can restart the plugin with the following command:
 
-    ```code
+    ```bash
     $ kubectl rollout restart deployment teleport-plugin-pagerduty
     ```
   </Tab>
@@ -851,7 +851,7 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -859,7 +859,7 @@ As the Teleport user `myuser`, create an Access Request for the `editor` role:
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```
@@ -905,7 +905,7 @@ approve or deny the request:
 
   <Tabs>
     <Tab title="As an Admin">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tctl request approve REQUEST_ID
       $ tctl request deny REQUEST_ID
@@ -913,7 +913,7 @@ approve or deny the request:
     </Tab>
 
     <Tab title="As a User">
-      ```code
+      ```bash
       # Replace REQUEST_ID with the id of the request
       $ tsh request review --approve REQUEST_ID
       $ tsh request review --deny REQUEST_ID
@@ -923,6 +923,10 @@ approve or deny the request:
 </Accordion>
 
 <Note>
+  <p>
+    **Auditing Access Requests**
+  </p>
+
   When the PagerDuty plugin sends a notification, anyone who receives the
   notification can follow the enclosed link to an Access Request URL. While users
   must be authorized via their Teleport roles to review Access Request, you
@@ -948,7 +952,7 @@ request_state:PENDING pagerduty/app.go:511
 
 Your Access Request will appear as `APPROVED`:
 
-```code
+```bash
 $ tsh requests ls
 ID                                   User               Roles     Created (UTC)       Status
 ------------------------------------ ------------------ --------- ------------------- --------
@@ -987,7 +991,7 @@ supported by systemd.
 
 Enable and start the plugin:
 
-```code
+```bash
 $ sudo systemctl enable teleport-pagerduty
 $ sudo systemctl start teleport-pagerduty
 ```

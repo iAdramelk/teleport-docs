@@ -1,7 +1,7 @@
 ---
 title: Role-Based Access Control for Desktops
 description: Role-based access control (RBAC) for desktops protected by Teleport.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport's RBAC allows administrators to set up granular access policies for
@@ -47,6 +47,10 @@ spec:
 ```
 
 <Warning>
+  <p>
+    **Active Directory Configuration**
+  </p>
+
   Teleport's RBAC system is not a replacement for proper Active Directory
   administration. Teleport-issued Windows certificates are valid for a small
   amount of time, but they do apply to the entire domain. Proper care should be
@@ -202,6 +206,10 @@ Windows users upon login.
 #### Configuration
 
 <Warning>
+  <p>
+    **Local users only**
+  </p>
+
   Automatic user provisioning is only supported for local users, and does
   not take effect in Active Directory environments.
 </Warning>

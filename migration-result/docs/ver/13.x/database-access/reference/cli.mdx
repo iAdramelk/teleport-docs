@@ -1,7 +1,7 @@
 ---
 title: Database Access CLI Reference
 description: CLI reference for Teleport database access.
-version: '13.x'
+version: "13.x"
 ---
 
 This reference shows you how to run common commands for managing Teleport
@@ -18,7 +18,7 @@ the Database Service, including:
 
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -33,7 +33,7 @@ the Database Service, including:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -54,7 +54,7 @@ Starts Teleport Database Service.
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ teleport db start \
         --token=/path/to/token \
         --auth-server=proxy.example.com:3080 \
@@ -65,7 +65,7 @@ Starts Teleport Database Service.
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ teleport db start \
         --token=/path/to/token \
         --auth-server=mytenant.teleport.sh:443 \
@@ -102,7 +102,7 @@ Creates a sample Database Service configuration.
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
     $ teleport db configure create \
       --token=/tmp/token \
@@ -115,7 +115,7 @@ Creates a sample Database Service configuration.
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ teleport db configure create --rds-discovery=us-west-1 --rds-discovery=us-west-2
     $ teleport db configure create \
       --token=/tmp/token \
@@ -158,7 +158,7 @@ Creates a sample Database Service configuration.
 Bootstrap the necessary configuration for the Database Service. It reads the
 provided configuration to determine what will be bootstrapped.
 
-```code
+```bash
 $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user TeleportUser
 $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role TeleportRole
 $ teleport db configure bootstrap -c /etc/teleport.yaml --manual
@@ -180,13 +180,17 @@ produces a CA certificate, a client certificate and a private key file used for
 configuring the Database Service with self-hosted database instances.
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   For database formats, `tctl` must be run on an Auth Service host or the remote
   user must be be able to impersonate the built-in `Db` role and user. See the
   [impersonation guide](/docs/ver/13.x/access-controls/guides/impersonation)
   for details on how to allow impersonation.
 </Note>
 
-```code
+```bash
 $ tctl auth sign --format=db --host=db.example.com --out=db --ttl=2190h
 $ tctl auth sign --format=db --host=host1,localhost,127.0.0.1 --out=db --ttl=2190h
 ```
@@ -226,14 +230,14 @@ database running on the same host as Teleport.
 
   Create the role:
 
-  ```code
+  ```bash
   $ tctl create -f db-impersonator.yaml
   ```
 
   Retrieve your Teleport user's dynamic configuration resource so you can add the
   `db-impersonator` role:
 
-  ```code
+  ```bash
   $ TELEPORT_USER=<your user>
   $ tctl get user/${TELEPORT_USER?} > myuser.yaml
   ```
@@ -252,7 +256,7 @@ database running on the same host as Teleport.
 
   Update your user:
 
-  ```code
+  ```bash
   $ tctl create -f myuser.yaml
   ```
 
@@ -261,6 +265,10 @@ database running on the same host as Teleport.
 </Accordion>
 
 <Note>
+  <p>
+    **TTL**
+  </p>
+
   We recommend using a shorter TTL, but keep mind that you'll need to update the
   database server certificate before it expires to not lose the ability to
   connect. Pick the TTL value that best fits your use-case.
@@ -270,7 +278,7 @@ database running on the same host as Teleport.
 
 Administrative command to list all databases registered with the cluster.
 
-```code
+```bash
 $ tctl db ls
 $ tctl db ls --format=yaml
 ```
@@ -303,7 +311,7 @@ Removes database resource called `database-resource-name`.
 
 Lists available databases and their connection information.
 
-```code
+```bash
 $ tsh db ls
 ```
 
@@ -313,7 +321,7 @@ Displays only the databases a user has access to (see [RBAC](/docs/ver/13.x/data
 
 Retrieves database credentials.
 
-```code
+```bash
 $ tsh db login example
 $ tsh db login --db-user=postgres --db-name=postgres example
 ```
@@ -327,7 +335,7 @@ $ tsh db login --db-user=postgres --db-name=postgres example
 
 Removes database credentials.
 
-```code
+```bash
 $ tsh db logout example
 $ tsh db logout
 ```
@@ -336,7 +344,7 @@ $ tsh db logout
 
 Connect to a database using its CLI client.
 
-```code
+```bash
 # Short syntax when only logged into a single database.
 $ tsh db connect
 # Specify database service to connect to explicitly.
@@ -346,6 +354,10 @@ $ tsh db connect --db-user=alice --db-name=db example
 ```
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   Respective database CLI clients (`psql`, `mysql`, `mongo` or `mongosh`) should be
   available in PATH.
 </Note>
@@ -359,7 +371,7 @@ $ tsh db connect --db-user=alice --db-name=db example
 
 Outputs environment variables for a particular database.
 
-```code
+```bash
 $ tsh db env
 $ tsh db env example
 $ eval $(tsh db env)
@@ -369,7 +381,7 @@ $ eval $(tsh db env)
 
 Prints database connection information. Useful when configuring GUI clients.
 
-```code
+```bash
 $ tsh db config
 $ tsh db config example
 $ tsh db config --format=cmd example

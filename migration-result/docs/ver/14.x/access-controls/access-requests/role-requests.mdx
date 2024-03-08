@@ -2,7 +2,7 @@
 title: Role Access Requests
 description: Use Just-in-time Access Requests to request new roles with elevated privileges.
 h1: Teleport Role Access Requests
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport's Just-in-time Access Requests allow users to request access to
@@ -20,7 +20,7 @@ via ChatOps or anywhere else via our flexible Authorization Workflow API.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -37,7 +37,7 @@ via ChatOps or anywhere else via our flexible Authorization Workflow API.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -52,7 +52,7 @@ via ChatOps or anywhere else via our flexible Authorization Workflow API.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -123,6 +123,10 @@ spec:
 ```
 
 <Warning>
+  <p>
+    **Requires Teleport Enterprise**
+  </p>
+
   Roles containing a `review_requests` rule can only be used in Teleport
   Enterprise. In Teleport Community Edition, Access Requests must be approved by an admin
   running `tctl` on the Auth Server.
@@ -172,7 +176,7 @@ Reviewers can see a list of open requests by navigating to
 Teleport Enterprise users with appropriate permissions can also approve requests
 with the `tsh` command line:
 
-```code
+```bash
 $ tsh request review --approve <request-id>
 ```
 
@@ -183,7 +187,7 @@ both command-line workflows and web UI workflows.
 
 For command-line use, the requestor should log in using the approved request ID:
 
-```code
+```bash
 # log in with an approved access request
 $ tsh login --request-id=bc8ca931-fec9-4b15-9a6f-20c13c5641a9
 ```

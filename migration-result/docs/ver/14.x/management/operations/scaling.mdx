@@ -1,7 +1,7 @@
 ---
 title: Scaling
 description: How to configure Teleport for large-scale deployments
-version: '14.x'
+version: "14.x"
 ---
 
 This section explains the recommended configuration settings for large-scale
@@ -69,7 +69,7 @@ LimitNOFILE=65536
 
 Verify that Teleport's process has high enough file limits:
 
-```code
+```bash
 $ cat /proc/$(pidof teleport)/limits
 # Limit                     Soft Limit           Hard Limit           Units
 # Max open files            65536                65536                files
@@ -99,7 +99,7 @@ When using Teleport with etcd, we recommend you do the following.
 During an incident, we may ask you to run `etcdctl`, test that you can run the
 following command successfully.
 
-```code
+```bash
 etcdctl \
     --write-out=table \
     --cacert=/path/to/ca.cert \

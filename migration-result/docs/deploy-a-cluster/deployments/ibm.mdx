@@ -1,7 +1,7 @@
 ---
 title: Running Teleport on IBM Cloud
 description: How to install and configure Gravitational Teleport on IBM cloud for SSH and Kubernetes access.
-version: '15.x'
+version: "15.x"
 ---
 
 We've created this guide to give customers an overview of how to use Teleport on
@@ -172,7 +172,7 @@ storage:
   bucket has been created.
 </Tip>
 
-```code
+```bash
 $ sudo teleport start --config=/etc/teleport.yaml -d
 # DEBU [SQLITE]    Connected to: file:/var/lib/teleport/proc/sqlite.db?_busy_timeout=10000&_sync=OFF, poll stream period: 1s lite/lite.go:173
 # DEBU [SQLITE]    Synchronous: 0, busy timeout: 10000 lite/lite.go:220

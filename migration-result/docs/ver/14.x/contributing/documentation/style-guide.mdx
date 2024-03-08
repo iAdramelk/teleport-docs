@@ -1,7 +1,7 @@
 ---
 title: Style Guide
 description: Use this reference to ensure our docs are consistent and effective
-version: '14.x'
+version: "14.x"
 ---
 
 To keep our documentation effective as Teleport develops, we need to ensure that we maintain a consistent approach to organizing information.
@@ -163,7 +163,7 @@ for the audience of a specific guide.
 
 - Prefer putting commands (e.g., Bash scripts) into full-line code snippets. These will render with a handy copy button.
 
-  ```code
+  ```bash
   $ echo "This is an example."
   ```
 
@@ -223,7 +223,7 @@ for the audience of a specific guide.
   Quicktime outputs large `.mov` files. Use `ffmpeg` to convert them into `mp4` and `webm`
   web-friendly formats:
 
-  ```code
+  ```bash
   # create MP4
   $ ffmpeg -i input.mov -b:v 0 -crf 25 output.mp4
   # create WebM

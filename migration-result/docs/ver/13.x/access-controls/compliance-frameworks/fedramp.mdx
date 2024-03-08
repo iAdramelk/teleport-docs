@@ -1,7 +1,7 @@
 ---
 title: FedRAMP Compliance for Infrastructure Access
 description: How to configure SSH, Kubernetes, database, and web app access to be FedRAMP compliant, including support for FIPS 140-2.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport provides the foundation to meet FedRAMP requirements for the purposes of accessing infrastructure. This includes support for [FIPS 140-2](https://en.wikipedia.org/wiki/FIPS_140-2), also known as the Federal Information Processing Standard, which is the US government approved standard for cryptographic modules. This document outlines a high
@@ -37,7 +37,7 @@ packages are also available.
 
 After downloading the binary tarball, run:
 
-```code
+```bash
 $ tar -xzf teleport-ent-v13.4.16-linux-amd64-fips-bin.tar.gz
 $ cd teleport-ent
 $ sudo ./install
@@ -120,7 +120,7 @@ proxy_service:
 Next, download the systemd service unit file from the [examples directory](https://github.com/gravitational/teleport/tree/branch/v13/examples/systemd/fips)
 on GitHub and save it as `/etc/systemd/system/teleport.service` on both servers.
 
-```code
+```bash
 # run this on both servers:
 $ sudo systemctl daemon-reload
 $ sudo systemctl enable teleport

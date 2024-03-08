@@ -1,7 +1,7 @@
 ---
 title: Machine ID with Ansible
 description: How to use Machine ID with Ansible
-version: '16.x'
+version: "16.x"
 ---
 
 Ansible is a common tool for managing fleets of Linux hosts via SSH. In order to
@@ -20,7 +20,7 @@ You will need the following tools to use Teleport with Ansible.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -29,7 +29,7 @@ You will need the following tools to use Teleport with Ansible.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -51,7 +51,7 @@ You will need the following tools to use Teleport with Ansible.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -75,7 +75,7 @@ You will need the following tools to use Teleport with Ansible.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -98,7 +98,7 @@ You will need the following tools to use Teleport with Ansible.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -132,7 +132,7 @@ You will need the following tools to use Teleport with Ansible.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -150,7 +150,7 @@ As Ansible will use the credentials produced by `tbot` to connect to the SSH
 nodes, you first need to configure Teleport to grant the bot access.
 
 In this example, access will be granted to all SSH nodes for the username
-ROOT. Ensure that you set this to a username that is available
+root. Ensure that you set this to a username that is available
 across your SSH nodes and that will have the appropriate privileges to manage
 your nodes.
 
@@ -220,7 +220,7 @@ Next, Ansible will be configured to use these files when making connections.
 
 Create a folder named `ansible` where all Ansible files will be collected.
 
-```code
+```bash
 $ mkdir -p ansible
 $ cd ansible
 ```
@@ -230,7 +230,7 @@ to run the OpenSSH client with the configuration file generated
 by Machine ID, `/opt/machine-id/ssh_config`. Note, `example.com` here is the
 name of your Teleport cluster.
 
-```code
+```bash
 [defaults]
 host_key_checking = True
 inventory=./hosts
@@ -250,7 +250,7 @@ called `teleport.example.com` and your host is called `node1`, the entry in
 You can generate an inventory file for all your nodes that meets this
 requirement with a script like the following:
 
-```code
+```bash
 # Source tsh env to get the name of the current Teleport cluster.
 $ eval "$( tsh env )"
 # You can modify the `tsh ls` command to filter nodes based ont he label.
@@ -289,7 +289,7 @@ playbook below runs `hostname` on all hosts.
 
 From the folder `ansible`, run the Ansible playbook:
 
-```code
+```bash
 $ ansible-playbook playbook.yaml
 
 # PLAY [all] *****************************************************************************************************************************************
@@ -324,13 +324,13 @@ You can examine and tweak patterns matching the inventory hosts in `ssh_config`.
 
 Try the SSH connection using `ssh_config` with verbose mode to inspect the error:
 
-```code
+```bash
 $ ssh -vvv -F /opt/machine-id/ssh_config root@node-name.example.com
 ```
 
 If `ssh` works, try running the playbook with verbose mode on:
 
-```code
+```bash
 $ ansible-playbook -vvv playbook.yaml
 ```
 

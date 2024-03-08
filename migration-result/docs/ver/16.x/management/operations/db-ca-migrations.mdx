@@ -1,7 +1,7 @@
 ---
 title: Database CA Migrations
 description: How to complete Teleport Database CA migrations.
-version: '16.x'
+version: "16.x"
 ---
 
 In Teleport, self-hosted databases must be configured with certificates to
@@ -26,7 +26,7 @@ CA(s) should be rotated to complete the migration process.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -35,7 +35,7 @@ CA(s) should be rotated to complete the migration process.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -57,7 +57,7 @@ CA(s) should be rotated to complete the migration process.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -81,7 +81,7 @@ CA(s) should be rotated to complete the migration process.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -104,7 +104,7 @@ CA(s) should be rotated to complete the migration process.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -121,7 +121,7 @@ CA(s) should be rotated to complete the migration process.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -221,6 +221,10 @@ To complete the `db_client` CA migration:
   you complete the `db_client` CA rotation.
 
 <Note>
+  <p>
+    **reconfiguring certs after db_client CA rotation**
+  </p>
+
   If you use `tctl auth sign` to reconfigure a database's certificates during
   a `db_client` CA rotation, then the trusted certificate output will include
   both the old and the new CA certificates.
@@ -246,7 +250,7 @@ or `db_client` CAs, you can check for duplicated CAs.
 Use these commands to print the X.509 certificate serial number for your `host`,
 `db`, and `db_client` CAs (in that order):
 
-```code
+```bash
 $ tctl auth export --type=tls-host | openssl x509 -noout -serial
 $ tctl auth export --type=db | openssl x509 -noout -serial
 $ tctl auth export --type=db-client | openssl x509 -noout -serial

@@ -1,7 +1,7 @@
 ---
 title: Commands to look up cluster addresses
 description: Suggests command-line tools and scripts to look up cluster addresses.
-version: '13.x'
+version: "13.x"
 ---
 
 If you aren't sure of what values to use for cluster settings such as the `tunnel_addr`
@@ -19,18 +19,18 @@ To get cluster addresses:
 1. Set the `PROXY` environment variable to retrieve information about your Teleport cluster
    by replacing `teleport.example.com` with your Teleport cluster domain:
 
-   ```code
+   ```bash
    $ PROXY=teleport.example.com
    ```
 
 2. Extract the `tunnel_addr` for your cluster by running the following command:
 
-   ```code
+   ```bash
    $ curl https://$PROXY/webapi/ping | jq 'if .proxy.tls_routing_enabled == true then .proxy.ssh.public_addr else .proxy.ssh.ssh_tunnel_public_addr end'      
    ```
 
 3. Extract the `web_proxy_addr` for your cluster by running the following command:
 
-   ```code
+   ```bash
    $ curl https://$PROXY/webapi/ping | jq .proxy.ssh.public_addr
    ```

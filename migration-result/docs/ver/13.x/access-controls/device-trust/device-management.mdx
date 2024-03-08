@@ -1,10 +1,14 @@
 ---
 title: Manage Trusted Devices (Preview)
 description: Learn how to manage Trusted Devices
-version: '13.x'
+version: "13.x"
 ---
 
 <Warning>
+  <p>
+    **Preview Note: Supported Device Type**
+  </p>
+
   The device trust preview works on macOS and Windows devices. Support for other operating
   systems and access features is planned for upcoming Teleport versions.
 </Warning>
@@ -21,7 +25,7 @@ version: '13.x'
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -37,7 +41,7 @@ version: '13.x'
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -53,7 +57,7 @@ version: '13.x'
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -80,15 +84,23 @@ responsible for managing devices, adding new devices to the inventory and
 removing devices that are no longer in use.
 
 <Tip>
+  <p>
+    **Self enrollment: v13.3.5+**
+  </p>
+
   Users with the preset `editor` or `device-admin` role (since v13.3.6)
   can register and enroll their device in a single step with the following command:
 
-  ```code
+  ```bash
   $ tsh device enroll --current-device
   ```
 </Tip>
 
 <Tip>
+  <p>
+    **Sync with Jamf Pro**
+  </p>
+
   Teleport supports device synchronization with [Jamf Pro](/docs/ver/13.x/access-controls/device-trust/jamf-integration). Once configured, devices
   are automatically updated in Teleport's device inventory.
 </Tip>
@@ -98,7 +110,7 @@ a device, you first need to determine its serial number.
 
 Retrieve device serial number with `tsh` (must be run on the device you want to register):
 
-```code
+```bash
 $ tsh device asset-tag
 C00AA0AAAA0A
 ```
@@ -119,7 +131,7 @@ C00AA0AAAA0A
 
       To find the value chosen by Teleport, run the following command:
 
-      ```code
+      ```bash
       $ tsh device collect
       DeviceCollectedData {
         ...
@@ -138,14 +150,14 @@ Use the serial number to register device:
     Replace C00AA0AAAA0A
     with the serial number obtained from the device you wish to enroll and run `tctl devices add` command:
 
-    ```code
+    ```bash
     $ tctl devices add --os=macos --asset-tag="C00AA0AAAA0A"
     Device C00AA0AAAA0A/macos added to the inventory
     ```
 
     Use `tctl` to check that the device has been registered:
 
-    ```code
+    ```bash
     $ tctl devices ls
     Asset Tag    OS    Enroll Status Device ID
     ------------ ----- ------------- ------------------------------------
@@ -157,14 +169,14 @@ Use the serial number to register device:
     Replace C00AA0AAAA0A
     with the serial number obtained from the device you wish to enroll and run `tctl devices add` command:
 
-    ```code
+    ```bash
     $ tctl devices add --os=windows --asset-tag="C00AA0AAAA0A"
     Device C00AA0AAAA0A/windows added to the inventory
     ```
 
     Use `tctl` to check that the device has been registered:
 
-    ```code
+    ```bash
     $ tctl devices ls
     Asset Tag    OS    Enroll Status Device ID
     ------------ ----- ------------- ------------------------------------
@@ -174,6 +186,10 @@ Use the serial number to register device:
 </Tabs>
 
 <Warning>
+  <p>
+    **Device Role**
+  </p>
+
   For clusters created after v13.3.6, Teleport supports preset `device-admin` role to manage devices.
 
   For clusters created using Teleport v12 or newer, the preset `editor` role has
@@ -191,7 +207,7 @@ performing the enrollment off-band (for example, via a corporate chat).
 To create an enrollment token run the command below, where `--asset-tag` is
 the serial number of the device we want to enroll:
 
-```code
+```bash
 $ tctl devices enroll --asset-tag="C00AA0AAAA0A"
 Run the command below on device "C00AA0AAAA0A" to enroll it:
 tsh device enroll --token=AAAAAAAAAAAAAAAAAAAAAAAA-this-is-an-example
@@ -202,7 +218,7 @@ tsh device enroll --token=AAAAAAAAAAAAAAAAAAAAAAAA-this-is-an-example
 To perform the enrollment ceremony, using the device specified above, type the
 command printed by `tctl devices enroll`:
 
-```code
+```bash
 $ tsh device enroll --token=AAAAAAAAAAAAAAAAAAAAAAAA-this-is-an-example
 Device "C00AA0AAAA0A"/macOS enrolled
 
@@ -276,7 +292,7 @@ Once enabled, user's with their device registered in Teleport and with the requi
 (preset `editor` or `device-enroll` role) will have their device enrolled to Teleport in
 their next login.
 
-```code
+```bash
 $ tsh logout
 All users logged out.
 $ tsh login --proxy=teleport.example.com --user=myuser
@@ -302,7 +318,7 @@ A device that is no longer in use may be removed using `tctl devices rm --device
 
 First, find a device to delete:
 
-```code
+```bash
 $ tctl devices ls
 Asset Tag    OS    Enroll Status Device ID
 ------------ ----- ------------- ------------------------------------
@@ -311,7 +327,7 @@ C00AA0AAAA0A macOS enrolled      c9cbb327-68a8-497e-b820-6a4b2bf58269
 
 Now use asset-tag or device id to delete a device:
 
-```code
+```bash
 # Delete using asset tag:
 $ tctl devices rm --asset-tag=C00AA0AAAA0A
 Device "C00AA0AAAA0A" removed
@@ -327,6 +343,10 @@ We recommend creating a dedicated `device-admin` role for device inventory
 management.
 
 <Tip>
+  <p>
+    **v13.3.6+**
+  </p>
+
   Teleport version 13.3.6 and above has the preset `device-admin` role, which
   is a substitute for the role described below.
 </Tip>
@@ -354,7 +374,7 @@ spec:
       - enroll
 ```
 
-```code
+```bash
 $ tctl create -f device-admin.yaml
 role 'device-admin' has been created
 ```

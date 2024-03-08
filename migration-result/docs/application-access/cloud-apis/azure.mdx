@@ -1,7 +1,7 @@
 ---
 title: "Protect Azure CLIs with Teleport Application Access"
 description: How to enable secure access to Azure CLIs.
-version: '15.x'
+version: "15.x"
 ---
 
 You can use Teleport to manage access to CLI tools that interact with Azure's
@@ -25,7 +25,7 @@ prevent unauthorized access to your organization's Azure identities.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -34,7 +34,7 @@ prevent unauthorized access to your organization's Azure identities.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -56,7 +56,7 @@ prevent unauthorized access to your organization's Azure identities.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -80,7 +80,7 @@ prevent unauthorized access to your organization's Azure identities.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -103,7 +103,7 @@ prevent unauthorized access to your organization's Azure identities.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -129,6 +129,10 @@ prevent unauthorized access to your organization's Azure identities.
   Virtual Machine Contributor.
 
   <Tip>
+    <p>
+      **Using existing identities**
+    </p>
+
     In this guide, we will create a user-assigned managed identity to demonstrate
     Azure CLI access with Teleport.
 
@@ -142,7 +146,7 @@ prevent unauthorized access to your organization's Azure identities.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -288,7 +292,7 @@ assigned the `teleport-azure` identity to.
 Establish trust between your Teleport cluster and your new Application Service
 instance by creating a join token:
 
-```code
+```bash
 $ tctl tokens add --type=app --ttl=1h --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -296,7 +300,7 @@ abcd123-insecure-do-not-use-this
 On the host where you will install the Teleport Application Service, create a
 file called `/tmp/token` that consists only of your token:
 
-```code
+```bash
 $ echo join-token | sudo tee /tmp/token
 ```
 
@@ -312,7 +316,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 15.0.2
     ```
   </Tab>
@@ -322,7 +326,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -344,7 +348,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -367,7 +371,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -390,7 +394,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -450,7 +454,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -468,13 +472,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -492,13 +496,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v15. You'll need to update this
@@ -516,13 +520,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -542,13 +546,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -564,7 +568,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -574,7 +578,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -588,7 +592,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -618,7 +622,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -640,7 +644,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -663,7 +667,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -686,7 +690,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -792,7 +796,7 @@ the Teleport Application Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Application Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -802,7 +806,7 @@ the Teleport Application Service.
     On the host where you will run the Teleport Application Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -861,7 +865,7 @@ identities.
     following command, pasting in the URI of the Azure identity you copied earlier
     as the value of `--set-azure-identities`:
 
-    ```code
+    ```bash
     $ tctl users update teleport-user \
     --set-azure-identities azure-identity-uri
     ```
@@ -872,7 +876,7 @@ identities.
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f azure-cli-access.yaml
     ```
   </Tab>
@@ -908,7 +912,7 @@ identities.
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f azure-cli-access.yaml
     ```
   </Tab>
@@ -942,7 +946,7 @@ identities.
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f azure-cli-access.yaml
     ```
   </Tab>
@@ -989,13 +993,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},azure-cli-access"
        ```
@@ -1006,7 +1010,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -1033,7 +1037,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -1043,7 +1047,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -1070,7 +1074,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -1080,7 +1084,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -1107,7 +1111,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -1126,7 +1130,7 @@ commands against it via the `az` CLI.
 Verify that your Teleport user can see the `azure-cli` application you
 registered earlier:
 
-```code
+```bash
 $ tsh apps ls
 Application Description Type Public Address                 Labels
 ----------- ----------- ---- ------------------------------ -------------------
@@ -1138,7 +1142,7 @@ azure-cli               HTTP azure-cli.teleport.example.com teleport.dev/origin
 Log in to the application, specifying that you would like to assume the
 `teleport-azure` identity:
 
-```code
+```bash
 $ tsh apps login azure-cli --azure-identity teleport-azure
 ```
 
@@ -1184,7 +1188,7 @@ At this point, you can run `az` commands using the Teleport Application Service
 by prefixing them with `tsh`. To list VMs running in your Azure resource group,
 for example, run the following command:
 
-```code
+```bash
 $ tsh az vm list
 ```
 
@@ -1206,7 +1210,7 @@ CLI application uses to authenticate requests to Azure's APIs.
 
 To start the local proxy, run the following `tsh` command:
 
-```code
+```bash
 $ tsh proxy azure 
 ```
 
@@ -1241,7 +1245,7 @@ Copy the `export` commands and paste them into a second terminal. In that
 terminal, you can now run your Azure CLI application of choice. For example, you
 can run the following command to list Azure VMs:
 
-```code
+```bash
 $ az vm list
 ```
 
@@ -1262,7 +1266,7 @@ resource group.
   longstanding admin roles for attackers to hijack. View our documentation on
   [Role Access
   Requests](/docs/access-controls/access-requests/role-requests) and
-  [Access Request plugins](/docs/access-controls/access-request-plugins/index).
+  [Access Request plugins](/docs/access-controls/access-request-plugins).
 - Consult the Azure documentation for information about [Azure managed
   identities](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview)
   and how to [manage user-assigned managed

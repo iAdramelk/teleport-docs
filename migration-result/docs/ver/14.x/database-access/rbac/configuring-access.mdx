@@ -1,7 +1,7 @@
 ---
 title: Database Access RBAC
 description: Role-based access control (RBAC) for Teleport database access.
-version: '14.x'
+version: "14.x"
 ---
 
 Role-based access control (or RBAC, for short) allows administrators to set up
@@ -69,6 +69,10 @@ spec:
 ```
 
 <Note>
+  <p>
+    **Deny Rules**
+  </p>
+
   Deny rules will match greedily. In the example above, a database connection
   attempting to use "postgres" database account (regardless of database instance
   or database name) or "postgres" database name (regardless of database instance

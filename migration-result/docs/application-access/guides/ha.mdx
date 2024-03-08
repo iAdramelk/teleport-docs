@@ -1,7 +1,7 @@
 ---
 title: Application Access High Availability (HA)
 description: How to configure Teleport application access in a Highly Available (HA) configuration.
-version: '15.x'
+version: "15.x"
 ---
 
 You can deploy the Application Service in a Highly Available (HA) configuration
@@ -29,7 +29,7 @@ app_service:
 With this configuration, you will see only a single entry for the application in
 `tsh apps ls`:
 
-```code
+```bash
 $ tsh apps ls
 Application Description Type Public Address            Labels
 ----------- ----------- ---- ------------------------- -------------------
@@ -69,7 +69,7 @@ app_service:
 With this configuration, both services will appear as two separate entries in
 `tsh apps ls` output and you will have to pick one explicitly when connecting:
 
-```code
+```bash
 $ tsh apps ls
 Application         Description Type Public Address            Labels
 ------------------- ----------- ---- ------------------------- -------------------

@@ -2,7 +2,7 @@
 title: Teleport Authentication with OneLogin as an SSO Provider
 description: How to configure Teleport access using OneLogin as an SSO provider
 h1: Teleport Authentication with OneLogin
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to configure [OneLogin](https://www.onelogin.com/)
@@ -29,7 +29,7 @@ to define policies like:
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -45,7 +45,7 @@ to define policies like:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -76,15 +76,15 @@ You can find Teleport icons to upload from the following links:
 From the application's **Configuration** page, set the following values:
 
 <Tip>
-  Set TELEPORT.EXAMPLE.COM:443
+  Set teleport.example.com:443
   here with your Teleport Proxy Service address and port, or Teleport Enterprise
   Cloud tenant (e.g. `company.teleport.sh:443`) to fill out the values below.
 </Tip>
 
 - **Login URL**:
-  - `https://`TELEPORT.EXAMPLE.COM:443`/web/login`
+  - `https://`teleport.example.com:443`/web/login`
 - **ACS (Consumer) URL**, **SAML Recipient**, **ACS (Consumer) URL Validator**, & **Audience**:
-  - `https://`TELEPORT.EXAMPLE.COM:443`/v1/webapi/saml/acs/onelogin`
+  - `https://`teleport.example.com:443`/v1/webapi/saml/acs/onelogin`
 
 <img src="/assets/onelogin-saml-2-f9a74e560c.png" alt="Configure SAML" width="1896" height="1862" />
 
@@ -96,6 +96,10 @@ the application with some parameters exposed as SAML attribute statements:
 <img src="/assets/onelogin-saml-4-8162e03027.png" alt="New Field Group" width="1558" height="990" />
 
 <Warning>
+  <p>
+    **Important**
+  </p>
+
   Make sure to check `Include in SAML assertion` checkbox.
 </Warning>
 
@@ -113,10 +117,10 @@ Once the application is set up, download `SAML Metadata` from the
 ## Step 2/3. Create a SAML connector
 
 Create a SAML connector using `tctl`. Update
-./ONELOGIN\_METADATA\_1234567.XML with the path to the XML metadata
+./onelogin\_metadata\_1234567.xml with the path to the XML metadata
 file downloaded in the previous step:
 
-```code
+```bash
 $ tctl sso configure saml --preset onelogin \
 --entity-descriptor ./onelogin_metadata_1234567.xml \
 --attributes-to-roles groups,admin,editor \
@@ -156,7 +160,7 @@ version: v2
 
 Test the newly created configuration:
 
-```code
+```bash
 $ cat onelogin.yaml | tctl sso test
 ```
 
@@ -167,7 +171,7 @@ configuration.
 
 Create the connector using `tctl` tool:
 
-```code
+```bash
 $ tctl create -f onelogin.yaml
 ```
 
@@ -182,7 +186,7 @@ Follow the instructions for your Teleport edition:
   <Tab title="Dynamic Resources (All Editions)">
     Use `tctl` to edit the `cluster_auth_preference` value:
 
-    ```code
+    ```bash
     $ tctl edit cluster_auth_preference
     ```
 
@@ -249,7 +253,7 @@ spec:
 
 **Notice:** Replace `ubuntu` with linux login available on your servers!
 
-```code
+```bash
 $ tctl create -f dev.yaml
 ```
 

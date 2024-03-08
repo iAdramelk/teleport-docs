@@ -1,7 +1,7 @@
 ---
 title: OAuth2 and OIDC authentication
 description: How to configure Teleport access with OAuth2 or OpenID connect (OIDC)
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to configure an SSO provider using [OpenID
@@ -28,7 +28,7 @@ policies like:
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -44,7 +44,7 @@ policies like:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -67,6 +67,10 @@ documented on the identity providers website. Here are a few links:
 - [Keycloak Client Registration](https://www.keycloak.org/docs/latest/securing_apps/index.html#_client_registration)
 
 <Tip>
+  <p>
+    **Google Workspace**
+  </p>
+
   For Google Workspace, see [Teleport Authentication with Google Workspace](/docs/access-controls/sso/google-workspace)
 </Tip>
 
@@ -82,7 +86,7 @@ OIDC relies on HTTP redirects to return control back to Teleport after
 authentication is complete. The redirect URL must be selected by a Teleport
 administrator in advance.
 
-The redirect URL for OIDC authentication in Teleport is <nobr>MYTENANT.TELEPORT.SH`/v1/webapi/oidc/callback`</nobr>. Replace `mytenant.teleport.sh`
+The redirect URL for OIDC authentication in Teleport is <nobr>mytenant.teleport.sh`/v1/webapi/oidc/callback`</nobr>. Replace `mytenant.teleport.sh`
 with your Teleport Cloud tenant or Proxy Service address.
 
 ## OIDC connector configuration
@@ -97,7 +101,7 @@ your client secret.
 To create a new connector, use `tctl sso configure`. The following example creates a
 connector resource file in YAML format named `oidc-connector.yaml`:
 
-```code
+```bash
 $ tctl sso configure oidc --name <CONNECTOR-NAME> \
   --issuer-url <PATH-TO-PROVIDER> \
   --id <CLIENT-ID> \
@@ -184,7 +188,7 @@ version: v3
 Before applying the connector to your cluster, you can test that it's configured
 correctly:
 
-```code
+```bash
 $ cat oidc-connector | tctl sso test
 ```
 
@@ -200,7 +204,7 @@ troubleshooting details.
 
 After your tests are successful, create the connector:
 
-```code
+```bash
 $ tctl create -f oidc-connector.yaml
 ```
 
@@ -368,7 +372,7 @@ Follow the instructions for your Teleport edition:
 
     Create a resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>

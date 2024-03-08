@@ -1,7 +1,7 @@
 ---
 title: Teleport Enterprise Cloud Downloads
 description: Cloud Downloads
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport Enterprise Cloud is currently running Teleport 14.3.6. We recommend
@@ -27,7 +27,7 @@ Binaries include:
   <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
     Add the Teleport repository to your repository list:
 
-    ```code
+    ```bash
     # Download Teleport's PGP public key
     $ sudo curl https://apt.releases.teleport.dev/gpg \
     -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -49,7 +49,7 @@ Binaries include:
   </Tab>
 
   <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-    ```code
+    ```bash
     # Source variables about OS version
     $ source /etc/os-release
     # Add the Teleport YUM repository for cloud.
@@ -72,7 +72,7 @@ Binaries include:
   </Tab>
 
   <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-    ```code
+    ```bash
     # Source variables about OS version
     $ source /etc/os-release
     # Add the Teleport YUM repository for cloud.
@@ -95,7 +95,7 @@ Binaries include:
   </Tab>
 
   <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-    ```code
+    ```bash
     # Source variables about OS version
     $ source /etc/os-release
     # Add the Teleport Zypper repository for cloud.

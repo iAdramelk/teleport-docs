@@ -1,7 +1,7 @@
 ---
 title: Export Teleport Audit Events with Datadog
 description: How to configure the Teleport Event Handler plugin and Fluentd to send audit logs to Datadog
-version: '13.x'
+version: "13.x"
 ---
 
 Datadog is a SAAS monitoring and security platform. In this guide, we'll explain
@@ -17,11 +17,11 @@ to establish a secure channel. In this setup, the Event Handler sends events to 
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -34,7 +34,7 @@ to establish a secure channel. In this setup, the Event Handler sends events to 
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -54,7 +54,7 @@ to establish a secure channel. In this setup, the Event Handler sends events to 
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -71,7 +71,7 @@ to establish a secure channel. In this setup, the Event Handler sends events to 
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -88,7 +88,7 @@ to establish a secure channel. In this setup, the Event Handler sends events to 
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -112,7 +112,7 @@ workstation. You will need to adjust paths, ports, and domains for other environ
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -127,7 +127,7 @@ workstation. You will need to adjust paths, ports, and domains for other environ
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -146,7 +146,7 @@ from Teleport's events API, and forwards them to Fluentd.
 
 <Tabs>
   <Tab title="Linux">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.8-linux-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v13.3.8-linux-amd64-bin.tar.gz
     ```
@@ -156,7 +156,7 @@ from Teleport's events API, and forwards them to Fluentd.
   </Tab>
 
   <Tab title="macOS">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.8-darwin-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v13.3.8-darwin-amd64-bin.tar.gz
     ```
@@ -170,7 +170,7 @@ from Teleport's events API, and forwards them to Fluentd.
   <Tab title="Docker">
     Ensure that you have Docker installed and running.
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.8
     ```
   </Tab>
@@ -178,13 +178,13 @@ from Teleport's events API, and forwards them to Fluentd.
   <Tab title="Helm">
     To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     To update the cache of charts from the remote repository, run `helm repo update`:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -194,7 +194,7 @@ from Teleport's events API, and forwards them to Fluentd.
 
     Run the following commands to build the plugin:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler/build.assets
     $ make build
@@ -209,7 +209,7 @@ from Teleport's events API, and forwards them to Fluentd.
 
     Run the following commands on your Universal Forwarder host:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler
     $ go build
@@ -229,7 +229,7 @@ from Teleport's events API, and forwards them to Fluentd.
     `mytenant.teleport.sh` with the DNS name of your Teleport Team or Teleport
     Enterprise Cloud tenant:
 
-    ```code
+    ```bash
     $ ./teleport-event-handler configure . mytenant.teleport.sh:443
     ```
   </Tab>
@@ -239,7 +239,7 @@ from Teleport's events API, and forwards them to Fluentd.
     `teleport.example.com:443` with the DNS name and HTTPS port of Teleport's Proxy
     Service:
 
-    ```code
+    ```bash
     $ ./teleport-event-handler configure . teleport.example.com:443
     ```
   </Tab>
@@ -249,7 +249,7 @@ from Teleport's events API, and forwards them to Fluentd.
     `TELEPORT_CLUSTER_ADDRESS` to the DNS name and port of your Teleport Auth
     Service or Proxy Service:
 
-    ```code
+    ```bash
     $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
     $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.8 configure . ${TELEPORT_CLUSTER_ADDRESS?}
     ```
@@ -258,7 +258,7 @@ from Teleport's events API, and forwards them to Fluentd.
     client credentials available as a secret. Use the following command to create
     that secret in Kubernetes:
 
-    ```code
+    ```bash
     $ kubectl create secret generic teleport-event-handler-client-tls --from-file=ca.crt=ca.crt,client.crt=client.crt,client.key=client.key
     ```
 
@@ -284,7 +284,7 @@ https://goteleport.com/docs/management/export-audit-events/fluentd/
 
 The plugin generates several setup files:
 
-```code
+```bash
 $ ls -l
 # -rw------- 1 bob bob     1038 Jul  1 11:14 ca.crt
 # -rw------- 1 bob bob     1679 Jul  1 11:14 ca.key
@@ -316,7 +316,7 @@ $ ls -l
   Event Handler at `handler.example.com`, you would run the following `configure`
   command:
 
-  ```code
+  ```bash
   $ teleport-event-handler configure --cn=handler.example.com --dns-names=forwarder.example.com
   ```
 
@@ -358,7 +358,7 @@ version: v2
 Move this file to your workstation (or recreate it by pasting the snippet above)
 and use `tctl` on your workstation to create the role and the user:
 
-```code
+```bash
 $ tctl create -f teleport-event-handler-role.yaml
 # user "teleport-event-handler" has been created
 # role 'teleport-event-handler' has been created
@@ -399,7 +399,7 @@ spec:
 
 Next, create the role:
 
-```code
+```bash
 $ tctl create -f teleport-event-handler-impersonator.yaml
 ```
 
@@ -410,7 +410,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -426,7 +426,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -436,7 +436,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -463,7 +463,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -473,7 +473,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -500,7 +500,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -510,7 +510,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -537,7 +537,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -561,7 +561,7 @@ command.
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=teleport-event-handler --out=auth.pem
     ```
 
@@ -576,6 +576,10 @@ command.
     You will refer to this file later when configuring the plugin.
 
     <Note>
+      <p>
+        **Certificate Lifetime**
+      </p>
+
       By default, `tctl auth sign` produces certificates with a relatively short
       lifetime. For production deployments, we suggest using [Machine
       ID](/docs/ver/13.x/machine-id/introduction) to programmatically issue and renew
@@ -588,7 +592,7 @@ command.
       a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=1001h
       ```
     </Note>
@@ -603,7 +607,7 @@ command.
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=teleport-event-handler --out=auth.pem
     ```
 
@@ -618,6 +622,10 @@ command.
     You will refer to this file later when configuring the plugin.
 
     <Note>
+      <p>
+        **Certificate Lifetime**
+      </p>
+
       By default, `tctl auth sign` produces certificates with a relatively short
       lifetime. For production deployments, we suggest using [Machine
       ID](/docs/ver/13.x/machine-id/introduction) to programmatically issue and renew
@@ -630,14 +638,14 @@ command.
       a `max_session_ttl` of at least 1000 hours, and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=1001h
       ```
     </Note>
 
     Next, create a Kubernetes secret for the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl create secret generic teleport-event-handler-identity --from-file=auth_id=identity
     ```
 
@@ -652,7 +660,7 @@ In order for Fluentd to communicate with Datadog, it requires the [Fluentd outpu
 plugin for Datadog](https://github.com/DataDog/fluent-plugin-datadog). Install
 the plugin on your Fluentd host using either `gem` or the `td-agent`, if installed:
 
-```code
+```bash
 # Using Gem
 $ gem install fluent-plugin-datadog
 
@@ -661,11 +669,15 @@ $ /usr/sbin/td-agent-gem install fluent-plugin-datadog
 ```
 
 <Tip>
+  <p>
+    **Testing Locally?**
+  </p>
+
   If you're running Fluentd in a local Docker container for testing, you can adjust
   the entrypoint to an interactive shell as the root user, so you can install the
   plugin before starting Fluentd:
 
-  ```code
+  ```bash
   $ docker run -u $(id -u root):$(id -g root) -p 8888:8888 -v $(pwd):/keys -v \
   $(pwd)/fluent.conf:/fluentd/etc/fluent.conf --entrypoint=/bin/sh -i --tty  fluent/fluentd:edge
   # From the container shell:
@@ -735,7 +747,7 @@ the Fluentd event handler. This file includes setting similar to the following:
 
     To start the event handler, run the following command:
 
-    ```code
+    ```bash
     $ ./teleport-event-handler start --config teleport-event-handler.toml
     ```
   </Tab>
@@ -760,7 +772,7 @@ the Fluentd event handler. This file includes setting similar to the following:
 
     To start the event handler, run the following command:
 
-    ```code
+    ```bash
     $ ./teleport-event-handler start --config teleport-event-handler.toml
     ```
   </Tab>
@@ -794,7 +806,7 @@ the Fluentd event handler. This file includes setting similar to the following:
 
     To start the event handler in Kubernetes, run the following command:
 
-    ```code
+    ```bash
     $ helm install teleport-plugin-event-handler teleport/teleport-plugin-event-handler \
       --values teleport-plugin-event-handler-values.yaml \
       --version 13.3.8
@@ -805,7 +817,7 @@ the Fluentd event handler. This file includes setting similar to the following:
 <Note>
   This example will start exporting from `May 5th 2021`:
 
-  ```code
+  ```bash
   $ ./teleport-event-handler start --config teleport-event-handler.toml --start-time "2022-02-02T00:00:00Z"
   ```
 

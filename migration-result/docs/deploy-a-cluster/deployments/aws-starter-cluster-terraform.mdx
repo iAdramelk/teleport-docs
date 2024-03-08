@@ -2,7 +2,7 @@
 title: Teleport Single-Instance Deployment on AWS
 description: How to quickly configure Teleport on a single instance for testing in AWS.
 tocDepth: 3
-version: '15.x'
+version: "15.x"
 ---
 
 This guide is designed to accompany our [reference starter-cluster Terraform code](https://github.com/gravitational/teleport/tree/branch/v15/examples/aws/terraform/starter-cluster#teleport-terraform-aws-ami-simple-example)
@@ -37,7 +37,7 @@ More details are [provided below](#reference-deployment-defaults).
 Our code requires Terraform 0.13+. You can [download Terraform here](https://www.terraform.io/downloads.html). We will assume that you have
 `terraform` installed and available on your path.
 
-```code
+```bash
 $ which terraform
 /usr/local/bin/terraform
 $ terraform version
@@ -58,7 +58,7 @@ your distribution, you can also download the tool from [https://aws.amazon.com/c
 
 We will assume that you have configured your AWS CLI access with credentials available at `~/.aws/credentials`:
 
-```code
+```bash
 $ cat ~/.aws/credentials
 # [default]
 # aws_access_key_id = abcd1234-this-is-an-example
@@ -67,7 +67,7 @@ $ cat ~/.aws/credentials
 
 You should also have a default region set under `~/.aws/config`:
 
-```code
+```bash
 $ cat ~/.aws/config
 # [default]
 # region = us-west-2
@@ -96,7 +96,7 @@ level of AWS permissions.
 
 Firstly, you'll need to clone the Teleport repo to get the Terraform code available on your system:
 
-```code
+```bash
 $ git clone https://github.com/gravitational/teleport -b branch/v15
 # Cloning into 'teleport'...
 # remote: Enumerating objects: 106, done.
@@ -109,7 +109,7 @@ $ git clone https://github.com/gravitational/teleport -b branch/v15
 
 Once this is done, you can change into the directory where the Terraform code is checked out and run `terraform init`:
 
-```code
+```bash
 $ cd teleport/examples/aws/terraform/starter-cluster
 $ terraform init
 
@@ -156,7 +156,7 @@ Things you will need to decide on:
 
 ### region
 
-```code
+```bash
 $ export TF_VAR_region="us-west-2"
 ```
 
@@ -165,7 +165,7 @@ These are regions that support [DynamoDB encryption at rest](https://docs.aws.am
 
 ### cluster\_name
 
-```code
+```bash
 $ export TF_VAR_cluster_name="teleport-example"
 ```
 
@@ -176,7 +176,7 @@ cluster from scratch, so choose carefully. A good example might be something lik
 
 ### ami\_name
 
-```code
+```bash
 $ export TF_VAR_ami_name="teleport-ent-15.0.2-x86_64"
 ```
 
@@ -192,28 +192,32 @@ The AWS account ID that publishes these AMIs is `146628656107`. You can list the
 the example `awscli` commands below. The output is in JSON format by default.
 
 <Tip>
+  <p>
+    **List Teleport AMIs**
+  </p>
+
   OSS AMIs<br />
 
-  ```code
+  ```bash
   $ aws --region us-west-2 ec2 describe-images --owners 146628656107 --filters 'Name=name,Values=teleport-oss-15.0.2-*'
   ```
 
   Enterprise AMIs<br />
 
-  ```code
+  ```bash
   $ aws --region us-west-2 ec2 describe-images --owners 146628656107 --filters 'Name=name,Values=teleport-ent-15.0.2-*'
   ```
 
   Enterprise FIPS 140-2 AMIs<br />
 
-  ```code
+  ```bash
   $ aws --region us-west-2 ec2 describe-images --owners 146628656107 --filters 'Name=name,Values=teleport-ent-15.0.2-*-fips-*'
   ```
 </Tip>
 
 ### key\_name
 
-```code
+```bash
 $ export TF_VAR_key_name="exampleuser"
 ```
 
@@ -234,7 +238,7 @@ download it.
 
 <img src="/assets/license-23cee352ae.png" alt="License File Download" width="2952" height="604" />
 
-```code
+```bash
 $ export TF_VAR_license_path="/home/user/license.pem"
 ```
 
@@ -246,14 +250,14 @@ here. The license file isn't used in Teleport Community Edition installs.)
 
 ### route53\_zone
 
-```code
+```bash
 $ export TF_VAR_route53_zone="example.com"
 ```
 
 Our Terraform setup requires you to have your domain provisioned in AWS Route 53 - it will automatically add
 DNS records for [`route53_domain`](#route53_domain) as set up below. You can list these with this command:
 
-```code
+```bash
 $ aws route53 list-hosted-zones --query "HostedZones[*].Name" --output json
 [
     "example.com.",
@@ -266,7 +270,7 @@ You should use the appropriate domain without the trailing dot.
 
 ### route53\_domain
 
-```code
+```bash
 $ export TF_VAR_route53_domain="teleport.example.com"
 ```
 
@@ -277,7 +281,7 @@ This must be a subdomain of the domain you chose for [`route53_zone`](#route53_z
 
 ### add\_wildcard\_route53\_record
 
-```code
+```bash
 $ export TF_VAR_add_wildcard_route53_record="true"
 ```
 
@@ -287,7 +291,7 @@ certificate is included if this is set to `true`. Let's Encrypt automatically in
 
 ### enable\_mongodb\_listener
 
-```code
+```bash
 $ export TF_VAR_enable_mongodb_listener="false"
 ```
 
@@ -295,7 +299,7 @@ When set to true, port `27017` is enabled on the Network Load Balancer that conn
 
 ### enable\_mysql\_listener
 
-```code
+```bash
 $ export TF_VAR_enable_mysql_listener="false"
 ```
 
@@ -303,7 +307,7 @@ Port `3036` is enabled on the Network Load Balancer that connects to the Telepor
 
 ### enable\_postgres\_listener
 
-```code
+```bash
 $ export TF_VAR_enable_postgres_listener="false"
 ```
 
@@ -311,7 +315,7 @@ Port `5432` is enabled on the Network Load Balancer that connects to the Telepor
 
 ### s3\_bucket\_name
 
-```code
+```bash
 $ export TF_VAR_s3_bucket_name="teleport-example"
 ```
 
@@ -322,7 +326,7 @@ Remember that S3 bucket names must be globally unique, so if you see errors rela
 
 ### cluster\_instance\_type
 
-```code
+```bash
 $ export TF_VAR_cluster_instance_type="t3.micro"
 ```
 
@@ -332,7 +336,7 @@ A `micro` instance is fine for testing, but if this server will need to support 
 
 ### email
 
-```code
+```bash
 $ export TF_VAR_email="support@example.com"
 ```
 
@@ -341,7 +345,7 @@ useful information. We recommend a generic ops/support email address which the t
 
 ### use\_letsencrypt
 
-```code
+```bash
 $ export TF_VAR_use_letsencrypt="false"
 ```
 
@@ -352,7 +356,7 @@ to load-balance connections to the Teleport cluster's web UI, and its SSL termin
 
 ### use\_acm
 
-```code
+```bash
 $ export TF_VAR_use_acm="true"
 ```
 
@@ -363,7 +367,7 @@ to load-balance connections to the Teleport cluster's web UI, and its SSL termin
 If you wish to use a pre-existing ACM certificate rather than having Terraform generate one for you, you can make
 Terraform use it by running this command before `terraform apply`:
 
-```code
+```bash
 $ terraform import aws_acm_certificate.cert <certificate_arn>
 ```
 
@@ -372,7 +376,7 @@ If ACM is enabled, Let's Encrypt will automatically be disabled regardless of th
 
 ### use\_tls\_routing
 
-```code
+```bash
 $ export TF_VAR_use_tls_routing="true"
 ```
 
@@ -383,7 +387,7 @@ When using this `starter-cluster` deployment, if ACM is enabled, TLS routing wil
 
 ### teleport\_auth\_type
 
-```code
+```bash
 $ export TF_VAR_teleport_auth_type="local"
 ```
 
@@ -434,6 +438,10 @@ the [`s3_bucket_name`](#s3_bucket_name) variable, under the `records` directory.
 In our example this would be `s3://teleport-example/records`
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   S3 provides [Amazon S3 Object Lock](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html),
   which is useful for customers deploying Teleport in regulated environments. Configuration of object lock is out of
   the scope of this guide.
@@ -479,7 +487,7 @@ When using Let's Encrypt, this is an A record pointing to the instance's public 
 Once you have set values for and exported all the variables detailed above, you should run `terraform plan` to validate the
 configuration.
 
-```code
+```bash
 $ terraform plan
 # Refreshing Terraform state in-memory prior to plan...
 # The refreshed state will be used to calculate this plan, but will not be
@@ -526,7 +534,7 @@ can't guarantee that exactly these actions will be performed if
 
 This looks good (no errors produced by Terraform) so we can run `terraform apply`:
 
-```code
+```bash
 $ terraform apply
 #  <output trimmed>
 
@@ -551,7 +559,7 @@ Once the Terraform setup is finished, the URL to your Teleport cluster's web UI 
 
 You can see this after deploy by running `terraform output -raw cluster_web_address`:
 
-```code
+```bash
 $ terraform output -raw cluster_web_address
 https://teleport.example.com
 ```
@@ -563,7 +571,7 @@ To add users to the Teleport cluster, you will need to connect to the Teleport c
 1. Use the key name and server IP to SSH into the Teleport cluster host. Make sure that the AWS keypair that you specified in the
    [`key_name`](#key_name) variable is available in the current directory, or update the `-i` parameter to point to it:
 
-   ```code
+   ```bash
    $ ssh -i $(terraform output -raw key_name).pem ec2-user@$(terraform output -raw instance_ip_public)
    # The authenticity of host '1.2.3.4 (1.2.3.4)' can't be established.
    # ECDSA key fingerprint is SHA256:vFPnCFliRsRQ1Dk+muIv2B1Owm96hXiihlOUsj5H3bg.
@@ -585,7 +593,7 @@ To add users to the Teleport cluster, you will need to connect to the Teleport c
 
    <Tabs>
      <Tab title="Teleport Community Edition">
-       ```code
+       ```bash
        # On the Teleport cluster host
        $ sudo tctl users add teleport-admin --roles=editor,access --logins=root,ec2-user
        # User "teleport-admin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -596,7 +604,7 @@ To add users to the Teleport cluster, you will need to connect to the Teleport c
      </Tab>
 
      <Tab title="Commercial">
-       ```code
+       ```bash
        # On the Teleport cluster host
        $ sudo tctl users add teleport-admin --roles=editor,access,reviewer --logins=root,ec2-user
        # User "teleport-admin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -623,7 +631,7 @@ You can [download the Teleport package containing the `tsh` client from here](ht
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     # When logging in with tsh, the https:// at the beginning of the URL is not needed
     $ export PROXY_ADDRESS=$(terraform output -raw cluster_web_address | sed 's_https://__')
     $ tsh login --proxy=${PROXY_ADDRESS} --user=teleport-admin
@@ -649,7 +657,7 @@ You can [download the Teleport package containing the `tsh` client from here](ht
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     # When logging in with tsh, the https:// at the beginning of the URL is not needed
     $ export PROXY_ADDRESS=$(terraform output -raw cluster_web_address | sed 's_https://__')
     $ tsh login --proxy=${PROXY_ADDRESS} --user=teleport-admin
@@ -683,7 +691,7 @@ The `systemd` service name is different between Let's Encrypt (`teleport.service
   <Tab title="If using ACM">
     You are using ACM if your `use_acm` variable is set to `"true"`.
 
-    ```code
+    ```bash
     $ systemctl status teleport-acm.service
     ● teleport-acm.service - Teleport Service (ACM)
       Loaded: loaded (/etc/systemd/system/teleport-acm.service; static; vendor preset: disabled)
@@ -699,7 +707,7 @@ The `systemd` service name is different between Let's Encrypt (`teleport.service
 
     You can get detailed logs for the Teleport Proxy Service using the `journalctl` command:
 
-    ```code
+    ```bash
     $ journalctl -u teleport-acm.service
     ```
   </Tab>
@@ -707,7 +715,7 @@ The `systemd` service name is different between Let's Encrypt (`teleport.service
   <Tab title="If using Let's Encrypt">
     You are using LetsEncrypt if your `use_acm` variable is set to `"false"`.
 
-    ```code
+    ```bash
     $ systemctl status teleport.service
     ● teleport.service - Teleport Service
       Loaded: loaded (/etc/systemd/system/teleport.service; static; vendor preset: disabled)
@@ -723,7 +731,7 @@ The `systemd` service name is different between Let's Encrypt (`teleport.service
 
     You can get detailed logs for the Teleport Proxy Service using the `journalctl` command:
 
-    ```code
+    ```bash
     $ journalctl -u teleport.service
     ```
   </Tab>

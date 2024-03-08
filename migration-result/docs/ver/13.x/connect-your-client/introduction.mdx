@@ -1,7 +1,7 @@
 ---
 title: Introduction to Teleport Clients
 description: The basics of connecting to resources with Teleport
-version: '13.x'
+version: "13.x"
 ---
 
 This guide covers the basics of authenticating to Teleport and
@@ -20,7 +20,7 @@ your Teleport cluster:
   <Tab title="Teleport Community Edition">
     <Tabs>
       <Tab title="Local user">
-        ```code
+        ```bash
         $ tsh login --proxy=teleport.example.com --user=user
         Enter password for Teleport user alice:
         Tap any security key
@@ -36,7 +36,7 @@ your Teleport cluster:
       </Tab>
 
       <Tab title="GitHub user">
-        ```code
+        ```bash
         $ tsh login --proxy=teleport.example.com --auth=github
         If browser window does not open automatically, open it by clicking on the link:
          http://127.0.0.1:49927/1d80e257-ec61-4ed2-9403-784f8d35b2fe
@@ -60,7 +60,7 @@ your Teleport cluster:
   <Tab title="Commercial">
     <Tabs>
       <Tab title="Local user">
-        ```code
+        ```bash
         $ tsh login --proxy=teleport.example.com --user=user
         Enter password for Teleport user alice:
         Tap any security key
@@ -76,7 +76,7 @@ your Teleport cluster:
       </Tab>
 
       <Tab title="SAML / OIDC / GitHub user">
-        ```code
+        ```bash
         $ tsh login --proxy=teleport.example.com --auth=your-idp-connector
         If browser window does not open automatically, open it by clicking on the link:
          http://127.0.0.1:49927/1d80e257-ec61-4ed2-9403-784f8d35b2fe
@@ -141,7 +141,7 @@ permissions.
   <Tab title="tsh">
     `tsh ls` lists the servers you have access to through Teleport:
 
-    ```code
+    ```bash
     $ tsh ls
     Node Name           Address         Labels                       
     ------------------- --------------- ---------------------------- 
@@ -151,7 +151,7 @@ permissions.
 
     To connect to a server:
 
-    ```code
+    ```bash
     $ tsh ssh ubuntu@server1.example.com
     ubuntu@server1:~$
     ```
@@ -176,7 +176,7 @@ permissions.
 
 `tsh scp` will let you transfer files to servers behind Teleport:
 
-```code
+```bash
 $ tsh scp some-file.ext server.example.com:
 some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s) [9s:1m48s]
 ```
@@ -188,7 +188,7 @@ some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s)
     To see the Kubernetes clusters that you can access via Teleport, run the
     following command:
 
-    ```code
+    ```bash
     $ tsh kube ls
      Kube Cluster Name Labels                      Selected
      ----------------- --------------------------- --------
@@ -198,7 +198,7 @@ some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s)
     To log in to the cluster, run the following command, changing `mycluster` to the
     name of a Kubernetes cluster as it was listed in `tsh kube ls`:
 
-    ```code
+    ```bash
     $ tsh kube login mycluster
     Logged into kubernetes cluster "mycluster". Try 'kubectl version' to test the
     connection.
@@ -249,7 +249,7 @@ some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s)
   <Tab title="tsh">
     `tsh db ls` will list the databases available to your user:
 
-    ```code
+    ```bash
     $ tsh db ls
     Name                                               Description Allowed Users   Labels  Connect
     -----------------------------------------------    ----------- --------------- ------- -------------------------
@@ -261,7 +261,7 @@ some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s)
     that database. For example, to connect to a MySQL or MariaDB database, you'll
     need the [MySQL CLI](https://dev.mysql.com/doc/refman/8.0/en/mysql.html) client:
 
-    ```code
+    ```bash
     $ tsh db connect --db-user=alice --db-name=teleport_example mysql-server1 
     ```
 
@@ -283,7 +283,7 @@ some-file.ext   7% |███████                | (25/342 MB, 2.9 MB/s)
     For other connection types, or to connect a graphic database client, you can
     create a local tunnel to point your software to:
 
-    ```code
+    ```bash
     $ tsh proxy db myelastic --db-user=alice --tunnel
     Started authenticated tunnel for the Elasticsearch database "myelastic" in cluster "example.come" on 192.0.2.58:52669.
 

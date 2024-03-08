@@ -1,7 +1,7 @@
 ---
 title: How to Build an Access Request Plugin
 description: Manage Access Requests using custom workflows with the Teleport API
-version: '14.x'
+version: "14.x"
 ---
 
 With Teleport [Access Requests](/docs/ver/14.x/access-controls/access-requests), you can
@@ -9,7 +9,7 @@ assign Teleport users to less privileged roles by default and allow them to
 temporarily escalate their privileges. Reviewers can grant or deny Access
 Requests within your organization's existing communication workflows (e.g.,
 Slack, email, and PagerDuty) using [Access Request
-plugins](/docs/ver/14.x/access-controls/access-request-plugins/index).
+plugins](/docs/ver/14.x/access-controls/access-request-plugins).
 
 You can use Teleport's API client library to build an Access Request plugin that
 integrates with your organization's unique workflows.
@@ -37,7 +37,7 @@ spreadsheet, with links to allow or deny each request.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -54,7 +54,7 @@ spreadsheet, with links to allow or deny each request.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -92,7 +92,7 @@ authenticating to the Google Sheets API:
 
 Download the source code for our minimal Access Request plugin:
 
-```code
+```bash
 $ git clone https://github.com/gravitational/teleport
 $ cd teleport/examples/access-plugin-minimal
 ```
@@ -215,7 +215,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -248,7 +248,7 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
@@ -264,7 +264,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -280,7 +280,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -290,7 +290,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -317,7 +317,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -327,7 +327,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -354,7 +354,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -364,7 +364,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -391,7 +391,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -411,7 +411,7 @@ The following `tctl auth sign` command impersonates the `access-plugin` user,
 generates signed credentials, and writes an identity file to the local
 directory:
 
-```code
+```bash
 $ tctl auth sign --user=access-plugin --out=auth.pem
 ```
 
@@ -462,7 +462,7 @@ spec:
 
 Create the roles you defined:
 
-```code
+```bash
 $ tctl create -f editor-request-rbac.yaml
 role 'editor-reviewer' has been created
 role 'editor-requester' has been created
@@ -478,7 +478,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -494,7 +494,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -504,7 +504,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -531,7 +531,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -541,7 +541,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -568,7 +568,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -578,7 +578,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -605,7 +605,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -616,7 +616,7 @@ commands for your authentication provider:
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor-requester 
 ```
 
@@ -1279,7 +1279,7 @@ Run the plugin to forward Access Requests from your Teleport cluster to Google
 Sheets. Execute the following command from within
 `examples/access-plugin-minimal`:
 
-```code
+```bash
 $ go run teleport-sheets
 ```
 
@@ -1289,7 +1289,7 @@ Now that the plugin is running, create an Access Request:
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -1297,7 +1297,7 @@ Now that the plugin is running, create an Access Request:
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```

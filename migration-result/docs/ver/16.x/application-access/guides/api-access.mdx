@@ -1,7 +1,7 @@
 ---
 title: Access REST APIs With Teleport Application Access
 description: How to access REST APIs with Teleport application access.
-version: '16.x'
+version: "16.x"
 ---
 
 The Teleport Application Service can be used to access applications' (REST or
@@ -9,6 +9,10 @@ Teleport's own gRPC) APIs with tools like
 [curl](https://man7.org/linux/man-pages/man1/curl.1.html) or Postman.
 
 <Note>
+  <p>
+    **Non-HTTP API Support**
+  </p>
+
   Use [TCP application access](/docs/ver/16.x/application-access/guides/tcp) for non-HTTP APIs (like gRPC).
 </Note>
 
@@ -17,7 +21,7 @@ Teleport's own gRPC) APIs with tools like
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -26,7 +30,7 @@ Teleport's own gRPC) APIs with tools like
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -48,7 +52,7 @@ Teleport's own gRPC) APIs with tools like
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -72,7 +76,7 @@ Teleport's own gRPC) APIs with tools like
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -95,7 +99,7 @@ Teleport's own gRPC) APIs with tools like
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -112,7 +116,7 @@ Teleport's own gRPC) APIs with tools like
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -129,7 +133,7 @@ Teleport's own gRPC) APIs with tools like
   and execute API queries against it. You can launch Grafana too with a single Docker
   command:
 
-  ```code
+  ```bash
   $ docker run -d -p 3000:3000 grafana/grafana
   ```
 
@@ -151,7 +155,7 @@ Teleport's own gRPC) APIs with tools like
 
 Log into your Teleport cluster and view available applications:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com
 $ tsh apps ls
 
@@ -162,7 +166,7 @@ $ tsh apps ls
 
 Retrieve short-lived X.509 certificate for the application:
 
-```code
+```bash
 $ tsh apps login grafana
 # Logged into app grafana. Example curl command:
 
@@ -176,6 +180,10 @@ The login message shows an example `curl` command you can run to call the
 target application's API through Teleport App Access.
 
 <Note>
+  <p>
+    **CA and Key Pair Files**
+  </p>
+
   Note the paths to your user's certificate/key pair in the command - `curl` will use a client certificate to authenticate with Teleport.
 
   The Teleport Proxy Service is usually configured with a wildcard certificate
@@ -189,7 +197,7 @@ As Grafana's API requires authentication, let's update the `curl` command to
 provide basic auth information using default Grafana username/password and
 call its `/api/users` endpoint:
 
-```code
+```bash
 $ curl --user admin:admin \
   --cert /Users/alice/.tsh/keys/teleport.example.com/alice-app/cluster-name/grafana-x509.pem \
   --key /Users/alice/.tsh/keys/teleport.example.com/alice \
@@ -201,14 +209,14 @@ $ curl --user admin:admin \
 The app's X.509 certificate will expire on its own after the TTL allowed by
 your user's role. You can also remove it explicitly:
 
-```code
+```bash
 $ tsh apps logout
 # Logged out of app "grafana"
 ```
 
 ## Application information
 
-```code
+```bash
 $ tsh apps config
 ```
 
@@ -218,7 +226,7 @@ This is useful when configuring CLI tools (such as `curl`) or GUI tools (such as
 
 Let's print the app information in a table format:
 
-```code
+```bash
 $ tsh apps config
 
 # Name:      grafana
@@ -231,7 +239,7 @@ $ tsh apps config
 We can also provide different `--format` values to print specific parts
 of the app configuration:
 
-```code
+```bash
 $ tsh apps config --format=uri
 # https://grafana-root.gravitational.io:3080
 
@@ -248,7 +256,7 @@ $ tsh apps config --format=key
 This can be useful in automation for simple templating e.g. to construct an
 appropriate `curl` command. Using our Grafana `/api/users` example above:
 
-```code
+```bash
 $ curl --user admin:admin \
   --cert $(tsh apps config --format=cert) \
   --key $(tsh apps config --format=key) \

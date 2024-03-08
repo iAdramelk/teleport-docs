@@ -1,7 +1,7 @@
 ---
 title: Reducing the Blast Radius of Attacks
 description: How to configure Teleport to minimize the scope of security breaches
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport encourages users to practice defense in depth so that every component of their infrastructure is safe against attacks, even if an attacker is partially successful. You can configure Teleport to add layers of protection to your cluster when users authenticate or request elevated privileges. In this guide, we will show you how to:
@@ -17,7 +17,7 @@ Teleport encourages users to practice defense in depth so that every component o
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -52,7 +52,7 @@ To do so, make the following changes depending on your environment:
   <Tab title="Cloud-Hosted">
     Obtain your existing `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl get cap > cap.yaml
     ```
 
@@ -70,7 +70,7 @@ To do so, make the following changes depending on your environment:
 
     Apply your change:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>
@@ -200,13 +200,13 @@ spec:
 
 Next, `myuser` attempts to request the `admin` role.
 
-```code
+```bash
 $ tsh request create --roles=admin
 ```
 
 However, the Auth Service denies the request.
 
-```code
+```bash
 Creating request...
 ERROR: user "myuser" can not request role "admin"
 ```

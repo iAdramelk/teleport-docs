@@ -3,7 +3,7 @@ title: Using Teleport with OpenSSH in agentless mode
 description: This guide shows you how to set up Teleport in agentless mode to enable secure access to OpenSSH servers so you can protect systems that do not run a Teleport binary.
 keywords: [openssh, teleport, agentless]
 videoBanner: x0eYFUEIOrM
-version: '14.x'
+version: "14.x"
 ---
 
 In this guide, we will show you how to configure Teleport in agentless mode and
@@ -32,6 +32,10 @@ a certificate signed by a Teleport CA that only the Auth Service possesses.
 In this setup, the Teleport SSH Service performs RBAC checks as well as audits and records sessions on its host, which eliminates the need for connection termination when recording SSH sessions.
 
 <Tip>
+  <p>
+    **Note**
+  </p>
+
   Registering an OpenSSH node with Teleport involves copying the `teleport` binary
   onto your `sshd` host. The `teleport` binary will handle registering the node
   with your cluster, generating certificates, modifying your OpenSSH `sshd` config,
@@ -44,14 +48,14 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
 - OpenSSH version 6.9 or above on your local machine. View your OpenSSH version
   with the command:
 
-  ```code
+  ```bash
   $ ssh -V
   ```
 
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -60,7 +64,7 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -82,7 +86,7 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -106,7 +110,7 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -129,7 +133,7 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -149,7 +153,7 @@ In this setup, the Teleport SSH Service performs RBAC checks as well as audits a
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -185,7 +189,7 @@ processes that that have joined the cluster.
 To register the OpenSSH node, you must have a valid auth token to connect to the cluster.
 You can generate the token by running the following command against your Teleport Auth Service:
 
-```code
+```bash
 $ tctl tokens add --type=node --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -193,7 +197,7 @@ abcd123-insecure-do-not-use-this
 Copy the `teleport` binary to your `sshd` host. Configure `sshd` and create a node
 resource on your cluster with the following command:
 
-```code
+```bash
 $ sudo teleport join openssh \
   --address server1.example.com:22 \
   --proxy-server teleport.example.com:443 \
@@ -224,7 +228,7 @@ First, make sure you have logged in to your Teleport cluster:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ tsh status
     > Profile URL:        https://teleport.example.com:443
       Logged in as:       myuser
@@ -238,7 +242,7 @@ First, make sure you have logged in to your Teleport cluster:
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    ```code
+    ```bash
     $ tsh status
     > Profile URL:        https://teleport.example.com:443
       Logged in as:       myuser
@@ -252,7 +256,7 @@ First, make sure you have logged in to your Teleport cluster:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh status
     > Profile URL:        https://mytenant.teleport.sh:443
       Logged in as:       myuser
@@ -270,7 +274,7 @@ On your local machine, run the following `tsh` command. This will print a
 configuration block that tells your SSH client to use credentials managed by
 Teleport to connect to hosts in your cluster.
 
-```code
+```bash
 $ tsh config > ssh_config_teleport
 ```
 
@@ -317,7 +321,7 @@ order to make it easier to clean up, but you can append the output of
   similar to the following, which assumes you are logging in to a node called
   `mynode` as `root` with a cluster called `teleport.example.com`:
 
-  ```code
+  ```bash
   $ /usr/bin/ssh -l root -A -o UserKnownHostsFile=/root/.tsh/known_hosts -p 11105 teleport.example.com -s proxy:mynode:3022@teleport.example.com
   ```
 
@@ -331,7 +335,7 @@ order to make it easier to clean up, but you can append the output of
   the file with the incorrect encoding. To ensure it's written properly, try the
   following:
 
-  ```code
+  ```bash
   $ tsh.exe config | out-file .ssh\config -encoding utf8 -append
   ```
 </Accordion>
@@ -344,6 +348,10 @@ order to make it easier to clean up, but you can append the output of
 </Accordion>
 
 <Tip>
+  <p>
+    **Multiple Clusters**
+  </p>
+
   If you switch between multiple Teleport Proxy Servers, you'll need to re-run
   `tsh config` for each to generate the cluster-specific configuration.
 
@@ -362,7 +370,7 @@ the username you will use to log in to your `sshd` host, and the port on your
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     # See the available logins you can use to access your sshd host
     $ tsh status | grep Logins
     Logins:             ubuntu, root
@@ -373,7 +381,7 @@ the username you will use to log in to your `sshd` host, and the port on your
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # See the available logins you can use to access your sshd host
     $ tsh status | grep Logins
     Logins:             ubuntu, root
@@ -386,7 +394,7 @@ the username you will use to log in to your `sshd` host, and the port on your
 
 Next, SSH in to your remote host:
 
-```code
+```bash
 $ ssh -p ${PORT?} -F ssh_config_teleport "${USER?}@${ADDR?}.${CLUSTER?}"
 ```
 
@@ -414,12 +422,16 @@ routed through your Teleport Proxy Service.
   You can log in to a host in a trusted leaf cluster by placing the name of the leaf cluster
   between the name of the node and the name of the root cluster:
 
-  ```code
+  ```bash
   $ ssh -F ssh_config_teleport ${USER?}@node2.leafcluster.${CLUSTER}
   ```
 </Accordion>
 
 <Tip>
+  <p>
+    **Note**
+  </p>
+
   Teleport uses OpenSSH certificates instead of keys. When you connect to a
   remote host, OpenSSH verifies that the address of the host is listed under the
   `Principals` section of the OpenSSH certificate. Usually, this is a fully

@@ -1,7 +1,7 @@
 ---
 title: Running Teleport with a Custom Configuration using Helm
 description: Install and configure a Teleport cluster with a custom configuration using Helm
-version: '14.x'
+version: "14.x"
 ---
 
 In this guide, we'll explain how to set up a Teleport cluster in Kubernetes
@@ -40,7 +40,7 @@ Teleport's charts require the use of Helm version 3. You can [install Helm 3 by 
 
 Throughout this guide, we will assume that you have the `helm` and `kubectl` binaries available in your `PATH`:
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -81,14 +81,14 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -176,7 +176,7 @@ configured `clusterName`.
 Create the namespace containing the Teleport-related resources and configure the
 `PodSecurityAdmission`:
 
-```code
+```bash
 $ kubectl create namespace teleport
 namespace/teleport created
 $ kubectl label namespace teleport 'pod-security.kubernetes.io/enforce=baseline'
@@ -200,11 +200,15 @@ install Teleport.
 2. Create a secret from your license file. Teleport will automatically discover
    this secret as long as your file is named `license.pem`.
 
-```code
+```bash
 $ kubectl -n teleport create secret generic license --from-file=license.pem
 ```
 
 <Note>
+  <p>
+    **External proxy port**
+  </p>
+
   Note that although the `proxy_service` listens on port 3080 inside the pod,
   the default `LoadBalancer` service configured by the chart will always listen
   externally on port 443 (which is redirected internally to port 3080).
@@ -222,7 +226,7 @@ You can now deploy Teleport in your cluster with the command:
 
 <Tabs>
   <Tab title="Open Source">
-    ```code
+    ```bash
     $ helm install teleport teleport/teleport-cluster \
       --namespace teleport \
       --values my-values.yaml
@@ -230,7 +234,7 @@ You can now deploy Teleport in your cluster with the command:
   </Tab>
 
   <Tab title="Enterprise">
-    ```code
+    ```bash
     $ helm install teleport teleport/teleport-cluster \
       --namespace teleport \
       --set enterprise=true \
@@ -241,7 +245,7 @@ You can now deploy Teleport in your cluster with the command:
 
 Once the chart is installed, you can use `kubectl` commands to view the deployment:
 
-```code
+```bash
 $ kubectl --namespace teleport get all
 
 NAME                                 READY   STATUS    RESTARTS   AGE
@@ -272,7 +276,7 @@ auth server, so we can run the command using `kubectl`:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -283,7 +287,7 @@ auth server, so we can run the command using `kubectl`:
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ kubectl --namespace teleport exec deployment/teleport-auth -- tctl users add test --roles=access,editor,reviewer
 
     User "test" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -305,7 +309,7 @@ auth server, so we can run the command using `kubectl`:
     <Tab title="EKS (hostname)">
       EKS uses a hostname:
 
-      ```code
+      ```bash
       $ kubectl --namespace teleport-cluster get service/teleport -o jsonpath='{.status.loadBalancer.ingress[*].hostname}'
       # a5f22a02798f541e58c6641c1b158ea3-1989279894.us-east-1.elb.amazonaws.com
       ```
@@ -314,7 +318,7 @@ auth server, so we can run the command using `kubectl`:
     <Tab title="GKE (IP address)">
       GKE uses an IP address:
 
-      ```code
+      ```bash
       $ kubectl --namespace teleport-cluster get service/teleport -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
       # 35.203.56.38
       ```
@@ -342,7 +346,7 @@ authentication for the Teleport user via the web UI.
 
 To uninstall the `teleport-cluster` chart, use `helm uninstall <release-name>`. For example:
 
-```code
+```bash
 $ helm --namespace teleport uninstall teleport
 ```
 

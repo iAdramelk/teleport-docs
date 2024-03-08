@@ -1,7 +1,7 @@
 ---
 title: "Export Teleport Audit Events to the Elastic Stack"
 description: "How to configure Teleport's Event Handler plugin to send audit events to the Elastic Stack"
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport's Event Handler plugin receives audit events from the Teleport Auth
@@ -19,7 +19,7 @@ stores them in Elasticsearch for visualization and alerting in Kibana.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -28,7 +28,7 @@ stores them in Elasticsearch for visualization and alerting in Kibana.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -50,7 +50,7 @@ stores them in Elasticsearch for visualization and alerting in Kibana.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -74,7 +74,7 @@ stores them in Elasticsearch for visualization and alerting in Kibana.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -97,7 +97,7 @@ stores them in Elasticsearch for visualization and alerting in Kibana.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -138,7 +138,7 @@ plugin on your Logstash host:
 
 <Tabs>
   <Tab title="Linux">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.7-linux-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v13.3.7-linux-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
@@ -149,7 +149,7 @@ plugin on your Logstash host:
   </Tab>
 
   <Tab title="macOS">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v13.3.7-darwin-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v13.3.7-darwin-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
@@ -164,7 +164,7 @@ plugin on your Logstash host:
   <Tab title="Docker">
     Ensure that you have Docker installed and running.
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.7
     ```
   </Tab>
@@ -172,13 +172,13 @@ plugin on your Logstash host:
   <Tab title="Helm">
     To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     To update the cache of charts from the remote repository, run `helm repo update`:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -188,7 +188,7 @@ plugin on your Logstash host:
 
     Run the following commands to build the plugin:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler/build.assets
     $ make build
@@ -203,7 +203,7 @@ plugin on your Logstash host:
 
     Run the following commands on your Universal Forwarder host:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler
     $ go build
@@ -227,7 +227,7 @@ your environment.
     `mytenant.teleport.sh` with the DNS name of your Teleport Team or Teleport
     Enterprise Cloud tenant:
 
-    ```code
+    ```bash
     $ teleport-event-handler configure . mytenant.teleport.sh:443
     ```
   </Tab>
@@ -237,7 +237,7 @@ your environment.
     `teleport.example.com:443` with the DNS name and HTTPS port of Teleport's Proxy
     Service:
 
-    ```code
+    ```bash
     $ teleport-event-handler configure . teleport.example.com:443
     ```
   </Tab>
@@ -247,7 +247,7 @@ your environment.
     `TELEPORT_CLUSTER_ADDRESS` to the DNS name and port of your Teleport Auth
     Service or Proxy Service:
 
-    ```code
+    ```bash
     $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
     $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:13.3.7 configure . ${TELEPORT_CLUSTER_ADDRESS?}
     ```
@@ -256,7 +256,7 @@ your environment.
     client credentials available as a secret. Use the following command to create
     that secret in Kubernetes:
 
-    ```code
+    ```bash
     $ kubectl create secret generic teleport-event-handler-client-tls --from-file=ca.crt=ca.crt,client.crt=client.crt,client.key=client.key
     ```
 
@@ -278,7 +278,7 @@ Teleport event handler 16.0.0-dev
 
 The plugin generates several setup files:
 
-```code
+```bash
 $ ls -l
 # -rw------- 1 bob bob     1038 Jul  1 11:14 ca.crt
 # -rw------- 1 bob bob     1679 Jul  1 11:14 ca.key
@@ -310,7 +310,7 @@ $ ls -l
   Event Handler at `handler.example.com`, you would run the following `configure`
   command:
 
-  ```code
+  ```bash
   $ teleport-event-handler configure --cn=handler.example.com --dns-names=forwarder.example.com
   ```
 
@@ -354,7 +354,7 @@ version: v2
 Move this file to your workstation (or recreate it by pasting the snippet above)
 and use `tctl` on your workstation to create the role and the user:
 
-```code
+```bash
 $ tctl create -f teleport-event-handler-role.yaml
 # user "teleport-event-handler" has been created
 # role 'teleport-event-handler' has been created
@@ -406,7 +406,7 @@ spec:
 
 Next, create the role:
 
-```code
+```bash
 $ tctl create teleport-event-handler-impersonator.yaml
 ```
 
@@ -421,13 +421,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},teleport-event-handler-impersonator"
        ```
@@ -438,7 +438,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -465,7 +465,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -475,7 +475,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -502,7 +502,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -512,7 +512,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -539,7 +539,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -610,7 +610,7 @@ longer-lived identity files with `tctl`:
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=teleport-event-handler --out=identity
     ```
 
@@ -635,7 +635,7 @@ longer-lived identity files with `tctl`:
       a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=60060
       ```
     </Accordion>
@@ -643,7 +643,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on a Linux server, create a data directory
     to hold certificate files for the plugin:
 
-    ```code
+    ```bash
     $ sudo mkdir -p /var/lib/teleport/api-credentials
     $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
@@ -651,7 +651,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on Kubernetes, Create a Kubernetes secret
     that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=identity teleport-event-handler-identity
     ```
 
@@ -709,7 +709,7 @@ You will need a password to decrypt the RSA key. To retrieve this, execute the
 following command in the directory where you ran `teleport-event-handler
 configure`:
 
-```code
+```bash
 $ cat fluent.conf | grep passphrase
 private_key_passphrase "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 ```
@@ -717,14 +717,14 @@ private_key_passphrase "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 Convert the encrypted RSA key to an unencrypted PKCS #8 key. The command will
 prompt your for the password you retrieved:
 
-```code
+```bash
 $ openssl pkcs8 -topk8 -in server.key -nocrypt -out pkcs8.key
 ```
 
 Enable Logstash to read the new key, plus the CA and certificate we generated
 earlier:
 
-```code
+```bash
 $ chmod +r pkcs8.key ca.crt server.crt
 ```
 
@@ -883,14 +883,14 @@ This disables the ECS for your Teleport audit log pipeline.
 
 Restart Logstash:
 
-```code
+```bash
 $ sudo systemctl restart logstash
 ```
 
 Make sure your Logstash pipeline started successfully by running the following
 command to tail Logstash's logs:
 
-```code
+```bash
 $ sudo journalctl -u logstash -f
 ```
 
@@ -1082,7 +1082,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
 
     Enable and start the plugin:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport-event-handler
     $ sudo systemctl start teleport-event-handler
     ```
@@ -1092,7 +1092,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
       exporting events when you run the `start` command. This example will start
       exporting from May 5th, 2021:
 
-      ```code
+      ```bash
       $ teleport-event-handler start --config /etc/teleport-event-handler.toml --start-time "2021-05-05T00:00:00Z"
       ```
 
@@ -1105,7 +1105,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
     Once the Teleport Event Handler starts, you will see notifications about scanned
     and forwarded events:
 
-    ```code
+    ```bash
     $ sudo journalctl -u teleport-event-handler
     DEBU   Event sent id:f19cf375-4da6-4338-bfdc-e38334c60fd1 index:0 ts:2022-09-21
     18:51:04.849 +0000 UTC type:cert.create event-handler/app.go:140
@@ -1116,7 +1116,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
   <Tab title="Helm chart">
     Run the following command on your workstation:
 
-    ```code
+    ```bash
     $ helm install teleport-plugin-event-handler teleport/teleport-plugin-event-handler \
       --values teleport-plugin-event-handler-values.yaml \
       --version 13.3.7

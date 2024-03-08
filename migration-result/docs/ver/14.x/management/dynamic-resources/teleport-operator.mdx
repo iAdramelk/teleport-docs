@@ -1,7 +1,7 @@
 ---
 title: Teleport Kubernetes Operator
 description: Easily manage Teleport resources from Kubernetes
-version: '14.x'
+version: "14.x"
 ---
 
 The Teleport Kubernetes Operator provides a way for Kubernetes users to manage some Teleport resources through
@@ -36,11 +36,11 @@ This guide covers how to:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v14.3.6 go1.21
 
@@ -58,7 +58,7 @@ This guide covers how to:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -74,7 +74,7 @@ This guide covers how to:
 
 Validate Kubernetes connectivity by running the following command:
 
-```code
+```bash
 $ kubectl cluster-info
 # Kubernetes control plane is running at https://127.0.0.1:6443
 # CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
@@ -85,7 +85,7 @@ $ kubectl cluster-info
   Users wanting to experiment locally with the operator can use [minikube](https://minikube.sigs.k8s.io/docs/start/)
   to start a local Kubernetes cluster:
 
-  ```code
+  ```bash
   $ minikube start
   ```
 </Tip>
@@ -96,14 +96,14 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -111,7 +111,7 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ helm install teleport-cluster teleport/teleport-cluster \
             --create-namespace --namespace teleport-cluster \
             --set clusterName=teleport-cluster.teleport-cluster.svc.cluster.local \
@@ -123,7 +123,7 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
   <Tab title="Teleport Enterprise">
     Create a namespace for your Teleport cluster resources:
 
-    ```code
+    ```bash
     $ kubectl create namespace teleport-cluster
     ```
 
@@ -140,13 +140,13 @@ Install the Helm chart for the Teleport Cluster with `operator.enabled=true`:
 
     Create a secret called "license" in the namespace you created:
 
-    ```code
+    ```bash
     $ kubectl -n teleport-cluster create secret generic license --from-file=license.pem
     ```
 
     Deploy your Teleport cluster and the Teleport Kubernetes Operator:
 
-    ```code
+    ```bash
     $ helm install teleport-cluster teleport/teleport-cluster \
             --namespace teleport-cluster \
             --set enterprise=true \
@@ -162,7 +162,7 @@ cluster. All resources (except CRDs, which are cluster-scoped) are created in th
 
 All subsequent commands will take place in the `teleport-cluster` namespace, so let's use it by default:
 
-```code
+```bash
 $ kubectl config set-context --current --namespace teleport-cluster
 ```
 
@@ -191,13 +191,13 @@ spec:
 
 Apply the manifests to the Kubernetes cluster:
 
-```code
+```bash
 $ kubectl apply -f teleport-resources.yaml
 ```
 
 List the created Kubernetes resources:
 
-```code
+```bash
 $ kubectl get teleportroles
 # NAME     AGE
 # myrole   10m
@@ -209,7 +209,7 @@ $ kubectl get teleportusers
 
 Check the user `myuser` has been created in Teleport and has been granted the role `myrole`:
 
-```code
+```bash
 $ AUTH_POD=$(kubectl get po -l app=teleport-cluster -o jsonpath='{.items[0].metadata.name}')
 $ kubectl exec -it "$AUTH_POD" -c teleport -- tctl users ls
 # User                          Roles
@@ -226,7 +226,7 @@ Kubernetes.
 Available fields can be browsed with `kubectl explain` in a cluster with Teleport CRDs installed.
 For example the command:
 
-```code
+```bash
 $ kubectl explain teleportroles.spec
 ```
 
@@ -265,7 +265,7 @@ Kubernetes resource.
 If an error happens and the reconciliation loop is not successful, an item in `status.conditions` will describe what
 went wrong. This allows users to diagnose errors by inspecting Kubernetes resources with `kubectl`:
 
-```code
+```bash
 $ kubectl get teleportusers myuser -o yaml
 ```
 

@@ -2,7 +2,7 @@
 title: Teleport SSH Nodes
 description: This chapter explains the concept of a Teleport Node and how Teleport manages SSH.
 h1: Teleport SSH Nodes
-version: '16.x'
+version: "16.x"
 ---
 
 ## The SSH Node service
@@ -34,6 +34,10 @@ They report their IP addresses and the values of their assigned labels.
 Clients can access the list of all Nodes in their cluster via the Auth Server API or CLI.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Nodes can register with Auth servers directly, or use proxies to establish the connection to auth servers.
   The latter is helpful if you have multiple proxies and nodes all over the world.
 </Tip>
@@ -55,6 +59,10 @@ This certificate contains information about the node including:
 A Teleport Cluster is a set of one or more machines whose certificates are signed by the same certificate authority (CA) operating in the Auth Server. A certificate is issued to a node when it joins the cluster for the first time.
 
 <Warning>
+  <p>
+    **Single-Node Clusters are Clusters**
+  </p>
+
   Once a Node gets a signed certificate from the Node CA, the Node is considered a member of the cluster, even if that cluster has only one node.
 </Warning>
 

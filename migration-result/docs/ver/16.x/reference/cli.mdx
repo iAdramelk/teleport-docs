@@ -1,7 +1,7 @@
 ---
 title: CLI References
 description: Detailed guide and reference documentation for Teleport's command line interface (CLI) tools.
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport is made up of four CLI tools.
@@ -66,6 +66,10 @@ Teleport is made up of four CLI tools.
 </Accordion>
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -80,13 +84,13 @@ The `--query` flag allows you to perform more sophisticated searches using a [pr
 
 In both cases, you can further refine the results by appending a list of comma-separated labels to the command. For example:
 
-```code
+```bash
 $ tsh ls --search=foo,bar labelKey1=labelValue1,labelKey2=labelValue2
 ```
 
 ### Filter Examples
 
-```code
+```bash
 # List all nodes
 $ tsh ls
 

@@ -2,7 +2,7 @@
 title: "Second Factor: WebAuthn"
 description: Configuring WebAuthn support in Teleport clusters.
 videoBanner: vQgKkD4ZRDU
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport supports [WebAuthn](https://webauthn.guide/) as a second authentication
@@ -19,7 +19,7 @@ UI).
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -28,7 +28,7 @@ UI).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -50,7 +50,7 @@ UI).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -74,7 +74,7 @@ UI).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -97,7 +97,7 @@ UI).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -116,7 +116,7 @@ UI).
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -137,7 +137,7 @@ Teleport configuration as below:
   <Tab title="Dynamic resources">
     Edit the `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl edit cap
     ```
 
@@ -255,7 +255,7 @@ devices are forbidden.
 
 A user can register multiple WebAuthn devices using `tsh`:
 
-```code
+```bash
 $ tsh mfa add
 # Choose device type [TOTP, WEBAUTHN]: webauthn
 # Enter device name: desktop yubikey
@@ -279,7 +279,7 @@ Once a WebAuthn device is registered, the user will be prompted for it on login:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ tsh login --proxy=example.com
     # Enter password for Teleport user codingllama:
     # Tap any security key or enter a code from a OTP device:
@@ -295,7 +295,7 @@ Once a WebAuthn device is registered, the user will be prompted for it on login:
   </Tab>
 
   <Tab title="Teleport Enterprise">
-    ```code
+    ```bash
     $ tsh login --proxy=example.com
     # Enter password for Teleport user codingllama:
     # Tap any security key or enter a code from a OTP device:
@@ -311,7 +311,7 @@ Once a WebAuthn device is registered, the user will be prompted for it on login:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh
     # Enter password for Teleport user codingllama:
     # Tap any security key or enter a code from a OTP device:

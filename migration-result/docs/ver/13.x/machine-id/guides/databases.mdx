@@ -1,7 +1,7 @@
 ---
 title: Machine ID with Databases
 description: Protecting your databases with Machine ID
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will demonstrate how to use Machine ID to access a database
@@ -18,11 +18,11 @@ Teleport provides for human users.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -35,7 +35,7 @@ Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -55,7 +55,7 @@ Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -72,7 +72,7 @@ Teleport provides for human users.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -89,7 +89,7 @@ Teleport provides for human users.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -111,7 +111,7 @@ Teleport provides for human users.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -126,7 +126,7 @@ Teleport provides for human users.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -173,7 +173,7 @@ This role allows Machine ID bots to do two things:
 
 Write this to `role.yaml` and run the following to create the role in Teleport:
 
-```code
+```bash
 $ tctl create -f role.yaml
 ```
 
@@ -184,7 +184,7 @@ With the role created, create a new bot and allow it to assume the new role.
     On your client machine, log in to Teleport using `tsh` before using `tctl` to
     create the bot:
 
-    ```code
+    ```bash
     $ tctl bots add app --roles=machine-id-db
     ```
   </Tab>
@@ -192,7 +192,7 @@ With the role created, create a new bot and allow it to assume the new role.
   <Tab title="Self-Hosted">
     Connect to the Teleport Auth Server and use `tctl` to create the bot:
 
-    ```code
+    ```bash
     $ tctl bots add app --roles=machine-id-db
     ```
   </Tab>
@@ -269,7 +269,7 @@ We'll work with the assumption you will be running Machine ID as the Linux user
 the destination directory by running this `tbot init` command either as `root`
 or as the `teleport` user:
 
-```code
+```bash
 $ tbot init \
     -c /etc/tbot.yaml \
     --init-dir=/opt/machine-id \
@@ -280,7 +280,7 @@ $ tbot init \
 
 Create the bot data directory and grant permissions to access it to the Linux user (in our example, `teleport`) which `tbot` will run as.
 
-```code
+```bash
 # Make the bot directory and assign ownership to teleport user
 $ sudo mkdir -p /var/lib/teleport/bot
 $ sudo chown teleport:teleport /var/lib/teleport/bot
@@ -351,7 +351,7 @@ parameters as necessary for your local setup.
 
 Finally, run the following commands to start Machine ID:
 
-```code
+```bash
 $ sudo systemctl enable machine-id machine-id-proxy
 $ sudo systemctl start machine-id machine-id-proxy
 $ sudo systemctl status machine-id machine-id-proxy
@@ -386,6 +386,10 @@ to configure the new output files, then restart `tbot` with
 `systemctl restart machine-id machine-id-proxy`.
 
 <Note>
+  <p>
+    **TLS Configuration Note**
+  </p>
+
   If desired, you can add the `--tunnel` flag to the `tbot proxy db ...` command in the `machine-id-proxy.service` systemd unit file to
   authenticate automatically at the proxy level, however this will decrease
   security as all users of the system will be able to connect to the database

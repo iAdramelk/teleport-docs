@@ -1,7 +1,7 @@
 ---
 title: Getting Started With Access Controls
 description: Get started using Teleport Access Controls.
-version: '16.x'
+version: "16.x"
 ---
 
 In Teleport, any local, SSO, or robot user can be assigned one or several roles.
@@ -16,7 +16,7 @@ wrap up with creating your own role.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -25,7 +25,7 @@ wrap up with creating your own role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -47,7 +47,7 @@ wrap up with creating your own role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -71,7 +71,7 @@ wrap up with creating your own role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -94,7 +94,7 @@ wrap up with creating your own role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -111,7 +111,7 @@ wrap up with creating your own role.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -168,7 +168,7 @@ Teleport provides several preset roles: `editor`, `auditor`, and `access`.
   <Tab title="Teleport Community Edition">
     Invite the local user Alice as cluster `editor`:
 
-    ```code
+    ```bash
     $ tctl users add alice --roles=editor
     ```
   </Tab>
@@ -176,7 +176,7 @@ Teleport provides several preset roles: `editor`, `auditor`, and `access`.
   <Tab title="Commercial">
     Invite the local user Alice as cluster `editor` and `reviewer`:
 
-    ```code
+    ```bash
     $ tctl users add alice --roles=editor,reviewer
     ```
   </Tab>
@@ -187,7 +187,7 @@ users and their roles using `tctl users ls`.
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ tctl users ls
 
     # User                 Roles
@@ -197,7 +197,7 @@ users and their roles using `tctl users ls`.
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ tctl users ls
 
     # User                 Roles
@@ -211,14 +211,14 @@ You can update the user's roles using the `tctl users update` command:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     # Once Alice logs back in, she will be able to view audit logs
     $ tctl users update alice --set-roles=editor,auditor
     ```
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     # Once Alice logs back in, she will be able to view audit logs
     $ tctl users update alice --set-roles=editor,reviewer,auditor
     ```
@@ -266,7 +266,7 @@ users within your SSO solution to Teleport roles.
 
     Create the `github` resource:
 
-    ```code
+    ```bash
     $ tctl create github.yaml
     ```
   </Tab>
@@ -300,7 +300,7 @@ users within your SSO solution to Teleport roles.
 
         Create the `saml` resource:
 
-        ```code
+        ```bash
         $ tctl create okta.yaml
         ```
       </Tab>
@@ -337,7 +337,7 @@ users within your SSO solution to Teleport roles.
 
         Create the `oidc` resource:
 
-        ```code
+        ```bash
         $ tctl create okta.yaml
         ```
       </Tab>
@@ -396,7 +396,7 @@ spec:
 
 Create a role using the `tctl create -f` command:
 
-```code
+```bash
 $ tctl create -f /tmp/interns.yaml
 # Get a list of all roles in the system
 $ tctl get roles --format text

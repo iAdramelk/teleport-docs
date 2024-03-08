@@ -1,7 +1,7 @@
 ---
 title: tbot CLI reference
 description: Comprehensive reference of subcommands, flags, and arguments for the tbot CLI tool.
-version: '16.x'
+version: "16.x"
 ---
 
 `tbot` is a CLI tool used with **Machine ID** that programatically issues and renews
@@ -80,7 +80,7 @@ If running `tbot` as the Linux user `root`, use the following invocation of
 `tbot init` to initialize the short-lived certificate directory
 `/opt/machine-id` with owner `jenkins:jenkins`.
 
-```code
+```bash
 $ tbot init \
     --destination-dir=/opt/machine-id \
     --owner=jenkins:jenkins
@@ -93,7 +93,7 @@ If running `tbot` as the Linux user `teleport`, use the following invocation of
 `/opt/machine-id` with owner `teleport:teleport` but allow `jenkins` to read
 from `/opt/machine-id`.
 
-```code
+```bash
 $ tbot init \
     --destination-dir=/opt/machine-id \
     --bot-user=teleport \
@@ -136,7 +136,7 @@ Additionally, the following should be noted:
 
 The following command forwards standard input and output over a proxy suitable for use as an OpenSSH `ProxyCommand` for SSH access:
 
-```code
+```bash
 $ tbot proxy --destination-dir=./tbot-user --proxy=proxy.example.com:3080 ssh alice@node:3022
 ```
 
@@ -152,7 +152,7 @@ In this case:
 The following example opens a local proxy server to the given database. Your database client
 must still be configured with client TLS certificates:
 
-```code
+```bash
 $ tbot proxy --destination-dir=./tbot-user --proxy=proxy.example.com:3080 db --port=1234 example
 ```
 
@@ -165,7 +165,7 @@ Though not recommended, to avoid the need for additional client authentication,
 the `--tunnel` flag may be used to perform authentication at the local proxy
 rather than within your client:
 
-```code
+```bash
 $ tbot proxy --destination-dir=./tbot-user --proxy=proxy.example.com:3080 db --tunnel --port=1234 example
 ```
 
@@ -219,7 +219,7 @@ Starts the Machine ID client `tbot`, fetching and writing certificates to disk a
 
 <Tabs>
   <Tab title="Cloud-Hosted">
-    ```code
+    ```bash
     $ tbot start \
        --data-dir=/var/lib/teleport/bot \
        --destination-dir=/opt/machine-id \
@@ -231,7 +231,7 @@ Starts the Machine ID client `tbot`, fetching and writing certificates to disk a
   </Tab>
 
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tbot start \
        --data-dir=/var/lib/teleport/bot \
        --destination-dir=/opt/machine-id \

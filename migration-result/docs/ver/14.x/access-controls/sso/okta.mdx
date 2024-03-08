@@ -2,7 +2,7 @@
 title: Authentication With Okta as an SSO Provider
 description: How to configure Teleport access using Okta for SSO
 videoBanner: SM4Am-i8cj4
-version: '14.x'
+version: "14.x"
 ---
 
 This guide covers how to configure [Okta](https://www.okta.com/) to provide
@@ -29,7 +29,7 @@ Teleport administrators to define policies like:
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -46,7 +46,7 @@ Teleport administrators to define policies like:
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -63,7 +63,7 @@ Teleport administrators to define policies like:
   <Tab title="Teleport Enterprise (Self-Hosted)">
     - The `tctl` and `tsh` client tools version >= 14.3.6, which you
       can download by visiting your [Teleport account](https://teleport.sh).
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -76,7 +76,7 @@ Teleport administrators to define policies like:
     - The `tctl` and `tsh` client tools version >= 14.3.6.
 
       You can download these from [Teleport Cloud Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -200,7 +200,7 @@ custom group assignment to roles. See [tctl sso configure
 saml](/docs/ver/14.x/reference/cli/tctl#tctl-sso-configure-saml) for a full reference of
 flags for this command:
 
-```code
+```bash
 $ tctl sso configure saml --preset=okta \
 --entity-descriptor https://example.okta.com/app/000000/sso/saml/metadata \
 --attributes-to-roles=groups,okta-admin,editor \
@@ -253,7 +253,7 @@ the assertion from Okta into a list of Teleport roles to apply to the session.
 You can test the connector before applying it to your cluster. This is strongly
 encouraged to avoid interruption to active clusters:
 
-```code
+```bash
 $ cat okta.yaml | tctl sso test
 If browser window does not open automatically, open it by clicking on the link:
  http://127.0.0.1:52519/0222b1ca...
@@ -297,7 +297,7 @@ For more details repeat the command with --debug flag.
 
 Create the connector using `tctl`:
 
-```code
+```bash
 $ tctl create okta-connector.yaml
 ```
 
@@ -312,7 +312,7 @@ Follow the instructions for your Teleport edition:
   <Tab title="Dynamic Resources (All Editions)">
     Use `tctl` to edit the `cluster_auth_preference` value:
 
-    ```code
+    ```bash
     $ tctl edit cluster_auth_preference
     ```
 
@@ -388,7 +388,7 @@ Reference](/docs/ver/14.x/access-controls/reference).
 
 Use tctl to create this role in the Teleport Auth Service:
 
-```code
+```bash
 $ tctl create dev.yaml
 ```
 
@@ -398,7 +398,7 @@ The Web UI now contains a new "Okta" button at the login screen. To
 authenticate via the `tsh` CLI, specify the Proxy Service address and `tsh` will
 automatically use the default authentication type:
 
-```code
+```bash
 $ tsh login --proxy=proxy.example.com
 ```
 
@@ -409,7 +409,7 @@ in a browser).
   Teleport can use multiple SAML connectors. In this case a connector name
   can be passed via the `--auth` flag. For the connector we created above:
 
-  ```code
+  ```bash
   $ tsh login --proxy=proxy.example.com --auth=okta
   ```
 </Tip>

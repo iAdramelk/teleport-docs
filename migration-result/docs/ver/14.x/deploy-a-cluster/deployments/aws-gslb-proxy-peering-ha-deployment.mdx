@@ -1,7 +1,7 @@
 ---
 title: "AWS Multi-Region Proxy Deployment"
 description: "Deploying a high-availability Teleport cluster using Proxy Peering and Route 53 to create global server load balancing."
-version: '14.x'
+version: "14.x"
 ---
 
 This deployment architecture features two important design decisions:
@@ -64,6 +64,10 @@ In other words, this must be a Layer 4 load balancer, not a Layer 7
 (e.g., HTTP) load balancer.
 
 <Warning>
+  <p>
+    **Note**
+  </p>
+
   Cross-zone load balancing is required for the Auth and Proxy service NLB configurations to route
   traffic across multiple zones. Doing this improves resiliency against localized AWS zone outages.
 </Warning>
@@ -85,6 +89,10 @@ Configure the load balancer to forward traffic from the following ports on the
 load balancer to the corresponding port on an available Teleport instance.
 
 <Warning>
+  <p>
+    **Note**
+  </p>
+
   Proxies must have network access to the Auth Service NLB. You can accomplish this
   in the Route53 GSLB architecture using [VPC Peering](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html)
   or [Transit Gateways](https://docs.aws.amazon.com/vpc/latest/tgw/what-is-transit-gateway.html).
@@ -148,6 +156,10 @@ Example Hosted Zone using AWS Route53 Latency Routing to create GSLB:
 | `*.teleport.example.com` | CNAME | Latency        | eu-central-1 | `elb.eu_central-1.amazonaws.com` |
 
 <Note>
+  <p>
+    **Required permissions**
+  </p>
+
   If you are using Let's Encrypt to provide TLS credentials to your Teleport
   instances, the TLS credential system we mentioned earlier needs permissions to
   manage Route53 DNS records in order to satisfy Let's Encrypt's DNS-01 challenge.
@@ -233,6 +245,10 @@ proxy_service:
 ```
 
 <Warning>
+  <p>
+    **Note**
+  </p>
+
   `agent_connection_count` on the Auth service should be set to a value >=2 to decrease
   the likelihood of agents being unavailable.
 </Warning>

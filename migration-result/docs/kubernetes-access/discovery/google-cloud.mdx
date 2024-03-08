@@ -1,7 +1,7 @@
 ---
 title: Teleport GKE Auto-Discovery
 description: How to configure auto-discovery of Google Kubernetes Engine clusters in Teleport.
-version: '15.x'
+version: "15.x"
 ---
 
 The Teleport Discovery Service can automatically register your Google Kubernetes
@@ -37,7 +37,7 @@ communications between users and the API servers of these clusters.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -46,7 +46,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -68,7 +68,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -92,7 +92,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -115,7 +115,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -142,7 +142,7 @@ communications between users and the API servers of these clusters.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -181,7 +181,7 @@ includedPermissions:
 Create the role, assigning the `--project` flag to the name of your Google Cloud
 project:
 
-```code
+```bash
 $ gcloud iam roles create GKEKubernetesAutoDisc \
   --project=google-cloud-project \
   --file=GKEKubernetesAutoDisc.yaml
@@ -210,7 +210,7 @@ Create the role, assigning the `--project` flag to the name of your Google Cloud
 project. If you receive a prompt indicating that certain permissions are in
 `TESTING`, enter `y`:
 
-```code
+```bash
 $ gcloud iam roles create GKEAccessManager \
   --project=google-cloud-project \
   --file=GKEAccessManager.yaml
@@ -224,7 +224,7 @@ Service, create a service account so you can assign these roles.
 Run the following command to create a service account called
 `teleport-discovery-kubernetes`:
 
-```code
+```bash
 $ gcloud iam service-accounts create teleport-discovery-kubernetes \
   --description="Teleport Discovery Service and Kubernetes Service" \
   --display-name="teleport-discovery-kubernetes"
@@ -233,7 +233,7 @@ $ gcloud iam service-accounts create teleport-discovery-kubernetes \
 Grant the roles you defined earlier to your service account, assigning
 `PROJECT_ID` to the name of your Google Cloud project:
 
-```code
+```bash
 $ PROJECT_ID=google-cloud-project
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
    --member="serviceAccount:teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com" \
@@ -249,7 +249,7 @@ separately?"
 >
   Create a service account for each service:
 
-  ```code
+  ```bash
   $ gcloud iam service-accounts create teleport-discovery-service \
     --description="Teleport Discovery Service" \
     --display-name="teleport-discovery-service"
@@ -261,7 +261,7 @@ separately?"
   Grant the roles you defined earlier to your service account, assigning
   `PROJECT_ID` to the name of your Google Cloud project:
 
-  ```code
+  ```bash
   $ PROJECT_ID=google-cloud-project
   $ gcloud projects add-iam-policy-binding ${PROJECT_ID?} \
      --member="serviceAccount:teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com" \
@@ -286,14 +286,14 @@ Kubernetes Service and Discovery Service on Google Cloud or some other way
   <Tab title="Google Cloud">
     Stop your VM so you can attach your service account to it:
 
-    ```code
+    ```bash
     $ gcloud compute instances stop vm-name --zone=google-cloud-region
     ```
 
-    Attach your service account to the instance, assigning the name of your VM to VM-NAME
-    and the name of your Google Cloud region to GOOGLE-CLOUD-REGION:
+    Attach your service account to the instance, assigning the name of your VM to vm-name
+    and the name of your Google Cloud region to google-cloud-region:
 
-    ```code
+    ```bash
     $ gcloud compute instances set-service-account vm-name \
        --service-account teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com \
        --zone google-cloud-region \
@@ -307,7 +307,7 @@ Kubernetes Service and Discovery Service on Google Cloud or some other way
       Attach the `teleport-kubernetes-service` service account to the VM running the
       Kubernetes Service:
 
-      ```code
+      ```bash
       $ gcloud compute instances set-service-account ${VM1_NAME?} \
          --service-account teleport-kubernetes-service@${PROJECT_ID?}.iam.gserviceaccount.com \
          --zone google-cloud-region \
@@ -317,7 +317,7 @@ Kubernetes Service and Discovery Service on Google Cloud or some other way
       Attach the `teleport-discovery-service` service account to the VM running the
       Discovery Service:
 
-      ```code
+      ```bash
       $ gcloud compute instances set-service-account ${VM2_NAME?} \
          --service-account teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com \
          --zone google-cloud-region \
@@ -333,7 +333,7 @@ Kubernetes Service and Discovery Service on Google Cloud or some other way
 
     Once you have attached the service account, restart your VM:
 
-    ```code
+    ```bash
     $ gcloud compute instances start vm-name --zone google-cloud-region
     ```
   </Tab>
@@ -342,7 +342,7 @@ Kubernetes Service and Discovery Service on Google Cloud or some other way
     Download a credentials file for the service account used by the Discovery
     Service and Kubernetes Service:
 
-    ```code
+    ```bash
     $ PROJECT_ID=google-cloud-project
     $ gcloud iam service-accounts keys create google-cloud-credentials.json \
         --iam-account=teleport-discovery-kubernetes@${PROJECT_ID?}.iam.gserviceaccount.com
@@ -359,7 +359,7 @@ separately?"
     >
       Download separate credentials files for each service:
 
-      ```code
+      ```bash
       $ PROJECT_ID=google-cloud-project
       $ gcloud iam service-accounts keys create discovery-service-credentials.json \
           --iam-account=teleport-discovery-service@${PROJECT_ID?}.iam.gserviceaccount.com
@@ -398,7 +398,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 15.0.2
     ```
   </Tab>
@@ -408,7 +408,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -430,7 +430,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -453,7 +453,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -476,7 +476,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -536,7 +536,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -554,13 +554,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -578,13 +578,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v15. You'll need to update this
@@ -602,13 +602,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -628,13 +628,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -650,7 +650,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -660,7 +660,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -674,7 +674,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -704,7 +704,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -726,7 +726,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -749,7 +749,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -772,7 +772,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -836,7 +836,7 @@ The Teleport Discovery Service and Kubernetes Service require an authentication
 token in order to to join the cluster. Generate one by running the following
 `tctl` command:
 
-```code
+```bash
 $ tctl tokens add --type=discovery,kube --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -845,7 +845,7 @@ Copy the token (e.g., `abcd123-insecure-do-not-use-this` above) and save the tok
 `/tmp/token` on the machine that will run the Discovery Service and Kubernetes
 Service, for example:
 
-```code
+```bash
 $ echo abcd123-insecure-do-not-use-this | sudo tee /tmp/token
 # abcd123-insecure-do-not-use-this
 ```
@@ -854,7 +854,7 @@ $ echo abcd123-insecure-do-not-use-this | sudo tee /tmp/token
   Generate separate tokens for the Kubernetes Service and Discovery Service by
   running the following `tctl` commands:
 
-  ```code
+  ```bash
   $ tctl tokens add --type=discovery --format=text
   # efgh456-insecure-do-not-use-this
   $ tctl tokens add --type=kube --format=text
@@ -1057,7 +1057,7 @@ command, depending on:
     On the host where you will run the Teleport Kubernetes Service and Discovery
     Service, start the Teleport service:
 
-    ```code
+    ```bash
     $ sudo systemctl start teleport
     ```
   </Tab>
@@ -1067,7 +1067,7 @@ command, depending on:
     Service, create a systemd service configuration for Teleport, enable the
     Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -1092,7 +1092,7 @@ command, depending on:
 
     Start the Teleport service:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -1103,7 +1103,7 @@ command, depending on:
     Service, create a systemd configuration that you can use to run Teleport in the
     background:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     ```
@@ -1121,7 +1121,7 @@ command, depending on:
 
     Start the Discovery Service and Kubernetes Service:
 
-    ```code
+    ```bash
     $ sudo systemctl start teleport
     ```
   </Tab>
@@ -1134,21 +1134,21 @@ command, depending on:
 Ensure that you are in the correct Kubernetes context for the cluster you would
 like to enable access to:
 
-```code
+```bash
 $ kubectl config current-context
 ```
 
 <Accordion title="Using the wrong context?">
   Retrieve all available contexts:
 
-  ```code
+  ```bash
   $ kubectl config get-contexts
   ```
 
   Switch to your context, replacing `CONTEXT_NAME` with the name of your chosen
   context:
 
-  ```code
+  ```bash
   $ kubectl config use-context CONTEXT_NAME
   Switched to context CONTEXT_NAME
   ```
@@ -1162,7 +1162,7 @@ Teleport role that grants access to the cluster you plan to interact with.
 
 Run the following command to get the Kubernetes user for your current context:
 
-```code
+```bash
 $ kubectl config view \
 -o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
 ```
@@ -1194,7 +1194,7 @@ spec:
 
 Apply your changes:
 
-```code
+```bash
 $ tctl create -f kube-access.yaml
 ```
 
@@ -1205,13 +1205,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},kube-access"
        ```
@@ -1222,7 +1222,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -1249,7 +1249,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -1259,7 +1259,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -1286,7 +1286,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -1296,7 +1296,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -1323,7 +1323,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -1366,7 +1366,7 @@ roleRef:
 
 Apply the `ClusterRoleBinding` with `kubectl`:
 
-```code
+```bash
 $ kubectl apply -f viewers-bind.yaml
 ```
 
@@ -1378,7 +1378,7 @@ When you ran the Discovery Service, it discovered your GKE cluster and
 registered the cluster with Teleport. You can confirm this by running the
 following `tctl` command:
 
-```code
+```bash
 $ tctl get kube_clusters
 kind: kube_cluster
 metadata:
@@ -1399,7 +1399,7 @@ version: v3
 Run the following command to list the Kubernetes clusters that your Teleport
 user has access to. The list should now include your GKE cluster:
 
-```code
+```bash
 $ tsh kube ls
 Kube Cluster Name   Labels                                                                                                   Selected
 ------------------- -------------------------------------------------------------------------------------------------------- --------
@@ -1409,7 +1409,7 @@ mycluster-gke location=us-east1 project-id=myproject teleport.dev/cloud=GCP tele
 Log in to your cluster, replacing `mycluster-gke` with the name of a cluster
 you listed previously:
 
-```code
+```bash
 $ tsh kube login mycluster-gke
 Logged into kubernetes cluster "mycluster-gke". Try 'kubectl version' to test the connection.
 ```

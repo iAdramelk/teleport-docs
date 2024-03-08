@@ -1,7 +1,7 @@
 ---
 title: TLS Routing Migration
 description: How to upgrade an existing Teleport cluster to single-port TLS routing mode
-version: '16.x'
+version: "16.x"
 ---
 
 In TLS routing mode, all Teleport client connections are wrapped in TLS and
@@ -34,7 +34,7 @@ If you use Teleport Cloud, see which ports and networking settings the Proxy
 Service is configured to use in your Teleport Cloud tenant. Run the following
 command, replacing `mytenant.teleport.sh` with your tenant address:
 
-```code
+```bash
 $ curl https://mytenant.teleport.sh/webapi/ping | jq '.proxy'
 ```
 
@@ -59,6 +59,10 @@ This setting will indicate to the clients (such as `tsh` or reverse tunnel
 agents) that they should connect to the web proxy port using TLS routing.
 
 <Note>
+  <p>
+    **Compatibility**
+  </p>
+
   Turning multiplexing on will not affect existing connections of trusted
   clusters, reverse tunnel agents and tsh/ssh clients. As long as the legacy
   listeners are enabled (see [step 7](#step-77-disable-legacy-listeners) below),

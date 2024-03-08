@@ -1,7 +1,7 @@
 ---
 title: AWS Cross-Account Database Access
 description: How to connect AWS databases in external AWS accounts to Teleport.
-version: '13.x'
+version: "13.x"
 ---
 
 <Accordion title="Version warning">
@@ -137,7 +137,7 @@ config all support the `assume_role_arn` and `external_id` settings.
 
     Save the configuration to a file like `database.yaml` and create it with `tctl`:
 
-    ```code
+    ```bash
     $ tctl create database.yaml
     ```
 
@@ -239,7 +239,7 @@ this command in automatic or manual mode:
     your Teleport Database Service runs as an IAM user (for example, uses an AWS
     credentials file).
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-user teleport-db-service
     ```
   </Tab>
@@ -249,7 +249,7 @@ this command in automatic or manual mode:
     your Teleport Database Service runs as an IAM role (for example, on an EC2
     instance with an attached IAM role).
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --attach-to-role teleport-db-service
     ```
   </Tab>
@@ -257,7 +257,7 @@ this command in automatic or manual mode:
   <Tab title="Manual / IAM User">
     Use this command to display required IAM policies which you will then create in your AWS console:
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-user arn:aws:iam::123456789012:user/teleport-db-service
     ```
   </Tab>
@@ -265,7 +265,7 @@ this command in automatic or manual mode:
   <Tab title="Manual / IAM Role">
     Use this command to display required IAM policies which you will then create in your AWS console:
 
-    ```code
+    ```bash
     $ teleport db configure bootstrap -c /etc/teleport.yaml --manual --attach-to-role arn:aws:iam::123456789012:role/teleport-db-service
     ```
   </Tab>
@@ -314,7 +314,7 @@ you can bootstrap permissions for it automatically by running the following
 command with AWS credentials for account `222222222222` configured in your
 shell:
 
-```code
+```bash
 $ teleport db configure bootstrap \
     -c /etc/teleport.yaml \
     --attach-to-role "example-role"

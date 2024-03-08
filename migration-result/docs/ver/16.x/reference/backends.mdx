@@ -1,7 +1,7 @@
 ---
 title: Storage backends
 description: How to configure Teleport deployment for high-availability using storage backends
-version: '16.x'
+version: "16.x"
 ---
 
 A Teleport cluster stores different types of data in different locations. By
@@ -19,6 +19,10 @@ read/write ratio, mutability, etc.).
 | teleport instance state | ID and credentials of a non-auth teleport instance (e.g. node, proxy)                                                                       | Local directory                                                                                |
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in the Teleport Architecture documentation.
 </Tip>
@@ -56,6 +60,10 @@ Configure your load balancer to use Layer 4 (TCP) load balancing, round-robin
 load balancing, and a 300 second idle timeout.
 
 <Tip>
+  <p>
+    **NOTE**
+  </p>
+
   With multiple instances of the Auth Service running, special attention needs to
   be paid to keeping their configuration identical. Settings like `cluster_name`,
   `tokens`, `storage`, etc. must be the same.
@@ -76,6 +84,10 @@ Configure your load balancer to use Layer 4 (TCP) load balancing, round-robin
 load balancing, and a 300 second idle timeout.
 
 <Tip>
+  <p>
+    **NOTE**
+  </p>
+
   If you terminate TLS with your own certificate for `web_listen_addr` at your
   load balancer you'll need to run Teleport with `--insecure-no-tls`
 </Tip>
@@ -85,7 +97,7 @@ If your load balancer supports HTTP health checks, configure it to hit the
 machines running Teleport. This endpoint must be enabled by using the
 `--diag-addr` flag to teleport start:
 
-```code
+```bash
 $ teleport start --diag-addr=0.0.0.0:3000
 ```
 
@@ -107,6 +119,10 @@ achieve highly available deployments. You must take steps to protect access to
 and user records will be stored.
 
 <Warning>
+  <p>
+    **IMPORTANT**
+  </p>
+
   `etcd` can only currently be used to store Teleport's internal database in a
   highly-available way. This will allow you to have multiple Auth Service instances in your
   cluster for an High Availability deployment, but it will not also store Teleport audit events
@@ -187,6 +203,10 @@ PostgreSQL cluster state and audit log storage is available starting from
 Teleport `13.3`.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in Teleport Architecture documentation.
 </Tip>
@@ -279,6 +299,10 @@ To configure Teleport to use PostgreSQL:
   instances.
 
 <Warning>
+  <p>
+    **PgBouncer**
+  </p>
+
   Teleport must connect directly to the Postgres server. `pgbouncer` is incompatible with the Teleport PostgreSQL storage backend.
 </Warning>
 
@@ -519,6 +543,10 @@ teleport:
 ## S3
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in Teleport Architecture documentation.
 </Tip>
@@ -661,7 +689,7 @@ enable the Auth Service to create and configure it for you:
 
     | Placeholder value    | Replace with                                             |
     | -------------------- | -------------------------------------------------------- |
-    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
+    | your-sessions-bucket | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -702,7 +730,7 @@ enable the Auth Service to create and configure it for you:
 
     | Placeholder value    | Replace with                                             |
     | -------------------- | -------------------------------------------------------- |
-    | YOUR-SESSIONS-BUCKET | Name to use for the Teleport S3 session recording bucket |
+    | your-sessions-bucket | Name to use for the Teleport S3 session recording bucket |
 
     ```json
     {
@@ -897,6 +925,10 @@ For more information, see the [AWS Documentation](https://docs.aws.amazon.com/Am
 ## DynamoDB
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in the Teleport Architecture documentation.
 </Tip>
@@ -1041,10 +1073,10 @@ Service to create and configure one for you:
 
     | Placeholder value     | Replace with                                                                                       |
     | --------------------- | -------------------------------------------------------------------------------------------------- |
-    | US-WEST-2             | AWS region                                                                                         |
+    | us-west-2             | AWS region                                                                                         |
     | 1234567890            | AWS account ID                                                                                     |
-    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
-    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | teleport-helm-backend | DynamoDB table name to use for the Teleport backend                                                |
+    | teleport-helm-events  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -1110,10 +1142,10 @@ Service to create and configure one for you:
 
     | Placeholder value     | Replace with                                                                                       |
     | --------------------- | -------------------------------------------------------------------------------------------------- |
-    | US-WEST-2             | AWS region                                                                                         |
+    | us-west-2             | AWS region                                                                                         |
     | 1234567890            | AWS account ID                                                                                     |
-    | TELEPORT-HELM-BACKEND | DynamoDB table name to use for the Teleport backend                                                |
-    | TELEPORT-HELM-EVENTS  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
+    | teleport-helm-backend | DynamoDB table name to use for the Teleport backend                                                |
+    | teleport-helm-events  | DynamoDB table name to use for the Teleport audit log (**must** be different to the backend table) |
 
     ```json
     {
@@ -1276,6 +1308,10 @@ Config option priority is applied in the following order:
 - Using the AWS environment variable
 
 <Warning>
+  <p>
+    **A warning about AWS_USE_FIPS_ENDPOINT**
+  </p>
+
   Setting this environment variable to true will enable FIPS endpoints for all AWS resource types. Some FIPS endpoints
   are not supported in certain regions or environments or are only supported in GovCloud.
 </Warning>
@@ -1888,6 +1924,10 @@ You'll need to replace these values in the policy example below:
 ### Migration from Dynamo to the Athena audit logs backend
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Migration is only needed if you used Amazon DynamoDB for audit logs and you
   want to keep old data.
 </Tip>
@@ -1906,6 +1946,10 @@ loggers. If more than 1 is used, then events are written to each audit system,
 and queries are executed from first one.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   If anything goes wrong during migration steps 1-4, roll back to the Amazon
   DynamoDB solution by making sure its URL is the first value in the
   `audit_events_uri` field and removing the Athena URL.
@@ -1974,6 +2018,10 @@ To disable writing to DynamoDB, remove the DynamoDB URL from the
 ## GCS
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in Teleport Architecture documentation.
 </Tip>
@@ -2015,6 +2063,10 @@ Replace the following variables in the above example with your own values:
 ## Firestore
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in Teleport Architecture documentation.
 </Tip>
@@ -2082,6 +2134,10 @@ Azure Blob Storage for session storage is available starting from Teleport
 `13.3`.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Before continuing, please make sure to take a look at the [Cluster State section](/docs/ver/16.x/architecture/nodes#cluster-state)
   in Teleport Architecture documentation.
 </Tip>

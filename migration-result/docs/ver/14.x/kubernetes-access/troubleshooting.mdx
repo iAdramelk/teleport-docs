@@ -1,7 +1,7 @@
 ---
 title: Kubernetes Access Troubleshooting
 description: Troubleshooting common issues with Kubernetes access
-version: '14.x'
+version: "14.x"
 ---
 
 This page describes common issues with Kubernetes and how to resolve them.
@@ -164,7 +164,7 @@ cluster in the Teleport cluster. To prevent the user from accessing GKE Autopilo
 clusters with that role, you can install the `teleport-kube-agent` chart with
 a label that identifies the cluster as an Autopilot cluster. For example:
 
-```code
+```bash
 $ PROXY_ADDR=teleport.example.com:443
 $ CLUSTER=cookie
 # Create the values.yaml file
@@ -190,7 +190,7 @@ $ helm install teleport-agent teleport/teleport-kube-agent \
 Make sure that the Teleport agent pod is running. You should see one Teleport
 agent pod pod with a single ready container:
 
-```code
+```bash
 $ kubectl -n teleport-agent get pods
 NAME               READY   STATUS    RESTARTS   AGE
 teleport-agent-0   1/1     Running   0          32s

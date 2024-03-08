@@ -1,7 +1,7 @@
 ---
 title: Using Teleport Connect
 description: Using Teleport Connect
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport Connect provides easy and secure access to SSH servers, databases, and Kubernetes clusters,
@@ -27,7 +27,7 @@ version. Teleport Connect supports macOS, Linux, and Windows.
 
     You can also download the project as a `tar.gz` file to extract and run it in place:
 
-    ```code
+    ```bash
     $ tar -xf  teleport-connect-13.4.16-linux-*.tar.gz
     ```
   </Tab>
@@ -41,7 +41,7 @@ version. Teleport Connect supports macOS, Linux, and Windows.
     A silent installation can be performed by running the installer with the `/S` flag. This will hide
     the progress bar and skip the launch of the app after the installation is complete.
 
-    ```code
+    ```bash
     $ "Teleport Connect Setup-13.4.16.exe" /S
     ```
   </Tab>
@@ -193,6 +193,10 @@ To open the config file, select "Open config file" from the additional actions m
 The file will open in your default editor.
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   Any changes to the config file will take effect at the next launch.
 </Note>
 
@@ -217,6 +221,10 @@ Below is the list of the supported config properties.
 | `headless.skipConfirm`        | false                                                                                                                  | Skips the confirmation prompt for Headless WebAuthn approval and instead prompts for WebAuthn immediately. |
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   The additional `$schema` property present in the config file allows text editors to provide autocompletion.
   It should not be modified.
 </Note>
@@ -296,19 +304,19 @@ To completely wipe all app state:
 
 <Tabs>
   <Tab title="macOS">
-    ```code
+    ```bash
     $ rm -rf ~/Library/Application\ Support/Teleport\ Connect/{tsh,app_state.json}
     ```
   </Tab>
 
   <Tab title="Linux">
-    ```code
+    ```bash
     $ rm -rf ~/.config/Teleport\ Connect/{tsh,app_state.json}
     ```
   </Tab>
 
   <Tab title="Windows">
-    ```code
+    ```bash
     $ rmdir /s /q C:\Users\%UserName%\AppData\Roaming\"Teleport Connect"\tsh
     $ del C:\Users\%UserName%\AppData\Roaming\"Teleport Connect"\app_state.json
     ```
@@ -327,7 +335,7 @@ and follow the *Submit a Bug* link.
 
     To get more detailed logs, run Teleport Connect with the `--connect-debug` flag:
 
-    ```code
+    ```bash
     # Using macOS open utility:
     $ open -a "Teleport Connect" --args --connect-debug
 
@@ -342,7 +350,7 @@ and follow the *Submit a Bug* link.
 
     To get more detailed logs, run Teleport Connect with the `--connect-debug` flag:
 
-    ```code
+    ```bash
     $ teleport-connect --connect-debug
     ```
   </Tab>
@@ -354,7 +362,7 @@ and follow the *Submit a Bug* link.
 
     To get more detailed logs, open Teleport Connect from the Command Prompt with the `--connect-debug` flag:
 
-    ```code
+    ```bash
     $ "%LocalAppData%\Programs\teleport-connect\Teleport Connect.exe" --connect-debug
     ```
   </Tab>
@@ -378,7 +386,7 @@ using this mode in production.
     To launch the app in insecure mode, open a terminal first. From there you can launch the app in one
     of two ways:
 
-    ```code
+    ```bash
     # Using macOS open utility:
     $ open -a "Teleport Connect" --args --insecure
 
@@ -390,7 +398,7 @@ using this mode in production.
   <Tab title="Linux">
     From a terminal, open Teleport Connect with the `--insecure` flag:
 
-    ```code
+    ```bash
     $ teleport-connect --insecure
     ```
   </Tab>
@@ -398,7 +406,7 @@ using this mode in production.
   <Tab title="Windows">
     From the Command Prompt, open Teleport Connect with the `--insecure` flag:
 
-    ```code
+    ```bash
     $ "%LocalAppData%\Programs\teleport-connect\Teleport Connect.exe" --insecure
     ```
   </Tab>
@@ -410,13 +418,13 @@ using this mode in production.
   <Tab title="macOS">
     Remove Teleport Connect for MacOS from the Applications directory with this command:
 
-    ```code
+    ```bash
     $ sudo rm -rf /Applications/Teleport\ Connect.app
     ```
 
     To remove the local user data directory:
 
-    ```code
+    ```bash
     $ rm -rf ~/Library/Application\ Support/Teleport\ Connect
     ```
   </Tab>
@@ -436,13 +444,13 @@ using this mode in production.
   <Tab title="Linux">
     For DEB installations uninstall Teleport Connect using APT:
 
-    ```code
+    ```bash
     $ sudo apt remove teleport-connect
     ```
 
     For RPM installations uninstall Teleport Connect using YUM:
 
-    ```code
+    ```bash
     $ sudo yum remove teleport-connect
     ```
 

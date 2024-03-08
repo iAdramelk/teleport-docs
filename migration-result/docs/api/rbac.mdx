@@ -1,7 +1,7 @@
 ---
 title: Generate Teleport Roles from an External RBAC System
 description: Use Teleport's API to automatically generate Teleport roles based on third-party RBAC policies
-version: '15.x'
+version: "15.x"
 ---
 
 You can use the Teleport gRPC API to generate roles automatically based on an
@@ -31,7 +31,7 @@ generate Teleport roles using Teleport's API client library.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -40,7 +40,7 @@ generate Teleport roles using Teleport's API client library.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -62,7 +62,7 @@ generate Teleport roles using Teleport's API client library.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -86,7 +86,7 @@ generate Teleport roles using Teleport's API client library.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -109,7 +109,7 @@ generate Teleport roles using Teleport's API client library.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -153,7 +153,7 @@ installed on your workstation:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -176,7 +176,7 @@ for generating Teleport roles.
 Start minikube with the Docker driver, which boots a local Kubernetes cluster on
 a single Docker container:
 
-```code
+```bash
 $ minikube start --driver=docker
 ```
 
@@ -184,7 +184,7 @@ This command should start a local Kubernetes cluster and set your context (i.e.,
 the Kubernetes cluster you are currently interacting with) to `minikube`. To
 verify this, run the following command:
 
-```code
+```bash
 $ kubectl config current-context
 minikube
 ```
@@ -239,7 +239,7 @@ roleRef:
 
 Create the resources:
 
-```code
+```bash
 $ kubectl apply -f pod-reader.yaml
 namespace/app created
 role.rbac.authorization.k8s.io/pod-reader created
@@ -278,7 +278,7 @@ roleRef:
 
 Create the resources:
 
-```code
+```bash
 $ kubectl apply -f pod-ops.yaml
 clusterrole.rbac.authorization.k8s.io/pod-ops created
 clusterrolebinding.rbac.authorization.k8s.io/pod-ops created
@@ -318,7 +318,7 @@ roleRef:
 
 Apply the changes:
 
-```code
+```bash
 $ kubectl apply -f rbac-sync.yaml
 clusterrole.rbac.authorization.k8s.io/rbac-sync created
 clusterrolebinding.rbac.authorization.k8s.io/rbac-sync created
@@ -368,7 +368,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f sync-kubernetes-rbac.yaml
 role 'sync-kubernetes-rbac' has been created
 user "sync-kubernetes-rbac" has been created
@@ -405,7 +405,7 @@ spec:
 
 Create the `sync-kubernetes-rbac-impersonator` role:
 
-```code
+```bash
 $ tctl create -f sync-kubernetes-rbac-impersonator.yaml
 ```
 
@@ -416,13 +416,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},sync-kubernetes-rbac-impersonator"
        ```
@@ -433,7 +433,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -460,7 +460,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -470,7 +470,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -497,7 +497,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -507,7 +507,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -534,7 +534,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -557,21 +557,21 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
 Request a token that the Kubernetes Service will use to join your Teleport
 cluster:
 
-```code
+```bash
 $ tctl tokens add --type=kube,app,discovery --ttl=10000h --format=json
 ```
 
@@ -580,16 +580,16 @@ Copy this token so you can use it when running the Teleport Kubernetes Service.
 Ensure that you are connected to the right Kubernetes cluster (logging into
 Teleport earlier will have changed your Kubernetes context):
 
-```code
+```bash
 $ kubectl config use-context minikube
 Switched to context "minikube".
 ```
 
-Install the Teleport Kubernetes Service in your cluster, assigning PROXY-ADDRESS to the host **and port** of your Teleport Proxy Service
-(e.g., `mytenant.teleport.sh:443`) and TOKEN to the token you
+Install the Teleport Kubernetes Service in your cluster, assigning proxy-address to the host **and port** of your Teleport Proxy Service
+(e.g., `mytenant.teleport.sh:443`) and token to the token you
 requested earlier:
 
-```code
+```bash
 $ helm install teleport-agent teleport/teleport-kube-agent \
   --set kubeClusterName=minikube \
   --set roles="kube\,app\,discovery" \
@@ -604,7 +604,7 @@ $ helm install teleport-agent teleport/teleport-kube-agent \
 After a few seconds, verify that you have deployed the Teleport Kubernetes
 Service by running the following command:
 
-```code
+```bash
 $ kubectl -n teleport-agent get pods
 ```
 
@@ -617,7 +617,7 @@ teleport-agent-0   1/1     Running   0          22s
 
 `tsh` should indicate that the cluster has registered with Teleport:
 
-```code
+```bash
 $ tsh kube ls
 Kube Cluster Name Labels           Selected
 ----------------- ---------------- --------
@@ -635,7 +635,7 @@ client application.
 
 Download the source code for the API client application:
 
-```code
+```bash
 $ git clone --depth=1 https://github.com/gravitational/teleport
 $ cd teleport/examples/api-sync-roles
 ```
@@ -656,7 +656,7 @@ The following `tctl auth sign` command impersonates the `sync-kubernetes-rbac`
 user, generates signed credentials, and writes an identity file to the local
 directory:
 
-```code
+```bash
 $ tctl auth sign --user=sync-kubernetes-rbac --out=auth.pem
 ```
 
@@ -674,10 +674,10 @@ credentials for the `sync-kubernetes-rbac` user. Your API client will present
 these credentials to authenticate to the Teleport Kubernetes Service, which will
 proxy requests to the Kubernetes cluster.
 
-Run the following command, ensuring that PROXY-ADDRESS includes
+Run the following command, ensuring that proxy-address includes
 the host and port of your Proxy Service:
 
-```code
+```bash
 $ tctl auth sign --user=sync-kubernetes-rbac \
   --kube-cluster-name=minikube \
   --format=kubernetes \
@@ -735,7 +735,7 @@ want to change later, including:
 
 | Constant            | Description                                                                                                                                                                                                                     |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `proxyAddr`         | The host and port of the Teleport Proxy Service, e.g., `mytenant.teleport.sh:443`, which we will use to connect the client to your cluster. **Assign this to your own Proxy Service's host and port:** PROXY-ADDRESS            |
+| `proxyAddr`         | The host and port of the Teleport Proxy Service, e.g., `mytenant.teleport.sh:443`, which we will use to connect the client to your cluster. **Assign this to your own Proxy Service's host and port:** proxy-address            |
 | `initTimeout`       | The timeout for connecting to the Teleport cluster. We have defined this as 30 seconds.                                                                                                                                         |
 | `identityFilePath`  | The path to the Teleport identity file you created earlier.                                                                                                                                                                     |
 | `clusterName`       | The name of the Kubernetes cluster you will fetch RBAC resources from. In this guide, the cluster's name is `minikube`.                                                                                                         |
@@ -1052,7 +1052,7 @@ program prints an error message and a stack trace by calling Go's built-in
 
 To test the client application, start it up from within its project directory:
 
-```code
+```bash
 $ go run main.go
 ```
 
@@ -1068,7 +1068,7 @@ Created roles for Kubernetes cluster minikube
 
 Examine the new `minikube-pod-ops-cluster` role by running the command below:
 
-```code
+```bash
 $ tctl get roles/minikube-pod-ops-cluster
 ```
 
@@ -1115,7 +1115,7 @@ version: v7
 Compare this with the `minikube-pod-reader-app` role, which you can retrieve
 with the following command:
 
-```code
+```bash
 $ tctl get roles/minikube-pod-reader-app
 ```
 

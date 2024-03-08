@@ -1,7 +1,7 @@
 ---
 title: Machine ID v14 Upgrade Guide
 description: Upgrade instructions for Machine ID in Teleport 14.0
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport 14.0 introduces a new version of the configuration format (v2) for
@@ -67,7 +67,7 @@ permanently. `tbot` will emit a warning when it starts until you do so.
 Determine the path of your current configuration file and the path you wish to
 write the migrated configuration file to. Then run:
 
-```code
+```bash
 $ tbot migrate -c /config.yaml -o /config.migrated.yaml
 ```
 

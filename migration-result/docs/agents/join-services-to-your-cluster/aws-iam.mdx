@@ -1,7 +1,7 @@
 ---
 title: Joining Services via AWS IAM Role
 description: Use the IAM join method to add services to your Teleport cluster on AWS
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will explain how to use the **IAM join method** to configure Teleport
@@ -25,7 +25,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -34,7 +34,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -56,7 +56,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -80,7 +80,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -103,7 +103,7 @@ Teleport Services to a Cluster](/docs/agents/join-services-to-your-cluster).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -124,7 +124,7 @@ verify that you can run `tctl` commands using your current credentials.
 
 For example:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com --user=email@example.com
 $ tctl status
 # Cluster  teleport.example.com
@@ -197,7 +197,7 @@ The optional `aws_arn` field in the allow rules supports wildcard characters:
 
 Run the following command to create the token:
 
-```code
+```bash
 $ tctl create -f token.yaml
 ```
 
@@ -293,7 +293,7 @@ your Teleport instance.
   <Tab title="Package Manager">
     On the host where you will run your Teleport instance, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -303,7 +303,7 @@ your Teleport instance.
     On the host where you will run your Teleport instance, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport

@@ -1,7 +1,7 @@
 ---
 title: tsh CLI reference
 description: Comprehensive reference of subcommands, flags, and arguments for the tsh CLI tool.
-version: '15.x'
+version: "15.x"
 ---
 
 `tsh` is a CLI client used by Teleport users. It allows users to interact with
@@ -51,13 +51,13 @@ Environment variables configure your tsh client and can help you avoid using fla
 
 List all available applications:
 
-```code
+```bash
 $ tsh apps ls
 ```
 
 ## tsh clusters
 
-```code
+```bash
 $ tsh clusters [<flags>]
 ```
 
@@ -74,7 +74,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh clusters
 
 # Cluster Name Status
@@ -93,7 +93,7 @@ $ tsh clusters --quiet
 Generates OpenSSH configuration to use currently logged in teleport
 as a bastion host.
 
-```code
+```bash
 $ tsh config
 ```
 
@@ -106,7 +106,7 @@ $ tsh config
 
 ### Examples
 
-```code
+```bash
 # Print OpenSSH config file to console
 $ tsh config
 
@@ -120,7 +120,7 @@ Enroll the current device as a trusted device.
 
 Requires a device enrollment token created via `tctl devices enroll`.
 
-```code
+```bash
 $ tsh device enroll --token=TOKEN
 ```
 
@@ -132,7 +132,7 @@ $ tsh device enroll --token=TOKEN
 
 ### Examples
 
-```code
+```bash
 $ tsh device enroll --token=AAAAAAAAAAAAAAAAAAAAAAAA-this-is-an-example
 Device "C00AA0AAAA0A"/macOS enrolled
 ```
@@ -144,7 +144,7 @@ is a tool for interacting with Google Cloud. A user must already be
 authenticated to a Google Cloud application in Teleport before they can execute
 `tsh gcloud` commands.
 
-```code
+```bash
 $ tsh gcloud [--app] [<command>]
 ```
 
@@ -165,7 +165,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh gcloud compute instances list
 ```
 
@@ -176,7 +176,7 @@ is a tool for interacting with Google Cloud Storage. A user must already be
 authenticated to a Google Cloud application in Teleport before they can execute
 `tsh gsutil` commands.
 
-```code
+```bash
 $ tsh gsutil [--app] [<command>]
 ```
 
@@ -197,7 +197,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh gsutil ls
 ```
 
@@ -205,7 +205,7 @@ $ tsh gsutil ls
 
 Prints help:
 
-```code
+```bash
 $ tsh help
 ```
 
@@ -213,7 +213,7 @@ $ tsh help
 
 Joins an active session:
 
-```code
+```bash
 $ tsh join [<flags>] <session-id>
 ```
 
@@ -237,7 +237,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 # join session using teleport user joe as ec2-user
 $ tsh --user=joe --login=ec2-user join <session-id>
 ```
@@ -246,11 +246,11 @@ $ tsh --user=joe --login=ec2-user join <session-id>
 
 Log into a Kubernetes cluster. Discover connected clusters by using [`tsh kube ls`](#tsh-kube-ls).
 
-```code
+```bash
 $ tsh kube login <kube-cluster>
 ```
 
-```code
+```bash
 # tsh kube login to k8s cluster (gke_bens-demos_us-central1-c_gks-demo)
 $ tsh kube login gke_bens-demos_us-central1-c_gks-demo
 # Logged into kubernetes cluster "gke_bens-demos_us-central1-c_gks-demo". Try 'kubectl version' to test the connection.
@@ -281,13 +281,13 @@ $ kubectl config get-contexts
 
 List Kubernetes clusters:
 
-```code
+```bash
 $ tsh kube ls
 ```
 
 ### Examples
 
-```code
+```bash
 $ tsh kube ls
 
 # Kube Cluster Name                     Selected
@@ -302,7 +302,7 @@ Logs in to the cluster. When `tsh` logs in, the auto-expiring key is stored in
 `~/.tsh` and is valid for 12 hours by default unless you specify another
 interval via `--ttl` flag (capped by the server-side configuration).
 
-```code
+```bash
 $ tsh login [<flags>] [<cluster>]
 ```
 
@@ -333,7 +333,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 *The proxy endpoint can take a https and ssh port in this format `host:https_port[,ssh_proxy_port]`*
 
-```code
+```bash
 # Try both ports 443 and 3080 for https
 $ tsh --proxy=proxy.example.com login
 
@@ -375,7 +375,7 @@ $ tsh login --proxy=proxy.example.com --request-reason="I need to run a debug sc
 
 Deletes the client's cluster certificate:
 
-```code
+```bash
 $ tsh logout
 ```
 
@@ -383,7 +383,7 @@ $ tsh logout
 
 List cluster nodes:
 
-```code
+```bash
 $ tsh ls [<flags>] [<label>]
 ```
 
@@ -422,7 +422,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh ls
 
 # Node Name Address            Labels
@@ -451,13 +451,13 @@ $ tsh ls os=osx
 
 Register a new Multi-Factor Authentication (MFA) device:
 
-```code
+```bash
 $ tsh mfa add
 ```
 
 ### Examples
 
-```code
+```bash
 $ tsh mfa add
 
 # Choose device type [TOTP, WEBAUTHN]: webauthn
@@ -467,7 +467,7 @@ $ tsh mfa add
 # MFA device "desktop yubikey" added.
 ```
 
-```code
+```bash
 $ tsh mfa add
 
 # Choose device type [TOTP, WEBAUTHN]: totp
@@ -489,7 +489,7 @@ $ tsh mfa add
 
 List all registered Multi-Factor Authentication (MFA) devices:
 
-```code
+```bash
 $ tsh mfa ls
 ```
 
@@ -498,7 +498,7 @@ $ tsh mfa ls
 Remove a registered Multi-Factor Authentication (MFA) device. You can view your
 registered devices using [`tsh mfa ls`](#tsh-mfa-ls).
 
-```code
+```bash
 $ tsh mfa rm <device-name>
 ```
 
@@ -506,7 +506,7 @@ $ tsh mfa rm <device-name>
 
 Plays back a prior session:
 
-```code
+```bash
 $ tsh play [<flags>] <session-id>
 ```
 
@@ -531,7 +531,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh --proxy proxy.example.com play <session-id>
 
 # Playing back a session using pty format using a downloaded session recording.
@@ -547,7 +547,7 @@ Starts a local TLS proxy for Application Service connections.
 You can use this proxy to connect to an application repeatedly after a single login to your Teleport cluster,
 which is especially useful for interacting with an application via a CLI.
 
-```code
+```bash
 $ tsh proxy app [<flags>] <app>
 ```
 
@@ -570,7 +570,7 @@ Run `tsh help <subcommand>` or see the [Global Flags Section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh proxy app <app>
 
 # Proxy a connection to grafana on local port 10700
@@ -584,7 +584,7 @@ $ curl http://127.0.0.1:10700/api/users
 Start a local proxy for AWS access. The user must already be logged in to at
 least one AWS application via Teleport before the proxy can start.
 
-```code
+```bash
 $ tsh proxy aws [<flags>]
 ```
 
@@ -604,7 +604,7 @@ Run `tsh help <subcommand>` or see the [Global Flags Section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 # Proxy a connection to AWS with the default settings
 $ tsh apps login awsapp
 $ tsh proxy aws
@@ -626,7 +626,7 @@ custom client applications. The local proxy forwards traffic to the Teleport
 Application Service, which uses an Azure managed identity to fetch an
 authentication token from Azure.
 
-```code
+```bash
 $ tsh proxy azure [<flags>]
 ```
 
@@ -683,7 +683,7 @@ Start a local TLS proxy for database connections when using Teleport with TLS
 Routing enabled. Clients can connect to a Teleport-registered database through
 the local proxy.
 
-```code
+```bash
 $ tsh proxy db [<flags>] <db>
 ```
 
@@ -713,13 +713,13 @@ Run `tsh help <subcommand>` or see the [Global Flags Section](#tsh-global-flags)
 
 Proxy a DB connection to a named database
 
-```code
+```bash
 $ tsh proxy db <db>
 ```
 
 Proxy a connection to mysql db on local port 10700:
 
-```code
+```bash
 $ tsh proxy db --port 10700  mysql-db
 # Started DB proxy on 127.0.0.1:10700
 
@@ -731,7 +731,7 @@ $ tsh proxy db --port 10700  mysql-db
 
 Proxy a connection to mysql db with no credentials required:
 
-```code
+```bash
 $ tsh proxy db --tunnel mysql-db
 Started authenticated tunnel for the MySQL database "mysql-db" in cluster "teleport.example.com" on 127.0.0.1:49415.
 
@@ -745,7 +745,7 @@ Start a local proxy for Google Cloud API access. The user must already be logged
 in to at least one Google Cloud application via Teleport before the proxy can
 start.
 
-```code
+```bash
 $ tsh proxy gcloud [<flags>]
 ```
 
@@ -765,7 +765,7 @@ Run `tsh help <subcommand>` or see the [Global Flags Section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh apps login google-cloud-app
 $ tsh proxy gcloud
 # Set env variables from output
@@ -781,7 +781,7 @@ through Teleport.  See the [OpenSSH Guide](/docs/server-access/openssh/openssh) 
 on configuring OpenSSH servers and clients.  The `tsh config` output will include `tsh proxy ssh`
 within a `ProxyCommand` directive.
 
-```code
+```bash
 $ tsh proxy ssh [<flags>] <[user@]host>
 ```
 
@@ -804,7 +804,7 @@ Run `tsh help <subcommand>` or see the [Global Flags Section](#tsh-global-flags)
 
 Run the following command to generate an OpenSSH client configuration:
 
-```code
+```bash
 $ tsh config
 ```
 
@@ -832,7 +832,7 @@ When you run an `ssh` command against a host with a subdomain of your Proxy
 Service's domain, this SSH configuration will use the `ProxyCommand` to run `tsh
 proxy ssh`:
 
-```code
+```bash
 $ ssh myuser@node1.example.com
 ```
 
@@ -854,7 +854,7 @@ $ tsh puttyconfig [--leaf <leaf-cluster-name>] [login@]hostname
 
 ### Examples
 
-```code
+```bash
 # Add a saved PuTTY session on 'node' for the user 'ec2-user'
 $ tsh puttyconfig ec2-user@node
 
@@ -871,7 +871,7 @@ See [full docs on `tsh puttyconfig` here](/docs/connect-your-client/putty-winscp
 
 Export recorded desktop sessions to video.
 
-```code
+```bash
 $ tsh recordings export <session_id> [<flags>]
 ```
 
@@ -883,7 +883,7 @@ $ tsh recordings export <session_id> [<flags>]
 
 ### Examples
 
-```code
+```bash
 $ tsh recordings export c8e1b2c5-322a-4095-89e3-391edfd2da9b --out=recording.avi
 wrote recording to recording.avi
 ```
@@ -892,7 +892,7 @@ wrote recording to recording.avi
 
 List recorded sessions.
 
-```code
+```bash
 $ tsh recordings ls [<flags>]
 ```
 
@@ -912,7 +912,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 # get the recorded sessions from the last 24 hours
 $ tsh --proxy proxy.example.com recordings ls
 ID                                   Type Participants Hostname Timestamp
@@ -932,6 +932,10 @@ $ tsh recordings ls --last=6h0m0s
 ```
 
 <Tip>
+  <p>
+    **Recorded Sessions Availability**
+  </p>
+
   Recorded sessions are linked from the audit events to session recordings files
   in their [storage backend](/docs/reference/backends).
   The following error can occur if a session recording file is not available or
@@ -939,7 +943,7 @@ $ tsh recordings ls --last=6h0m0s
   sessions. When using a directory storage backend for audit logs and recorded sessions,
   only the auth server with that recorded session can retrieve it.
 
-  ```code
+  ```bash
   $ tsh play c8e1b2c5-322a-4095-89e3-391edfd2da9b
   ERROR: Recording for session c8e1b2c5-322a-4095-89e3-391edfd2da9b not found.
   ```
@@ -949,7 +953,7 @@ $ tsh recordings ls --last=6h0m0s
 
   Downloaded recorded session are directly playable as a file.
 
-  ```code
+  ```bash
   $ tsh play c8e1b2c5-322a-4095-89e3-391edfd2da9b.tar
   ```
 </Tip>
@@ -958,7 +962,7 @@ $ tsh recordings ls --last=6h0m0s
 
 Create a new Access Request.
 
-```code
+```bash
 $ tsh request create [<flags>]
 ```
 
@@ -977,6 +981,10 @@ $ tsh request create [<flags>]
 | `--assume-start-time` | none                         | String                                                      | Sets time roles can be assumed by requestor (RFC3339)                                                                                          |
 
 <Tip>
+  <p>
+    **Note**
+  </p>
+
   The `--request-ttl` and `--session-ttl` values can not be greater than the
   following:
 
@@ -992,7 +1000,7 @@ $ tsh request create [<flags>]
 
 Drop one or more access requests from current identity
 
-```code
+```bash
 $ tsh request drop [<request-id>...]
 ```
 
@@ -1006,7 +1014,7 @@ $ tsh request drop [<request-id>...]
 
 List Access Requests
 
-```code
+```bash
 $ tsh request ls
 ```
 
@@ -1023,7 +1031,7 @@ $ tsh request ls
 
 Review an Access Request
 
-```code
+```bash
 $ tsh request review [<flags>] <request-id>
 ```
 
@@ -1044,7 +1052,7 @@ $ tsh request review [<flags>] <request-id>
 
 Search for resources to request access to
 
-```code
+```bash
 $ tsh request search [<flags>]
 ```
 
@@ -1061,7 +1069,7 @@ $ tsh request search [<flags>]
 
 Show Access Request details
 
-```code
+```bash
 $ tsh request show <request-id>
 ```
 
@@ -1079,7 +1087,7 @@ $ tsh request show <request-id>
 
 Copies files from source to dest:
 
-```code
+```bash
 $ tsh scp [<flags>] <source>... <dest>
 ```
 
@@ -1106,7 +1114,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 $ tsh --proxy=proxy.example.com scp example.txt user@host:/destination/dir
 ```
 
@@ -1118,7 +1126,7 @@ $ tsh --proxy=proxy.example.com scp example.txt user@host:/destination/dir
 
 Run shell or execute a command on a remote SSH node:
 
-```code
+```bash
 $ tsh ssh [<flags>] <[user@]host> [<command>...]
 ```
 
@@ -1156,7 +1164,7 @@ Run `tsh help <subcommand>` or see the [Global Flags section](#tsh-global-flags)
 
 ### Examples
 
-```code
+```bash
 # Log in to node `grav-00` as OS User `root` with Teleport User `teleport`
 $ tsh ssh --proxy proxy.example.com --user teleport -d root@grav-00
 # `tsh ssh` takes the same arguments as OpenSSH client:
@@ -1170,13 +1178,13 @@ $ tsh ssh root@env=aws hostname
 
 Display the list of proxy servers and retrieved certificates:
 
-```code
+```bash
 $ tsh status
 ```
 
 ### Examples
 
-```code
+```bash
 $ tsh status
 
 # > Profile URL:  https://proxy.example.com:3080
@@ -1195,7 +1203,7 @@ $ tsh status
 
 Prints the version of your `tsh` binary and the Teleport Proxy Service in the current `tsh` profile
 
-```code
+```bash
 $ tsh version [<flags>]
 ```
 
@@ -1206,7 +1214,7 @@ $ tsh version [<flags>]
 
 ### Examples
 
-```code
+```bash
 $ tsh version
 Teleport v15.0.2 git: go1.21
 Proxy version: 15.0.2
@@ -1215,7 +1223,7 @@ Proxy: teleport.example.com:443
 
 Display in JSON format:
 
-```code
+```bash
 $ tsh version --format=json
 ```
 
@@ -1231,7 +1239,7 @@ $ tsh version --format=json
 
 Only display the `tsh` binary version:
 
-```code
+```bash
 $ tsh version --client
 Teleport v15.0.2 git: go1.21
 ```

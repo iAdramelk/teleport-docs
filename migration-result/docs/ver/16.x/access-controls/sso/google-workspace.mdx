@@ -2,7 +2,7 @@
 title: Teleport Authentication with Google Workspace (G Suite)
 description: How to configure Teleport access with Google Workspace (formerly known as G Suite)
 videoBanner: WTLWc6nnPfk
-version: '16.x'
+version: "16.x"
 ---
 
 This guide explains how to configure [Google Workspace](https://workspace.google.com/)
@@ -41,7 +41,7 @@ Before you get started, verify the following:
 
     You can verify the tools you have installed by running the following commands:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -57,7 +57,7 @@ Before you get started, verify the following:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -340,7 +340,7 @@ your client secret.
     The following command defines the service account by embedding JSON in the command used to create the connector resource.
     With this method, you don't have to provide the JSON file to all of the hosts running the Teleport Auth Service.
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
     --secret $( cat client-secret.txt) \
     --claims-to-roles groups,auditor@example.com,auditor \
@@ -412,7 +412,7 @@ your client secret.
     You can use this method for self-hosted Teleport Auth Service instances if you can
     make the JSON file available to all hosts running the Teleport Auth Service.
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset google --id <CLIENT-ID> \
     --secret $( cat client-secret.txt) \
     --google-acc-uri <PATH/TO/SERVICE-ACCOUNT-KEY>.json \
@@ -472,7 +472,7 @@ resource configuration file. For more information about viewing audit logs, see
 
 To test the connector, run the following command:
 
-```code
+```bash
 $ cat gworkspace-connector.yaml | tctl sso test
 ```
 
@@ -482,7 +482,7 @@ information.
 
 To create the connector using the `tctl` tool, run the following command:
 
-```code
+```bash
 $ tctl create -f gworkspace-connector.yaml
 ```
 
@@ -491,7 +491,7 @@ $ tctl create -f gworkspace-connector.yaml
 After you create the connector, the Teleport Web UI displays a new sign-in option, **Login with Google**.
 To sign in from the command-line:
 
-```code
+```bash
 $ tsh --proxy=proxy.example.com login --auth=google
 ```
 
@@ -531,7 +531,7 @@ Follow the instructions for your Teleport edition:
 
     Create a resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>

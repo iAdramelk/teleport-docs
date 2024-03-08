@@ -1,7 +1,7 @@
 ---
 title: Setting up the Okta Service
 description: How to set up the Okta Service with some basic configurations
-version: '15.x'
+version: "15.x"
 ---
 
 <Warning>
@@ -48,7 +48,7 @@ configurations to enable it.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -64,7 +64,7 @@ configurations to enable it.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -118,12 +118,12 @@ configurations to enable it.
 Before setting up the Okta Service, you should create Okta import rules in order
 to ensure that our Okta applications are set up with appropriate labeling before
 you attempt to synchronize them. First, you'll need to get the group and application
-IDs from Okta. The easiest way to do this is to use the OKTA-API-TOKEN
+IDs from Okta. The easiest way to do this is to use the okta-api-token
 that was created when when evaluating the prerequisites.
 
 To get group IDs:
 
-```code
+```bash
 $ curl -H "Authorization: SSWS okta-api-token" okta-endpoint-url/api/v1/groups | jq '[.[] |  {"id": .id, "label": .profile.name}]'
 ...
 [
@@ -147,7 +147,7 @@ $ curl -H "Authorization: SSWS okta-api-token" okta-endpoint-url/api/v1/groups |
 ]
 ```
 
-```code
+```bash
 $ curl -H "Authorization: SSWS okta-api-token" okta-endpoint-url/api/v1/apps | jq '[.[] |  {"id": .id, "label": .label}]'
 ...
 [
@@ -206,7 +206,7 @@ and groups. The Okta Service connects back to the Teleport cluster over a revers
 Establish trust between your Teleport cluster and the new Okta Service
 instance by creating a join token:
 
-```code
+```bash
 $ tctl tokens add --type=okta --ttl=1h --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -214,14 +214,14 @@ abcd123-insecure-do-not-use-this
 On the host where you will install the Teleport Okta Service, create a
 file called `/tmp/token` that consists only of your token:
 
-```code
+```bash
 $ echo join-token | sudo tee /tmp/token
 ```
 
 ### Configure the Okta Service
 
 First, on the host where you will run the Okta Service , create a file at
-OKTA-API-TOKEN-PATH with the contents of the API token.
+okta-api-token-path with the contents of the API token.
 
 Install Teleport on the host:
 
@@ -231,7 +231,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -249,13 +249,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -273,13 +273,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v15. You'll need to update this
@@ -297,13 +297,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -323,13 +323,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -345,7 +345,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -355,7 +355,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -369,7 +369,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -388,7 +388,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -410,7 +410,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -433,7 +433,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -456,7 +456,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -539,7 +539,7 @@ the Teleport Okta Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Okta Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -549,7 +549,7 @@ the Teleport Okta Service.
     On the host where you will run the Teleport Okta Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport

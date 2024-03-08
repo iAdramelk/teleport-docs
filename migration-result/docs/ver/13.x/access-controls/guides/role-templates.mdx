@@ -1,7 +1,7 @@
 ---
 title: Teleport Role Templates
 description: This guide explains templating in Teleport roles. Templates allow you to enable access to resources depending on the traits of a local or single sign-on user.
-version: '13.x'
+version: "13.x"
 ---
 
 As organizations grow, infrastructure teams have to figure out how to define
@@ -22,11 +22,11 @@ other policies.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -39,7 +39,7 @@ other policies.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -59,7 +59,7 @@ other policies.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -76,7 +76,7 @@ other policies.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -93,7 +93,7 @@ other policies.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -107,7 +107,7 @@ other policies.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -122,7 +122,7 @@ other policies.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -182,7 +182,7 @@ spec:
 
 You can create roles and invite Alice and Bob as local users:
 
-```code
+```bash
 $ tctl create -f roles.yaml
 $ tctl users add alice --roles=alice
 $ tctl users add bob --roles=bob
@@ -225,7 +225,7 @@ with a local user.
 
 Use `tctl` to create a role template:
 
-```code
+```bash
 $ tctl create -f devs.yaml
 ```
 
@@ -256,7 +256,7 @@ spec:
 
 Update both users' entries with the `tctl create -f` command:
 
-```code
+```bash
 $ tctl create -f traits.yaml
 # user "alice" has been updated
 ```
@@ -266,7 +266,7 @@ a new role. SSH logins and Kubernetes groups will also be set:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
 
     # > Profile URL:        https://teleport.example.com:443
@@ -282,7 +282,7 @@ a new role. SSH logins and Kubernetes groups will also be set:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --user=alice
 
     # > Profile URL:        https://mytenant.teleport.sh:443
@@ -364,7 +364,7 @@ spec:
 
 Create this connector using `tctl`:
 
-```code
+```bash
 $ tctl create -f github.yaml
 ```
 
@@ -373,7 +373,7 @@ a new role and SSH logins generated using  the `sso-users` role template:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --auth=github
 
     #> Profile URL:        https://teleport.example.com:443
@@ -389,7 +389,7 @@ a new role and SSH logins generated using  the `sso-users` role template:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --auth=github
 
     #> Profile URL:        https://mytenant.teleport.sh:443

@@ -1,7 +1,7 @@
 ---
 title: Run the Jira Access Request Plugin
 description: How to set up the Teleport Jira plugin to notify users when another user requests elevated privileges.
-version: '14.x'
+version: "14.x"
 ---
 
 This guide explains how to set up the Teleport Access Request plugin for Jira.
@@ -42,7 +42,7 @@ webhook run by the plugin, which modifies the Access Request in Teleport.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -59,7 +59,7 @@ webhook run by the plugin, which modifies the Access Request in Teleport.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -100,7 +100,7 @@ your infrastructure.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -150,7 +150,7 @@ spec:
 
 Create the roles you defined:
 
-```code
+```bash
 $ tctl create -f editor-request-rbac.yaml
 role 'editor-reviewer' has been created
 role 'editor-requester' has been created
@@ -166,7 +166,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -182,7 +182,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -192,7 +192,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -219,7 +219,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -229,7 +229,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -256,7 +256,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -266,7 +266,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -293,7 +293,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -304,7 +304,7 @@ commands for your authentication provider:
 Create a user called `myuser` who has the `editor-requester` role. This user
 cannot edit your cluster configuration unless they request the `editor` role:
 
-```code
+```bash
 $ tctl users add myuser --roles=editor-requester 
 ```
 
@@ -348,7 +348,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -381,13 +381,13 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
 Retrieve your user definition:
 
-```code
+```bash
 $ TELEPORT_USER=$(tsh status --format=json | jq -r .active.username)
 $ tctl get users/${TELEPORT_USER?} > myuser.yaml
 ```
@@ -404,7 +404,7 @@ Edit `myuser.yaml` to include the role you just created:
 
 Apply your changes:
 
-```code
+```bash
 $ tctl create -f myuser.yaml
 ```
 
@@ -427,7 +427,7 @@ tenant).
     plugins from source. You can run the plugin from a remote host or your local
     development machine.
 
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-access-jira-v14.3.3-linux-amd64-bin.tar.gz
     $ tar -xzf teleport-access-jira-v14.3.3-linux-amd64-bin.tar.gz
     $ cd teleport-access-jira
@@ -436,7 +436,7 @@ tenant).
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-jira version
     teleport-jira v14.3.3 git:teleport-jira-v14.3.3-fffffffff go1.21
     ```
@@ -446,13 +446,13 @@ tenant).
     We currently only provide Docker images for `linux-amd64`.
     Pull the Docker image for the latest access request plugin by running the following command:
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-jira:14.3.3
     ```
 
     Make sure the plugin is installed by running the following command:
 
-    ```code
+    ```bash
     $ docker run public.ecr.aws/gravitational/teleport-plugin-jira:14.3.3 version
     teleport-jira v14.3.3 git:teleport-jira-v14.3.3-api/14.0.0-gd1e081e 1.21
     ```
@@ -464,7 +464,7 @@ tenant).
     To install from source you need `git` and `go` installed. If you do not have Go
     installed, visit the Go [downloads page](https://go.dev/dl/).
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/jira
     $ make
@@ -474,7 +474,7 @@ tenant).
 
     Make sure the binary is installed:
 
-    ```code
+    ```bash
     $ teleport-jira version
     teleport-jira v14.3.3 git:teleport-jira-v14.3.3-fffffffff go1.21
     ```
@@ -487,13 +487,13 @@ tenant).
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -562,7 +562,7 @@ longer-lived identity files with `tctl`:
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=access-plugin --out=identity
     ```
 
@@ -587,7 +587,7 @@ longer-lived identity files with `tctl`:
       a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=60060
       ```
     </Accordion>
@@ -595,7 +595,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on a Linux server, create a data directory
     to hold certificate files for the plugin:
 
-    ```code
+    ```bash
     $ sudo mkdir -p /var/lib/teleport/api-credentials
     $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
@@ -603,7 +603,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on Kubernetes, Create a Kubernetes secret
     that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=identity teleport-plugin-jira-identity
     ```
 
@@ -726,7 +726,7 @@ credentials and run the Jira webhook at the address you configured earlier.
     boilerplate configuration by running the following command (the plugin will not run
     unless the config file is in `/etc/teleport-jira.toml`):
 
-    ```code
+    ```bash
     $ teleport-jira configure | sudo tee /etc/teleport-jira.toml > /dev/null
     ```
 
@@ -879,18 +879,18 @@ refresh_identity = true
 
     **https\_key\_file** and **https\_cert\_file** correspond to the private key and
     certificate you generated earlier via Caddy. Use the following values, assigning
-    EXAMPLE.COM to the domain name you created for the plugin
+    example.com to the domain name you created for the plugin
     earlier:
 
     - **https\_key\_file:**
 
-      ```code
+      ```bash
       $ /var/teleport-jira/tls/certificates/acme-v02.api.letsencrypt.org-directory/example.com/example.com.key
       ```
 
     - **https\_cert\_file:**
 
-      ```code
+      ```bash
       $ /var/teleport-jira/tls/certificates/acme-v02.api.letsencrypt.org-directory/example.com/example.com.crt
       ```
   </Tab>
@@ -933,7 +933,7 @@ Jira-based Access Request flow:
   <Tab title="Executable">
     Run the following on your Linux host:
 
-    ```code
+    ```bash
     $ sudo teleport-jira start
     INFO   Starting Teleport Jira Plugin 12.1.1: jira/app.go:112
     INFO   Plugin is ready jira/app.go:142
@@ -943,7 +943,7 @@ Jira-based Access Request flow:
   <Tab title="Helm Chart">
     Install the Helm chart for the Teleport Jira plugin:
 
-    ```code
+    ```bash
     $ helm install teleport-plugin-jira teleport/teleport-plugin-jira \
       --namespace teleport \
       --values values.yaml \
@@ -955,7 +955,7 @@ Jira-based Access Request flow:
 
     See whether the load balancer has a domain name or IP address:
 
-    ```code
+    ```bash
     $ kubectl -n teleport get services/teleport-plugin-jira
     NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP                          PORT(S)                      AGE
     teleport-plugin-jira   LoadBalancer   10.100.135.75   abc123.us-west-2.elb.amazonaws.com   80:30625/TCP,443:31672/TCP   134m
@@ -981,14 +981,14 @@ code with no document body:
 
 <Tabs>
   <Tab title="Executable">
-    ```code
+    ```bash
     $ curl -v https://example.com:8081/status 2>&1 | grep "^< HTTP/2"
     < HTTP/2 200
     ```
   </Tab>
 
   <Tab title="Helm Chart">
-    ```code
+    ```bash
     $ curl -v https://example.com:443/status 2>&1 | grep "^< HTTP/2"
     < HTTP/2 200
     ```
@@ -1004,7 +1004,7 @@ Access Request:
   <Tab title="As an Admin">
     A Teleport admin can create an Access Request for another user with `tctl`:
 
-    ```code
+    ```bash
     $ tctl request create myuser --roles=editor
     ```
   </Tab>
@@ -1012,7 +1012,7 @@ Access Request:
   <Tab title="As a User">
     Users can use `tsh` to create an Access Request and log in with approved roles:
 
-    ```code
+    ```bash
     $ tsh request create --roles=editor
     Seeking request approval... (id: 8f77d2d1-2bbf-4031-a300-58926237a807)
     ```
@@ -1038,6 +1038,10 @@ then click the card and navigate to Teleport. You will see that the Access
 Request has been denied.
 
 <Note>
+  <p>
+    **Auditing Access Requests**
+  </p>
+
   Anyone with access to the Jira project board can modify the status of Access
   Requests reflected on the board. You can check the Teleport audit log to ensure
   that the right users are reviewing the right requests.
@@ -1077,7 +1081,7 @@ Save this as `teleport-jira.service` or another [unit file load
 path](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Unit%20File%20Load%20Path)
 supported by systemd.
 
-```code
+```bash
 $ sudo systemctl enable teleport-jira
 $ sudo systemctl start teleport-jira
 ```

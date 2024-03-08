@@ -1,7 +1,7 @@
 ---
 title: "Protect Google Cloud API Access with Teleport"
 description: How to enable secure access to Google Cloud APIs.
-version: '14.x'
+version: "14.x"
 ---
 
 You can use Teleport to manage access to CLI tools that interact with Google
@@ -26,7 +26,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -35,7 +35,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -57,7 +57,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -81,7 +81,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -104,7 +104,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -136,6 +136,10 @@ prevent unauthorized access to your organization's Google Cloud service accounts
   must have permissions to attach service accounts to Google Compute Engine VMs.
 
 <Tip>
+  <p>
+    **Using existing service accounts**
+  </p>
+
   In this guide, we will demonstrate Google Cloud CLI access by creating a service
   account for Teleport users to authenticate as, `teleport-vm-viewer`. If you would
   like to enable access to any existing service accounts in your Google Cloud
@@ -148,7 +152,7 @@ prevent unauthorized access to your organization's Google Cloud service accounts
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -191,7 +195,7 @@ Application Service and assign permissions to it.
 
 Create a service account called `teleport-google-cloud-cli`:
 
-```code
+```bash
 $ gcloud iam service-accounts create teleport-google-cloud-cli \
   --description="Google Cloud CLI access" \
   --display-name="teleport-google-cloud-cli"
@@ -200,7 +204,7 @@ $ gcloud iam service-accounts create teleport-google-cloud-cli \
 Enable your service account to act as other service accounts by assigning it the
 predefined "Service Account User" role:
 
-```code
+```bash
 $ gcloud projects add-iam-policy-binding google-cloud-project \
    --member="serviceAccount:teleport-google-cloud-cli@google-cloud-project.iam.gserviceaccount.com" \
    --role="roles/iam.serviceAccountUser"
@@ -226,7 +230,7 @@ permissions to impersonate target service accounts.
 
 Create a target service account:
 
-```code
+```bash
 $ gcloud iam service-accounts create teleport-vm-viewer \
   --description="Sample service account to demonstrate Teleport" \
   --display-name="teleport-vm-viewer"
@@ -235,7 +239,7 @@ $ gcloud iam service-accounts create teleport-vm-viewer \
 Bind this service account to the predefined "Compute Viewer" role, which allows
 users with the role to list Google Compute Engine resources:
 
-```code
+```bash
 $ gcloud projects add-iam-policy-binding google-cloud-project \
    --member="serviceAccount:teleport-vm-viewer@google-cloud-project.iam.gserviceaccount.com" \
    --role="roles/compute.viewer"
@@ -253,7 +257,7 @@ Creator Role" for the `teleport-vm-viewer` service account:
   run this command for each service account.
 </Tip>
 
-```code
+```bash
 $ gcloud iam service-accounts add-iam-policy-binding \
  teleport-vm-viewer@google-cloud-project.iam.gserviceaccount.com \
  --member=serviceAccount:teleport-google-cloud-cli@google-cloud-project.iam.gserviceaccount.com \
@@ -282,7 +286,7 @@ new one:
     Create a new virtual machine with the `teleport-google-cloud` service account
     attached:
 
-    ```code
+    ```bash
     $ gcloud compute instances create teleport-app-service \
        --service-account=teleport-google-cloud-cli@google-cloud-project.iam.gserviceaccount.com \
        --scopes=cloud-platform \
@@ -299,13 +303,13 @@ new one:
   <Tab title="Existing Virtual Machine">
     Stop your VM so you can attach your service account to it:
 
-    ```code
+    ```bash
     $ gcloud compute instances stop vm-name --zone=google-cloud-zone
     ```
 
     Attach your service account to the instance:
 
-    ```code
+    ```bash
     $ gcloud compute instances set-service-account vm-name \
        --service-account teleport-google-cloud-cli@google-cloud-project.iam.gserviceaccount.com \
        --zone google-cloud-zone \
@@ -320,7 +324,7 @@ new one:
 
     Once you have attached the service account, restart your VM:
 
-    ```code
+    ```bash
     $ gcloud compute instances start vm-name --zone google-cloud-zone
     ```
   </Tab>
@@ -331,7 +335,7 @@ new one:
 Establish trust between your Teleport cluster and your new Application Service
 instance by creating a join token:
 
-```code
+```bash
 $ tctl tokens add --type=app --ttl=1h --format=text
 abcd123-insecure-do-not-use-this
 ```
@@ -339,7 +343,7 @@ abcd123-insecure-do-not-use-this
 On the host where you will install the Teleport Application Service, create a
 file called `/tmp/token` that consists only of your token:
 
-```code
+```bash
 $ echo join-token | sudo tee /tmp/token
 ```
 
@@ -355,7 +359,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 14.3.6
     ```
   </Tab>
@@ -365,7 +369,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -387,7 +391,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -410,7 +414,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -433,7 +437,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -493,7 +497,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -511,13 +515,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -535,13 +539,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v14. You'll need to update this
@@ -559,13 +563,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v14. You'll need to update this
@@ -585,13 +589,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -607,7 +611,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -617,7 +621,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -631,7 +635,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v14.3.6-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -661,7 +665,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -683,7 +687,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -706,7 +710,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -729,7 +733,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -838,7 +842,7 @@ the Teleport Application Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Application Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -848,7 +852,7 @@ the Teleport Application Service.
     On the host where you will run the Teleport Application Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -907,7 +911,7 @@ service accounts:
     Assign the target service account we created earlier (or another service
     account) to your Teleport user by running the following command:
 
-    ```code
+    ```bash
     $ tctl users update teleport-user \
     --set-gcp-service-accounts teleport-vm-viewer@google-cloud-project.iam.gserviceaccount.com
     ```
@@ -919,7 +923,7 @@ service accounts:
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f google-cloud-cli-access.yaml
     ```
   </Tab>
@@ -963,7 +967,7 @@ service accounts:
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f google-cloud-cli-access
     ```
   </Tab>
@@ -996,7 +1000,7 @@ service accounts:
 
     Create the role:
 
-    ```code
+    ```bash
     $ tctl create -f google-cloud-cli-access.yaml
     ```
   </Tab>
@@ -1043,7 +1047,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -1059,7 +1063,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -1069,7 +1073,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -1096,7 +1100,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -1106,7 +1110,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -1133,7 +1137,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -1143,7 +1147,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -1170,7 +1174,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -1189,7 +1193,7 @@ through Teleport.
 Verify that your Teleport user can see the `google-cloud-cli` application you
 registered earlier:
 
-```code
+```bash
 $ tsh apps ls
 Application      Description Type Public Address                        Labels
 ---------------- ----------- ---- ------------------------------------- -------------------
@@ -1201,7 +1205,7 @@ google-cloud-cli             HTTP google-cloud-cli.teleport.example.com teleport
 Log in to the application, specifying that you would like to assume the
 `teleport-vm-viewer` service account:
 
-```code
+```bash
 $ tsh apps login google-cloud-cli --gcp-service-account teleport-vm-viewer
 ```
 
@@ -1230,7 +1234,7 @@ Service by prefixing them with `tsh`. Since your user authenticated to your
 Google Cloud CLI application with a service account that can list VMs, for
 example, run this command to do so:
 
-```code
+```bash
 $ tsh gcloud compute instances list
 ```
 
@@ -1239,7 +1243,7 @@ You should see a list of virtual machines in your Google Cloud project.
 However, your Teleport user cannot create a VM, since its service account
 does not have this authorization:
 
-```code
+```bash
 $ tsh gcloud compute instances create another-instance --zone=google-cloud-zone
 ERROR: (gcloud.compute.instances.create) Could not fetch resource:
  - Required 'compute.instances.create' permission for 'projects/my-project/zones/my-zone/instances/another-instance'
@@ -1248,11 +1252,15 @@ ERROR: exit status 1
 ```
 
 <Tip>
+  <p>
+    **Using gsutil with tsh**
+  </p>
+
   You can also use the `google-cloud-cli` application you registered with Teleport
   to run `gsutil` commands via the Teleport Application Service. As with `gcloud`,
   prefix a `gsutil` command with `tsh` in order to run it:
 
-  ```code
+  ```bash
   $ tsh gsutil ls
   ```
 </Tip>
@@ -1271,7 +1279,7 @@ authenticate requests to Google Cloud's APIs.
 
 To start the local proxy, run the following `tsh` command:
 
-```code
+```bash
 $ tsh proxy gcloud
 ```
 
@@ -1304,7 +1312,7 @@ Copy the `export` commands and paste them into a second terminal. In that
 terminal, you can now run your Google Cloud CLI application of choice. For
 example, you can run the following command to list Google Compute Engine VMs:
 
-```code
+```bash
 $ gcloud compute instances list
 ```
 
@@ -1313,7 +1321,7 @@ earlier in this guide. After you enter the `export` commands printed by `tsh
 proxy gcloud`, this command runs as a restricted user, resulting in
 authorization issues:
 
-```code
+```bash
 $ gcloud iam service-accounts create demo-service-account
 ERROR: (gcloud.iam.service-accounts.create) User [myuser] does not have permission to access projects instance [myproject] (or it may not exist): Permission 'iam.serviceAccounts.create' denied on resource (or it may not exist).
 - '@type': type.googleapis.com/google.rpc.ErrorInfo
@@ -1336,7 +1344,7 @@ ERROR: (gcloud.iam.service-accounts.create) User [myuser] does not have permissi
   temporarily, with no longstanding admin roles for attackers to hijack. View
   our documentation on [Role Access
   Requests](/docs/ver/14.x/access-controls/access-requests/role-requests) and [Access
-  Request plugins](/docs/ver/14.x/access-controls/access-request-plugins/index).
+  Request plugins](/docs/ver/14.x/access-controls/access-request-plugins).
 - You can proxy any `gcloud` or `gsutil` command via Teleport. For a full
   reference of commands, view the Google Cloud documentation for
   [`gcloud`](https://cloud.google.com/sdk/gcloud/reference) and

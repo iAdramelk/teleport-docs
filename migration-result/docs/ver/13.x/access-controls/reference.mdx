@@ -2,7 +2,7 @@
 title: Access Controls Reference Documentation
 description: This reference shows you the configuration settings that you can include in a Teleport role, which enables you to apply access controls for your infrastructure.
 h1: Teleport Access Controls Reference
-version: '13.x'
+version: "13.x"
 ---
 
 This guide shows you how to use Teleport roles to manage role-based access
@@ -37,7 +37,7 @@ To see the list of roles in a Teleport cluster, an administrator can execute:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     # Log in to your cluster with tsh so you can use tctl from your local machine.
     # You can also run tctl on your Auth Service host without running "tsh login"
     # first.
@@ -47,7 +47,7 @@ To see the list of roles in a Teleport cluster, an administrator can execute:
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # Log in to your cluster with tsh so you can use tctl.
     $ tsh login --user=myuser --proxy=mytenant.teleport.sh
     $ tctl get roles
@@ -56,6 +56,10 @@ To see the list of roles in a Teleport cluster, an administrator can execute:
 </Tabs>
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -605,6 +609,10 @@ label *and* a `region` label of either `us-west-1` or `eu-central-1`:
 ```
 
 <Tip>
+  <p>
+    **Dynamic RBAC**
+  </p>
+
   Resource labels can be dynamic, i.e. determined at runtime by an output of an executable.
   In this case, you can implement "permissions follow workload"
   policies (eg., any server where PostgreSQL is running becomes *automatically*
@@ -802,6 +810,10 @@ who created the session.
 </Accordion>
 
 <Warning>
+  <p>
+    **Preset Auditor Role**
+  </p>
+
   In order for these roles to take effect, you must ensure your user doesn't also
   have a more permissive role, like the preset `auditor` role, which allows access
   to all events, sessions, and session recordings.

@@ -1,7 +1,7 @@
 ---
 title: Machine ID Troubleshooting Guide
 description: Troubleshooting common issues with Machine ID
-version: '16.x'
+version: "16.x"
 ---
 
 ## A bot failed to renew a certificate due to a "generation mismatch"
@@ -75,7 +75,7 @@ locked bot:
 
 To remove the lock, first find and remove the lock targeting the bot user:
 
-```code
+```bash
 $ tctl get locks
 kind: lock
 metadata:
@@ -93,7 +93,7 @@ $ tctl rm lock/5cee949f-5203-4f3b-9805-dac35d798a16
 
 Next, reset the generation counter by deleting and recreating the bot:
 
-```code
+```bash
 $ tctl bots rm example
 
 $ tctl bots add example --roles=foo,bar
@@ -138,7 +138,7 @@ server-side data and issues a new joining token.
 
 Remove and recreate the bot, replacing the name and role list as desired:
 
-```code
+```bash
 $ sudo tctl bots rm example
 $ sudo tctl bots add example --roles=access
 ```
@@ -154,7 +154,7 @@ restart the bot. It will detect the new token and rejoin the cluster as normal.
 When attempting to connect to a node via SSH, connections fail with an error
 like the following:
 
-```code
+```bash
 $ ssh -F /opt/machine-id/ssh_config bob@node.example.com
 ERROR: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey], no supported methods remain
 
@@ -200,7 +200,7 @@ own after the renewal interval (by default, 20 minutes), but you can trigger a
 renewal immediately by either restarting the `tbot` process or sending it a
 reload signal:
 
-```code
+```bash
 ## If using systemd, you can restart the process:
 $ systemctl restart machine-id
 ## Alternatively, you can send `tbot` a reload signal directly:
@@ -221,7 +221,7 @@ database "example" not found
 
 However, the database exists and can be seen by regular users via `tsh`:
 
-```code
+```bash
 $ tsh db ls
 Name       Description Allowed Users Labels  Connect 
 ---------- ----------- ------------- ------- ------- 
@@ -263,13 +263,13 @@ Ensure the bot has a role that grants it at least these RBAC rules. If desired
 you can examine bot roles with `tctl` to ensure the necessary `rules` have been
 granted:
 
-```code
+```bash
 $ tctl get role/machine-id-db
 ```
 
 If the role is missing database permissions, it can be modified:
 
-```code
+```bash
 ## save the role to a local file
 $ tctl get role/machine-id-db > db-role.yaml
 ## edit the role as necessary
@@ -295,7 +295,7 @@ If the bot was not granted the role initially, the simplest solution is to
 delete and recreate the bot, being sure to include the role in the `--roles=...`
 flag:
 
-```code
+```bash
 $ tctl bots rm example
 $ tctl bots add example --roles=foo,bar,machine-id-db
 ```

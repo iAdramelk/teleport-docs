@@ -1,7 +1,7 @@
 ---
 title: Standalone Kubernetes Operator
 description: Run a standalone operator against a remote Teleport cluster such as Teleport Cloud.
-version: '15.x'
+version: "15.x"
 ---
 
 This guide explains how to run the Teleport Kubernetes Operator against any remote Teleport cluster.
@@ -13,7 +13,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -22,7 +22,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -44,7 +44,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -68,7 +68,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -91,7 +91,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -111,7 +111,7 @@ If your Teleport cluster is deployed using the `teleport-cluster` Helm chart, yo
 
 Validate Kubernetes connectivity by running the following command:
 
-```code
+```bash
 $ kubectl cluster-info
 # Kubernetes control plane is running at https://127.0.0.1:6443
 # CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
@@ -122,7 +122,7 @@ $ kubectl cluster-info
   Users wanting to experiment locally with the operator can use [minikube](https://minikube.sigs.k8s.io/docs/start/)
   to start a local Kubernetes cluster:
 
-  ```code
+  ```bash
   $ minikube start
   ```
 </Tip>
@@ -133,7 +133,7 @@ In this step we create the role the operator uses to interact with Teleport reso
 
 Download and apply the operator role manifest:
 
-```code
+```bash
 $ curl -L https://raw.githubusercontent.com/gravitational/teleport/v15.0.2/integrations/operator/hack/fixture-operator-role.yaml -o operator-role.yaml
 $ tctl create -f operator-role.yaml
 ```
@@ -151,11 +151,11 @@ The join token is used by the operator on each startup to join the Teleport clus
 To establish trust between the connecting operator and Teleport, we are delegating the authentication to Kubernetes. Kubernetes has its own internal CA which signs the ServiceAccount tokens that are mounted in the pods. In the following setup, Teleport will trust SA tokens signed by Kubernetes to join the cluster.
 
 1. Retrieve the Kubernetes JWKS (the keys Teleport can use to validate Kubernetes SA tokens)
-   ```code
+   ```bash
    $ export JWKS="$(kubectl get --raw /openid/v1/jwks)"
    ```
 2. Create the token manifest that allows serviceaccount teleport-iac-operator from the namespace teleport-iac to join the cluster as the operator.
-   ```code
+   ```bash
    $ cat <<EOF > operator-token.yaml   
    kind: token
    version: v2
@@ -176,11 +176,11 @@ To establish trust between the connecting operator and Teleport, we are delegati
    EOF
    ```
 3. Then, apply the token manifest:
-   ```code
+   ```bash
    $ tctl create -f operator-token.yaml
    ```
 4. Finally, retrieve the Teleport cluster name that will be required to use the token:
-   ```code
+   ```bash
    $ export CLUSTER_NAME="$(tctl status | awk '/Cluster/ {print $2}')"
    ```
 
@@ -189,7 +189,7 @@ To establish trust between the connecting operator and Teleport, we are delegati
 In Teleport, a bot is a resource allowing a machine to access Teleport.
 Create a bot for the operator with the following command:
 
-```code
+```bash
 $ tctl bots add operator --token operator-bot --roles operator
 ```
 
@@ -201,36 +201,36 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
 1. Recover the version of your Teleport cluster
-   ```code
+   ```bash
    export TELEPORT_VERSION="$(tsh version | awk '/Proxy[[:space:]]version/ {print $3}')"
    echo "$TELEPORT_VERSION"
    ```
 2. Create the Kubernetes namespace that will contain both the operator Pods and the CustomResources to configure Teleport:
-   ```code
+   ```bash
    $ kubectl create namespace teleport-iac
    ```
 3. Apply the strictest Pod Security Standard on the namespace:
-   ```code
+   ```bash
    $ kubectl label namespace teleport-iac 'pod-security.kubernetes.io/enforce=restricted'
    ```
 4. Deploy the operator with Helm:
-   ```code
+   ```bash
    $ helm install teleport-operator teleport/teleport-operator -n teleport-iac --version "$TELEPORT_VERSION" --set teleportAddress=teleport.example.com:443 --set "teleportClusterName=$CLUSTER_NAME" --set token=operator-bot 
    ```
 5. Validate that operator is running properly (the operator might take a few seconds to start):
-   ```code
+   ```bash
    $ kubectl get pods -n teleport-iac
    ```
 
@@ -256,7 +256,7 @@ If an error happens and the reconciliation loop is not successful, an item in
 `status.conditions` will describe what went wrong. This allows users to diagnose
 errors by inspecting Kubernetes resources with `kubectl`:
 
-```code
+```bash
 $ kubectl describe teleportusers myuser
 ```
 
@@ -290,12 +290,12 @@ the issue, check the operator logs:
 1. Check if the CR is in the same namespace as the operator. The operator only
    watches for resource in its own namespace.
 2. Check if the operator pods are running and healthy:
-   ```code
+   ```bash
    kubectl get pods -n "$OPERATOR_NAMESPACE"`
    ```
 3. Check the operator logs:
 
-   ```code
+   ```bash
    $ kubectl logs deploy/<OPERATOR_DEPLOYMENT_NAME> -n "$OPERATOR_NAMESPACE"
    ```
 
@@ -338,6 +338,6 @@ To resolve this lock, you can either:
 
   For example, if the role is named `my-role`:
 
-  ```code
+  ```bash
   kubectl patch TeleportRole my-role -p '{"metadata":{"finalizers":null}}' --type=merge
   ```

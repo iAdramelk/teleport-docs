@@ -1,7 +1,7 @@
 ---
 title: Running Teleport with Self-Signed Certificates
 description: This guide shows you how to run Teleport using self-signed certificates, which is helpful for testing or demo environments.
-version: '14.x'
+version: "14.x"
 ---
 
 This guide explains how to evaluate Teleport in a
@@ -19,6 +19,10 @@ Additionally, self-signed certificates can prevent `teleport`, `tsh`, and `tctl`
 to the Proxy Service.
 
 <Warning>
+  <p>
+    **DO NOT USE THIS IN PRODUCTION**
+  </p>
+
   **DO NOT USE SELF-SIGNED CERTIFICATES IN PRODUCTION**
 
   Configuring your cluster to trust self-signed certificates
@@ -34,7 +38,7 @@ to the Proxy Service.
 <Tabs>
   <Tab title="Open Source">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/14.x/index) guide (skip TLS certificate setup).
+      [Getting Started](/docs/ver/14.x) guide (skip TLS certificate setup).
 
     - A Teleport Proxy Service which does not have certificates or ACME automatic certificates configured.
       For example, this Teleport Proxy Service configuration would use self-signed certs:
@@ -50,7 +54,7 @@ to the Proxy Service.
 
     - The `tctl` and `tsh` client tools version >= 14.3.6.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v14.3.6 go1.21
 
@@ -79,7 +83,7 @@ to the Proxy Service.
 
     - The `tctl` and `tsh` client tools version >= 14.3.6, which you
       can download by visiting your [Teleport account](https://teleport.sh).
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -137,7 +141,7 @@ running Teleport: via the `teleport` CLI, using a Helm chart, or via systemd:
       </Tab>
 
       <Tab title="--set">
-        ```code
+        ```bash
         $ --set "extraArgs={--insecure}"
         ```
       </Tab>
@@ -155,7 +159,7 @@ running Teleport: via the `teleport` CLI, using a Helm chart, or via systemd:
       </Tab>
 
       <Tab title="--set">
-        ```code
+        ```bash
         $ --set insecureSkipProxyTLSVerify=true
         ```
       </Tab>
@@ -171,7 +175,7 @@ running Teleport: via the `teleport` CLI, using a Helm chart, or via systemd:
 
     You will see output similar to the following, including the file path (`/lib/systemd/system/teleport.service`) that contains the unit file for the systemd configuration being applied:
 
-    ```code
+    ```bash
     ● teleport.service - Teleport Service
         Loaded: loaded (/lib/systemd/system/teleport.service; disabled; vendor preset: enabled)
         Active: inactive (dead)
@@ -229,7 +233,7 @@ flag](/docs/ver/14.x/connect-your-client/teleport-connect#skipping-tls-certifica
 
 ## Further reading
 
-- [Configuring Teleport TLS Certs](/docs/ver/14.x/index#configure-teleport)
+- [Configuring Teleport TLS Certs](/docs/ver/14.x/management/..#configure-teleport)
 - [Run Teleport as a systemd Daemon](/docs/ver/14.x/management/admin/daemon)
 - [Teleport Proxy Service](/docs/ver/14.x/architecture/proxy)
 - [Teleport Authentication](/docs/ver/14.x/architecture/authentication)

@@ -2,7 +2,7 @@
 title: Dual Authorization
 description: Dual Authorization for SSH and Kubernetes.
 videoBanner: b_iqJm_o15I
-version: '14.x'
+version: "14.x"
 ---
 
 You can set up Teleport to require the approval of multiple team members to perform some critical actions.
@@ -36,7 +36,7 @@ The steps below describe how to use Teleport with Mattermost. You can also
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -53,7 +53,7 @@ The steps below describe how to use Teleport with Mattermost. You can also
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -64,7 +64,11 @@ The steps below describe how to use Teleport with Mattermost. You can also
 </Tabs>
 
 <Tip>
-  ```code
+  <p>
+    **Running Mattermost locally with Docker**
+  </p>
+
+  ```bash
   $ docker run --name mattermost-preview -d --publish 8065:8065 --add-host dockerhost:127.0.0.1 mattermost/mattermost-preview
   ```
 </Tip>
@@ -74,7 +78,7 @@ The steps below describe how to use Teleport with Mattermost. You can also
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -139,7 +143,7 @@ version: v2
 
 Create the user and role:
 
-```code
+```bash
 $ tctl create -f access-plugin.yaml
 ```
 
@@ -172,7 +176,7 @@ spec:
 
 Create the `access-plugin-impersonator` role:
 
-```code
+```bash
 $ tctl create -f access-plugin-impersonator.yaml
 ```
 
@@ -188,7 +192,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -204,7 +208,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -214,7 +218,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -241,7 +245,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -251,7 +255,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -278,7 +282,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -288,7 +292,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -315,7 +319,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -336,7 +340,7 @@ The following `tctl auth sign` command impersonates the `access-plugin` user,
 generates signed credentials, and writes an identity file to the local
 directory:
 
-```code
+```bash
 $ tctl auth sign --user=access-plugin --out=identity
 ```
 
@@ -361,7 +365,7 @@ Auth Service's gRPC endpoint.
   a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
   when logging in:
 
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --ttl=60060
   ```
 </Accordion>
@@ -369,7 +373,7 @@ Auth Service's gRPC endpoint.
 If you are running the plugin on a Linux server, create a data directory
 to hold certificate files for the plugin:
 
-```code
+```bash
 $ sudo mkdir -p /var/lib/teleport/api-credentials
 $ sudo mv identity /var/lib/teleport/plugins/api-credentials
 ```
@@ -377,7 +381,7 @@ $ sudo mv identity /var/lib/teleport/plugins/api-credentials
 If you are running the plugin on Kubernetes, Create a Kubernetes secret
 that contains the Teleport identity file:
 
-```code
+```bash
 $ kubectl -n teleport create secret generic --from-file=identity plugin-identity
 ```
 
@@ -390,7 +394,7 @@ We'll reference the exported file(s) later when configuring the plugin.
 
 <Tabs>
   <Tab title="Download">
-    ```code
+    ```bash
     $ curl -L https://get.gravitational.com/teleport-access-mattermost-v14.3.3-linux-amd64-bin.tar.gz
     $ tar -xzf teleport-access-mattermost-v14.3.3-linux-amd64-bin.tar.gz
     $ cd teleport-access-mattermost
@@ -401,7 +405,7 @@ We'll reference the exported file(s) later when configuring the plugin.
   <Tab title="From Source">
     To install from source you need `git` and `go >= 1.21` installed.
 
-    ```code
+    ```bash
     # Checkout teleport-plugins
     $ git clone https://github.com/gravitational/teleport-plugins.git
     $ cd teleport-plugins/access/mattermost
@@ -410,7 +414,7 @@ We'll reference the exported file(s) later when configuring the plugin.
   </Tab>
 </Tabs>
 
-```code
+```bash
 $ teleport-mattermost configure > /etc/teleport-mattermost.toml
 ```
 
@@ -491,7 +495,7 @@ spec:
 
 The commands below create the local users Bob, Alice, and Ivan.
 
-```code
+```bash
 $ tctl users add bob@example.com --roles=devops
 $ tctl users add alice@example.com --roles=dbreviewer
 $ tctl users add ivan@example.com --roles=dbreviewer
@@ -509,7 +513,7 @@ Bob can create an Access Request for the `dbadmin` role in the Web UI or CLI:
   </Tab>
 
   <Tab title="Terminal">
-    ```code
+    ```bash
     # Bob has to set valid emails of Alice and Ivan matching in Mattermost.
     $ tsh request create --roles=dbadmin --reviewers=alice@example.com,ivan@example.com
     ```
@@ -528,7 +532,7 @@ Alice and Ivan can review and approve request using Web UI or CLI:
   </Tab>
 
   <Tab title="CLI">
-    ```code
+    ```bash
     $ tsh request list
 
     # ID                                   User             Roles   Created (UTC)       Status

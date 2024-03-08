@@ -2,7 +2,7 @@
 title: SSO with Active Directory Federation Services
 description: How to configure Teleport access with Active Directory Federation Services
 h1: Single Sign-On with Active Directory Federation Services
-version: '14.x'
+version: "14.x"
 ---
 
 This guide will explain how to configure Active Directory Federation Services
@@ -28,7 +28,7 @@ allows Teleport administrators to define policies like:
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -45,7 +45,7 @@ allows Teleport administrators to define policies like:
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -60,7 +60,7 @@ allows Teleport administrators to define policies like:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -188,7 +188,7 @@ important.
 
 Create a SAML connector resource using `tctl`:
 
-```code
+```bash
 $ tctl sso configure saml --acs https://teleport.example.com/v1/webapi/saml/acs \
   --preset adfs \
   --entity-descriptor https://adfs.example.com/FederationMetadata/2007-06/FederationMetadata.xml \
@@ -211,7 +211,7 @@ but until we complete the next step the authentication process will not complete
 
 Apply the connector:
 
-```code
+```bash
 $ tctl create -f adfs.yaml
 ```
 
@@ -219,7 +219,7 @@ $ tctl create -f adfs.yaml
 
 For the last step, you'll need to export the signing key:
 
-```code
+```bash
 $ tctl saml export adfs > saml.cer
 ```
 
@@ -231,7 +231,7 @@ file as one of the signature verification certificates:
 The Web UI will now contain a new button: "Login with MS Active Directory". The CLI is
 the same as before:
 
-```code
+```bash
 $ tsh --proxy=proxy.example.com login
 ```
 
@@ -239,6 +239,10 @@ This command will print the SSO login URL and try to open it
 automatically in a browser.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Teleport can use multiple SAML connectors. In this case a connector name
   can be passed via `tsh login --auth=connector_name`
 </Tip>
@@ -254,7 +258,7 @@ Follow the instructions for your Teleport edition:
   <Tab title="Dynamic Resources (All Editions)">
     Use `tctl` to edit the `cluster_auth_preference` value:
 
-    ```code
+    ```bash
     $ tctl edit cluster_auth_preference
     ```
 

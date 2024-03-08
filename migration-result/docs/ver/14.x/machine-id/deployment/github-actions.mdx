@@ -1,7 +1,7 @@
 ---
 title: Deploying Machine ID on GitHub Actions
 description: How to install and configure Machine ID on GitHub Actions
-version: '14.x'
+version: "14.x"
 ---
 
 GitHub Actions is a popular CI/CD platform that works as a part of the larger
@@ -16,7 +16,7 @@ Actions runners as well as GitHub Enterprise Server.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -25,7 +25,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -47,7 +47,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -71,7 +71,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -94,7 +94,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -111,7 +111,7 @@ Actions runners as well as GitHub Enterprise Server.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -169,6 +169,10 @@ will run within. You may also choose to change the name of the bot and token
 to more accurately describe your use-case.
 
 <Note>
+  <p>
+    **Using GitHub Enterprise?**
+  </p>
+
   **Enterprise Server**
 
   From Teleport 11.1.4, users with Teleport Enterprise are able to permit
@@ -209,14 +213,14 @@ to more accurately describe your use-case.
 
 Once the resource file has been written, create the token with `tctl`:
 
-```code
+```bash
 $ tctl create -f bot-token.yaml
 ```
 
 Check that token `example-bot` has been created with the following
 command:
 
-```code
+```bash
 $ tctl tokens ls
 Token       Type Labels Expiry Time (UTC)
 ----------- ---- ------ ----------------------------------------------
@@ -246,13 +250,13 @@ spec:
 
 Use `tctl` to apply this file:
 
-```code
+```bash
 $ tctl create -f bot-role.yaml
 ```
 
 Create the bot, specifying the role and token that you have created:
 
-```code
+```bash
 $ tctl bots add example --roles=example-bot --token=example-bot
 ```
 

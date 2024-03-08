@@ -1,7 +1,7 @@
 ---
 title: Setting Up Teleport Access Controls for Kubernetes
 description: How to configure Teleport roles to access clusters, groups, users, and resources in Kubernetes.
-version: '15.x'
+version: "15.x"
 ---
 
 The Teleport Kubernetes Service is a proxy that sits between Kubernetes users
@@ -22,7 +22,7 @@ Kubernetes clusers, groups, users, and resources.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -31,7 +31,7 @@ Kubernetes clusers, groups, users, and resources.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -53,7 +53,7 @@ Kubernetes clusers, groups, users, and resources.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -77,7 +77,7 @@ Kubernetes clusers, groups, users, and resources.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -100,7 +100,7 @@ Kubernetes clusers, groups, users, and resources.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -117,7 +117,7 @@ Kubernetes clusers, groups, users, and resources.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -145,14 +145,14 @@ installed on your workstation:
 
 Start minikube with the Docker driver:
 
-```code
+```bash
 $ minikube start --driver=docker
 ```
 
 This command should start a local Kubernetes cluster and set your context to
 `minikube`. To verify this, run the following command:
 
-```code
+```bash
 $ kubectl config current-context
 minikube
 ```
@@ -254,13 +254,13 @@ This manifest creates two namespaces, `development` and `production`, and
 deploys two `nginx` pods into each one: `webapp` and `loadbalancer`. Apply the
 new resources:
 
-```code
+```bash
 $ kubectl apply -f pods.yaml
 ```
 
 Ensure that the resources are deployed:
 
-```code
+```bash
 $ kubectl -n development get pods
 $ kubectl -n production get pods
 ```
@@ -303,7 +303,7 @@ roleRef:
 
 Apply your changes:
 
-```code
+```bash
 $ kubectl apply -f k8s-rbac.yaml
 ```
 
@@ -318,31 +318,31 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
 Request a token that the Kubernetes Service will use to join your Teleport
 cluster:
 
-```code
+```bash
 $ tctl tokens add --type=kube,app,discovery --ttl=1h --format=text
 ```
 
 Copy this token so you can use it when running the Teleport Kubernetes Service.
 
-Install the Teleport Kubernetes Service in your cluster, assigning PROXY-ADDRESS to the host **and port** of your Teleport Proxy Service
-(e.g., `mytenant.teleport.sh:443`) and TOKEN to the token you
+Install the Teleport Kubernetes Service in your cluster, assigning proxy-address to the host **and port** of your Teleport Proxy Service
+(e.g., `mytenant.teleport.sh:443`) and token to the token you
 requested earlier:
 
-```code
+```bash
 $ helm install teleport-agent teleport/teleport-kube-agent \
   --set kubeClusterName=minikube \
   --set roles="kube\,app\,discovery" \
@@ -360,14 +360,14 @@ these to configure access controls for the cluster later in this guide.
 
 Verify that the `teleport` pod is running in your cluster:
 
-```code
+```bash
 $ kubectl -n teleport-agent get pods
 ```
 
 You can check that the Teleport Kubernetes Service registered itself with your
 Teleport cluster by executing the following command:
 
-```code
+```bash
 $ tctl get kube_servers
 ```
 
@@ -472,7 +472,7 @@ In this role, we have defined the following `allow` rules:
 Once you have finished configuring the `kube-access` role, create it using the
 following command:
 
-```code
+```bash
 $ tctl create kube-access.yaml
 ```
 
@@ -483,13 +483,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},kube-access"
        ```
@@ -500,7 +500,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -527,7 +527,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -537,7 +537,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -564,7 +564,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -574,7 +574,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -601,7 +601,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -618,7 +618,7 @@ new access controls.
 
 List the Kubernetes clusters you can access via Teleport:
 
-```code
+```bash
 $ tsh kube ls
 ```
 
@@ -633,7 +633,7 @@ minikube          platform=minikube region=local
 To access your Kubernetes cluster via Teleport, authenticate to it and update
 your kubeconfig:
 
-```code
+```bash
 $ tsh kube login minikube
 ```
 
@@ -641,7 +641,7 @@ When listing pods in all namespaces, the Teleport Kubernetes Service will filter
 the pods it retrieves to show only those that your Teleport user can access. Run
 the following command:
 
-```code
+```bash
 $ kubectl get pods --all-namespaces
 ```
 
@@ -657,7 +657,7 @@ production    webapp-0000000000-00000        1/1     Running   0          36m
 
 You can access information about the `webapp` pod in the `production` namespace:
 
-```code
+```bash
 $ kubectl -n production get pods/webapp-0000000000-00000 -o json
 ```
 
@@ -665,7 +665,7 @@ Also note that the `kube-access` role we created earlier mapped your Teleport
 user to the `developers` Kubernetes group, which has permissions only to view
 pods:
 
-```code
+```bash
 $ kubectl auth can-i create pods
 no
 ```
@@ -677,7 +677,7 @@ infrastructure.
 When you authenticated to your `minikube` cluster via `tsh kube login`, Teleport
 generated a kubeconfig that connects to your cluster via Teleport:
 
-```code
+```bash
 $ kubectl config current-context
 teleport.example.com-minikube
 ```
@@ -685,7 +685,7 @@ teleport.example.com-minikube
 If you want to regain full control of your `minikube` cluster, you can use the
 default `minikube` context instead:
 
-```code
+```bash
 $ kubectl config use-context minikube
 ```
 
@@ -700,5 +700,5 @@ Now that you know how to configure Teleport's RBAC system to control access to
 Kubernetes clusters, learn how to set up [Resource Access
 Requests](/docs/access-controls/access-requests/resource-requests)
 for just-in-time access and [Access Request
-plugins](/docs/access-controls/access-request-plugins/index) so you can manage
+plugins](/docs/access-controls/access-request-plugins) so you can manage
 access with your communication workflow of choice.

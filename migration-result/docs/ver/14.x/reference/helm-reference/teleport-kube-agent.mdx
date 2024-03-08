@@ -1,7 +1,7 @@
 ---
 title: teleport-kube-agent Chart Reference
 description: Values that can be set using the teleport-kube-agent Helm chart
-version: '14.x'
+version: "14.x"
 ---
 
 The `teleport-kube-agent` Helm chart is used to configure a Teleport agent that
@@ -14,6 +14,10 @@ GitHub](https://github.com/gravitational/teleport/tree/branch/v14/examples/chart
 This reference details available values for the `teleport-kube-agent` chart.
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -318,6 +322,10 @@ Possible values are `token`, `iam` and `ec2`.
   [through an existing Kubernetes Secret](#joinTokenSecret).
 
 <Note>
+  <p>
+    **IAM joining requirements**
+  </p>
+
   Using the IAM joining method requires either the pods to have access to [instance
   metadata](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html),
   or [IAM roles for service
@@ -465,6 +473,10 @@ apps:
 ```
 
 <Tip>
+  <p>
+    **Supported values**
+  </p>
+
   You can see a list of all the supported [values which can be used in a Teleport application access configuration here](/docs/ver/14.x/application-access/reference#configuration).
 </Tip>
 
@@ -489,16 +501,28 @@ appResources:
 ```
 
 <Tip>
+  <p>
+    **Example**
+  </p>
+
   Once `appResources` is set, you can dynamically register application with `tsh` by following [this guide](/docs/ver/14.x/application-access/guides/dynamic-registration).
 </Tip>
 
 ## `awsDatabases`
 
 <Tip>
+  <p>
+    **AWS database auto-discovery**
+  </p>
+
   This section configures AWS database auto-discovery. You can configure databases for other platforms using the [`azureDatabases`](#azuredatabases) or [`databases`](#databases) sections.
 </Tip>
 
 <Note>
+  <p>
+    **IAM roles**
+  </p>
+
   For AWS database auto-discovery to work, your Database Service pods will need to use a role which has appropriate IAM permissions as per the [database documentation](/docs/ver/14.x/database-access/guides/rds#step-36-create-iam-policies-for-teleport).
 
   After configuring a role, you can use an `eks.amazonaws.com/role-arn` annotation with the `annotations.serviceAccount` value to associate it with the service account and grant permissions:
@@ -547,10 +571,18 @@ annotations:
 ## `azureDatabases`
 
 <Tip>
+  <p>
+    **Azure database auto-discovery**
+  </p>
+
   This section configures Azure database auto-discovery. You can configure databases for other platforms using the [`awsDatabases`](#awsdatabases) or [`databases`](#databases) sections.
 </Tip>
 
 <Note>
+  <p>
+    **Azure IAM**
+  </p>
+
   For Azure database auto-discovery to work, your Database Service pods will need to have appropriate IAM permissions as per the [database documentation](/docs/ver/14.x/database-access/guides/azure-postgres-mysql#step-46-configure-iam-permissions-for-teleport).
 
   After configuring a service principal with appropriate IAM permissions, you must pass credentials to the pods.
@@ -558,7 +590,7 @@ annotations:
 
   First, create in the chart installation namespace a Kubernetes `Secret` containing the azure client secret:
 
-  ```code
+  ```bash
   $ kubectl create secret generic teleport-azure-client-secret --from-literal=client_secret=<your-azure-client-secret>
   secret/teleport-azure-client-secret created
   ```
@@ -662,14 +694,22 @@ databases:
 ```
 
 <Tip>
+  <p>
+    **Supported values**
+  </p>
+
   You can see a list of all the supported [values which can be used in a Teleport database service configuration here](/docs/ver/14.x/database-access/reference/configuration).
 </Tip>
 
 <Tip>
+  <p>
+    **Trusting Database CA**
+  </p>
+
   Database CAs can be trusted on a per-database basis.
   You must create a secret containing the database CA certificate in the same namespace as Teleport using a command like:
 
-  ```code
+  ```bash
   $ kubectl create secret generic my-postgres-ca --from-file=ca.pem=/path/to/database-ca.pem
   ```
 
@@ -716,6 +756,10 @@ databaseResources:
 ```
 
 <Tip>
+  <p>
+    **Example**
+  </p>
+
   Once `databaseResources` is set, you can dynamically register database with `tsh` by following [this guide](/docs/ver/14.x/database-access/guides/dynamic-registration).
 </Tip>
 
@@ -831,11 +875,15 @@ The injected CA will be used to validate TLS communications, with the Proxy Serv
 
 You must create a secret containing the CA certs in the same namespace as Teleport using a command like:
 
-```code
+```bash
 $ kubectl create secret generic my-root-ca --from-file=ca.pem=/path/to/root-ca.pem
 ```
 
 <Warning>
+  <p>
+    **Root CA filename**
+  </p>
+
   The key containing the root CA in the secret must be `ca.pem`.
 </Warning>
 
@@ -1020,6 +1068,10 @@ storage:
 You can override this to use your own Teleport image rather than a Teleport-published image.
 
 <Warning>
+  <p>
+    **Interaction with Teleport Kube Agent Updater**
+  </p>
+
   When using the Teleport Kube Agent Updater you must ensure the image is
   available before the updater version target gets updated and Kubernetes tries
   to pull the image.
@@ -1064,6 +1116,10 @@ imagePullSecrets:
 Set to a number higher than `1` for a high availability mode where multiple Teleport pods will be deployed.
 
 <Tip>
+  <p>
+    **Sizing guidelines**
+  </p>
+
   As a rough guide, we recommend configuring one replica per distinct availability zone where your cluster has worker nodes.
 
   2 replicas/availability zones will be fine for smaller workloads. 3-5 replicas/availability zones will be more appropriate for bigger
@@ -1299,7 +1355,7 @@ join token stored in your Teleport chart values.
 
 To create your own join token secret, you can use a command like this:
 
-```code
+```bash
 $ kubectl --namespace teleport create secret generic teleport-kube-agent-join-token --from-literal=auth-token=<replace-with-actual-token>
 ```
 

@@ -1,7 +1,7 @@
 ---
 title: Use Teleport's SAML Provider to authenticate with Grafana
 description: Configure Grafana to use identities provided by Teleport.
-version: '13.x'
+version: "13.x"
 ---
 
 Grafana is an open source observability platform. Their enterprise version supports
@@ -26,7 +26,7 @@ not just those running behind the Teleport App Service.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -42,7 +42,7 @@ not just those running behind the Teleport App Service.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 13.4.16,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -58,7 +58,7 @@ not just those running behind the Teleport App Service.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -72,7 +72,7 @@ not just those running behind the Teleport App Service.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -87,7 +87,7 @@ not just those running behind the Teleport App Service.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -120,7 +120,7 @@ spec:
 
 Create it with `tctl`:
 
-```code
+```bash
 $ tctl create sp-manager.yaml 
 role 'saml-idp-service-provider-manager' has been created
 ```
@@ -132,7 +132,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -148,7 +148,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -158,7 +158,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -185,7 +185,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -195,7 +195,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -222,7 +222,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -232,7 +232,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -259,7 +259,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -276,7 +276,7 @@ it in an easy to remember file name like `teleport-metadata.xml`.
 
 Encode the metadata using `base64` to provide to the Grafana config:
 
-```code
+```bash
 $ cat teleport-metadata.xml | base64
 ```
 
@@ -333,7 +333,7 @@ version: v1
 
 Add the service provider definition to Teleport:
 
-```code
+```bash
 $ tctl create grafana-sp.yaml
 ```
 

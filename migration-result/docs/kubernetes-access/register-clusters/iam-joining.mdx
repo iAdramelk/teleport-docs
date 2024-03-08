@@ -1,7 +1,7 @@
 ---
 title: Register a Kubernetes Cluster using IAM Joining
 description: Connecting a Kubernetes cluster to Teleport with IAM joining.
-version: '15.x'
+version: "15.x"
 ---
 
 In this guide, we will show you how to register a Kubernetes cluster with
@@ -23,7 +23,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -32,7 +32,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -54,7 +54,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -78,7 +78,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -101,7 +101,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -121,7 +121,7 @@ balancer or reverse proxy is available in Teleport 13.0+.
 
 Verify that Helm and Kubernetes are installed and up to date.
 
-```code
+```bash
 $ helm version
 # version.BuildInfo{Version:"v3.4.2"}
 
@@ -135,7 +135,7 @@ $ kubectl version
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -168,7 +168,7 @@ does not require any other permissions.
 
 To create the IAM policy, run the following command:
 
-```code
+```bash
 $ cat >iam-policy.json <<EOF
 {
     "Version": "2012-10-17",
@@ -185,7 +185,7 @@ EOF
 
 Then create the IAM policy:
 
-```code
+```bash
 $ aws iam create-policy --policy-name kube-iam-policy --policy-document file://iam-policy.json
 {
     "Policy": {
@@ -213,7 +213,7 @@ using it or you can use the AWS CLI method.
     `eksctl` supports automatic creation of new IAM roles and mapping it into the Kubernetes Service
     Account in the target namespace.
 
-    ```code
+    ```bash
     $ eksctl create iamserviceaccount \
         --name teleport-kube-agent-sa \
         --namespace teleport-agent \
@@ -226,13 +226,13 @@ using it or you can use the AWS CLI method.
 
     The referenced parameters are:
 
-    - TELEPORT-KUBE-AGENT-SA is the name of the Kubernetes service account.
-    - TELEPORT-AGENT is the namespace where the Teleport Kubernetes Service is
+    - teleport-kube-agent-sa is the name of the Kubernetes service account.
+    - teleport-agent is the namespace where the Teleport Kubernetes Service is
       running.
-    - AWS-REGION is the AWS region where the cluster is running.
-    - KUBE-IAM-POLICY is the name of the IAM policy created in the previous step.
-    - KUBE-CLUSTER  is the name of the Kubernetes cluster.
-    - KUBE-IAM-ROLE is the name of the IAM role to create.
+    - aws-region is the AWS region where the cluster is running.
+    - kube-iam-policy is the name of the IAM policy created in the previous step.
+    - kube-cluster  is the name of the Kubernetes cluster.
+    - kube-iam-role is the name of the IAM role to create.
 
     Once the command completes, you should see a new IAM role created in your AWS account
     and a new Kubernetes service account created in the target namespace.
@@ -245,7 +245,7 @@ using it or you can use the AWS CLI method.
     First, we need to create the target namespace in the Kubernetes cluster and the
     Kubernetes service account.
 
-    ```code
+    ```bash
     $ kubectl create ns teleport-agent
     namespace/teleport-agent created
 
@@ -259,13 +259,13 @@ using it or you can use the AWS CLI method.
 
     To extract the AWS account ID you can use the following command:
 
-    ```code
+    ```bash
     $ account_id=$(aws sts get-caller-identity --query "Account" --output text)
     ```
 
     The OIDC provider URL can be extracted from the cluster configuration:
 
-    ```code
+    ```bash
     $ oidc_provider=$(aws eks describe-cluster --name kube-cluster --region aws-region --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
     $ echo $oidc_provider
     oidc.eks.eu-west-1.amazonaws.com/id/[...]
@@ -276,7 +276,7 @@ using it or you can use the AWS CLI method.
 
     To create the IAM role and trust relationship, run the following command:
 
-    ```code
+    ```bash
     $ cat >trust-relationship.json <<EOF
     {
       "Version": "2012-10-17",
@@ -301,13 +301,13 @@ using it or you can use the AWS CLI method.
 
     To create the IAM role, run the following command:
 
-    ```code
+    ```bash
     $ aws iam create-role --role-name kube-iam-role --assume-role-policy-document file://trust-relationship.json --description "my-role-description"
     ```
 
     Then attach the service account with the IAM role annotation:
 
-    ```code
+    ```bash
     $ kubectl annotate serviceaccount -n teleport-agent teleport-kube-agent-sa eks.amazonaws.com/role-arn=arn:aws:iam::$account_id:role/kube-iam-role
     ```
 
@@ -327,7 +327,7 @@ configured in your AWS joining token.
 Create the following `token.yaml` with an `allow` rule specifying your AWS
 account and the AWS ARN the agents will be running as.
 
-```code
+```bash
 $ cat >token.yaml <<EOF
 kind: token
 version: v2
@@ -356,20 +356,20 @@ Set up the Teleport Helm repository.
 
 Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 Update the cache of charts from the remote repository so you can upgrade to all
 available releases:
 
-```code
+```bash
 $ helm repo update
 ```
 
 Switch `kubectl` to the Kubernetes cluster and run:
 
-```code
+```bash
 # Deploy a Kubernetes agent. It dials back to the Teleport cluster tele.example.com.
 $ CLUSTER=iam-cluster
 $ PROXY=tele.example.com:443
@@ -391,7 +391,7 @@ $ helm install teleport-agent teleport/teleport-kube-agent \
 Make sure that the Teleport agent pod is running. You should see one Teleport
 agent pod pod with a single ready container:
 
-```code
+```bash
 $ kubectl -n teleport-agent get pods
 NAME               READY   STATUS    RESTARTS   AGE
 teleport-agent-0   1/1     Running   0          32s
@@ -400,7 +400,7 @@ teleport-agent-0   1/1     Running   0          32s
 List connected clusters using `tsh kube ls` and switch between
 them using `tsh kube login`:
 
-```code
+```bash
 $ tsh kube ls
 
 # Kube Cluster Name Selected
@@ -430,7 +430,7 @@ For both cases, please refer to the section below.
 
   Run the following command to get the Kubernetes user for your current context:
 
-  ```code
+  ```bash
   $ kubectl config view \
   -o jsonpath="{.contexts[?(@.name==\"$(kubectl config current-context)\")].context.user}"
   ```
@@ -462,7 +462,7 @@ For both cases, please refer to the section below.
 
   Apply your changes:
 
-  ```code
+  ```bash
   $ tctl create -f kube-access.yaml
   ```
 
@@ -473,13 +473,13 @@ For both cases, please refer to the section below.
     <Tab title="Local User">
       1. Retrieve your local user's roles as a comma-separated list:
 
-         ```code
+         ```bash
          $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
          ```
 
       2. Edit your local user to add the new role:
 
-         ```code
+         ```bash
          $ tctl users update $(tsh status -f json | jq -r '.active.username') \
            --set-roles "${ROLES?},kube-access"
          ```
@@ -490,7 +490,7 @@ For both cases, please refer to the section below.
     <Tab title="GitHub">
       1. Retrieve your `github` authentication connector:
 
-         ```code
+         ```bash
          $ tctl get github/github --with-secrets > github.yaml
          ```
 
@@ -517,7 +517,7 @@ For both cases, please refer to the section below.
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f github.yaml
          ```
 
@@ -527,7 +527,7 @@ For both cases, please refer to the section below.
     <Tab title="SAML">
       1. Retrieve your `saml`  configuration resource:
 
-         ```code
+         ```bash
          $ tctl get --with-secrets saml/mysaml > saml.yaml
          ```
 
@@ -554,7 +554,7 @@ For both cases, please refer to the section below.
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f saml.yaml
          ```
 
@@ -564,7 +564,7 @@ For both cases, please refer to the section below.
     <Tab title="OIDC">
       1. Retrieve your `oidc`  configuration resource:
 
-         ```code
+         ```bash
          $ tctl get oidc/myoidc --with-secrets > oidc.yaml
          ```
 
@@ -591,7 +591,7 @@ For both cases, please refer to the section below.
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f oidc.yaml
          ```
 
@@ -634,7 +634,7 @@ For both cases, please refer to the section below.
 
   Apply the `ClusterRoleBinding` with `kubectl`:
 
-  ```code
+  ```bash
   $ kubectl apply -f viewers-bind.yaml
   ```
 

@@ -1,7 +1,7 @@
 ---
 title: teleport-cluster Chart Reference
 description: Values that can be set using the teleport-cluster Helm chart
-version: '16.x'
+version: "16.x"
 ---
 
 The `teleport-cluster` Helm chart deploys a Teleport cluster on Kubernetes.
@@ -21,6 +21,10 @@ The `teleport-cluster` chart runs three Teleport services, split into two sets o
 | `proxy_service`      | proxy `Deployment` | Runs the externally-facing parts of a Teleport<br />cluster, such as the web UI, SSH proxy and reverse tunnel service. | [Proxy documentation](/docs/ver/16.x/architecture/proxy)                         |
 
 <Tip>
+  <p>
+    **Additional Kubernetes Clusters and Teleport Services**
+  </p>
+
   If you want to provide access to resources like Databases, Applications or other
   Kubernetes clusters than the one hosting the Teleport cluster, you should use the
   [`teleport-kube-agent` Helm chart](/docs/ver/16.x/reference/helm-reference/teleport-kube-agent).
@@ -43,18 +47,30 @@ Get started with a guide for each mode:
 | `scratch` (v12 and above) | Generates empty Teleport configuration. User must pass their own config. This is discouraged, use `standalone` mode with [`auth.teleportConfig`](#authteleportconfig) and [`proxy.teleportConfig`](#proxyteleportconfig) instead. | [Running a Teleport cluster with a custom config](/docs/ver/16.x/deploy-a-cluster/helm-deployments/custom)                   |
 
 <Note>
+  <p>
+    **Custom mode removal**
+  </p>
+
   `custom` mode has been removed in Teleport version 12. See the [version 12
   migration guide](/docs/ver/16.x/deploy-a-cluster/helm-deployments/migration-v12) for
   more information.
 </Note>
 
 <Warning>
+  <p>
+    **Version Compatibility**
+  </p>
+
   The chart is versioned with Teleport. No compatibility guarantees are ensured
   between new charts and previous major Teleport versions. It is strongly recommended
   to always deploy a Teleport version with the same major version as the Helm chart.
 </Warning>
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -80,7 +96,7 @@ used as the cluster's public address by default.
     <Tab title="EKS (hostname)">
       EKS uses a hostname:
 
-      ```code
+      ```bash
       $ kubectl --namespace teleport-cluster get service/teleport -o jsonpath='{.status.loadBalancer.ingress[*].hostname}'
       # a5f22a02798f541e58c6641c1b158ea3-1989279894.us-east-1.elb.amazonaws.com
       ```
@@ -89,7 +105,7 @@ used as the cluster's public address by default.
     <Tab title="GKE (IP address)">
       GKE uses an IP address:
 
-      ```code
+      ```bash
       $ kubectl --namespace teleport-cluster get service/teleport -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
       # 35.203.56.38
       ```
@@ -630,7 +646,7 @@ Setting `enterprise` to `true` will use the Teleport Enterprise image.
 
 You will also need to download your Enterprise license from the Teleport dashboard and add it as a Kubernetes secret to use this:
 
-```code
+```bash
 $ kubectl --namespace teleport create secret generic license --from-file=/path/to/downloaded/license.pem
 ```
 
@@ -641,7 +657,7 @@ $ kubectl --namespace teleport create secret generic license --from-file=/path/t
 <Note>
   The file added to the secret must be called `license.pem`. If you have renamed it, you can specify the filename to use in the secret creation command:
 
-  ```code
+  ```bash
   $ kubectl --namespace teleport create secret generic license --from-file=license.pem=/path/to/downloaded/this-is-my-teleport-license.pem
   ```
 </Note>
@@ -1050,6 +1066,10 @@ Controls the amount of pod replicas. The [`highAvailability`](#highAvailability)
 the replication requirements.
 
 <Warning>
+  <p>
+    **Version Compatibility**
+  </p>
+
   If you set a value greater than 1, you **must** meet the replication criteria described above. Failure to do so will result in errors and inconsistent data.
 </Warning>
 
@@ -1134,6 +1154,10 @@ Setting `highAvailability.certManager.enabled` to `true` will use `cert-manager`
 cluster deployed in HA mode.
 
 <Note>
+  <p>
+    **Installing cert-manager**
+  </p>
+
   You must install and configure `cert-manager` in your Kubernetes cluster yourself.
 
   See the [cert-manager Helm install instructions](https://cert-manager.io/docs/installation/kubernetes/#option-2-install-crds-as-part-of-the-helm-release)
@@ -1149,6 +1173,10 @@ cluster deployed in HA mode.
 Setting `highAvailability.certManager.addCommonName` to `true` will instruct `cert-manager` to set the commonName field in its certificate signing request to the issuing CA.
 
 <Note>
+  <p>
+    **Enabling common name field**
+  </p>
+
   You must install and configure `cert-manager` in your Kubernetes cluster yourself.
 
   See the [cert-manager Helm install instructions](https://cert-manager.io/docs/installation/kubernetes/#option-2-install-crds-as-part-of-the-helm-release)
@@ -1194,6 +1222,10 @@ highAvailability:
 Sets the name of the `cert-manager` `Issuer` or `ClusterIssuer` to use for issuing certificates.
 
 <Note>
+  <p>
+    **Configuring an Issuer**
+  </p>
+
   You must install configure an appropriate `Issuer` supporting a DNS01 challenge yourself.
 
   Please see the [cert-manager DNS01 docs](https://cert-manager.io/docs/configuration/acme/dns01/#supported-dns01-providers) and the relevant sections
@@ -1306,6 +1338,10 @@ kubectl create secret generic my-root-ca --from-file=ca.pem=/path/to/root-ca.pem
 ```
 
 <Warning>
+  <p>
+    **Root CA filename**
+  </p>
+
   The filename used for the root CA in the secret must be `ca.pem`.
 </Warning>
 

@@ -1,7 +1,7 @@
 ---
 title: Deploying Machine ID on Spacelift
 description: How to install and configure Machine ID on Spacelift
-version: '16.x'
+version: "16.x"
 ---
 
 You can use Spacelift with the Teleport Terraform provider to manage dynamic
@@ -32,7 +32,7 @@ resources.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -48,7 +48,7 @@ resources.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -112,14 +112,14 @@ Replace:
 
 Once the resource file has been written, create the token with `tctl`:
 
-```code
+```bash
 $ tctl create -f bot-token.yaml
 ```
 
 Check that token `example-bot` has been created with the following
 command:
 
-```code
+```bash
 $ tctl tokens ls
 Token       Type Labels Expiry Time (UTC)
 ----------- ---- ------ ----------------------------------------------
@@ -181,7 +181,7 @@ $ tctl create -f example-bot-role.yaml
 
 Create the bot, specifying the role and token that you have created:
 
-```code
+```bash
 $ tctl bots add example --roles=example-bot --token=example-bot
 ```
 
@@ -230,6 +230,10 @@ Replace:
 - `example-bot` with the name of the token you created in the first step.
 
 <Note>
+  <p>
+    **Using multiple stacks in one repository?**
+  </p>
+
   If you have multiple Spacelift stacks within a single repository, you should
   note that using `stack_defaults` will apply this configuration to all the
   stacks within the repository.
@@ -317,7 +321,7 @@ You should see output indicating success:
 Verify that Spacelift has created the new user and role by running the following
 commands, which should return YAML data for each resource:
 
-```code
+```bash
 $ tctl get roles/terraform-test
 $ tctl get users/terraform-test
 ```

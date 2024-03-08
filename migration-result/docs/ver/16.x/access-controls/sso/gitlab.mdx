@@ -2,7 +2,7 @@
 title: Authentication With GitLab as an SSO provider
 description: How to configure Teleport access using GitLab for SSO
 h1: Teleport SSO Authentication with GitLab
-version: '16.x'
+version: "16.x"
 ---
 
 This guide will cover how to configure [GitLab](https://www.gitlab.com/) to issue
@@ -30,7 +30,7 @@ like:
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -46,7 +46,7 @@ like:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -100,7 +100,7 @@ your client secret.
   <Tab title="GitLab.com">
     Replace the application ID and secret with the values from GitLab:
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset gitlab \
     --id <APPLICATION-ID> \
     --secret $( cat client-secret.txt) \
@@ -113,7 +113,7 @@ your client secret.
     Replace the application ID and secret with the values from GitLab, and replace
     `https://gitlab.company.com` with the path to your self-hosted GitLab instance:
 
-    ```code
+    ```bash
     $ tctl sso configure oidc --preset gitlab \
     --id <APPLICATION-ID> \
     --issuer-url https://gitlab.company.com \
@@ -153,7 +153,7 @@ version: v3
 
 Test the connector resource by piping the file to `tctl sso test`:
 
-```code
+```bash
 $ cat oidc.yaml | tctl sso test
 ```
 
@@ -163,7 +163,7 @@ of the command to diagnose.
 
 Create the connector using `tctl` tool:
 
-```code
+```bash
 $ tctl create -f oidc.yaml
 ```
 
@@ -218,7 +218,7 @@ spec:
 
 Create both roles on the auth server:
 
-```code
+```bash
 $ tctl create -f admin.yaml
 $ tctl create -f dev.yaml
 ```
@@ -256,7 +256,7 @@ Follow the instructions for your Teleport edition:
 
     Create a resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>
@@ -265,7 +265,7 @@ Follow the instructions for your Teleport edition:
 The Web UI will now contain a new button: "Login with GitLab". The CLI is
 the same as before:
 
-```code
+```bash
 $ tsh --proxy=teleport.example.com login
 ```
 
@@ -273,11 +273,19 @@ This command will print the SSO login URL (and will try to open it
 automatically in a browser).
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Teleport can use multiple OIDC/SAML connectors. In this case a connector name
   can be passed via `tsh login --auth=connector_name`
 </Tip>
 
 <Note>
+  <p>
+    **IMPORTANT**
+  </p>
+
   Teleport only supports sending party initiated flows for OIDC Connect. This
   means you can not initiate login from your identity provider, you have to
   initiate login from either the Teleport Web UI or CLI.

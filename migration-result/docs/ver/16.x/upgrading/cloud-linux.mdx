@@ -1,7 +1,7 @@
 ---
 title: Upgrade Teleport Cloud Agents on Linux
 description: Provides instructions for upgrading Teleport Cloud agents that run on Linux servers. 
-version: '16.x'
+version: "16.x"
 ---
 
 This guide explains how to upgrade Teleport Cloud agents running on Linux
@@ -20,7 +20,7 @@ upgrades or upgrade them manually using the method you used to install Teleport.
   Enterprise Cloud account. This requires the [`jq` CLI
   tool](https://jqlang.github.io/jq/):
 
-  ```code
+  ```bash
   $ curl -s https://mytenant.teleport.sh/webapi/ping | jq '.server_version'
   ```
 
@@ -33,7 +33,7 @@ how agent updating works. Automatic agent upgrades require:
   your account supports automatic updates, run the following command, replacing
   `mytenant.teleport.sh` with the address of your Teleport Cloud account:
 
-  ```code
+  ```bash
   $ curl -s https://mytenant.teleport.sh/webapi/ping | jq '.automatic_upgrades'
   true
   ```
@@ -52,7 +52,7 @@ inventory ls` command with the `--upgrader=none` flag. This command also uses
 the `--services` flag to constrain the search to Teleport processes running
 agent services:
 
-```code
+```bash
 $ tctl inventory ls \
   --services=node,kube,db,app,windows_desktop,discovery,okta \
   --upgrader=none
@@ -64,7 +64,7 @@ Server ID                            Hostname      Services Version Upgrader
 If you have a lot of agents on different versions and want to prioritize enrolling
 your oldest agents, you can limit your search using the `--older-than` filter:
 
-```code
+```bash
 $ tctl inventory ls --upgrader=none --older-than=v1.2.3
 Server ID                            Hostname        Services Version Upgrader
 ------------------------------------ --------------- -------- ------- --------
@@ -79,7 +79,7 @@ via Teleport.
 For each agent ID returned by the `tctl inventory ls` command, copy the ID and
 run the following `tctl` command to access the host via `tsh`:
 
-```code
+```bash
 $ HOST=00000000-0000-0000-0000-000000000000
 $ USER=root
 $ tsh ssh "${USER?}@${HOST?}"
@@ -98,7 +98,7 @@ automatic updates:
    To verify if the Teleport repository was added to the system, check if either of
    the follow files exists:
 
-   ```code
+   ```bash
    $ ls /etc/apt/sources.list.d/teleport.list
    # or
    $ ls /etc/yum.repos.d/teleport.repo
@@ -110,7 +110,7 @@ automatic updates:
 2. If the repository was added, make sure the Teleport binary installed on the
    agent can run the automatic updater:
 
-   ```code
+   ```bash
    $ which teleport-upgrade || echo "Install the upgrader"
    Install the upgrader
    ```
@@ -123,7 +123,7 @@ automatic updates:
      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
        Add the Teleport repository to your repository list:
 
-       ```code
+       ```bash
        # Download Teleport's PGP public key
        $ sudo curl https://apt.releases.teleport.dev/gpg \
        -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -145,7 +145,7 @@ automatic updates:
      </Tab>
 
      <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport YUM repository for cloud.
@@ -168,7 +168,7 @@ automatic updates:
      </Tab>
 
      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport YUM repository for cloud.
@@ -191,7 +191,7 @@ automatic updates:
      </Tab>
 
      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport Zypper repository for cloud.
@@ -215,7 +215,7 @@ automatic updates:
    `/etc/teleport-upgrade.d/schedule` and grant ownership to your Teleport user.
    Otherwise, you can skip this step:
 
-   ```code
+   ```bash
    $ sudo mkdir -p /etc/teleport-upgrade.d/
    $ sudo touch /etc/teleport-upgrade.d/schedule
    $ sudo chown <your-teleport-user> /etc/teleport-upgrade.d/schedule
@@ -224,7 +224,7 @@ automatic updates:
 5. Verify that the upgrader can see your version endpoint by checking for
    updates:
 
-   ```code
+   ```bash
    $ sudo teleport-upgrade dry-run
    ```
 
@@ -242,7 +242,7 @@ automatic updates:
 
 6. Ensure that the upgrader is running:
 
-   ```code
+   ```bash
    $ sudo systemctl status teleport-upgrade
    ```
 
@@ -251,18 +251,18 @@ automatic updates:
 If the agent is not automatically updated, you can invoke the upgrader manually
 and look at its logs:
 
-```code
+```bash
 $ sudo teleport-upgrade run
 ```
 
 To suspend automatic updates, disable the systemd timer:
 
-```code
+```bash
 $ sudo systemctl disable --now teleport-upgrade.timer
 ```
 
 To enable and start the systemd timer after suspending:
 
-```code
+```bash
 $ sudo systemctl enable --now teleport-upgrade.timer
 ```

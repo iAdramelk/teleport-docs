@@ -1,7 +1,7 @@
 ---
 title: Setting up self-hosted automatic agent updates (Preview)
 description: How to setup automatic agent update for self-hosted Teleport
-version: '13.x'
+version: "13.x"
 ---
 
 <Accordion title="Version warning">
@@ -46,19 +46,19 @@ soon as possible.
 
 Create a directory for the new release channel `current`.
 
-```code
+```bash
 $ mkdir current/
 ```
 
 Make the `current` release channel target the version 13.4.16:
 
-```code
+```bash
 $ echo -n "13.4.16" > current/version
 ```
 
 And mark the update as not critical:
 
-```code
+```bash
 $ echo -n "no" > current/critical
 ```
 
@@ -77,7 +77,7 @@ Choose a way to serve the release channel and setup the hosting.
 
 The webserver must answer the following queries:
 
-```code
+```bash
 $ curl https://<hosting-domain-and-path>/current/version
 13.4.16
 
@@ -122,7 +122,7 @@ spec:
 
 Finally, apply the manifest using `tctl`:
 
-```code
+```bash
 $ tctl create cmc.yaml
 maintenance window has been updated
 ```

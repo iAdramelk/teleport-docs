@@ -1,7 +1,7 @@
 ---
 title: Session Recording and Playback
 description: Recording and playing back Teleport desktop access sessions.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport supports recording and playback of desktop sessions.
@@ -73,13 +73,17 @@ of the stream is reached. To replay a session, refresh the page.
 To export desktop session recordings to video for playback outside of Teleport,
 use the `tsh recordings export` command:
 
-```code
+```bash
 $ tsh recordings export <SESSION_ID>
 ```
 
 Note: video encoding is done client-side to avoid consuming server resources.
 
 <Tip>
+  <p>
+    **Listing recordings**
+  </p>
+
   Use `tsh recordings ls` to list available recordings.
 </Tip>
 

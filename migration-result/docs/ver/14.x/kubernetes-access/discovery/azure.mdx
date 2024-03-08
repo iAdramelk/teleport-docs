@@ -1,7 +1,7 @@
 ---
 title: Teleport AKS Auto-Discovery
 description: Auto-Discovery of AKS clusters in Azure cloud.
-version: '14.x'
+version: "14.x"
 ---
 
 AKS Auto-Discovery can automatically
@@ -30,7 +30,7 @@ communications between users and the API servers of these clusters.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -39,7 +39,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -61,7 +61,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -85,7 +85,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -108,7 +108,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -312,7 +312,7 @@ Kubernetes services to join the cluster. Generate one by running the following
 command against your Teleport Auth Service and save it in `/tmp/token` on the
 machine that will run Kubernetes Discovery:
 
-```code
+```bash
 $ tctl tokens add --type=discovery,kube
 ```
 

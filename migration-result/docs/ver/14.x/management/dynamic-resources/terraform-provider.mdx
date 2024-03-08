@@ -2,7 +2,7 @@
 title: Terraform Provider
 description: How to manage dynamic resources using the Teleport Terraform provider.
 videoBanner: YgNHD4SS8dg
-version: '14.x'
+version: "14.x"
 ---
 
 This guide demonstrates how to:
@@ -19,7 +19,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -28,7 +28,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -50,7 +50,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -74,7 +74,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -97,7 +97,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -111,7 +111,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
 
 - [Terraform >= 1.0.0+](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 
-  ```code
+  ```bash
   $ terraform version
   # Terraform v1.0.0
   ```
@@ -121,7 +121,7 @@ and Machine ID](/docs/ver/14.x/machine-id/deployment/spacelift).
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -150,7 +150,7 @@ To prepare credentials for a local Teleport user:
 
 1. Create a folder called `teleport-terraform` to hold temporary files:
 
-   ```code
+   ```bash
    $ mkdir -p teleport-terraform
    $ cd teleport-terraform
    ```
@@ -202,7 +202,7 @@ To prepare credentials for a local Teleport user:
 
 4. Create the `terraform` user and role by running the following command:
 
-   ```code
+   ```bash
    $ tctl create terraform.yaml
    ```
 
@@ -231,7 +231,7 @@ To prepare credentials for a local Teleport user:
 
 7. Create the `terraform-impersonator` role by running the following command:
 
-   ```code
+   ```bash
    $ tctl create terraform-impersonator.yaml
    ```
 
@@ -241,7 +241,7 @@ To prepare credentials for a local Teleport user:
      <Tab title="Local User">
        1. Retrieve your local user's configuration resource:
 
-          ```code
+          ```bash
           $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
           ```
 
@@ -257,7 +257,7 @@ To prepare credentials for a local Teleport user:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f out.yaml
           ```
 
@@ -267,7 +267,7 @@ To prepare credentials for a local Teleport user:
      <Tab title="GitHub">
        1. Retrieve your `github` authentication connector:
 
-          ```code
+          ```bash
           $ tctl get github/github --with-secrets > github.yaml
           ```
 
@@ -294,7 +294,7 @@ To prepare credentials for a local Teleport user:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f github.yaml
           ```
 
@@ -304,7 +304,7 @@ To prepare credentials for a local Teleport user:
      <Tab title="SAML">
        1. Retrieve your `saml`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get --with-secrets saml/mysaml > saml.yaml
           ```
 
@@ -331,7 +331,7 @@ To prepare credentials for a local Teleport user:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f saml.yaml
           ```
 
@@ -341,7 +341,7 @@ To prepare credentials for a local Teleport user:
      <Tab title="OIDC">
        1. Retrieve your `oidc`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get oidc/myoidc --with-secrets > oidc.yaml
           ```
 
@@ -368,7 +368,7 @@ To prepare credentials for a local Teleport user:
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f oidc.yaml
           ```
 
@@ -378,7 +378,7 @@ To prepare credentials for a local Teleport user:
 
 9. Request a signed identity file for the Terraform user by running the following command:
 
-   ```code
+   ```bash
    $ tctl auth sign --user=terraform --out=terraform-identity
    ```
 
@@ -579,7 +579,7 @@ To apply the configuration:
 
 1. Check the contents of the `teleport-terraform` folder:
 
-   ```code
+   ```bash
    $ ls
    # main.tf  terraform-identity  terraform-impersonator.yaml  terraform.yaml
    ```
@@ -587,14 +587,14 @@ To apply the configuration:
 2. Initialize the working directory that contains Terraform configuration files by running the
    following command:
 
-   ```code
+   ```bash
    $ terraform init
    ```
 
 3. Execute the Terraform plan defined in the configuration file by running the
    following command:
 
-   ```code
+   ```bash
    $ terraform apply
    ```
 

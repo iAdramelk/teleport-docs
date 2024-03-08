@@ -2,7 +2,7 @@
 title: AWS KMS
 description: Configure Teleport to store CA private keys in the AWS Key Management Service
 h1: Store Teleport Private Keys in AWS KMS
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will show you how to set up your Teleport cluster to use the AWS Key
@@ -40,7 +40,7 @@ higher.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -56,7 +56,7 @@ higher.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -127,7 +127,7 @@ Start by creating the following AWS IAM policy in your account.
 
 You can create the policy from the AWS console, or via the AWS CLI.
 
-```code
+```bash
 $ aws iam create-policy --policy-name TeleportKMS --policy-document file://policy.json
 {
     "Policy": {
@@ -149,7 +149,7 @@ Attach the policy to an IAM role that your Auth Service instances will
 authenticate to your AWS account as.
 You can attach the policy from the AWS console, or via the AWS CLI.
 
-```code
+```bash
 $ aws iam attach-role-policy --role-name <IAM role> --policy-arn <policy ARN>
 ```
 
@@ -238,7 +238,7 @@ confirm that Teleport has generated AWS KMS keys in your account by viewing them
 in the AWS Console.
 You can also run the following `tctl` commands to find the ARN of each key.
 
-```code
+```bash
 $ tctl get cert_authorities --with-secrets --format json | jq -r '.[].spec.active_keys.tls[0].key | select(.) | @base64d'
 awskms:arn:aws:kms:us-west-2:123456789012:key/dd0f77e2-a1b7-4ecd-ba83-d29476c15fec
 awskms:arn:aws:kms:us-west-2:123456789012:key/fe8daacb-2457-4639-aa68-2bdc38a47a89

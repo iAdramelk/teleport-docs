@@ -2,7 +2,7 @@
 title: Enroll a Kubernetes Cluster
 description: Demonstrates how to enroll a Kubernetes cluster as a resource protected by Teleport.
 videoBanner: 3AUGrOZ5me0
-version: '16.x'
+version: "16.x"
 ---
 
 This guide demonstrates how to enroll a Kubernetes cluster as a resource by deploying the
@@ -27,7 +27,7 @@ Teleport Cluster](/docs/ver/16.x/kubernetes-access/register-clusters/static-kube
   use the Enterprise version of `tctl`.
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -43,7 +43,7 @@ Teleport Cluster](/docs/ver/16.x/kubernetes-access/register-clusters/static-kube
 
   Verify that Helm and Kubernetes are installed and up to date.
 
-  ```code
+  ```bash
   $ helm version
   # version.BuildInfo{Version:"v3.4.2"}
 
@@ -57,7 +57,7 @@ Teleport Cluster](/docs/ver/16.x/kubernetes-access/register-clusters/static-kube
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -132,7 +132,7 @@ To set up and test access:
 3. (Optional) Copy and run the commands displayed in the Teleport Web UI to interact with the
    Kubernetes cluster to verify access through Teleport.
 
-   ```code
+   ```bash
    $ tsh login --proxy=teleport.example.com:443 --auth=local --user=admin@example.com teleport.example.com
    $ tsh kube login Kubernetes-cluster-name
    $ tsh kubectl get pods
@@ -177,7 +177,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
 2. Apply your changes:
 
-   ```code
+   ```bash
    $ tctl create -f kube-access.yaml
    ```
 
@@ -188,13 +188,13 @@ one Kubernetes group named `viewers` and one Kubernetes user.
      <Tab title="Local User">
        1. Retrieve your local user's roles as a comma-separated list:
 
-          ```code
+          ```bash
           $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
           ```
 
        2. Edit your local user to add the new role:
 
-          ```code
+          ```bash
           $ tctl users update $(tsh status -f json | jq -r '.active.username') \
             --set-roles "${ROLES?},kube-access"
           ```
@@ -205,7 +205,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
      <Tab title="GitHub">
        1. Retrieve your `github` authentication connector:
 
-          ```code
+          ```bash
           $ tctl get github/github --with-secrets > github.yaml
           ```
 
@@ -232,7 +232,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f github.yaml
           ```
 
@@ -242,7 +242,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
      <Tab title="SAML">
        1. Retrieve your `saml`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get --with-secrets saml/mysaml > saml.yaml
           ```
 
@@ -269,7 +269,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f saml.yaml
           ```
 
@@ -279,7 +279,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
      <Tab title="OIDC">
        1. Retrieve your `oidc`  configuration resource:
 
-          ```code
+          ```bash
           $ tctl get oidc/myoidc --with-secrets > oidc.yaml
           ```
 
@@ -306,7 +306,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
        3. Apply your changes:
 
-          ```code
+          ```bash
           $ tctl create -f oidc.yaml
           ```
 
@@ -347,7 +347,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
 5. Apply the `ClusterRoleBinding` with `kubectl`:
 
-   ```code
+   ```bash
    $ tsh kubectl apply -f viewers-bind.yaml
    ```
 
@@ -355,7 +355,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
 7. List connected clusters using `tsh kube ls`:
 
-   ```code
+   ```bash
    $ tsh kube ls
    ```
 
@@ -373,7 +373,7 @@ one Kubernetes group named `viewers` and one Kubernetes user.
 
 8. View pods using the `kubectl` command routed through the Teleport cluster:
 
-   ```code
+   ```bash
    $ tsh kubectl get pods 
    ```
 

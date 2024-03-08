@@ -1,7 +1,7 @@
 ---
 title: Access Controls for Servers
 description: Role-based access control (RBAC) for Teleport server access.
-version: '15.x'
+version: "15.x"
 ---
 
 You can use Teleport's role-based access control (RBAC) system to set up
@@ -59,6 +59,10 @@ spec:
 ```
 
 <Note>
+  <p>
+    **Deny Rules**
+  </p>
+
   Deny rules will match greedily. In the example above, a server session
   attempting to use the "root" server user  account will be rejected.
 </Note>

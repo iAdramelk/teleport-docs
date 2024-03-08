@@ -1,7 +1,7 @@
 ---
 title: Using Teleport's Certificate Authority with GitHub
 description:  How to use Teleport's short-lived SSH certificates with the GitHub Certificate Authority.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport supports exporting user SSH certificates with configurable key extensions. This allows the Teleport CA to be used in conjunction with GitHub's support for SSH Certificate Authorities. This way, users can access their organizations' repositories with short-lived, signed SSH certificates.
@@ -11,7 +11,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -20,7 +20,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -42,7 +42,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -66,7 +66,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -89,7 +89,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -107,7 +107,7 @@ Teleport supports exporting user SSH certificates with configurable key extensio
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -121,9 +121,9 @@ Teleport supports exporting user SSH certificates with configurable key extensio
 
 ## Step 1/3. Import the Teleport CA into GitHub
 
-In order to export the Teleport CA, execute the following command, assigning PROXY to the address of your Teleport Proxy Service:
+In order to export the Teleport CA, execute the following command, assigning proxy to the address of your Teleport Proxy Service:
 
-```code
+```bash
 $ curl 'https://proxy/webapi/auth/export?type=user' | sed 's/^cert-authority //g'
 ```
 
@@ -158,13 +158,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},developer"
        ```
@@ -175,7 +175,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -202,7 +202,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -212,7 +212,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -239,7 +239,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -249,7 +249,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -276,7 +276,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -288,13 +288,13 @@ commands for your authentication provider:
 
 A user certificate may be issued with the following command, where `<USERNAME>` is the Teleport user to generate the SSH certificate for:
 
-```code
+```bash
 $ tctl auth sign --out out.cer --user=<USERNAME>
 ```
 
 To test that authentication with this signed certificate is working correctly, SSH into `github.com` with your organization's user:
 
-```code
+```bash
 $ ssh -i out.cer org-<ID>@github.com
 ```
 
@@ -302,7 +302,7 @@ If authentication is successful,  a "You've successfully authenticated" message 
 
 This newly generated certificate may then be used when interacting with GitHub over SSH by adding the following to the `~/.ssh/config` file:
 
-```code
+```bash
 Host github.com
  HostName github.com
  IdentityFile path/to/out.cer

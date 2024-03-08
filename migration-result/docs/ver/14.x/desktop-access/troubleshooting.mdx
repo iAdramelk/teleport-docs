@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting Desktop Access
 description: Common issues and resolutions for Teleport's desktop access
-version: '14.x'
+version: "14.x"
 ---
 
 Common issues and resolution steps.
@@ -59,10 +59,10 @@ This means that the host does not trust the Teleport CA.
 First, make sure that you [import the Teleport CA into Group
 Policy](/docs/ver/14.x/desktop-access/active-directory-manual#create-the-GPO-for-the-Teleport-certificate).
 Note that if you have rotated the Teleport CA since the last import, you need to
-fetch the new CA using the following command, replacing TELEPORT.EXAMPLE.COM
+fetch the new CA using the following command, replacing teleport.example.com
 with the address of your Teleport cluster:
 
-```code
+```bash
 $ curl -o user-ca.cer https://teleport.example.com/webapi/auth/export?type=windows
 ```
 
@@ -308,6 +308,6 @@ If you are still encountering this error after disabling NLA in Active Directory
 run the following command from the Windows Command prompt as an administrator
 to force the policy update:
 
-```code
+```bash
 $ gpupdate.exe /force
 ```

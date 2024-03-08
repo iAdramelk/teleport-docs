@@ -2,7 +2,7 @@
 title: Resource Access Requests
 description: Teleport allows users to request access to specific resources from the CLI or UI. Requests can be escalated via ChatOps or anywhere else via our flexible Authorization Workflow API.
 tocDepth: 3
-version: '14.x'
+version: "14.x"
 ---
 
 With Teleport Resource Access Requests, users can request access to specific
@@ -28,7 +28,7 @@ available in Teleport Enterprise.
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -45,7 +45,7 @@ available in Teleport Enterprise.
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -60,7 +60,7 @@ available in Teleport Enterprise.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -98,7 +98,7 @@ spec:
         - access
 ```
 
-```code
+```bash
 $ tctl create requester.yaml
 ```
 
@@ -121,7 +121,7 @@ spec:
         - access
 ```
 
-```code
+```bash
 $ tctl create reviewer.yaml
 ```
 
@@ -132,7 +132,7 @@ users to test this feature.
 Make sure the requester has a valid `login` so that they can view and access SSH
 nodes.
 
-```code
+```bash
 $ tctl users add alice --roles requester --logins alice
 $ tctl users add bob --roles reviewer
 ```
@@ -145,13 +145,13 @@ user named `bob`.
 
 First, log in as `alice`.
 
-```code
+```bash
 $ tsh login --proxy teleport.example.com --user alice
 ```
 
 Notice that `tsh ls` returns an empty list, because `alice` does not have access to any resources by default.
 
-```code
+```bash
 $ tsh ls
 Node Name Address Labels
 --------- ------- ------
@@ -159,7 +159,7 @@ Node Name Address Labels
 
 Then try searching for all available ssh nodes.
 
-```code
+```bash
 $ tsh request search --kind node
 Name                                 Hostname    Labels       Resource ID
 ------------------------------------ ----------- ------------ ------------------------------------------------------
@@ -179,6 +179,10 @@ resources within Kubernetes clusters.
   Teleport supports searching and requesting access to the following Kubernetes resources:
 
   <Tip>
+    <p>
+      **Resource Access Requests to Kubernetes Namespaces**
+    </p>
+
     Requesting access to a Kubernetes namespace allows you to access all resources
     in that namespace, including the supported Kubernetes resources listed below.
     However, it prevents you from access any resources belonging to another namespace.
@@ -212,7 +216,7 @@ Advanced filters and queries are supported. See our
 
 Try narrowing your search to a specific resource you want to access.
 
-```code
+```bash
 $ tsh request search --kind node --search iot
 Name                                 Hostname    Labels       Resource ID
 ------------------------------------ ----------- ------------ ------------------------------------------------------
@@ -227,7 +231,7 @@ To request access to these resources, run
 
 Copy the command output by `tsh request search` in the previous step, optionally filling in a request reason.
 
-```code
+```bash
 $ tsh request create --resource /teleport.example.com/node/bbb56211-7b54-4f9e-bee9-b68ea156be5f \
     --reason "responding to incident 123"
 Creating request...
@@ -251,13 +255,13 @@ The command will automatically wait until the request is approved.
 
 First, log in as `bob`.
 
-```code
+```bash
 $ tsh login --proxy teleport.example.com --user bob
 ```
 
 Then list, review, and approve the Access Request.
 
-```code
+```bash
 $ tsh request ls
 ID                                   User  Roles  Resources                   Created At (UTC)    Status
 ------------------------------------ ----- ------ --------------------------- ------------------- -------
@@ -291,7 +295,7 @@ Successfully submitted review.  Request state: APPROVED
 
 `alice`'s `tsh request create` command should resolve now that the request has been approved.
 
-```code
+```bash
 $ tsh request create --resource /teleport.example.com/node/bbb56211-7b54-4f9e-bee9-b68ea156be5f \
     --reason "responding to incident 123"
 Creating request...
@@ -323,7 +327,7 @@ Approval received, getting updated certificates...
 
 `alice` can now view and access the node.
 
-```code
+```bash
 $ tsh ls
 Node Name Address   Labels
 --------- --------- ---------
@@ -340,7 +344,7 @@ This is necessary because their certificate now contains an elevated role,
 so it is restricted to only allow access to the resources they were specifically approved for.
 Use the `tsh request drop` command to "drop" the request and resume regular access.
 
-```code
+```bash
 $ tsh request drop
 ```
 
@@ -352,7 +356,7 @@ Once you have configured Resource Access Requests,
 `tsh ssh` is able to automatically create a Resource Access Request for you when access is denied,
 allowing you to skip the `tsh request search` and `tsh request create` steps.
 
-```code
+```bash
 $ tsh ssh alice@iot
 ERROR: access denied to alice connecting to iot on cluster teleport.example.com
 
@@ -566,7 +570,7 @@ spec:
 Teleport users can request access to a Kubernetes resources by running the following
 command:
 
-```code
+```bash
 $ tsh request create resource-id
 ```
 
@@ -586,7 +590,7 @@ Teleport supports the following namespaced resources: `pod`, `secret`, `configma
 For example, to request access to a pod called `nginx-1` in the `development`
 namespace, run the following command:
 
-```code
+```bash
 $ tsh request create --resources /teleport.example.com/pod/mycluster/development/nginx-1
 ```
 
@@ -597,7 +601,7 @@ with `^` and end with `$`.
 For example, to create a request to access all pods in all namespaces that match
 the regular expression `/^nginx-[a-z0-9-]+$/`, run the following command:
 
-```code
+```bash
 $ tsh request create --resources /teleport.example.com/pod/mycluster/*/^nginx-[a-z0-9-]+$
 ```
 
@@ -614,7 +618,7 @@ Teleport supports the following cluster-wide resources: `namespace`, `kube_node`
 
 For example, to request access to a namespace called `prod`, run the following command:
 
-```code
+```bash
 $ tsh request create --resources /teleport.example.com/namespace/mycluster/prod
 ```
 
@@ -625,7 +629,7 @@ with `^` and end with `$`.
 For example, to create a request to access all namespaces prefixed with `dev` match
 the regular expression `/^dev-[a-z0-9-]+$/`, run the following command:
 
-```code
+```bash
 $ tsh request create --resources /teleport.example.com/namespace/mycluster/^dev-[a-z0-9-]+$
 ```
 
@@ -634,7 +638,7 @@ $ tsh request create --resources /teleport.example.com/namespace/mycluster/^dev-
 If a user has no access to a Kubernetes cluster, they can search the list of resources
 in the cluster by running the following command:
 
-```code
+```bash
 $ tsh request search --kind=<kind> --kube-cluster=kube-cluster \
 [--kube-namespace=namespace|--all-kube-namespaces]
 Name               Namespace Labels    Resource ID
@@ -662,7 +666,7 @@ with the desired Kubernetes cluster, but the user's `search_as_roles` values
 must allow access to the cluster. If the user is unsure of the name of the cluster,
 they can run the following command to search it:
 
-```code
+```bash
 $ tsh request search --kind=kube_cluster
 Name  Hostname Labels Resource ID
 ----- -------- ------ ----------------------------------------

@@ -1,7 +1,7 @@
 ---
 title: Profiling
 description: Collecting pprof profiles.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport leverages Go's diagnostic capabilities to collect and export
@@ -20,7 +20,7 @@ them via:
     Start a `teleport` instance with the `--diag-addr` flag set to the local
     address where the diagnostic endpoint will listen:
 
-    ```code
+    ```bash
     $ sudo teleport start --debug --diag-addr=127.0.0.1:3000
     ```
   </Tab>
@@ -46,7 +46,7 @@ them via:
 <Accordion title="Ensure you can connect to the diagnostic endpoint">
   Verify that Teleport is now serving the diagnostics endpoint:
 
-  ```code
+  ```bash
   $ curl http://127.0.0.1:3000/healthz
   ```
 </Accordion>
@@ -62,7 +62,7 @@ a series of profiles over a period of time.
 
 CPU profile shows execution statistics gathered over a user specified period:
 
-```code
+```bash
 # Download the profile into a file:
 $ curl -o cpu.profile http://127.0.0.1:3000/debug/pprof/profile?seconds=30
 
@@ -74,7 +74,7 @@ $ go tool pprof -http : cpu.profile
 
 Goroutine profiles show the stack traces for all running goroutines in the system:
 
-```code
+```bash
 # Download the profile into a file:
 $ curl -o goroutine.profile http://127.0.0.1:3000/debug/pprof/goroutine
 
@@ -86,7 +86,7 @@ $ go tool pprof -http : goroutine.profile
 
 Heap profiles show allocated objects in the system:
 
-```code
+```bash
 # Download the profile into a file:
 $ curl -o heap.profile http://127.0.0.1:3000/debug/pprof/heap
 
@@ -99,7 +99,7 @@ $ go tool pprof  -http : heap.profile
 Trace profiles capture scheduling, system calls, garbage collections, heap size, and other events that are collected by the Go runtime
 over a user specified period of time:
 
-```code
+```bash
 # Download the profile into a file:
 $ curl -o trace.out http://127.0.0.1:3000/debug/pprof/trace?seconds=5
 

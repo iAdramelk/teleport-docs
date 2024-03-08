@@ -1,7 +1,7 @@
 ---
 title: Using Machine ID With GitHub Actions and Kubernetes
 description: A tutorial for using Machine ID with GitHub Actions and Kubernetes
-version: '13.x'
+version: "13.x"
 ---
 
 <Accordion title="Version warning">
@@ -23,11 +23,11 @@ Actions runners as well as GitHub Enterprise Server.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -40,7 +40,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -60,7 +60,7 @@ Actions runners as well as GitHub Enterprise Server.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -77,7 +77,7 @@ Actions runners as well as GitHub Enterprise Server.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -94,7 +94,7 @@ Actions runners as well as GitHub Enterprise Server.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -108,7 +108,7 @@ Actions runners as well as GitHub Enterprise Server.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -123,7 +123,7 @@ Actions runners as well as GitHub Enterprise Server.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -144,13 +144,17 @@ Actions runners as well as GitHub Enterprise Server.
   repository.
 
 <Note>
+  <p>
+    **Kubernetes Public Address Required for non-TLS Routing**
+  </p>
+
   For self-hosted Teleport Clusters that have non-TLS routing the Kubernetes public
   address must be set for Machine ID Kubernetes connections.
 
   To confirm the TLS routing mode check the `proxy.tls_routing_enabled` from this
   command with your proxy address:
 
-  ```code
+  ```bash
   $ curl https://teleport.example.com:443/webapi/ping | jq
   ```
 
@@ -248,14 +252,14 @@ joining on the
 
 Once the resource file has been written, create the token with `tctl`:
 
-```code
+```bash
 $ tctl create -f tokenconfig.yaml
 ```
 
 Check that token `github-token` has been created with the following
 command:
 
-```code
+```bash
 $ tctl tokens ls
 Token       Type Labels Expiry Time (UTC)
 ----------- ---- ------ ----------------------------------------------
@@ -301,13 +305,13 @@ this group to a Kubernetes role with a cluster role binding.
 
 Apply this to your Teleport cluster:
 
-```code
+```bash
 $ tctl create -f role.yaml
 ```
 
 Now create the Machine ID bot, assigning it the role you created above:
 
-```code
+```bash
 $ tctl bots add github-demo --roles=github-demo-kube-access --token=github-token
 ```
 

@@ -1,7 +1,7 @@
 ---
 title: Teleport Kubernetes Access Controls
 description: How the Teleport Kubernetes Service applies RBAC to manage access to Kubernetes
-version: '15.x'
+version: "15.x"
 ---
 
 This guide explains the way the Teleport Kubernetes Service applies role-based
@@ -172,7 +172,7 @@ to do this depends on how you have launched the service:
     Set labels when installing or upgrading the `teleport-kube-agent` Helm chart,
     e.g.:
 
-    ```code
+    ```bash
     $ helm upgrade teleport-agent teleport-kube-agent --set kubeClusterName={CLUSTER?}\
       --set proxyAddr=${PROXY?} --set authToken=${TOKEN?} --create-namespace --namespace=teleport-agent\
       --set labels.env=prod --set labels.region=us-west-1

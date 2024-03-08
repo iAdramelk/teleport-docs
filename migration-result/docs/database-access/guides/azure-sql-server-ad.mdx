@@ -1,7 +1,7 @@
 ---
 title: Database Access with SQL Server on Azure
 description: How to configure Teleport database access with Azure SQL Server using Azure Active Directory authentication.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport can provide secure access to Azure SQL Server via the  [Teleport Database
@@ -32,7 +32,7 @@ is available starting from Teleport `11.0`.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -41,7 +41,7 @@ is available starting from Teleport `11.0`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -63,7 +63,7 @@ is available starting from Teleport `11.0`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -87,7 +87,7 @@ is available starting from Teleport `11.0`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -110,7 +110,7 @@ is available starting from Teleport `11.0`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -129,7 +129,7 @@ is available starting from Teleport `11.0`.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -151,7 +151,7 @@ is available starting from Teleport `11.0`.
   <Tab title="Teleport Team/Community Edition">
     Create a local Teleport user with the built-in `access` role:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access \
       --db-users=\* \
@@ -163,7 +163,7 @@ is available starting from Teleport `11.0`.
   <Tab title="Teleport Enterprise/Enterprise Cloud">
     Create a local Teleport user with the built-in `access` and `requester` roles:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access,requester \
       --db-users=\* \
@@ -278,6 +278,10 @@ role assignments**, then on **Add role assignment**. Select the custom role and
 save.
 
 <Note>
+  <p>
+    **Azure Role Assignments**
+  </p>
+
   The role assignment should be at a high enough scope to allow the Teleport Database Service to discover
   all matching databases. See
   [Identify the needed scope](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps#step-3-identify-the-needed-scope)
@@ -338,7 +342,7 @@ Select an edition, then follow the instructions for that edition to install Tele
     The following command updates the repository for the package manager on the
     local operating system and installs the provided Teleport version:
 
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 15.0.2
     ```
   </Tab>
@@ -348,7 +352,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -370,7 +374,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -393,7 +397,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -416,7 +420,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -476,7 +480,7 @@ Select an edition, then follow the instructions for that edition to install Tele
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -494,13 +498,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -518,13 +522,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v15. You'll need to update this
@@ -542,13 +546,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v15. You'll need to update this
@@ -568,13 +572,13 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -590,7 +594,7 @@ Select an edition, then follow the instructions for that edition to install Tele
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -600,7 +604,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -614,7 +618,7 @@ Select an edition, then follow the instructions for that edition to install Tele
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -644,7 +648,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -666,7 +670,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -689,7 +693,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -712,7 +716,7 @@ Select an edition, then follow the instructions for that edition to install Tele
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -774,7 +778,7 @@ Generate a configuration file at `/etc/teleport.yaml` for the Database Service.
 Set the `--proxy` command-line option to the address for your Teleport cluster
 and the `--azure-sqlserver-discovery` to the appropriate region:
 
-```code
+```bash
 $ sudo teleport db configure create \
    -o file \
    --token=/tmp/token \
@@ -796,7 +800,7 @@ the Teleport Database Service.
   <Tab title="Package Manager">
     On the host where you will run the Teleport Database Service, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -806,7 +810,7 @@ the Teleport Database Service.
     On the host where you will run the Teleport Database Service, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -818,6 +822,10 @@ You can check the status of the Teleport Database Service with `systemctl status
 and view its logs with `journalctl -fu teleport`.
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   A single Teleport process can run multiple different services, for example
   multiple Database Service agents as well as the SSH Service or Application
   Service.
@@ -828,7 +836,7 @@ and view its logs with `journalctl -fu teleport`.
 Log in to your Teleport cluster. Your database should appear in the list of
 available databases:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com --user=alice
 $ tsh db ls
 Name                Description                       Allowed Users Labels Connect
@@ -839,7 +847,7 @@ sqlserver-managed  Azure Managed SQL Server in eastus [*]           ...
 
 To retrieve credentials for a database and connect to it:
 
-```code
+```bash
 $ tsh db connect --db-user=sqlserver-identity --db-name=master sqlserver
 ```
 
@@ -854,7 +862,7 @@ Where `--db-user` is the managed identity name.
   the following command to start a local proxy server that you can connect to with
   your SQL Server client:
 
-  ```code
+  ```bash
   $ tsh proxy db --db-user=teleport --tunnel sqlserver
   ```
 

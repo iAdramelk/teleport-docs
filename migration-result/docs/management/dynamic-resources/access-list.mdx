@@ -1,7 +1,7 @@
 ---
 title: Creating Access Lists with IaC
 description: Use Infrastructure-as-Code tooling to create Teleport AccessLists.
-version: '15.x'
+version: "15.x"
 ---
 
 Access Lists allow Teleport users to be granted long-term access to resources
@@ -202,7 +202,7 @@ role.
 
 <Tabs>
   <Tab title="tctl">
-    ```code
+    ```bash
     $ tctl create -f privileged-role.yaml
     role 'support-engineer' has been created
 
@@ -219,7 +219,7 @@ role.
   <Tab title="Kubernetes Operator">
     Create the Kubernetes CRs with the following commands:
 
-    ```code
+    ```bash
     $ kubectl apply -n "$OPERATOR_NAMESPACE" -f privileged-role.yaml
     teleportrolev7.resources.teleport.dev/support-engineer created
 
@@ -229,7 +229,7 @@ role.
   </Tab>
 
   <Tab title="Terraform">
-    ```code
+    ```bash
     $ terraform plan
     [...]
     Plan: 2 to add, 0 to change, 0 to destroy.
@@ -262,7 +262,7 @@ You can log in as alice and add `bob` to the `support-engineers` Access List.
   <Tab title="CLI">
     Login as `alice` with `tsh`, then add bob to the Access List:
 
-    ```code
+    ```bash
     # login as alice
     $ tsh login --proxy <your-cluster-domain>:<port> --user alice
 
@@ -272,7 +272,7 @@ You can log in as alice and add `bob` to the `support-engineers` Access List.
 
     Finally, list the Access List members:
 
-    ```code
+    ```bash
     $ tctl acl users ls support-engineers
     Members of support-engineers:
     - bob

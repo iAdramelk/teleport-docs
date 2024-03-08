@@ -1,7 +1,7 @@
 ---
 title: Database Access with Self-Hosted CockroachDB
 description: How to configure Teleport database access with self-hosted CockroachDB.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport can provide secure access to CockroachDB via the  [Teleport Database
@@ -29,11 +29,11 @@ In this guide, you will:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -46,7 +46,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -66,7 +66,7 @@ In this guide, you will:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -83,7 +83,7 @@ In this guide, you will:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -100,7 +100,7 @@ In this guide, you will:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -119,7 +119,7 @@ In this guide, you will:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -134,7 +134,7 @@ In this guide, you will:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -177,7 +177,7 @@ The Database Service requires a valid auth token to connect to the cluster. Gene
 one by running the following command against your Teleport Auth Service and save
 it in `/tmp/token` on the node that will run the Database Service:
 
-```code
+```bash
 $ tctl tokens add --type=db
 ```
 
@@ -189,7 +189,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
     <Tabs dropdownView dropdownCaption="Teleport Edition">
       <Tab title="Teleport Community Edition">
-        ```code
+        ```bash
         $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
         ```
       </Tab>
@@ -199,7 +199,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             Add the Teleport repository to your repository list:
 
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -221,7 +221,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -244,7 +244,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -267,7 +267,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for cloud.
@@ -325,7 +325,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
       <Tab title="Teleport Enterprise">
         <Tabs>
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -343,13 +343,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo apt-get install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for v13. You'll need to update this
@@ -367,13 +367,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo yum install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -391,13 +391,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo yum install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for v13. You'll need to update this
@@ -417,13 +417,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo dnf install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository.
@@ -439,7 +439,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo zypper install teleport-ent-fips
             ```
           </Tab>
@@ -449,7 +449,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
             value (`amd64`, `arm64`, or `arm`). All example commands using this variable
             will update after one is filled out.
 
-            ```code
+            ```bash
             $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
             # <checksum> <filename>
             $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -463,7 +463,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
             For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
             will be slightly different:
 
-            ```code
+            ```bash
             $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
             # <checksum> <filename>
             $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -493,7 +493,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             Add the Teleport repository to your repository list:
 
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -515,7 +515,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -538,7 +538,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -561,7 +561,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for cloud.
@@ -630,7 +630,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
     <Tabs>
       <Tab title="Teleport Enterprise/Enterprise Cloud">
-        ```code
+        ```bash
         $ sudo teleport db configure create \
            -o file \
            --token=/tmp/token \
@@ -643,7 +643,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
       </Tab>
 
       <Tab title="Teleport Team/Community Edition">
-        ```code
+        ```bash
         $ sudo teleport db configure create \
            -o file \
            --token=/tmp/token \
@@ -664,7 +664,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
       <Tab title="Package Manager">
         On the host where you will run the Teleport Database Service, enable and start Teleport:
 
-        ```code
+        ```bash
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
         ```
@@ -674,7 +674,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
         On the host where you will run the Teleport Database Service, create a systemd service
         configuration for Teleport, enable the Teleport service, and start Teleport:
 
-        ```code
+        ```bash
         $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
@@ -691,13 +691,13 @@ Install and configure Teleport where you will run the Teleport Database Service:
 
     To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     To update the cache of charts from the remote repository, run `helm repo update`:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
 
@@ -706,7 +706,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
         Install the Teleport Kube Agent into your Kubernetes Cluster
         with the Teleport Database Service configuration.
 
-        ```code
+        ```bash
         $ JOIN_TOKEN=$(cat /tmp/token)
         $ helm install teleport-kube-agent teleport/teleport-kube-agent \
           --create-namespace \
@@ -726,7 +726,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
         Install the Teleport Kube Agent into your Kubernetes Cluster
         with the Teleport Database Service configuration.
 
-        ```code
+        ```bash
         $ JOIN_TOKEN=$(cat /tmp/token)
         $ helm install teleport-kube-agent teleport/teleport-kube-agent \
           --create-namespace \
@@ -746,7 +746,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
     Make sure that the Teleport agent pod is running. You should see one
     `teleport-kube-agent` pod with a single ready container:
 
-    ```code
+    ```bash
     $ kubectl -n teleport-agent get pods
     NAME                    READY   STATUS    RESTARTS   AGE
     teleport-kube-agent-0   1/1     Running   0          32s
@@ -755,6 +755,10 @@ Install and configure Teleport where you will run the Teleport Database Service:
 </Tabs>
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   A single Teleport process can run multiple services, for example
   multiple Database Service instances as well as other services such the
   SSH Service or Application Service.
@@ -770,7 +774,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
   <Tab title="Teleport Team/Community Edition">
     Create a local Teleport user with the built-in `access` role:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access \
       --db-users=\* \
@@ -782,7 +786,7 @@ Install and configure Teleport where you will run the Teleport Database Service:
   <Tab title="Teleport Enterprise/Enterprise Cloud">
     Create a local Teleport user with the built-in `access` and `requester` roles:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access,requester \
       --db-users=\* \
@@ -853,7 +857,7 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
     Copy your CockroachDB CA cert to `ca-client.crt` in the certs directory of
     each CockroachDB node:
 
-    ```code
+    ```bash
     $ CERTS_DIR=/path/to/cockroachdb/certs/dir
     $ cp "${CERTS_DIR}/ca.crt" "${CERTS_DIR}/ca-client.crt"
     ```
@@ -862,7 +866,7 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
     (or export it once and copy it to each node) and append the certificate to
     `ca-client.crt`:
 
-    ```code
+    ```bash
     $ tctl auth export --type=db_client >> /path/to/cockroachdb/certs/dir/ca-client.crt
     ```
 
@@ -908,7 +912,7 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
 
     Generate secrets for a CockroachDB node using `tctl`:
 
-    ```code
+    ```bash
     $ tctl auth sign \
         --format=cockroachdb \
         --host=roach.example.com \
@@ -917,6 +921,10 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
     ```
 
     <Note>
+      <p>
+        **TTL**
+      </p>
+
       We recommend using a shorter TTL, but keep mind that you'll need to update the
       database server certificate before it expires to not lose the ability to
       connect. Pick the TTL value that best fits your use-case.
@@ -942,7 +950,7 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
     Prepend your CockroachDB CA's certificate to `ca-client.crt`.
     Now issue a client certificate for the node using your CockroachDB CA:
 
-    ```code
+    ```bash
     $ cockroach cert create-client node \
       --certs-dir=/path/to/cockroachdb/certs/dir \
       --ca-key=ca-secrets/ca-client.key
@@ -967,7 +975,7 @@ cluster. This is because CockroachDB uses mTLS for node-to-node communication.
 Restart your CockroachDB nodes, passing them the directory with generated secrets
 via the `--certs-dir` flag:
 
-```code
+```bash
 $ cockroach start \
     --certs-dir=/path/to/cockroachdb/certs/dir \
     # other flags...
@@ -979,7 +987,7 @@ Alternatively, if the nodes were already started with
 restarting the node. You must send `SIGHUP` as the same user that started the
 `cockroach` process:
 
-```code
+```bash
 $ pkill -SIGHUP -x cockroach
 ```
 
@@ -990,7 +998,7 @@ list of available databases:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
     $ tsh db ls
     # Name  Description         Labels
@@ -1000,7 +1008,7 @@ list of available databases:
   </Tab>
 
   <Tab title="Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=mytenant.teleport.sh --user=alice
     $ tsh db ls
     # Name  Description         Labels
@@ -1012,14 +1020,14 @@ list of available databases:
 
 To retrieve credentials for a database and connect to it:
 
-```code
+```bash
 $ tsh db connect roach
 ```
 
 You can optionally specify the database name and the user to use by default
 when connecting to the database server:
 
-```code
+```bash
 $ tsh db connect --db-user=alice roach
 ```
 
@@ -1030,7 +1038,7 @@ $ tsh db connect --db-user=alice roach
 
 To log out of the database and remove credentials:
 
-```code
+```bash
 $ tsh db logout roach
 ```
 

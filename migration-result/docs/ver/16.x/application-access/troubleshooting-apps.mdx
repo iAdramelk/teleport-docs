@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting Application Access
 description: Describes common issues and solutions for access to applications protected by Teleport.
-version: '16.x'
+version: "16.x"
 ---
 
 This section describes common issues that you might encounter in managing access to applications
@@ -115,7 +115,7 @@ certificate, you can use the `--insecure` command-line option to allow clients
 to accept the certificate. For example, you can start Teleport with a self-signed
 certificate by running a command similar to the following:
 
-```code
+```bash
 sudo teleport start --config=/etc/teleport.yaml --insecure
 ```
 
@@ -124,7 +124,7 @@ validate the certificate chain presented by the Teleport Proxy Service, you can
 manually set the `SSL_CERT_FILE` or `SSL_CERT_DIR` environment variable on the
 command line. For example:
 
-```code
+```bash
 sudo SSL_CERT_FILE=path-to-rootCA-pem teleport start --config=/etc/teleport.yaml
 ```
 

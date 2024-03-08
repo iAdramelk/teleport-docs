@@ -1,7 +1,7 @@
 ---
 title: Deploying Machine ID on CircleCI
 description: How to install and configure Machine ID on CircleCI
-version: '14.x'
+version: "14.x"
 ---
 
 In this guide, you will configure Machine ID's agent, `tbot`, to run within a
@@ -13,7 +13,7 @@ joining method to eliminate the need for long-lived secrets.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -22,7 +22,7 @@ joining method to eliminate the need for long-lived secrets.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -44,7 +44,7 @@ joining method to eliminate the need for long-lived secrets.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -68,7 +68,7 @@ joining method to eliminate the need for long-lived secrets.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -91,7 +91,7 @@ joining method to eliminate the need for long-lived secrets.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -108,7 +108,7 @@ joining method to eliminate the need for long-lived secrets.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -213,7 +213,7 @@ Let's go over the token resource's fields in more detail:
 
 Apply this to your Teleport cluster using `tctl`:
 
-```code
+```bash
 $ tctl create -f bot-token.yaml
 ```
 
@@ -240,13 +240,13 @@ spec:
 
 Use `tctl` to apply this file:
 
-```code
+```bash
 $ tctl create -f bot-role.yaml
 ```
 
 Create the bot, specifying the role and token that you have created:
 
-```code
+```bash
 $ tctl bots add example --roles=example-bot --token=example-bot
 ```
 

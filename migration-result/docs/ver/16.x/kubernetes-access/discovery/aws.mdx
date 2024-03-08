@@ -1,7 +1,7 @@
 ---
 title: Teleport EKS Auto-Discovery
 description: How to configure auto-discovery of AWS EKS clusters in Teleport.
-version: '16.x'
+version: "16.x"
 ---
 
 EKS Auto-Discovery can automatically
@@ -30,7 +30,7 @@ communications between users and the API servers of these clusters.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -39,7 +39,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -61,7 +61,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -85,7 +85,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -108,7 +108,7 @@ communications between users and the API servers of these clusters.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -340,7 +340,7 @@ Kubernetes services to join the cluster. Generate one by running the following
 command against your Teleport Auth Service and save it in `/tmp/token` on the
 machine that will run Kubernetes Discovery:
 
-```code
+```bash
 $ tctl tokens add --type=discovery,kube
 ```
 
@@ -466,7 +466,7 @@ the Kubernetes and Discovery Services.
   <Tab title="Package Manager">
     On the host where you will run the Kubernetes and Discovery Services, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -476,7 +476,7 @@ the Kubernetes and Discovery Services.
     On the host where you will run the Kubernetes and Discovery Services, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport

@@ -1,7 +1,7 @@
 ---
 title: Headless WebAuthn (Preview)
 description: Headless WebAuthn
-version: '13.x'
+version: "13.x"
 ---
 
 <Warning>
@@ -19,6 +19,10 @@ For example:
 - Logging into Teleport on a machine without a WebAuthn-compatible browser
 
 <Note>
+  <p>
+    **Headless WebAuthn Support**
+  </p>
+
   Headless WebAuthn only supports the following `tsh` commands:
 
   - `tsh ls`
@@ -64,7 +68,7 @@ Headless WebAuthn without any additional configuration.
 
   Update the configuration:
 
-  ```code
+  ```bash
   $ tctl create -f cap.yaml
   # cluster auth preference has been updated
   ```
@@ -93,7 +97,7 @@ Headless WebAuthn without any additional configuration.
 
   Update the configuration:
 
-  ```code
+  ```bash
   $ tctl create -f cap.yaml
   # cluster auth preference has been updated
   ```
@@ -104,7 +108,7 @@ Headless WebAuthn without any additional configuration.
 First open a terminal on the remote machine and confirm the `tsh` binary
 is v12.2+ with `tsh version`.
 
-```code
+```bash
 $ tsh version
 Teleport v13.4.16 git: go1.21
 ```
@@ -112,7 +116,7 @@ Teleport v13.4.16 git: go1.21
 Run a headless `tsh` command with the `--headless` flag. This will initiate
 headless authentication, printing a URL and `tsh` command.
 
-```code
+```bash
 $ tsh ls --headless --proxy=proxy.example.com --user=alice
 # Complete headless authentication in your local web browser:
 # 
@@ -136,7 +140,7 @@ command, you will need to go through the Headless WebAuthn flow:
 
 ### Example: Listing SSH servers
 
-```code
+```bash
 $ tsh ls --headless --proxy=proxy.example.com --user=alice
 # Complete headless authentication in your local web browser:
 # 
@@ -153,7 +157,7 @@ $ tsh ls --headless --proxy=proxy.example.com --user=alice
 
 ### Example: Initiating an SSH session
 
-```code
+```bash
 $ tsh ssh --headless --proxy=proxy.example.com --user=alice server01
 # Complete headless authentication in your local web browser:
 # 

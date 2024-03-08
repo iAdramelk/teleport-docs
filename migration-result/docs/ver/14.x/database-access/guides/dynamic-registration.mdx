@@ -1,7 +1,7 @@
 ---
 title: Dynamic Database Registration
 description: Register/unregister databases without restarting Teleport.
-version: '14.x'
+version: "14.x"
 ---
 
 Dynamic database registration allows Teleport administrators to register new
@@ -97,7 +97,7 @@ See the full database resource spec [reference](/docs/ver/14.x/database-access/r
 
 To create a database resource, run:
 
-```code
+```bash
 $ tctl create database.yaml
 ```
 
@@ -106,7 +106,7 @@ $ tctl create database.yaml
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -124,7 +124,7 @@ instance picks it up according to its label selectors.
 
 To update an existing database resource, run:
 
-```code
+```bash
 $ tctl create -f database.yaml
 ```
 
@@ -133,7 +133,7 @@ will unregister and stop proxying it.
 
 To delete a database resource, run:
 
-```code
+```bash
 $ tctl rm db/example
 ```
 

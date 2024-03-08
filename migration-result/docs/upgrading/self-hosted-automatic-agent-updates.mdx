@@ -1,7 +1,7 @@
 ---
 title: Set up Automatic Agent Upgrades
 description: Describes how to set up automatic agent upgrades for self-hosted Teleport deployments.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport supports automatic agent upgrades for systemd-based Linux distributions
@@ -49,7 +49,7 @@ agent upgrades. Terraform is not required to set up a version server.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -71,7 +71,7 @@ the maintenance schedule and upgrade as soon as possible.
 
 The version server is a static file server that responds to the following queries:
 
-```code
+```bash
 $ curl https://<hosting-domain-and-path>/current/version
 15.0.2
 
@@ -81,26 +81,26 @@ no
 
 1. Create a project directory for the files we create in this guide:
 
-   ```code
+   ```bash
    $ mkdir version-server
    $ cd version-server
    ```
 
 2. Create a directory for the new release channel `current`.
 
-   ```code
+   ```bash
    $ mkdir current/
    ```
 
 3. Make the `current` release channel target the version 15.0.2:
 
-   ```code
+   ```bash
    $ echo -n "15.0.2" > current/version
    ```
 
 4. And mark the upgrade as not critical:
 
-   ```code
+   ```bash
    $ echo -n "no" > current/critical
    ```
 
@@ -238,7 +238,7 @@ no
 
 3. Apply the configuration:
 
-```code
+```bash
 $ terraform init
 $ terraform apply
 ```
@@ -272,7 +272,7 @@ roles provide this ability, so you will need to create one.
 
 2. Create the role resource:
 
-   ```code
+   ```bash
    $ tctl create cmd-editor.yaml
    ```
 
@@ -285,13 +285,13 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's roles as a comma-separated list:
 
-       ```code
+       ```bash
        $ ROLES=$(tsh status -f json | jq -r '.active.roles | join(",")')
        ```
 
     2. Edit your local user to add the new role:
 
-       ```code
+       ```bash
        $ tctl users update $(tsh status -f json | jq -r '.active.username') \
          --set-roles "${ROLES?},myrole"
        ```
@@ -302,7 +302,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -329,7 +329,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -339,7 +339,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -366,7 +366,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -376,7 +376,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -403,7 +403,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -435,7 +435,7 @@ spec:
 
 Finally, apply the manifest using `tctl`:
 
-```code
+```bash
 $ tctl create cmc.yaml
 maintenance window has been updated
 ```
@@ -456,7 +456,7 @@ This section assumes that the name of your `teleport-kube-agent` release is
    `teleport-kube-agent` chart. You should see the following when you query your
    `teleport-kube-agent` release:
 
-   ```code
+   ```bash
    $ helm -n teleport get values -n teleport-agent -o json | jq '.enterprise'
    true   
    ```
@@ -471,13 +471,13 @@ This section assumes that the name of your `teleport-kube-agent` release is
      releaseChannel: release-channel
    ```
 
-   Change RELEASE-CHANNEL to the name of the release channel you
+   Change release-channel to the name of the release channel you
    would like the agent to query for upgrades. For the current version, choose
    `current`.
 
 3. Update the Helm chart release with the new values:
 
-   ```code
+   ```bash
    $ helm -n teleport  upgrade teleport-agent teleport/teleport-kube-agent \
    --values=values.yaml \
    --version=15.0.2
@@ -488,7 +488,7 @@ This section assumes that the name of your `teleport-kube-agent` release is
 1. You can validate the updater is running properly by checking if its pod is
    ready:
 
-   ```code
+   ```bash
    $ kubectl -n teleport-agent get pods
    NAME                               READY   STATUS    RESTARTS   AGE
    <your-agent-release>-0                         1/1     Running   0          14m
@@ -499,7 +499,7 @@ This section assumes that the name of your `teleport-kube-agent` release is
 
 2. Check for any deployment issues by checking the updater logs:
 
-   ```code
+   ```bash
    $ kubectl -n teleport logs deployment/teleport-agent-updater
    2023-04-28T13:13:30Z	INFO	StatefulSet is already up-to-date, not updating.	{"controller": "statefulset", "controllerGroup": "apps", "controllerKind": "StatefulSet", "StatefulSet": {"name":"my-agent","namespace":"agent"}, "namespace": "agent", "name": "my-agent", "reconcileID": "10419f20-a4c9-45d4-a16f-406866b7fc05", "namespacedname": "agent/my-agent", "kind": "StatefulSet", "err": "no new version (current: \"v12.2.3\", next: \"v12.2.3\")"}
    ```
@@ -514,7 +514,7 @@ until the next reconciliation, you can trigger an event.
 1. Any deployment update will send an event, so you can trigger the upgrader by
    annotating the resource:
 
-   ```code
+   ```bash
    $ kubectl -n teleport annotate statefulset/teleport-agent 'debug.teleport.dev/trigger-event=1'
    ```
 
@@ -536,7 +536,7 @@ Follow these instructions on each of your Teleport agents.
 
    To verify if the Teleport repository was added to the system, check if either of the follow files exist:
 
-   ```code
+   ```bash
    $ ls /etc/apt/sources.list.d/teleport.list
    # or
    $ ls /etc/yum.repos.d/teleport.repo
@@ -548,7 +548,7 @@ Follow these instructions on each of your Teleport agents.
 2. If the repository was added, make sure the Teleport binary installed on the
    agent can run the automatic updater:
 
-   ```code
+   ```bash
    $ which teleport-upgrade || echo "Install the upgrader"
    Install the upgrader
    ```
@@ -559,7 +559,7 @@ Follow these instructions on each of your Teleport agents.
 
    <Tabs>
      <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-       ```code
+       ```bash
        # Download Teleport's PGP public key
        $ sudo curl https://apt.releases.teleport.dev/gpg \
        -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -577,13 +577,13 @@ Follow these instructions on each of your Teleport agents.
 
        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-       ```code
+       ```bash
        $ sudo apt-get install teleport-ent-fips
        ```
      </Tab>
 
      <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport YUM repository for v15. You'll need to update this
@@ -601,13 +601,13 @@ Follow these instructions on each of your Teleport agents.
 
        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-       ```code
+       ```bash
        $ sudo yum install teleport-ent-fips
        ```
      </Tab>
 
      <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport Zypper repository for v15. You'll need to update this
@@ -625,13 +625,13 @@ Follow these instructions on each of your Teleport agents.
 
        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-       ```code
+       ```bash
        $ sudo yum install teleport-ent-fips
        ```
      </Tab>
 
      <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport YUM repository for v15. You'll need to update this
@@ -651,13 +651,13 @@ Follow these instructions on each of your Teleport agents.
 
        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-       ```code
+       ```bash
        $ sudo dnf install teleport-ent-fips
        ```
      </Tab>
 
      <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-       ```code
+       ```bash
        # Source variables about OS version
        $ source /etc/os-release
        # Add the Teleport Zypper repository.
@@ -673,7 +673,7 @@ Follow these instructions on each of your Teleport agents.
 
        For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-       ```code
+       ```bash
        $ sudo zypper install teleport-ent-fips
        ```
      </Tab>
@@ -683,7 +683,7 @@ Follow these instructions on each of your Teleport agents.
        value (`amd64`, `arm64`, or `arm`). All example commands using this variable
        will update after one is filled out.
 
-       ```code
+       ```bash
        $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
        # <checksum> <filename>
        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -697,7 +697,7 @@ Follow these instructions on each of your Teleport agents.
        For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
        will be slightly different:
 
-       ```code
+       ```bash
        $ curl https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
        # <checksum> <filename>
        $ curl -O https://cdn.teleport.dev/teleport-ent-v15.0.2-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -714,7 +714,7 @@ Follow these instructions on each of your Teleport agents.
 
 1. Create the upgrade configuration directory:
 
-   ```code
+   ```bash
    $ sudo mkdir -p /etc/teleport-upgrade.d/
    ```
 
@@ -722,7 +722,7 @@ Follow these instructions on each of your Teleport agents.
    `/etc/teleport-upgrade.d/schedule` and grant ownership to your Teleport user.
    Otherwise, you can skip this step:
 
-   ```code
+   ```bash
    $ sudo touch /etc/teleport-upgrade.d/schedule
    $ sudo chown your-teleport-user /etc/teleport-upgrade.d/schedule
    ```
@@ -730,7 +730,7 @@ Follow these instructions on each of your Teleport agents.
 3. Configure the upgrader to connect to your custom version server and subscribe
    to the right release channel:
 
-   ```code
+   ```bash
    $ echo version-server-url/path/release-channel | sudo tee /etc/teleport-upgrade.d/endpoint
    ```
 
@@ -741,7 +741,7 @@ Follow these instructions on each of your Teleport agents.
 1. Verify that the upgrader can see your version endpoint by checking for
    upgrades:
 
-   ```code
+   ```bash
    $ sudo teleport-upgrade dry-run
    ```
 
@@ -762,19 +762,19 @@ Follow these instructions on each of your Teleport agents.
 1. If an agent is not automatically upgraded, you can invoke the upgrader
    manually and look at its logs:
 
-   ```code
+   ```bash
    $ sudo teleport-upgrade run
    ```
 
 2. To suspend automatic updates, disable the systemd timer:
 
-   ```code
+   ```bash
    $ sudo systemctl disable --now teleport-upgrade.timer
    ```
 
 3. To enable and start the systemd timer after suspending:
 
-   ```code
+   ```bash
    $ sudo systemctl enable --now teleport-upgrade.timer
    ```
 

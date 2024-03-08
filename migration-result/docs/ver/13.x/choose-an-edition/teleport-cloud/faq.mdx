@@ -2,7 +2,7 @@
 title: Teleport Enterprise Cloud FAQ
 description: Teleport cloud frequently asked questions.
 tocDepth: 3
-version: '13.x'
+version: "13.x"
 ---
 
 ## Billing and usage
@@ -107,7 +107,7 @@ incompatibility to these cluster editions for certain features.
 To verify you have a Teleport Enterprise release installed run the `teleport version`
 command and Enterprise will be in the output.
 
-```code
+```bash
 $ teleport version
 # Teleport Enterprise v13.4.16 go1.21
 ```
@@ -115,7 +115,7 @@ $ teleport version
 Teleport Community Edition clusters should use the Teleport Community Edition releases. The `teleport version`
 command will only include Teleport in its output for those releases.
 
-```code
+```bash
 $ teleport version
 # Teleport v13.4.16 go1.21
 ```
@@ -128,7 +128,7 @@ with Enterprise or OSS releases.
 After [connecting](#how-can-i-access-the-tctl-admin-tool) `tctl` to Teleport Enterprise Cloud, users can generate
 [dynamic tokens](/docs/ver/13.x/agents/join-services-to-your-cluster/join-token):
 
-```code
+```bash
 $ tctl nodes add --ttl=5m --roles=node,proxy --token=$(uuid)
 ```
 
@@ -140,7 +140,7 @@ Find the appropriate download at [Teleport Enterprise Cloud Downloads](/docs/ver
 
 After downloading the tools, first log in to your cluster using `tsh`, then use `tctl` remotely:
 
-```code
+```bash
 $ tsh login --proxy=myinstance.teleport.sh
 $ tctl status
 ```
@@ -149,7 +149,7 @@ $ tctl status
 
 If you have a local file `/etc/teleport.yaml` on your machine `tctl` will attempt to use the local cluster. Set the environment variable `TELEPORT_CONFIG_FILE` to `""` so it will not attempt to use that Teleport configuration file.
 
-```code
+```bash
 $ export TELEPORT_CONFIG_FILE=""
 $ tctl tokens add --type=node
 ```
@@ -231,7 +231,7 @@ agent into automatic updates](/docs/ver/13.x/management/operations/enroll-agent-
 To find the version of Teleport agent is attached to your cluster, run the
 following commands for the different protocols we support.
 
-```code
+```bash
 $ tctl get nodes --format=text
 $ tctl get kube_server --format=text
 $ tctl get app_server --format=text
@@ -242,7 +242,7 @@ $ tctl get windows_desktop_service --format=text
 Below you can see sample output of `tctl get nodes --format=text`. Note the
 `Version` column will contain the version of the attached agent.
 
-```code
+```bash
 $ tctl get nodes --format=text
 Host     UUID                                 Public Address Labels Version
 -------- ------------------------------------ -------------- ------ ----------
@@ -258,7 +258,7 @@ Teleport Enterprise Cloud allocates a different set of ports to each tenant. To 
 ports are available for your Teleport Enterprise Cloud tenant, run a command similar to the
 following, replacing `example.teleport.sh` with your tenant domain:
 
-```code
+```bash
 $ curl https://example.teleport.sh/webapi/ping | jq '.proxy'
 ```
 

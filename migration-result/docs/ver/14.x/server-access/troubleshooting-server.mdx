@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting Server Access
 description: Describes common issues and solutions for access to servers.
-version: '14.x'
+version: "14.x"
 ---
 
 This section describes common issues that you might encounter in managing access to servers
@@ -36,7 +36,7 @@ To check the file system permissions on the `teleport` binary:
 
 2. Determine the location and file system permission of the Teleport binary by running the following command:
 
-   ```code
+   ```bash
    ls -al $(which teleport)
    ```
 
@@ -49,7 +49,7 @@ To check the file system permissions on the `teleport` binary:
    If you don't see the permission that allows other users to read and execute (-rwxr-x**r-x**),
    you should update the permissions. For example:
 
-   ```code
+   ```bash
    sudo chmod go+rx $(which teleport)
    ```
 
@@ -153,6 +153,6 @@ changing this setting to `PermitRootLogin prohibit-password`.
 
 You will need to restart sshd for the change to take effect:
 
-```code
+```bash
 $ sudo systemctl restart sshd
 ```

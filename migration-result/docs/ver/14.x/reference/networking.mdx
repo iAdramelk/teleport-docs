@@ -1,7 +1,7 @@
 ---
 title: Networking
 description: This reference explains the networking requirements of a Teleport cluster, including its public address, ports, and support for HTTP CONNECT proxies.
-version: '14.x'
+version: "14.x"
 ---
 
 ## Public address
@@ -90,10 +90,18 @@ The value of `HTTPS_PROXY` or `HTTP_PROXY` should be in the format
 `host:port` , Teleport will prepend `http` .
 
 <Warning>
+  <p>
+    **Note**
+  </p>
+
   `localhost` and `127.0.0.1` are invalid values for the proxy host. If for some reason your proxy runs locally, you'll need to provide some other DNS name or a private IP address for it.
 </Warning>
 
 <Warning>
+  <p>
+    **Note**
+  </p>
+
   The proxy service also respects `HTTPS_PROXY` and `HTTP_PROXY` when connecting to a local kubernetes cluster, which may not work. To fix this, add `kube.teleport.cluster.local` to `NO_PROXY`.
 </Warning>
 
@@ -106,10 +114,14 @@ This section describes the ports you should open on your Teleport instances.
     ### Proxy Service ports
 
     <Tip>
+      <p>
+        **Note**
+      </p>
+
       To get a listing of the assigned ports for an instance of the Teleport Proxy
       Service, use the following command:
 
-      ```code
+      ```bash
       $ curl https://teleport.example.com:443/webapi/ping | jq
       ```
 
@@ -162,7 +174,7 @@ This section describes the ports you should open on your Teleport instances.
     tenant, run a command similar to the following, replacing `mytenant.teleport.sh`
     with your tenant domain:
 
-    ```code
+    ```bash
     $ curl https://mytenant.teleport.sh/webapi/ping | jq '.proxy'
     ```
 
@@ -221,6 +233,10 @@ This is useful when you need to connect to resources directly if the Proxy
 Service becomes unavailable.
 
 <Tip>
+  <p>
+    **Note**
+  </p>
+
   In Teleport Cloud, the Auth and Proxy Services run in Teleport-owned infrastructure.
   For this reason, Teleport Cloud customers must connect their resources via reverse tunnels.
   Exposing ports for direct dial is only supported in self-hosted deployments.

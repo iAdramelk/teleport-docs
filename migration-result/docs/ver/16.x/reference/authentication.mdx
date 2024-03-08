@@ -1,7 +1,7 @@
 ---
 title: Authentication options
 description: A reference for Teleport's authentication connectors
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport authenticates users either via the Proxy Service or with an identity
@@ -54,7 +54,7 @@ possible values (types) of MFA:
 
     Obtain your existing `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl get cap > cap.yaml
     ```
 
@@ -74,7 +74,7 @@ possible values (types) of MFA:
 
     Create the `cluster_auth_preference` resource via `tctl`:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>
@@ -84,14 +84,14 @@ possible values (types) of MFA:
 
     Log in to Teleport from your local machine so you can use the `tctl` admin tool:
 
-    ```code
+    ```bash
     $ tsh login --proxy=myinstance.teleport.sh
     $ tctl status
     ```
 
     Obtain your existing `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl get cap > cap.yaml
     ```
 
@@ -111,7 +111,7 @@ possible values (types) of MFA:
 
     Create the `cluster_auth_preference` resource via `tctl`:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>
@@ -132,7 +132,7 @@ following these steps.
 
 Retrieve the user entry so you can edit the status:
 
-```code
+```bash
 $ tctl get users/username > user.yaml
 ```
 
@@ -155,7 +155,7 @@ version: v2
 Update the `is_locked` field under `status` to `false` and save the file. Now
 update the user entry with the command below:
 
-```code
+```bash
 $ tctl create -f user.yaml
 ```
 

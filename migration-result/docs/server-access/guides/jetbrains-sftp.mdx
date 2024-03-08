@@ -2,7 +2,7 @@
 title: JetBrains SFTP
 description: How to use a JetBrains IDE to manipulate files on a remote host with Teleport
 h1: SFTP with JetBrains IDE
-version: '15.x'
+version: "15.x"
 ---
 
 JetBrain's IDEs, like PyCharm, GoLand, and IntelliJ, allow browsing, copying, and editing files on a remote server
@@ -16,7 +16,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -25,7 +25,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -47,7 +47,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -71,7 +71,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -94,7 +94,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -115,7 +115,7 @@ This guide explains how to use Teleport and a JetBrains IDE to access files with
 
 Configure your local SSH client to access servers, assigning the `--proxy` flag to the address of your Teleport Proxy Service (e.g., `mytenant.teleport.sh` for Teleport Cloud users).
 
-```code
+```bash
 # log in to your proxy:
 $ tsh login --proxy proxy.foo.example.com --user alice
 
@@ -139,7 +139,7 @@ in the path below:
       shell redirection may write the file with the incorrect encoding. To
       ensure it's written properly, try the following:
 
-      ```code
+      ```bash
       $ tsh.exe config | out-file .ssh\config -encoding utf8 -append
       ```
     </Warning>
@@ -148,7 +148,7 @@ in the path below:
 
 You should be able to connect to the desired server using the following command, replacing `user` with the username you would like to assume on the server:
 
-```code
+```bash
 $ ssh user@[server name].[cluster name]
 ```
 
@@ -162,7 +162,7 @@ $ ssh user@[server name].[cluster name]
   See the [OpenSSH guide](/docs/server-access/openssh) for more information.
   Example connecting to a OpenSSH server:
 
-  ```code
+  ```bash
   $ ssh -p 22 user@[server name].[cluster name]
   ```
 </Note>

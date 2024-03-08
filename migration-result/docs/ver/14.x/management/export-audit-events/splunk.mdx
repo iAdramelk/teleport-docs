@@ -1,7 +1,7 @@
 ---
 title: Export Teleport Audit Events to Splunk
 description: How to configure the Teleport Event Handler plugin to send audit logs to Splunk
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport's Event Handler plugin receives audit logs from the Teleport Auth
@@ -20,7 +20,7 @@ visualization and alerting.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/14.x/index) guide.
+      [Getting Started](/docs/ver/14.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
 
@@ -29,7 +29,7 @@ visualization and alerting.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -51,7 +51,7 @@ visualization and alerting.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -75,7 +75,7 @@ visualization and alerting.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -98,7 +98,7 @@ visualization and alerting.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -140,7 +140,7 @@ your infrastructure.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -167,7 +167,7 @@ Handler plugin on your Universal Forwarder host:
 
 <Tabs>
   <Tab title="Linux">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v14.3.3-linux-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v14.3.3-linux-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
@@ -178,7 +178,7 @@ Handler plugin on your Universal Forwarder host:
   </Tab>
 
   <Tab title="macOS">
-    ```code
+    ```bash
     $ curl -L -O https://get.gravitational.com/teleport-event-handler-v14.3.3-darwin-amd64-bin.tar.gz
     $ tar -zxvf teleport-event-handler-v14.3.3-darwin-amd64-bin.tar.gz
     $ sudo ./teleport-event-handler/install
@@ -193,7 +193,7 @@ Handler plugin on your Universal Forwarder host:
   <Tab title="Docker">
     Ensure that you have Docker installed and running.
 
-    ```code
+    ```bash
     $ docker pull public.ecr.aws/gravitational/teleport-plugin-event-handler:14.3.3
     ```
   </Tab>
@@ -201,13 +201,13 @@ Handler plugin on your Universal Forwarder host:
   <Tab title="Helm">
     To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     To update the cache of charts from the remote repository, run `helm repo update`:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
   </Tab>
@@ -217,7 +217,7 @@ Handler plugin on your Universal Forwarder host:
 
     Run the following commands to build the plugin:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler/build.assets
     $ make build
@@ -232,7 +232,7 @@ Handler plugin on your Universal Forwarder host:
 
     Run the following commands on your Universal Forwarder host:
 
-    ```code
+    ```bash
     $ git clone https://github.com/gravitational/teleport-plugins.git --depth 1
     $ cd teleport-plugins/event-handler
     $ go build
@@ -254,7 +254,7 @@ Generate a configuration file with placeholder values for the Teleport Event Han
     `mytenant.teleport.sh` with the DNS name of your Teleport Team or Teleport
     Enterprise Cloud tenant:
 
-    ```code
+    ```bash
     $ teleport-event-handler configure . mytenant.teleport.sh:443
     ```
   </Tab>
@@ -264,7 +264,7 @@ Generate a configuration file with placeholder values for the Teleport Event Han
     `teleport.example.com:443` with the DNS name and HTTPS port of Teleport's Proxy
     Service:
 
-    ```code
+    ```bash
     $ teleport-event-handler configure . teleport.example.com:443
     ```
   </Tab>
@@ -274,7 +274,7 @@ Generate a configuration file with placeholder values for the Teleport Event Han
     `TELEPORT_CLUSTER_ADDRESS` to the DNS name and port of your Teleport Auth
     Service or Proxy Service:
 
-    ```code
+    ```bash
     $ TELEPORT_CLUSTER_ADDRESS=mytenant.teleport.sh:443
     $ docker run -v `pwd`:/opt/teleport-plugin -w /opt/teleport-plugin public.ecr.aws/gravitational/teleport-plugin-event-handler:14.3.3 configure . ${TELEPORT_CLUSTER_ADDRESS?}
     ```
@@ -283,7 +283,7 @@ Generate a configuration file with placeholder values for the Teleport Event Han
     client credentials available as a secret. Use the following command to create
     that secret in Kubernetes:
 
-    ```code
+    ```bash
     $ kubectl create secret generic teleport-event-handler-client-tls --from-file=ca.crt=ca.crt,client.crt=client.crt,client.key=client.key
     ```
 
@@ -305,7 +305,7 @@ Teleport event handler 14.3.6
 
 The plugin generates several setup files:
 
-```code
+```bash
 $ ls -l
 # -rw------- 1 bob bob     1038 Jul  1 11:14 ca.crt
 # -rw------- 1 bob bob     1679 Jul  1 11:14 ca.key
@@ -337,7 +337,7 @@ $ ls -l
   Event Handler at `handler.example.com`, you would run the following `configure`
   command:
 
-  ```code
+  ```bash
   $ teleport-event-handler configure --cn=handler.example.com --dns-names=forwarder.example.com
   ```
 
@@ -381,7 +381,7 @@ version: v2
 Move this file to your workstation (or recreate it by pasting the snippet above)
 and use `tctl` on your workstation to create the role and the user:
 
-```code
+```bash
 $ tctl create -f teleport-event-handler-role.yaml
 # user "teleport-event-handler" has been created
 # role 'teleport-event-handler' has been created
@@ -419,7 +419,7 @@ spec:
 
 Next, create the role:
 
-```code
+```bash
 $ tctl create teleport-event-handler-impersonator.yaml
 ```
 
@@ -434,7 +434,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -450,7 +450,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -460,7 +460,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -487,7 +487,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -497,7 +497,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -524,7 +524,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -534,7 +534,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -561,7 +561,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 
@@ -632,7 +632,7 @@ longer-lived identity files with `tctl`:
     generates signed credentials, and writes an identity file to the local
     directory:
 
-    ```code
+    ```bash
     $ tctl auth sign --user=teleport-event-handler --out=identity
     ```
 
@@ -657,7 +657,7 @@ longer-lived identity files with `tctl`:
       a `max_session_ttl` of at least 1000 hours (60000 minutes), and you must specify a `--ttl`
       when logging in:
 
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --ttl=60060
       ```
     </Accordion>
@@ -665,7 +665,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on a Linux server, create a data directory
     to hold certificate files for the plugin:
 
-    ```code
+    ```bash
     $ sudo mkdir -p /var/lib/teleport/api-credentials
     $ sudo mv identity /var/lib/teleport/plugins/api-credentials
     ```
@@ -673,7 +673,7 @@ longer-lived identity files with `tctl`:
     If you are running the plugin on Kubernetes, Create a Kubernetes secret
     that contains the Teleport identity file:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic --from-file=identity teleport-event-handler-identity
     ```
 
@@ -697,7 +697,7 @@ installing the Universal Forwarder.
   your Universal Forwarder service definition, which the init system systemd uses
   to run the Universal Forwarder:
 
-  ```code
+  ```bash
   $ sudo systemctl status SplunkForwarder.service
   ● SplunkForwarder.service - Systemd service file for Splunk, generated by 'splunk enable boot-start'
        Loaded: loaded (/lib/systemd/system/SplunkForwarder.service; enabled; vendor preset: enabled)
@@ -764,14 +764,14 @@ following commands on the Universal Forwarder host, where `server.crt` and
 `server.key` are two of the files you generated earlier with the
 `teleport-event-handler configure` the command:
 
-```code
+```bash
 $ cp server.crt server.pem
 $ cat server.key >> server.pem
 ```
 
 Allow the Universal Forwarder to access the certificate file:
 
-```code
+```bash
 $ sudo chown splunk:splunk server.pem
 ```
 
@@ -803,7 +803,7 @@ Assign `serverCert` to the path to the `server.pem` file you generated earlier.
 To assign `sslPassword`, run the following command in the directory that
 contains `fluent.conf`:
 
-```code
+```bash
 $ cat fluent.conf | grep passphrase
 private_key_passphrase "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 ```
@@ -836,7 +836,7 @@ Assign `sslRootCAPath` to the path of the `ca.crt` file you generated earlier.
 
 Ensure that the Universal Forwarder can read the CA certificate:
 
-```code
+```bash
 $ sudo chmod +r ca.crt
 ```
 
@@ -877,7 +877,7 @@ API when forwarding logs.
 
 Finally, restart the Universal Forwarder:
 
-```code
+```bash
 $ sudo systemctl restart SplunkForwarder
 ```
 
@@ -1016,7 +1016,7 @@ to generate, `/opt/machine-id/identity`.
 
 Ensure that the Teleport Event Handler can read the identity file:
 
-```code
+```bash
 $ chmod +r auth.pem
 ```
 
@@ -1053,7 +1053,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
 
     Enable and start the plugin:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport-event-handler
     $ sudo systemctl start teleport-event-handler
     ```
@@ -1063,7 +1063,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
       exporting events when you run the `start` command. This example will start
       exporting from May 5th, 2021:
 
-      ```code
+      ```bash
       $ teleport-event-handler start --config /etc/teleport-event-handler.toml --start-time "2021-05-05T00:00:00Z"
       ```
 
@@ -1076,7 +1076,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
     Once the Teleport Event Handler starts, you will see notifications about scanned
     and forwarded events:
 
-    ```code
+    ```bash
     $ sudo journalctl -u teleport-event-handler
     DEBU   Event sent id:f19cf375-4da6-4338-bfdc-e38334c60fd1 index:0 ts:2022-09-21
     18:51:04.849 +0000 UTC type:cert.create event-handler/app.go:140
@@ -1087,7 +1087,7 @@ Start the Teleport Teleport Event Handler by following the instructions below.
   <Tab title="Helm chart">
     Run the following command on your workstation:
 
-    ```code
+    ```bash
     $ helm install teleport-plugin-event-handler teleport/teleport-plugin-event-handler \
       --values teleport-plugin-event-handler-values.yaml \
       --version 14.3.3

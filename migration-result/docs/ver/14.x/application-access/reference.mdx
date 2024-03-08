@@ -1,12 +1,16 @@
 ---
 title: Application Access Reference Documentation
 description: Configuration and CLI reference documentation for Teleport application access.
-version: '14.x'
+version: "14.x"
 ---
 
 ## Configuration
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -116,7 +120,7 @@ assume that you have created a YAML file called `app.yaml` with your configurati
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     # Log in to your cluster with tsh so you can use tctl from your local machine.
     # You can also run tctl on your Auth Service host without running "tsh login"
     # first.
@@ -127,7 +131,7 @@ assume that you have created a YAML file called `app.yaml` with your configurati
   </Tab>
 
   <Tab title="Teleport Enterprise Cloud">
-    ```code
+    ```bash
     # Log in to your cluster with tsh so you can use tctl from your local machine.
     $ tsh login --proxy=mytenant.teleport.sh --user=myuser
     # Create the resource.
@@ -144,7 +148,7 @@ This section shows CLI commands relevant for application access.
 
 Lists available applications.
 
-```code
+```bash
 $ tsh apps ls
 ```
 
@@ -152,7 +156,7 @@ $ tsh apps ls
 
 Retrieves short-lived X.509 certificate for CLI application access.
 
-```code
+```bash
 $ tsh apps login grafana
 ```
 
@@ -165,7 +169,7 @@ $ tsh apps login grafana
 
 Removes CLI application access certificate.
 
-```code
+```bash
 # Log out of a particular app.
 $ tsh apps logout grafana
 
@@ -177,7 +181,7 @@ $ tsh apps logout
 
 Prints application connection information.
 
-```code
+```bash
 # Print app information in a table form.
 $ tsh apps config
 
@@ -202,7 +206,7 @@ $ curl $(tsh apps config --format=uri) \
 
 Run an Azure CLI command via the Teleport Application Service:
 
-```code
+```bash
 $ tsh az <command>
 ```
 

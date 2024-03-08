@@ -1,7 +1,7 @@
 ---
 title: Federated Kubernetes Access with Trusted Clusters
 description: Federated Access using Teleport trusted clusters.
-version: '14.x'
+version: "14.x"
 ---
 
 There are cases when you have Kubernetes clusters that have to operate independently,
@@ -28,7 +28,7 @@ to federate trust across Kubernetes clusters.
 
     In this scenario, users usually log in using the following command:
 
-    ```code
+    ```bash
     # Using login without arguments
     $ tsh --proxy=main.example.com login
 
@@ -61,7 +61,7 @@ to federate trust across Kubernetes clusters.
 
     In this scenario, users usually log in using the following command:
 
-    ```code
+    ```bash
     # Using login without arguments
     $ tsh --proxy=mytenant.teleport.sh login
 

@@ -1,7 +1,7 @@
 ---
 title: MongoDB Automatic User Provisioning 
 description: Configure automatic user provisioning for MongoDB.
-version: '14.x'
+version: "14.x"
 ---
 
 Teleport can automatically create users in your database, removing the need for
@@ -15,6 +15,10 @@ database accounts for all users.
 - Ability to connect to and create user accounts in the target database.
 
 <Note>
+  <p>
+    **Supported services**
+  </p>
+
   Automatic user provisioning is not compatible with MongoDB Atlas.
 </Note>
 
@@ -161,12 +165,16 @@ Users created within the database will:
 
 Now, log into your Teleport cluster and connect to the database:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com
 $ tsh db connect --db-name <database> example
 ```
 
 <Note>
+  <p>
+    **Database Username**
+  </p>
+
   When connecting to a database with user provisioning enabled, the Database
   Service expects your Teleport username will be used as the database username .
 
@@ -185,7 +193,7 @@ use the command `tsh db ls -v`. By default, all database roles will be assigned
 to your auto-provisioned database user. You can optionally select a subset of
 the database roles with `--db-roles`:
 
-```code
+```bash
 $ tsh db connect --db-name <database> --db-roles myCustomRole@db2 example
 ```
 

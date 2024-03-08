@@ -1,7 +1,7 @@
 ---
 title: Teleport Authentication with Azure Active Directory (AD)
 description: How to configure Teleport access with Azure Active Directory.
-version: '13.x'
+version: "13.x"
 ---
 
 This guide will cover how to configure Microsoft Azure Active Directory to issue
@@ -36,7 +36,7 @@ Before you get started, you’ll need:
       You can download these tools by visiting your [Teleport account](https://teleport.sh).
       You can verify the tools you have installed by running the following commands:
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -53,7 +53,7 @@ Before you get started, you’ll need:
     - The `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -67,7 +67,7 @@ Before you get started, you’ll need:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -82,7 +82,7 @@ Before you get started, you’ll need:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -130,7 +130,7 @@ Before you get started, you’ll need:
 
 3. Enter the URL for your Teleport Proxy Service host in the **Entity ID** and **Reply URL**  fields:
 
-   ```code
+   ```bash
    https://mytenant.teleport.sh:443/v1/webapi/saml/acs/ad
    ```
 
@@ -171,7 +171,7 @@ Before you get started, you’ll need:
 
 Now, create a SAML connector resource using `tctl`.
 
-```code
+```bash
 $ tctl sso configure saml --preset ad \
 --entity-descriptor https://login.microsoftonline.com/ff882432.../federationmetadata/2007-06/federationmetadata.xml\?appid\=b8d06e01... \
 --attributes-to-roles http://schemas.microsoft.com/ws/2008/06/identity/claims/groups,41c94563...,dev \
@@ -217,7 +217,7 @@ version: v2
 
 With the connector in place on the cluster, you can test it with `tctl`:
 
-```code
+```bash
 $ cat azure-connector.yaml | tctl sso test
 ```
 
@@ -227,7 +227,7 @@ debug the connector configuration.
 
 To create the connector using the `tctl` tool, run the following command:
 
-```code
+```bash
 $ tctl create -f azure-connector.yaml
 ```
 
@@ -257,7 +257,7 @@ spec:
 
 Replace `ubuntu` with the Linux login available on your servers.
 
-```code
+```bash
 $ tctl create dev.yaml
 ```
 
@@ -270,7 +270,7 @@ user database.
   <Tab title="Dynamic Resources (All Editions)">
     Use `tctl` to edit the `cluster_auth_preference` value:
 
-    ```code
+    ```bash
     $ tctl edit cluster_auth_preference
     ```
 
@@ -326,13 +326,13 @@ should enable token encryption, read the Azure AD
 Start with generating a public/private key and a certificate. You will set up
 the public certificate with Azure AD and the private key with Teleport.
 
-```code
+```bash
 $ openssl req -nodes -new -x509 -keyout server.key -out server.cer
 ```
 
 If you are modifying the existing connector, write the YAML to a file first:
 
-```code
+```bash
 $ tctl get saml --with-secrets > azure-out.yaml
 ```
 
@@ -408,6 +408,10 @@ version: v2
 ```
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Make sure to have the same indentation for all lines of the certificate and key, otherwise
   Teleport will not parse the YAML file.
 </Warning>
@@ -458,7 +462,7 @@ version: v2
 
 Update the connector:
 
-```code
+```bash
 $ tctl create -f azure-connector.yaml
 ```
 

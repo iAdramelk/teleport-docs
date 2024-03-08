@@ -1,7 +1,7 @@
 ---
 title: Application Access Role-Based Access Control
 description: Role-Based Access Control (RBAC) for Teleport application access.
-version: '15.x'
+version: "15.x"
 ---
 
 This article describes access control concepts particularly relevant to the
@@ -118,7 +118,7 @@ variable with any Azure identities you have assigned to the user.
 To assign Azure identities to a user, run a `tctl users update` command similar
 to the following:
 
-```code
+```bash
 $ tctl users update myuser --set-azure-identities \
 /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1,\
 /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id2

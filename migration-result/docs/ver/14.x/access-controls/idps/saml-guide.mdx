@@ -2,7 +2,7 @@
 title: Using Teleport as a SAML identity provider
 description: How to configure and use Teleport as a SAML identity provider.
 h1: Teleport as a SAML identity provider
-version: '14.x'
+version: "14.x"
 ---
 
 ## How to use Teleport as an identity provider
@@ -22,7 +22,7 @@ authenticate to external services.
 
       You can download these tools from the [Cloud Downloads page](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -38,7 +38,7 @@ authenticate to external services.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6,
       which you can download by visiting your [Teleport account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -54,7 +54,7 @@ authenticate to external services.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       To download these tools, visit the [Downloads](/docs/ver/14.x/choose-an-edition/teleport-cloud/downloads) page.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -69,7 +69,7 @@ authenticate to external services.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -114,7 +114,7 @@ version: v1
 
 Add the spec to Teleport using `tctl`:
 
-```code
+```bash
 $ tctl create saml-sp.yaml
 # SAML IdP service provider 'samltest-id' has been created.
 ```
@@ -130,7 +130,7 @@ to the `saml_idp_service_provider` spec.
 <Accordion title="(Optional) Manually add entity descriptor">
   First download the service provider metadata from samltest.id as `saml-sp.xml`:
 
-  ```code
+  ```bash
   $ curl -o saml-sp.xml https://samltest.id/saml/sp
   ```
 
@@ -153,7 +153,7 @@ to the `saml_idp_service_provider` spec.
 
   Add this to Teleport using `tctl`:
 
-  ```code
+  ```bash
   $ tctl create saml-sp.yaml
   # SAML IdP service provider 'samltest-id' has been created.
   ```
@@ -166,7 +166,7 @@ to the `saml_idp_service_provider` spec.
   Subsequent updates require an entity descriptor to be present in the service provider spec. As such, when updating
   service provider, you should first fetch the spec that is stored in Teleport and only then edit the configuration.
 
-  ```code
+  ```bash
   # get service provider spec
   $ tctl get saml_idp_service_provider/<service provider name> > service-provider.yml
   ```
@@ -230,7 +230,7 @@ version: v7
 
 Create the role with `tctl`:
 
-```code
+```bash
 $ tctl create sp-manager.yaml
 role 'saml-idp-service-provider-manager' has been created
 ```
@@ -244,7 +244,7 @@ commands for your authentication provider:
   <Tab title="Local User">
     1. Retrieve your local user's configuration resource:
 
-       ```code
+       ```bash
        $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
        ```
 
@@ -260,7 +260,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f out.yaml
        ```
 
@@ -270,7 +270,7 @@ commands for your authentication provider:
   <Tab title="GitHub">
     1. Retrieve your `github` authentication connector:
 
-       ```code
+       ```bash
        $ tctl get github/github --with-secrets > github.yaml
        ```
 
@@ -297,7 +297,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f github.yaml
        ```
 
@@ -307,7 +307,7 @@ commands for your authentication provider:
   <Tab title="SAML">
     1. Retrieve your `saml`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get --with-secrets saml/mysaml > saml.yaml
        ```
 
@@ -334,7 +334,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f saml.yaml
        ```
 
@@ -344,7 +344,7 @@ commands for your authentication provider:
   <Tab title="OIDC">
     1. Retrieve your `oidc`  configuration resource:
 
-       ```code
+       ```bash
        $ tctl get oidc/myoidc --with-secrets > oidc.yaml
        ```
 
@@ -371,7 +371,7 @@ commands for your authentication provider:
 
     3. Apply your changes:
 
-       ```code
+       ```bash
        $ tctl create -f oidc.yaml
        ```
 

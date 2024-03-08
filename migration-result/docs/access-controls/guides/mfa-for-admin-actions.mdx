@@ -1,7 +1,7 @@
 ---
 title: MFA for Administrative Actions
 description: Require MFA checks to perform administrative actions.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport can be configured to require additional multi-factor authentication
@@ -41,7 +41,7 @@ their on-disk Teleport certificates.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -50,7 +50,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -72,7 +72,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -96,7 +96,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -119,7 +119,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -136,7 +136,7 @@ their on-disk Teleport certificates.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -166,7 +166,7 @@ WebAuthn is the only form of second factor allowed.
   <Tab title="Dynamic Resources">
     Edit the `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl edit cap
     ```
 

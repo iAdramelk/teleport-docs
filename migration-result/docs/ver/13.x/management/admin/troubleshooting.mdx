@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Troubleshooting and Collecting Metrics of Teleport Processes
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will explain how to address issues or unexpected behavior in your
@@ -16,11 +16,11 @@ services such as the Application Service and Database Service.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -33,7 +33,7 @@ services such as the Application Service and Database Service.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -53,7 +53,7 @@ services such as the Application Service and Database Service.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -70,7 +70,7 @@ services such as the Application Service and Database Service.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -87,7 +87,7 @@ services such as the Application Service and Database Service.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -101,7 +101,7 @@ services such as the Application Service and Database Service.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -116,7 +116,7 @@ services such as the Application Service and Database Service.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -177,7 +177,7 @@ whether a goroutine is waiting to send or receive on a channel.
 
 To generate a goroutine dump, send a `USR1` signal to a `teleport` process:
 
-```code
+```bash
 $ kill -USR1 $(pidof teleport)
 ```
 
@@ -215,7 +215,7 @@ Support team.
 
 Determine the version of the `teleport` process you are investigating.
 
-```code
+```bash
 $ teleport version
 Teleport v8.3.7 git:v8.3.7-0-ga8d066935 go1.17.3
 ```
@@ -226,7 +226,7 @@ Service, and client tools to rule out version compatibility issues.
 To see the version of the Auth Service and Proxy Service, run the following
 command:
 
-```code
+```bash
 $ tctl status
 Cluster  mytenant.teleport.sh
 Version  14.3.6
@@ -238,7 +238,7 @@ CA pin   sha256:abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678abdc1245efgh5678
 
 Get the versions of your client tools:
 
-```code
+```bash
 $ tctl version
 Teleport v9.0.4 git: go1.18
 $ tsh version

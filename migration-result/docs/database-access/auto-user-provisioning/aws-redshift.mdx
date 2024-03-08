@@ -1,7 +1,7 @@
 ---
 title: AWS Redshift Automatic User Provisioning 
 description: Configure automatic user provisioning for AWS Redshift.
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport can automatically create users in your database, removing the need for
@@ -15,6 +15,10 @@ database accounts for all users.
 - Ability to connect to and create user accounts in the target database.
 
 <Note>
+  <p>
+    **Supported services**
+  </p>
+
   Automatic user provisioning is not compatible with Redshift Serverless.
 </Note>
 
@@ -67,6 +71,10 @@ Next, configure the database admin user in the Teleport database configuration:
 </Tabs>
 
 <Tip>
+  <p>
+    **Auto-discovered databases**
+  </p>
+
   For auto-discovered cloud databases, the name of the admin user is taken from
   the `teleport.dev/db-admin` label.
 </Tip>
@@ -128,12 +136,16 @@ exists in the database and is not managed by Teleport (i.e. not assigned the
 
 Now, log into your Teleport cluster and connect to the database:
 
-```code
+```bash
 $ tsh login --proxy=teleport.example.com
 $ tsh db connect --db-name <database> example
 ```
 
 <Note>
+  <p>
+    **Database Username**
+  </p>
+
   When connecting to a database with user provisioning enabled, the Database
   Service expects your Teleport username will be used as the database username .
 
@@ -152,7 +164,7 @@ use the command `tsh db ls -v`. By default, all database roles will be assigned
 to your auto-provisioned database user. You can optionally select a subset of
 the database roles with `--db-roles`:
 
-```code
+```bash
 $ tsh db connect --db-name <database> --db-roles reader example
 ```
 

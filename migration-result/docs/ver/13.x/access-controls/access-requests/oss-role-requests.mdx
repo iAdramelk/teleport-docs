@@ -1,7 +1,7 @@
 ---
 title: Teleport Community Edition Role Access Requests
 description: Teleport Community Edition allows users to request access to roles from the CLI.
-version: '13.x'
+version: "13.x"
 ---
 
 Just-in-time Access Requests are a feature of Teleport Enterprise.
@@ -40,13 +40,13 @@ spec:
 
 Define this role in the file `contractor-role.yaml` and create it with `tctl`:
 
-```code
+```bash
 $ tctl create contractor-role.yaml
 ```
 
 Use `tctl` to assign this role to a user (`alice` in this example):
 
-```code
+```bash
 $ tctl users update --set-roles \
     $(tctl get users/alice --format=json | jq -r '.[].spec.roles | join(",")'),contractor alice
 ```
@@ -71,7 +71,7 @@ spec:
 
 Define this role in the file `dba-role.yaml` and create it with `tctl`:
 
-```code
+```bash
 $ tctl create dba-role.yaml
 ```
 
@@ -80,7 +80,7 @@ $ tctl create dba-role.yaml
 In Teleport Community Edition, requests are made from the `tsh` CLI. To create an access
 request, use the `tsh request create` command.
 
-```code
+```bash
 $ tsh request create \
     --roles=dba \
     --reviewers=bob \
@@ -93,7 +93,7 @@ request without waiting for approval, add the `--nowait` flag.
 Alternatively, `tsh` can automatically create an access request during the login
 process. To activate this behavior, specify the `--request-roles` flag:
 
-```code
+```bash
 $ tsh login --user=alice --request-roles=dba
 # Seeking request approval... (id: bc8ca931-fec9-4b15-9a6f-20c13c5641a9)
 ```
@@ -105,14 +105,14 @@ To log in and submit the request without waiting for approval, add the
 `--request-nowait` flag. In this scenario, you will receive your regular roles
 upon login, and can elevate your access after the request is approved.
 
-```code
+```bash
 # log in with an approved access request
 $ tsh login --request-id=bc8ca931-fec9-4b15-9a6f-20c13c5641a9
 ```
 
 You can list requests using `tsh request ls`.
 
-```code
+```bash
 $ tsh request ls
 # Token                                Requestor Metadata       Created At (UTC)    Status
 # ------------------------------------ --------- -------------- ------------------- -------
@@ -130,7 +130,7 @@ of a particular request with `tctl requests get <id>`.
 To  approve or deny a request, use `tctl request approve` or `tctl request deny`.
 For example, to deny a request:
 
-```code
+```bash
 $ tctl request deny \
     --reason="today's migration has been canceled" \
     bc8ca931-fec9-4b15-9a6f-20c13c5641a9
@@ -145,7 +145,7 @@ $ tctl request deny \
 
 Reviewers can approve the request while also overriding the set of roles in the request:
 
-```code
+```bash
 $ tctl request approve \
     --roles="db-support" \
     --reason="approved access to db-support, dba is not necessary" \

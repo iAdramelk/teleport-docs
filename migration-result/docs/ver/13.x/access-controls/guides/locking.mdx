@@ -1,7 +1,7 @@
 ---
 title: Session and Identity Locking
 description: How to lock compromised users or agents
-version: '13.x'
+version: "13.x"
 ---
 
 <Accordion title="Version warning">
@@ -35,11 +35,11 @@ A lock can target the following objects or attributes:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -52,7 +52,7 @@ A lock can target the following objects or attributes:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -72,7 +72,7 @@ A lock can target the following objects or attributes:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -89,7 +89,7 @@ A lock can target the following objects or attributes:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -106,7 +106,7 @@ A lock can target the following objects or attributes:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -120,7 +120,7 @@ A lock can target the following objects or attributes:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -135,7 +135,7 @@ A lock can target the following objects or attributes:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -154,7 +154,7 @@ with one of the following options:
 
 <Tabs>
   <Tab title="Username">
-    ```code
+    ```bash
     $ tctl lock --user=foo@example.com --message="Suspicious activity." --ttl=10h
     # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
     ```
@@ -163,7 +163,7 @@ with one of the following options:
   <Tab title="Role">
     All users with assigned roles matching the target role will be locked.
 
-    ```code
+    ```bash
     $ tctl lock --role=contractor --message="All contractor access is disabled for 10h." --ttl=10h
     # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
     ```
@@ -172,7 +172,7 @@ with one of the following options:
   <Tab title="Trusted device">
     All connections initiated from a device matching the device ID will be locked.
 
-    ```code
+    ```bash
     $ tctl lock --device 9cdfc0ad-64b7-4d9c-9342-50e97f418ba0 --message="Compromised device" --ttl=48h
     Created a lock with name "5444970a-39a0-4814-968d-e58b4a8fa686".
     ```
@@ -181,7 +181,7 @@ with one of the following options:
   <Tab title="Multi-factor device">
     All connections initiated with per-session MFA matching the device ID will be locked.
 
-    ```code
+    ```bash
     $ tctl lock --mfa-device=d6c06a18-e147-4232-9dfe-6f83a28d5850 --message="All contractor access is disabled for 10h." --ttl=10h
     # Created a lock with name "d6c06a18-e147-4232-9dfe-6f83a28d5850".
     ```
@@ -190,7 +190,7 @@ with one of the following options:
   <Tab title="Agent">
     All connections to the specified agent will be locked and the agent will be excluded from the Teleport cluster.
 
-    ```code
+    ```bash
     $ tctl lock --server-id=363256df-f78a-4d99-803c-bae19da9ede4 --message="The server running the Kubernetes Service and Database Service is under investigation." --ttl=10h
     # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
     ```
@@ -199,7 +199,7 @@ with one of the following options:
   <Tab title="Windows Desktop">
     All connections to the specified Windows Desktop will be locked.
 
-    ```code
+    ```bash
     $ tctl lock --windows-desktop=WIN-FMPFM5UF1SS-teleport-example-com --ttl=10h
     # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
     ```
@@ -208,7 +208,7 @@ with one of the following options:
   <Tab title="Access request">
     All connections using elevated privileges from the matching Access Request will be locked.
 
-    ```code
+    ```bash
     $ tctl lock --access-request=261e80c5-357b-4c43-9b67-40a6bc4c6e4d --ttl=24h
     # Created a lock with name "dc7cee9d-fe5e-4534-a90d-db770f0234a1".
     ```
@@ -237,7 +237,7 @@ with one of the following options:
           verbs: [list, create, read, update, delete]
   ```
 
-  ```code
+  ```bash
   $ tctl create -f locksmith.yaml
   # role 'locksmith' has been created
   ```
@@ -249,7 +249,7 @@ with one of the following options:
     <Tab title="Local User">
       1. Retrieve your local user's configuration resource:
 
-         ```code
+         ```bash
          $ tctl get users/$(tsh status -f json | jq -r '.active.username') > out.yaml
          ```
 
@@ -265,7 +265,7 @@ with one of the following options:
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f out.yaml
          ```
 
@@ -275,7 +275,7 @@ with one of the following options:
     <Tab title="GitHub">
       1. Retrieve your `github` authentication connector:
 
-         ```code
+         ```bash
          $ tctl get github/github --with-secrets > github.yaml
          ```
 
@@ -302,7 +302,7 @@ with one of the following options:
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f github.yaml
          ```
 
@@ -312,7 +312,7 @@ with one of the following options:
     <Tab title="SAML">
       1. Retrieve your `saml`  configuration resource:
 
-         ```code
+         ```bash
          $ tctl get --with-secrets saml/mysaml > saml.yaml
          ```
 
@@ -339,7 +339,7 @@ with one of the following options:
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f saml.yaml
          ```
 
@@ -349,7 +349,7 @@ with one of the following options:
     <Tab title="OIDC">
       1. Retrieve your `oidc`  configuration resource:
 
-         ```code
+         ```bash
          $ tctl get oidc/myoidc --with-secrets > oidc.yaml
          ```
 
@@ -376,7 +376,7 @@ with one of the following options:
 
       3. Apply your changes:
 
-         ```code
+         ```bash
          $ tctl create -f oidc.yaml
          ```
 
@@ -398,7 +398,7 @@ lock targeting User:"foo@example.com" is in force: Suspicious activity.
 <Note>
   You can tweak the message returned to a user with `--message` parameter:
 
-  ```code
+  ```bash
   $ tctl lock --user=foo@example.com --message="Please come back tomorrow." --ttl=24h
   ```
 </Note>
@@ -431,13 +431,13 @@ lock targeting User:"foo@example.com" is in force: Suspicious activity.
 
 Use `tctl get` command to list all active locks:
 
-```code
+```bash
 $ tctl get locks
 ```
 
 Delete a lock resource:
 
-```code
+```bash
 $ tctl rm locks/24679348-baff-4987-a2cd-e820ab7f9d2b
 lock "24679348-baff-4987-a2cd-e820ab7f9d2b" has been deleted
 ```
@@ -476,7 +476,7 @@ the last known locks. This decision strategy is encoded as one of the two modes:
 
         Create a resource:
 
-        ```code
+        ```bash
         $ tctl create -f cap.yaml
         # cluster auth preference has been updated
         ```
@@ -514,7 +514,7 @@ the last known locks. This decision strategy is encoded as one of the two modes:
 
     Create a resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     # cluster auth preference has been updated
     ```

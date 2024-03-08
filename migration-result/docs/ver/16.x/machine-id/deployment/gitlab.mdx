@@ -1,7 +1,7 @@
 ---
 title: Deploying Machine ID on GitLab CI
 description: How to install and configure Machine ID on GitLab CI
-version: '16.x'
+version: "16.x"
 ---
 
 In this guide, you will use Teleport Machine ID to allow a GitLab pipeline to
@@ -23,7 +23,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -32,7 +32,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -54,7 +54,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -78,7 +78,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -101,7 +101,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -118,7 +118,7 @@ Machine ID for GitLab is available starting from Teleport `v12.2`.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -183,7 +183,7 @@ on the
 
 Apply this to your Teleport cluster using `tctl`:
 
-```code
+```bash
 $ tctl create -f bot-token.yaml
 ```
 
@@ -210,13 +210,13 @@ spec:
 
 Use `tctl` to apply this file:
 
-```code
+```bash
 $ tctl create -f bot-role.yaml
 ```
 
 Create the bot, specifying the role and token that you have created:
 
-```code
+```bash
 $ tctl bots add example --roles=example-bot --token=example-bot
 ```
 

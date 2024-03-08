@@ -2,10 +2,14 @@
 title: Enforce Device Trust
 description: Learn how to enforce trusted devices with Teleport
 videoBanner: gBQyj_X1LVw
-version: '16.x'
+version: "16.x"
 ---
 
 <Note>
+  <p>
+    **Supported Resources**
+  </p>
+
   Device trust fully supports SSH, Database and Kubernetes resources.
 
   Apps may enforce trusted devices using role-based enforcement. See the [App
@@ -41,7 +45,7 @@ by the `device_trust_mode` authentication setting:
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v16.0.0-dev go1.22
 
@@ -73,6 +77,10 @@ applies to the resources in its `allow` rules. It
 works similarly to [`require_session_mfa`](/docs/ver/16.x/access-controls/guides/per-session-mfa).
 
 <Tip>
+  <p>
+    **v13.3.6+**
+  </p>
+
   Teleport version 13.3.6 and above has the preset `require-trusted-device` role.
   Make sure you update the "allow" rules in the role according to your requirements.
 </Tip>
@@ -98,7 +106,7 @@ spec:
 
 ```
 
-```code
+```bash
 $ tctl create -f device-enforcement.yaml
 ```
 
@@ -110,6 +118,10 @@ Enterprise clusters run in `optional` mode by default. Changing the mode to
 accesses.
 
 <Warning>
+  <p>
+    **Web UI**
+  </p>
+
   The Web UI is not capable of trusted device access. Only `tsh` and Teleport
   Connect are able to fulfill device mode `required`.
 </Warning>
@@ -137,14 +149,14 @@ To enable device mode `required` update your configuration as follows:
 
     Update the configuration:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     cluster auth preference has been updated
     ```
 
     You can also edit this configuration directly:
 
-    ```code
+    ```bash
     $ tctl edit cluster_auth_preference
     ```
   </Tab>
@@ -168,12 +180,16 @@ To enable device mode `required` update your configuration as follows:
 Once the config is updated, SSH, Database and Kubernetes access without a trusted device will be forbidden.
 For example, SSH access without a trusted device fails with the following error:
 
-```code
+```bash
 $ tsh ssh ip-172-31-35-170
 ERROR: ssh: rejected: administratively prohibited (unauthorized device)
 ```
 
 <Tip>
+  <p>
+    **Trusted Clusters**
+  </p>
+
   It is possible to use [trusted
   clusters](/docs/ver/16.x/management/admin/trustedclusters) to limit the impact of
   device mode `required`. A leaf cluster in mode `required` will enforce access to
@@ -207,7 +223,7 @@ spec:
 
 Create the role and assign it to a user:
 
-```code
+```bash
 $ tctl create require-trusted-device-apps.yaml
 $ tctl edit users/alice
 ```
@@ -241,7 +257,7 @@ if the device is enrolled to Teleport.
 
 Find a device ID to lock:
 
-```code
+```bash
 $ tctl devices ls
 Asset Tag     OS    Enroll Status   Device ID
 ------------ -----  ------------- ------------------------------------
@@ -250,7 +266,7 @@ C00AA0AAAA0A  macOS  enrolled     9cdfc0ad-64b7-4d9c-this-is-an-example
 
 Lock a device:
 
-```code
+```bash
 $ tctl lock --device=9cdfc0ad-64b7-4d9c-this-is-an-example --ttl=12h
 Created a lock with name "5444970a-39a0-4814-968d-e58b4a8fa686".
 ```
@@ -258,7 +274,7 @@ Created a lock with name "5444970a-39a0-4814-968d-e58b4a8fa686".
 Now, if a user on that device tries to access an SSH server for example,
 Teleport will deny access:
 
-```code
+```bash
 $ tsh ssh ip-172-31-35-170
 ERROR: ssh: rejected: administratively prohibited (lock targeting Device:"9cdfc0ad-64b7-4d9c-this-is-an-example" is in force)
 ```

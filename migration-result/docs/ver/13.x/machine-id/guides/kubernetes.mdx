@@ -1,7 +1,7 @@
 ---
 title: Machine ID with Kubernetes Access
 description: Accessing Kubernetes clusters via Machine ID
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will demonstrate how to configure an automated service to use
@@ -16,11 +16,11 @@ controls that Teleport provides for human users.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -33,7 +33,7 @@ controls that Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -53,7 +53,7 @@ controls that Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -70,7 +70,7 @@ controls that Teleport provides for human users.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -87,7 +87,7 @@ controls that Teleport provides for human users.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -101,13 +101,17 @@ controls that Teleport provides for human users.
   the [Kubernetes Access Getting Started Guide](/docs/ver/13.x/kubernetes-access/getting-started).
 
 <Note>
+  <p>
+    **Kubernetes Public Address Required for non-TLS Routing**
+  </p>
+
   For self-hosted Teleport Clusters that have non-TLS routing the Kubernetes public
   address must be set for Machine ID Kubernetes connections.
 
   To confirm the TLS routing mode check the `proxy.tls_routing_enabled` from this
   command with your proxy address:
 
-  ```code
+  ```bash
   $ curl https://teleport.example.com:443/webapi/ping | jq
   ```
 
@@ -134,7 +138,7 @@ controls that Teleport provides for human users.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -149,7 +153,7 @@ controls that Teleport provides for human users.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -220,7 +224,7 @@ Be sure to configure the `allow` fields to match your environment:
 
 Once finished, create the role in Teleport:
 
-```code
+```bash
 $ tctl create -f role.yaml
 ```
 
@@ -232,7 +236,7 @@ $ tctl create -f role.yaml
   your application, such as `view` and `edit`. You may view these preexisting
   rules by running the following:
 
-  ```code
+  ```bash
   $ kubectl get clusterrole
   ```
 
@@ -240,7 +244,7 @@ $ tctl create -f role.yaml
   to create a rule with narrow access to certain resources types in the
   `example-namespace` namespace:
 
-  ```code
+  ```bash
   ## This creates a role allowing `get` and `list` on pods and deployments.
   $ kubectl create role example-role \
     --namespace=example-namespace \
@@ -252,7 +256,7 @@ $ tctl create -f role.yaml
   the bot's mapped `User` or mapped `Group` to a role, however it must have been
   granted the matching `User` or `Group` via a Teleport role above:
 
-  ```code
+  ```bash
   ## This binds the new role to the group `example`
   $ kubectl create rolebinding example-rolebinding-group \
     --namespace=demo \
@@ -280,7 +284,7 @@ $ tctl create -f role.yaml
 On a node with `tctl` access, such as your local machine, create a new Machine ID bot using the
 Teleport role created in the previous step:
 
-```code
+```bash
 $ tctl bots add example --roles=machine-id-kube-role
 ```
 
@@ -338,7 +342,7 @@ We'll work with the assumption you will be running Machine ID as the Linux user
 initialize the destination directory by running this `tbot init` command either
 as `root` or as the `teleport` user:
 
-```code
+```bash
 $ tbot init \
     -c /etc/tbot.yaml \
     --init-dir=/opt/machine-id \
@@ -349,7 +353,7 @@ $ tbot init \
 
 Create the bot data directory and grant permissions to access it to the Linux user (in our example, `teleport`) which `tbot` will run as.
 
-```code
+```bash
 # Make the bot directory and assign ownership to teleport user
 $ sudo mkdir -p /var/lib/teleport/bot
 $ sudo chown teleport:teleport /var/lib/teleport/bot
@@ -383,7 +387,7 @@ WantedBy=multi-user.target
 
 Finally, run the following commands to start Machine ID:
 
-```code
+```bash
 $ sudo systemctl enable machine-id
 $ sudo systemctl start machine-id
 $ sudo systemctl status machine-id
@@ -394,7 +398,7 @@ $ sudo systemctl status machine-id
 With Machine ID up and running, you should now have Kubernetes certificates
 written to `/opt/machine-id`. This can be verified in a few ways:
 
-```code
+```bash
 ## A `kubeconfig.yaml` should exist in the destination directory:
 $ ls /opt/machine-id/kubeconfig.yaml
 /opt/machine-id/kubeconfig.yaml
@@ -407,7 +411,7 @@ Jul 13 20:46:42 example tbot[29177]: INFO [TBOT]      Generated identity for Kub
 You can now use the generated `kubeconfig.yaml` to connect to the cluster with
 `kubectl`:
 
-```code
+```bash
 $ kubectl --kubeconfig /opt/machine-id/kubeconfig.yaml get pods -n demo
 ```
 

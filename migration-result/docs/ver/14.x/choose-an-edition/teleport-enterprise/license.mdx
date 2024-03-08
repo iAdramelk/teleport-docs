@@ -1,7 +1,7 @@
 ---
 title: Enterprise License File
 description: How to manage your Teleport Enterprise license file.
-version: '14.x'
+version: "14.x"
 ---
 
 Self-hosted Teleport Enterprise subscriptions require a valid license. In this
@@ -34,6 +34,10 @@ LICENSE KEY" button, which will generate a new license file and allow you to
 download it.
 
 <Tip>
+  <p>
+    **Use the same license on all clusters**
+  </p>
+
   A new license file is produced each time you repeat this procedure.
   It is important that you download the license file once and use the
   same license across all of your clusters. This will ensure that your
@@ -75,7 +79,7 @@ Service on a Linux host or on Kubernetes:
     Create a secret called "license" in the namespace you are using to deploy
     Teleport:
 
-    ```code
+    ```bash
     $ kubectl -n teleport create secret generic license --from-file=license.pem
     ```
 
@@ -99,7 +103,7 @@ expiration date of your license.
 Run the following command to inspect the expiration date of your license,
 assuming your license is saved as `license.pem`:
 
-```code
+```bash
 $ openssl x509 -text -in license.pem | grep "Not After"
              Not After : Dec 16 19:43:40 2022 GMT
 ```

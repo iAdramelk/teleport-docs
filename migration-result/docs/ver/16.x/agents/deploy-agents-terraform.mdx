@@ -1,7 +1,7 @@
 ---
 title: "Deploy Teleport Agents with Terraform"
 description: "In this guide, we will show you how to deploy a pool of Teleport agents so you can apply dynamic resources to enroll your infrastructure with Teleport."
-version: '16.x'
+version: "16.x"
 ---
 
 An agent is a Teleport instance configured to run one or more Teleport services
@@ -31,7 +31,7 @@ resources:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -40,7 +40,7 @@ resources:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -62,7 +62,7 @@ resources:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -86,7 +86,7 @@ resources:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -109,7 +109,7 @@ resources:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -127,7 +127,7 @@ resources:
   lessons from this guide to protect your infrastructure. You can get started with
   a demo cluster using:
 
-  - A demo deployment on a [Linux server](/docs/ver/16.x/index)
+  - A demo deployment on a [Linux server](/docs/ver/16.x)
   - A [Teleport Team trial](https://goteleport.com/signup)
 </Tip>
 
@@ -156,7 +156,7 @@ resources:
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -468,7 +468,7 @@ standard approach for your organization.
 
 Apply the Terraform configuration:
 
-```code
+```bash
 $ terraform init
 $ terraform apply
 ```
@@ -478,7 +478,7 @@ your agents have deployed successfully. This command, which assumes that the
 agents have the `Node` role, lists all Teleport SSH Service instances with the
 `role=agent-pool` label:
 
-```code
+```bash
 $ tsh ls role=agent-pool
 Node Name                  Address    Labels
 -------------------------- ---------- ---------------

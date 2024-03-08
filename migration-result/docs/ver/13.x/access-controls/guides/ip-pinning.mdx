@@ -1,7 +1,7 @@
 ---
 title: "IP Pinning (Preview)"
 description: How to enable IP pinning for Teleport users
-version: '13.x'
+version: "13.x"
 ---
 
 <Warning>
@@ -76,7 +76,7 @@ spec:
 The admin assigns this role to the user Alice, who then logs into Teleport using the 'tsh' command and tries
 to access a node from the same IP address she logged in with:
 
-```code
+```bash
 $ curl ifconfig.me
 
 # 198.51.111.1
@@ -91,7 +91,7 @@ As with Alice's usual attempts to access a node, this one is successful.
 Later, Alice changes her IP address, and her attempt to access the same node will fail due to the IP address mismatch.
 This will trigger the relogin process, prompting Alice to authenticate again.
 
-```code
+```bash
 $ curl ifconfig.me
 
 # 198.51.222.2

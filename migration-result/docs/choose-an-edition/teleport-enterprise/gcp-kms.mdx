@@ -2,7 +2,7 @@
 title: Google Cloud KMS
 description: Configure Teleport to store CA private keys in the Google Cloud Key Management Service
 h1: Store Teleport Private Keys in Google Cloud KMS
-version: '15.x'
+version: "15.x"
 ---
 
 This guide will show you how to set up your Teleport Cluster to use the Google
@@ -40,7 +40,7 @@ higher.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -56,7 +56,7 @@ higher.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -90,7 +90,7 @@ tool. Follow
 [this guide](https://cloud.google.com/kms/docs/creating-asymmetric-keys#create_a_key_ring)
 or run the following command if you have the `gcloud` CLI configured:
 
-```code
+```bash
 $ gcloud kms keyrings create "teleport-keyring" --location location
 ```
 
@@ -113,7 +113,7 @@ includedPermissions:
 - cloudkms.cryptoKeyVersions.viewPublicKey
 ```
 
-```code
+```bash
 $ gcloud iam roles create teleport_kms_role \
     --project GCP-Project-ID \
     --file teleport_kms_role.yaml \
@@ -123,7 +123,7 @@ $ gcloud iam roles create teleport_kms_role \
 Note the `name` field in the output which is the fully qualified name for the
 custom role and must be used in later steps.
 
-```code
+```bash
 $ export IAM_ROLE=<role name output from above>
 ```
 
@@ -131,7 +131,7 @@ If you don't already have a GCP service account for your Teleport Auth Server
 you can create one with the following command, otherwise use your existing
 service account.
 
-```code
+```bash
 $ gcloud iam service-accounts create teleport-auth-server \
     --description="Service account for Teleport Auth Server" \
     --display-name="Teleport Auth Server" \
@@ -141,14 +141,14 @@ $ gcloud iam service-accounts create teleport-auth-server \
 Note the `email` field in the output, this must be used as the identifier for
 the service account.
 
-```code
+```bash
 $ export SERVICE_ACCOUNT=<email output from above command>
 ```
 
 Create the IAM policy binding to grant the role to the service account for this
 keyring.
 
-```code
+```bash
 $ gcloud kms keyrings add-iam-policy-binding teleport-keyring \
     --location location \
     --member "serviceAccount:${SERVICE_ACCOUNT}" \
@@ -173,7 +173,7 @@ to learn how to provide them for your preferred environment.
   `gcloud` CLI tool from your Teleport Auth Server's environment. Some example
   commands you could use to debug are listed here:
 
-  ```code
+  ```bash
   $ gcloud kms keys list --location location --keyring "teleport-keyring"
   Listed 0 items.
   $ gcloud kms keys create --location location --keyring "teleport-keyring" \
@@ -200,7 +200,7 @@ Find the fully qualified name of the KMS key ring you created in
 [step 1](#step-15-create-a-key-ring-in-gcp)
 in the GCP Console or by running:
 
-```code
+```bash
 $ gcloud kms keyrings list --location location
 ```
 
@@ -250,7 +250,7 @@ After starting up your Auth Server with the `gcp_kms` configuration, you can
 confirm that Teleport has generated keys in your keyring in the GCP Console or
 by running
 
-```code
+```bash
 $ gcloud kms keys list --keyring "teleport-keyring" --location location
 ```
 

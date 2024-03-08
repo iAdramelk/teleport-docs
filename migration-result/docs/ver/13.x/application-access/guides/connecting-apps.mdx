@@ -1,7 +1,7 @@
 ---
 title: Web Application Access
 description: In this getting started guide, learn how to connect an application to your Teleport cluster by running the Teleport Application Service.
-version: '13.x'
+version: "13.x"
 ---
 
 Download the latest version of Teleport for your platform from the [downloads page](https://goteleport.com/download)
@@ -57,7 +57,7 @@ your Teleport instance.
   <Tab title="Package Manager">
     On the host where you will run your Teleport instance, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -67,7 +67,7 @@ your Teleport instance.
     On the host where you will run your Teleport instance, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -84,7 +84,7 @@ A join token is required to authorize a Teleport Application Service to
 join the cluster. Generate a short-lived join token and save it for example
 in `/tmp/token`:
 
-```code
+```bash
 # Log in to your cluster with tsh so you can use tctl from your local machine.
 # You can also run tctl on your Auth Service host without running "tsh login"
 # first.
@@ -103,6 +103,10 @@ for the Teleport Proxy Service and a wildcard certificate for its sub-domain. Th
 everyone will log into Teleport.
 
 <Tip>
+  <p>
+    **Application Access and DNS**
+  </p>
+
   Teleport assigns a subdomain to each application you configure for Application
   Access. For example, if you enroll Grafana as a resource, Teleport assigns the resource
   to the `grafana.teleport.example.com` subdomain.
@@ -145,11 +149,11 @@ deployments, use your own private key and certificate.
 
     On the host where you will start the Teleport Auth Service and Proxy Service,
     run the following `teleport configure` command. Assign
-    TELE.EXAMPLE.COM to the
-    domain name of your Teleport cluster and USER\@EXAMPLE.COM to
+    tele.example.com to the
+    domain name of your Teleport cluster and user\@example.com to
     an email address used for notifications (you can use any domain):
 
-    ```code
+    ```bash
     $ sudo teleport configure -o file \
         --acme --acme-email=user@example.com \
         --cluster-name=tele.example.com
@@ -165,9 +169,9 @@ deployments, use your own private key and certificate.
     The leaf certificate must have a subject that corresponds to the domain of your Teleport host, e.g., `*.teleport.example.com`.
 
     On the host where you will start the Teleport Auth Service and Proxy Service,
-    run the following `teleport configure` command. Assign TELE.EXAMPLE.COM to the domain name of your Teleport cluster.
+    run the following `teleport configure` command. Assign tele.example.com to the domain name of your Teleport cluster.
 
-    ```code
+    ```bash
     $ sudo teleport configure -o file \
         --cluster-name=tele.example.com \
         --public-addr=tele.example.com:443 \
@@ -182,7 +186,7 @@ deployments, use your own private key and certificate.
 A Teleport user needs their role's permission to access an application. Teleport
 comes with a built-in `access` role that grants access to all apps:
 
-```code
+```bash
 $ tctl --config=/path/to/teleport.yaml users add --roles=access appuser
 ```
 
@@ -194,7 +198,7 @@ Use the appropriate commands for your environment to install your package:
 
 <Tabs dropdownView dropdownCaption="Teleport Edition">
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
     ```
   </Tab>
@@ -204,7 +208,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -226,7 +230,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -249,7 +253,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -272,7 +276,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -330,7 +334,7 @@ Use the appropriate commands for your environment to install your package:
   <Tab title="Teleport Enterprise">
     <Tabs>
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -348,13 +352,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo apt-get install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -372,13 +376,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -396,13 +400,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo yum install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for v13. You'll need to update this
@@ -422,13 +426,13 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo dnf install teleport-ent-fips
         ```
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository.
@@ -444,7 +448,7 @@ Use the appropriate commands for your environment to install your package:
 
         For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-        ```code
+        ```bash
         $ sudo zypper install teleport-ent-fips
         ```
       </Tab>
@@ -454,7 +458,7 @@ Use the appropriate commands for your environment to install your package:
         value (`amd64`, `arm64`, or `arm`). All example commands using this variable
         will update after one is filled out.
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -468,7 +472,7 @@ Use the appropriate commands for your environment to install your package:
         For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
         will be slightly different:
 
-        ```code
+        ```bash
         $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
         # <checksum> <filename>
         $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -498,7 +502,7 @@ Use the appropriate commands for your environment to install your package:
       <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
         Add the Teleport repository to your repository list:
 
-        ```code
+        ```bash
         # Download Teleport's PGP public key
         $ sudo curl https://apt.releases.teleport.dev/gpg \
         -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -520,7 +524,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -543,7 +547,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport YUM repository for cloud.
@@ -566,7 +570,7 @@ Use the appropriate commands for your environment to install your package:
       </Tab>
 
       <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-        ```code
+        ```bash
         # Source variables about OS version
         $ source /etc/os-release
         # Add the Teleport Zypper repository for cloud.
@@ -624,7 +628,7 @@ Use the appropriate commands for your environment to install your package:
 
 You can start the Teleport Application Service with a single CLI command:
 
-```code
+```bash
 $ sudo teleport start \
     --roles=app \
     --token=/tmp/token \
@@ -703,7 +707,7 @@ proxy_service:
 
 Start the Application Service:
 
-```code
+```bash
 $ sudo teleport start --config=/path/to/teleport.yaml
 ```
 
@@ -736,6 +740,10 @@ address. To override the public address, specify the `public_addr` field:
 ### Skip TLS certificate verification
 
 <Warning>
+  <p>
+    **Danger Zone**
+  </p>
+
   This is insecure and not recommended for use in production.
 </Warning>
 

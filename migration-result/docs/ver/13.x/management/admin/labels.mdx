@@ -1,7 +1,7 @@
 ---
 title: Add Labels to Resources
 description: How to assign static and command-based dynamic labels to Teleport resources.
-version: '13.x'
+version: "13.x"
 ---
 
 Teleport allows you to add arbitrary key-value pairs to applications, servers,
@@ -41,11 +41,11 @@ but filter and limit access to the servers based on their AWS region.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -58,7 +58,7 @@ but filter and limit access to the servers based on their AWS region.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -78,7 +78,7 @@ but filter and limit access to the servers based on their AWS region.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -95,7 +95,7 @@ but filter and limit access to the servers based on their AWS region.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -112,7 +112,7 @@ but filter and limit access to the servers based on their AWS region.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -127,7 +127,7 @@ so you can execute commands with the `tctl` admin tool:
 
 <Tabs>
   <Tab title="Self-Hosted">
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=email@example.com
     $ tctl status
     # Cluster  teleport.example.com
@@ -142,7 +142,7 @@ so you can execute commands with the `tctl` admin tool:
   </Tab>
 
   <Tab title="Teleport Cloud">
-    ```code
+    ```bash
     $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
     $ tctl status
     # Cluster  myinstance.teleport.sh
@@ -161,7 +161,7 @@ so you can execute commands with the `tctl` admin tool:
 2. Use the appropriate commands for your environment to install your package:
    <Tabs dropdownView dropdownCaption="Teleport Edition">
      <Tab title="Teleport Community Edition">
-       ```code
+       ```bash
        $ curl https://goteleport.com/static/install.sh | bash -s 13.4.16
        ```
      </Tab>
@@ -171,7 +171,7 @@ so you can execute commands with the `tctl` admin tool:
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -193,7 +193,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -216,7 +216,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -239,7 +239,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -297,7 +297,7 @@ so you can execute commands with the `tctl` admin tool:
      <Tab title="Teleport Enterprise">
        <Tabs>
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -315,13 +315,13 @@ so you can execute commands with the `tctl` admin tool:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo apt-get install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v13. You'll need to update this
@@ -339,13 +339,13 @@ so you can execute commands with the `tctl` admin tool:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for v13. You'll need to update this
@@ -363,13 +363,13 @@ so you can execute commands with the `tctl` admin tool:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo yum install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for v13. You'll need to update this
@@ -389,13 +389,13 @@ so you can execute commands with the `tctl` admin tool:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo dnf install teleport-ent-fips
            ```
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository.
@@ -411,7 +411,7 @@ so you can execute commands with the `tctl` admin tool:
 
            For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-           ```code
+           ```bash
            $ sudo zypper install teleport-ent-fips
            ```
          </Tab>
@@ -421,7 +421,7 @@ so you can execute commands with the `tctl` admin tool:
            value (`amd64`, `arm64`, or `arm`). All example commands using this variable
            will update after one is filled out.
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -435,7 +435,7 @@ so you can execute commands with the `tctl` admin tool:
            For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
            will be slightly different:
 
-           ```code
+           ```bash
            $ curl https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
            # <checksum> <filename>
            $ curl -O https://cdn.teleport.dev/teleport-ent-v13.4.16-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -465,7 +465,7 @@ so you can execute commands with the `tctl` admin tool:
          <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
            Add the Teleport repository to your repository list:
 
-           ```code
+           ```bash
            # Download Teleport's PGP public key
            $ sudo curl https://apt.releases.teleport.dev/gpg \
            -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -487,7 +487,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -510,7 +510,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport YUM repository for cloud.
@@ -533,7 +533,7 @@ so you can execute commands with the `tctl` admin tool:
          </Tab>
 
          <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-           ```code
+           ```bash
            # Source variables about OS version
            $ source /etc/os-release
            # Add the Teleport Zypper repository for cloud.
@@ -595,14 +595,14 @@ so you can execute commands with the `tctl` admin tool:
    The following example generates a new token that is valid for five minutes and can be used
    to enroll a server:
 
-   ```code
+   ```bash
    $ tctl tokens add --ttl=5m --type=node
    # The invite token: abcd123-insecure-do-not-use-this
    ```
 
 4. List all generated non-expired tokens by running the following command:
 
-   ```code
+   ```bash
    $ tctl tokens ls
    # Token                            Type        Labels Expiry Time (UTC)               
    # -------------------------------- ----------- ------ ------------------------------- 
@@ -612,7 +612,7 @@ so you can execute commands with the `tctl` admin tool:
 5. Copy the token and assign it to an environment variable on the computer you are enrolling
    as a resource:
 
-   ```code
+   ```bash
    $ export INVITE_TOKEN=<token>
    ```
 
@@ -642,7 +642,7 @@ To add a static label:
    to define more complex string values that include white space or punctuation marks.
    For example:
 
-   ```code
+   ```bash
    ssh_service:
      enabled: true
      labels:
@@ -653,20 +653,20 @@ To add a static label:
 
 5. Start Teleport with the invitation token you saved in the `INVITE_TOKEN` environment variable:
 
-   ```code
+   ```bash
    $ sudo teleport start --token=${INVITE_TOKEN?}
    ```
 
 6. Verify that you have added the label by running the following command
    on your local computer.
 
-   ```code
+   ```bash
    $ tsh ls --query 'labels["environment"]=="dev"'
    ```
 
    You should see output similar to the following:
 
-   ```code
+   ```bash
    Node Name        Address    Labels                                                                                                       
    ---------------- ---------- ------------------------------------------
    ip-192-168-13-57 ⟵ Tunnel   environment=dev,hostname=ip-192-168-13-57
@@ -689,13 +689,13 @@ To add a static label:
    If the SSH Service is running on the server, verify that your current Teleport user has a login on the local host.
    You can check the status of your user account by running the following command:
 
-   ```code
+   ```bash
    $ tsh status
    ```
 
    You should see output similar to the following with at least one login listed for your current user:
 
-   ```code
+   ```bash
    > Profile URL:        https://ajuba-aws.teledocs.click:443
      Logged in as:       teleport-admin
      Cluster:            teleport-aws.example.com
@@ -711,7 +711,7 @@ To add a static label:
 
    You can add logins to a user by running a command similar to the following:
 
-   ```code
+   ```bash
    $ tctl users update myuser --set-logins=root
    ```
 
@@ -802,20 +802,20 @@ To add a command to generate a dynamic label:
 
 6. Start Teleport with the invitation token you saved in the `INVITE_TOKEN` environment variable:
 
-   ```code
+   ```bash
    $ sudo teleport start --token=${INVITE_TOKEN?}
    ```
 
 7. Verify that you have added the label by running the following command on your local
    computer. Your Teleport user must be authorized to access the server.
 
-   ```code
+   ```bash
    $ tsh ls
    ```
 
    You should see output similar to the following with both the `arch` and `environment` labels displayed:
 
-   ```code
+   ```bash
    Node Name        Address        Labels                                                                                                                   
    ---------------- -------------- ------------------------------------------------------
    ip-192-168-13-57 ⟵ Tunnel       arch=x86_64,environment=dev,hostname=ip-192-168-13-57

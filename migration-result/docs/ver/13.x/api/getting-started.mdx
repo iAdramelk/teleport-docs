@@ -1,7 +1,7 @@
 ---
 title: API Getting Started Guide
 description: Get started working with the Teleport API programmatically using Go.
-version: '13.x'
+version: "13.x"
 ---
 
 In this getting started guide we will use the Teleport API Go client to connect
@@ -20,11 +20,11 @@ Here are the steps we'll walkthrough:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -37,7 +37,7 @@ Here are the steps we'll walkthrough:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -57,7 +57,7 @@ Here are the steps we'll walkthrough:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -74,7 +74,7 @@ Here are the steps we'll walkthrough:
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -91,7 +91,7 @@ Here are the steps we'll walkthrough:
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -105,7 +105,7 @@ Here are the steps we'll walkthrough:
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -120,7 +120,7 @@ Here are the steps we'll walkthrough:
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -159,12 +159,16 @@ Here are the steps we'll walkthrough:
 </Accordion>
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   Read [API authorization](/docs/ver/13.x/api/architecture#authorization) to learn more about defining custom roles for your API client.
 </Tip>
 
 Create a user `api-admin` with the built-in role `editor`:
 
-```code
+```bash
 # Run this directly on your Auth Server unless you are using Teleport Cloud
 # Add a user and login via the Proxy Service
 $ sudo tctl users add api-admin --roles=editor
@@ -174,7 +178,7 @@ $ sudo tctl users add api-admin --roles=editor
 
 Log in as the newly created user with `tsh`.
 
-```code
+```bash
 # generate tsh profile
 $ tsh login --user=api-admin --proxy=tele.example.com
 ```
@@ -186,20 +190,24 @@ will automatically retrieve Credentials from the current profile in the next ste
 
 Set up a new [Go module](https://golang.org/doc/tutorial/create-module) and import the `client` package:
 
-```code
+```bash
 $ mkdir client-demo && cd client-demo
 $ go mod init client-demo
 $ go get github.com/gravitational/teleport/api/client
 ```
 
 <Tip>
+  <p>
+    **API Version**
+  </p>
+
   To ensure compatibility, you should use a version of Teleport's API library that matches
   the major version of Teleport running in your cluster.
 
   To find the pseudoversion appropriate for a go.mod file for a specific git tag,
   run the following command from the `teleport` repository:
 
-  ```code
+  ```bash
   $ go list -f '{{.Version}}' -m "github.com/gravitational/teleport/api@$(git rev-parse v12.1.0)"
   v0.0.0-20230307032901-49a6de744a3a
   ```
@@ -251,7 +259,7 @@ func main() {
 
 Now you can run the program and connect the client to the Teleport Auth Server to fetch the server version.
 
-```code
+```bash
 $ go run main.go
 ```
 

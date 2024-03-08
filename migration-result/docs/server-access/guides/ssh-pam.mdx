@@ -2,7 +2,7 @@
 title: Configure SSH with Pluggable Authentication Modules
 description: How to configure Teleport SSH with PAM (Pluggable Authentication Modules).
 h1: Pluggable Authentication Modules (PAM)
-version: '15.x'
+version: "15.x"
 ---
 
 Teleport's SSH Service can be configured to integrate with
@@ -25,7 +25,7 @@ Pluggable Authentication Modules (PAM) date back to 1995 when Sun Microsystems
 implemented a generic authentication framework for Solaris. Since then most GNU/Linux
 distributions have adopted PAM.
 
-```code
+```bash
 $ man pam
 ```
 
@@ -81,6 +81,10 @@ Teleport currently supports account management and session management.
 </Accordion>
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   Backing up production instances, environments, and/or settings before making permanent modifications is encouraged as a best practice. Doing so allows you to roll back to an existing state if needed.
 </Warning>
 
@@ -154,7 +158,7 @@ include:
     This will be shown during the `tsh login` process, and must be positively acknowledged
     before the user is allowed to log in to the cluster.
 
-    ```code
+    ```bash
     $ tsh login --proxy teleport.example.com
     # Welcome to the cluster. All activity will be logged.
     # Press [ENTER] to continue.
@@ -188,7 +192,7 @@ session    optional     pam_motd.so noupdate
 
 By updating `/etc/motd` you can provide a message to users accessing Nodes via Teleport.
 
-```code
+```bash
 $ cat /etc/motd
 # WARNING: All activity on this node is being recorded by Teleport
 ```
@@ -234,7 +238,7 @@ Next, create a script that will be run by `pam_exec.so`.
 
 Create a directory where you will store the script:
 
-```code
+```bash
 $ mkdir -p /etc/pam-exec.d
 ```
 
@@ -250,7 +254,7 @@ exit 0
 
 Ensure that your script is executable:
 
-```code
+```bash
 $ chmod +x /etc/pam-exec.d/teleport_acct
 ```
 
@@ -267,7 +271,7 @@ identity information.
   depending on your Linux distribution. Adjust to your particular system as needed
   depending on the result of the following command:
 
-  ```code
+  ```bash
   $ which useradd
   ```
 </Note>

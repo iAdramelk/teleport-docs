@@ -2,7 +2,7 @@
 title: Per-session MFA
 description: Require MFA checks to initiate sessions.
 videoBanner: j8Ze7HhjFGw
-version: '16.x'
+version: "16.x"
 ---
 
 Teleport supports requiring additional multi-factor authentication checks
@@ -28,7 +28,7 @@ their on-disk Teleport certificates.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -37,7 +37,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -59,7 +59,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -83,7 +83,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -106,7 +106,7 @@ their on-disk Teleport certificates.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -123,7 +123,7 @@ their on-disk Teleport certificates.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -140,6 +140,10 @@ their on-disk Teleport certificates.
   SSH or desktop sessions from the Teleport Web UI).
 
 <Note>
+  <p>
+    **Per-session MFA with FIPS**
+  </p>
+
   Teleport FIPS builds disable local users. To configure WebAuthn in order to use
   per-session MFA with FIPS builds, provide the following in your `teleport.yaml`:
 
@@ -179,7 +183,7 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
       <Tab title="Dynamic resources">
         Obtain your existing `cluster_auth_preference` resource:
 
-        ```code
+        ```bash
         $ tctl get cap > cap.yaml
         ```
 
@@ -196,7 +200,7 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
 
         Create the resource:
 
-        ```code
+        ```bash
         $ tctl create -f cap.yaml
         ```
       </Tab>
@@ -206,7 +210,7 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
   <Tab title="Teleport Enterprise Cloud">
     Obtain your existing `cluster_auth_preference` resource:
 
-    ```code
+    ```bash
     $ tctl get cap > cap.yaml
     ```
 
@@ -223,7 +227,7 @@ Per-session MFA can be enforced cluster-wide or only for some specific roles.
 
     Create the resource:
 
-    ```code
+    ```bash
     $ tctl create -f cap.yaml
     ```
   </Tab>
@@ -297,7 +301,7 @@ Olga then assigns both roles to all engineers, including Jerry.
 When Jerry logs into node `dev1.example.com` (with label `env: dev` as login `jerry`), nothing
 special happens:
 
-```code
+```bash
 $ tsh ssh jerry@dev1.example.com
 
 # jerry@dev1.example.com >
@@ -306,7 +310,7 @@ $ tsh ssh jerry@dev1.example.com
 But when Jerry logs into node `rod3.example.com` (with label `env: prod` as login `jerry`), he
 gets prompted for an MFA check:
 
-```code
+```bash
 $ tsh ssh jerry@prod3.example.com
 # Tap any security key <tap>
 
@@ -314,6 +318,10 @@ $ tsh ssh jerry@prod3.example.com
 ```
 
 <Tip>
+  <p>
+    **OTP**
+  </p>
+
   If you are using `tsh` in a constrained environment, you can tell it to use
   OTP by doing `tsh --mfa-mode=otp ssh prod3.example.com`.
 
@@ -326,11 +334,15 @@ If per-session MFA was enabled cluster-wide, Jerry would be prompted for MFA
 even when logging into `dev1.example.com`.
 
 <Tip>
+  <p>
+    **Per-session MFA for Database Access**
+  </p>
+
   The Teleport Database Service supports per-connection MFA. When Jerry connects
   to the database `prod-mysql-instance` (with label `env: prod`), he gets prompted
   for an MFA check for each `tsh db connect` or `tsh proxy db` call:
 
-  ```code
+  ```bash
   $ tsh db connect prod-mysql-instance
   # Tap any security key
 

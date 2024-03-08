@@ -1,7 +1,7 @@
 ---
 title: Jamf Pro Integration 
 description: Sync your Jamf Pro inventory into Teleport
-version: '15.x'
+version: "15.x"
 ---
 
 Device Trust Jamf Pro integration lets you automatically sync your Jamf Pro computer
@@ -46,7 +46,7 @@ and behavior.
 
   You can verify the tools you have installed by running the following commands:
 
-  ```code
+  ```bash
   $ tctl version
   # Teleport Enterprise v15.0.2 go1.21
 
@@ -97,6 +97,10 @@ Create a readonly Jamf user for inventory sync.
 ## Step 2/4. Configure Jamf service
 
 <Tip>
+  <p>
+    **Hosted Jamf plugin**
+  </p>
+
   Teleport Cloud users can quickly get started with Jamf integration by using
   the hosted Jamf plugin in the Web UI.
 
@@ -148,7 +152,7 @@ Change the following settings, as appropriate:
 
 Finally, write your Jamf password to the `/var/lib/teleport/jamf_password` file:
 
-```code
+```bash
 $ sudo nano /var/lib/teleport/jamf_password # or use your favorite editor
 
 # Only the OS user that runs `teleport` should have access to the password file.
@@ -161,7 +165,7 @@ $ sudo chown teleport /var/lib/teleport/jamf_password
 Jamf service requires an MDM token to write devices to Teleport.
 On your local workstation, create the token as shown below:
 
-```code
+```bash
 $ tctl tokens add --type=mdm
 The invite token: efgh456-insecure-do-not-use-this
 This token will expire in 30 minutes.
@@ -188,7 +192,7 @@ your Teleport instance.
   <Tab title="Package Manager">
     On the host where you will run your Teleport instance, enable and start Teleport:
 
-    ```code
+    ```bash
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
     ```
@@ -198,7 +202,7 @@ your Teleport instance.
     On the host where you will run your Teleport instance, create a systemd service
     configuration for Teleport, enable the Teleport service, and start Teleport:
 
-    ```code
+    ```bash
     $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
     $ sudo systemctl enable teleport
     $ sudo systemctl start teleport
@@ -225,7 +229,7 @@ devices from Jamf and reflecting any additions or removals on Teleport.
 After the initial sync happens, you may verify the synced devices using `tctl
 devices ls`:
 
-```code
+```bash
 $ tctl devices ls
 Asset Tag    OS      Enroll Status Device ID
 ------------ ------- ------------- ------------------------------------
@@ -288,7 +292,7 @@ deleted.
 For immediate removal of unwanted devices first lock the device on Teleport,
 then remove it from Jamf:
 
-```code
+```bash
 $ tctl devices lock --asset-tag=SERIAL_NUMBER --message='reason for locking'
 Created a lock with name "a2f1491c-4a3e-4daf-9c83-2fe931668076".
 ```

@@ -1,7 +1,7 @@
 ---
 title: Get started with Teleport on DigitalOcean Kubernetes
 description: How to get started with Teleport on DigitalOcean Kubernetes
-version: '13.x'
+version: "13.x"
 ---
 
 This guide will show you how to get started with Teleport on DigitalOcean
@@ -41,13 +41,13 @@ While the Kubernetes cluster is being provisioned, follow the "Getting Started" 
 
 To allow Helm to install charts that are hosted in the Teleport Helm repository, use `helm repo add`:
 
-```code
+```bash
 $ helm repo add teleport https://charts.releases.teleport.dev
 ```
 
 To update the cache of charts from the remote repository, run `helm repo update`:
 
-```code
+```bash
 $ helm repo update
 ```
 
@@ -56,7 +56,7 @@ chart:
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ CLUSTERNAME=tele.example.com # replace with your preferred domain name
     $ EMAIL_ADDR=dodemo@goteleport.com # replace with your email
     $ helm install teleport-cluster teleport/teleport-cluster \
@@ -79,7 +79,7 @@ chart:
     Create a namespace for your Teleport cluster resources and configure the
     PodSecurityAdmission:
 
-    ```code
+    ```bash
     $ kubectl create namespace teleport-cluster
     namespace/teleport-cluster created
     $ kubectl label namespace teleport-cluster 'pod-security.kubernetes.io/enforce=baseline'
@@ -97,13 +97,13 @@ chart:
 
         <img src="/assets/license-23cee352ae.png" alt="License File Download" width="2952" height="604" />
 
-    ```code
+    ```bash
     $ kubectl -n teleport-cluster create secret generic license --from-file=license.pem
     ```
 
     Install Teleport:
 
-    ```code
+    ```bash
     $ CLUSTERNAME=tele.example.com # replace with your preferred domain name
     $ EMAIL_ADDR=dodemo@goteleport.com # replace with your email
     $ helm install teleport-cluster teleport/teleport-cluster \
@@ -127,7 +127,7 @@ chart:
 
 First, get the external IP (from the `EXTERNAL-IP` field) for the Kubernetes cluster.
 
-```code
+```bash
 
 $ kubectl --namespace=teleport-cluster get services
 
@@ -146,7 +146,7 @@ Now we create a Teleport user by executing the `tctl` command with `kubectl`.
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ kubectl --namespace teleport-cluster exec deployment/teleport-cluster-auth -- tctl users add tadmin --roles=access,editor --logins=ubuntu
 
     User "tadmin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -157,7 +157,7 @@ Now we create a Teleport user by executing the `tctl` command with `kubectl`.
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ kubectl --namespace teleport-cluster exec deployment/teleport-cluster-auth -- tctl users add tadmin --roles=access,editor,reviewer --logins=ubuntu
 
     User "tadmin" has been created but requires a password. Share this URL with the user to complete user setup, link is valid for 1h:
@@ -197,12 +197,16 @@ spec:
 ```
 
 <Warning>
+  <p>
+    **Warning**
+  </p>
+
   `system:masters` is a Kubernetes built-in role that is similar to `sudo` permissions in Linux systems. It is used here for demonstration purposes and should be used in production only when necessary.
 </Warning>
 
 Next, create this role in Kubernetes with the command:
 
-```code
+```bash
 $ kubectl --namespace=teleport-cluster exec -i deployment/teleport-cluster-auth -- tctl create -f < member.yaml
 ```
 
@@ -228,16 +232,20 @@ The following steps show how to access the Kubernetes cluster using `tsh`.
 First, authenticate to Teleport using `tsh` as the **tadmin** user we created in the third step.
 
 <Note>
+  <p>
+    **Note**
+  </p>
+
   The following process will override your global kubectl configuration file. To write your kubectl configuration to a separate file instead of having your global kubectl configuration modified, run the following command:
 
-  ```code
+  ```bash
   $ export KUBECONFIG=${HOME?}/teleport-kubeconfig.yaml
   ```
 </Note>
 
 <Tabs>
   <Tab title="Teleport Community Edition">
-    ```code
+    ```bash
     $ tsh login --proxy=tele.example.com:443 --auth=local --user=tadmin
     Enter password for Teleport user tadmin:
     Enter your OTP token:
@@ -254,7 +262,7 @@ First, authenticate to Teleport using `tsh` as the **tadmin** user we created in
   </Tab>
 
   <Tab title="Commercial">
-    ```code
+    ```bash
     $ tsh login --proxy=tele.example.com:443 --auth=local --user=tadmin
     Enter password for Teleport user tadmin:
     Enter your OTP token:
@@ -273,14 +281,14 @@ First, authenticate to Teleport using `tsh` as the **tadmin** user we created in
 
 ### Select the Kubernetes cluster
 
-```code
+```bash
 $ tsh kube login tele.example.com
 Logged into kubernetes cluster "tele.example.com". Try 'kubectl version' to test the connection.
 ```
 
 ### Connect to the Kubernetes cluster
 
-```code
+```bash
 $ kubectl --namespace=teleport-cluster get pods
 NAME                                READY   STATUS    RESTARTS   AGE
 teleport-cluster-6cc679b6f6-7xr5h   1/1     Running   0          14h

@@ -1,7 +1,7 @@
 ---
 title: Machine ID with Application Access
 description: Accessing web applications with Machine ID
-version: '13.x'
+version: "13.x"
 ---
 
 In this guide, we will demonstrate how to configure an automated service to use
@@ -16,11 +16,11 @@ controls that Teleport provides for human users.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see our
-      [Getting Started](/docs/ver/13.x/index) guide.
+      [Getting Started](/docs/ver/13.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 13.4.16.
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport v13.4.16 go1.21
 
@@ -33,7 +33,7 @@ controls that Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v13.4.16 go1.21
       
@@ -53,7 +53,7 @@ controls that Teleport provides for human users.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 go1.21
       
@@ -70,7 +70,7 @@ controls that Teleport provides for human users.
       13.4.16, which you can download by visiting your [Teleport
       account](https://teleport.sh).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v13.4.16 go1.21
 
@@ -87,7 +87,7 @@ controls that Teleport provides for human users.
     - The Enterprise `tctl` admin tool and `tsh` client tool version >= 14.3.6.
       You can download these tools from the [Cloud Downloads page](/docs/ver/13.x/choose-an-edition/teleport-cloud/downloads).
 
-      ```code
+      ```bash
       $ tctl version
       # Teleport Enterprise v14.3.6 go1.21
 
@@ -106,7 +106,7 @@ controls that Teleport provides for human users.
   so you can execute commands with the `tctl` admin tool:
   <Tabs>
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tsh login --proxy=teleport.example.com --user=email@example.com
       $ tctl status
       # Cluster  teleport.example.com
@@ -121,7 +121,7 @@ controls that Teleport provides for human users.
     </Tab>
 
     <Tab title="Teleport Cloud">
-      ```code
+      ```bash
       $ tsh login --proxy=myinstance.teleport.sh --user=email@example.com
       $ tctl status
       # Cluster  myinstance.teleport.sh
@@ -162,7 +162,7 @@ selector here, especially for production deployments.
 
 Once finished, create the role on your Teleport cluster:
 
-```code
+```bash
 $ tctl create -f role.yaml
 ```
 
@@ -171,7 +171,7 @@ $ tctl create -f role.yaml
 First, on a node with `tctl` access, create a new Machine ID bot using the role
 created in the previous step:
 
-```code
+```bash
 $ tctl bots add example --roles=machine-id-app-role
 ```
 
@@ -228,7 +228,7 @@ We'll work with the assumption you will be running Machine ID as the Linux user
 initialize the destination directory by running this `tbot init` command either
 as `root` or as the `teleport` user:
 
-```code
+```bash
 $ tbot init \
     -c /etc/tbot.yaml \
     --init-dir=/opt/machine-id \
@@ -239,7 +239,7 @@ $ tbot init \
 
 Create the bot data directory and grant permissions to access it to the Linux user (in our example, `teleport`) which `tbot` will run as.
 
-```code
+```bash
 # Make the bot directory and assign ownership to teleport user
 $ sudo mkdir -p /var/lib/teleport/bot
 $ sudo chown teleport:teleport /var/lib/teleport/bot
@@ -277,7 +277,7 @@ this by omitting this.
 
 Finally, run the following commands to start Machine ID:
 
-```code
+```bash
 $ sudo systemctl enable machine-id
 $ sudo systemctl start machine-id
 $ sudo systemctl status machine-id
@@ -289,7 +289,7 @@ With Machine ID up and running, there should be certificates in
 `/opt/machine-id` that your automated  service will use to connect to your web
 application. This can be verified by examining the `tbot` log:
 
-```code
+```bash
 $ journalctl -u machine-id | grep -i app
 Jul 29 12:34:56 example tbot[29177]: INFO [TBOT]      Generated identity for app {"grafana-example"} tbot/renew.go:429
 ```
@@ -311,7 +311,7 @@ You may use these credentials with any client application that supports them.
 
     For example, to access the Grafana API using `curl`:
 
-    ```code
+    ```bash
     $ curl --user admin:admin \
       --cert /opt/machine-id/tlscert \
       --key /opt/machine-id/key \
@@ -327,7 +327,7 @@ You may use these credentials with any client application that supports them.
 
     For example, to access the Grafana API using `curl`:
 
-    ```code
+    ```bash
     $ curl --user admin:admin \
       --cert /opt/machine-id/tlscert \
       --key /opt/machine-id/key \
@@ -350,6 +350,10 @@ Note that if the certificates are invalid or otherwise misconfigured, clients
 will be redirected to the Teleport login page when attempting to access the app.
 
 <Note>
+  <p>
+    **Proxy Note**
+  </p>
+
   While it's usually best to access apps through the public Teleport Proxy
   Service, it's also possible to open a local proxy to the app using
   `tbot proxy app ...` in situations where the Teleport Proxy Service's app endpoints are
@@ -357,13 +361,13 @@ will be redirected to the Teleport login page when attempting to access the app.
 
   <Tabs>
     <Tab title="Teleport Enterprise Cloud">
-      ```code
+      ```bash
       $ tbot proxy --destination-dir=/opt/machine-id --proxy=example.teleport.sh:443 app --port=1234 grafana-example
       ```
     </Tab>
 
     <Tab title="Self-Hosted">
-      ```code
+      ```bash
       $ tbot proxy --destination-dir=/opt/machine-id --proxy=teleport.example.com:443 app --port=1234 grafana-example
       ```
     </Tab>
@@ -371,7 +375,7 @@ will be redirected to the Teleport login page when attempting to access the app.
 
   You may now connect to the app via a local proxy at `http://localhost:1234`:
 
-  ```code
+  ```bash
   $ curl --user admin:admin http://localhost:1234/api/users
   ```
 
@@ -400,6 +404,10 @@ This will generate `tls.crt` and `tls.key` inside `/opt/machine-id`
 with identical content to the certificate files listed above.
 
 <Note>
+  <p>
+    **Config Templates**
+  </p>
+
   The `tls` configuration template is one of several supported template types;
   refer to the [Configuration Reference](/docs/ver/13.x/machine-id/reference/configuration) for a
   list of all possible configuration templates.

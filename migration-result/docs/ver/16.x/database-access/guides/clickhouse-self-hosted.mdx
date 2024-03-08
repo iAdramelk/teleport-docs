@@ -1,7 +1,7 @@
 ---
 title: Database Access with ClickHouse
 description: How to configure Teleport database access with ClickHouse.
-version: '16.x'
+version: "16.x"
 ---
 
 The Teleport Clickhouse integration allows you to enroll ClickHouse databases
@@ -33,7 +33,7 @@ This guide will help you to:
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -42,7 +42,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -64,7 +64,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -88,7 +88,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -111,7 +111,7 @@ This guide will help you to:
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -145,7 +145,7 @@ The Database Service requires a valid auth token to connect to the cluster. Gene
 one by running the following command against your Teleport Auth Service and save
 it in `/tmp/token` on the node that will run the Database Service:
 
-```code
+```bash
 $ tctl tokens add --type=db
 ```
 
@@ -157,7 +157,7 @@ $ tctl tokens add --type=db
   <Tab title="Teleport Team/Community Edition">
     Create a local Teleport user with the built-in `access` role:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access \
       --db-users=\* \
@@ -169,7 +169,7 @@ $ tctl tokens add --type=db
   <Tab title="Teleport Enterprise/Enterprise Cloud">
     Create a local Teleport user with the built-in `access` and `requester` roles:
 
-    ```code
+    ```bash
     $ tctl users add \
       --roles=access,requester \
       --db-users=\* \
@@ -215,11 +215,15 @@ allow:
 Export Teleport's certificate authority and a generated certificate/key pair
 for host db.example.com with a 1-year validity period:
 
-```code
+```bash
 $ tctl auth sign --format=db --host=clickhouse.example.com --out=server --ttl=8766h
 ```
 
 <Note>
+  <p>
+    **TTL**
+  </p>
+
   We recommend using a shorter TTL, but keep mind that you'll need to update the
   database server certificate before it expires to not lose the ability to
   connect. Pick the TTL value that best fits your use-case.
@@ -272,7 +276,7 @@ run the Teleport Database Service:
         The following command updates the repository for the package manager on the
         local operating system and installs the provided Teleport version:
 
-        ```code
+        ```bash
         $ curl https://goteleport.com/static/install.sh | bash -s 16.0.0-dev
         ```
       </Tab>
@@ -282,7 +286,7 @@ run the Teleport Database Service:
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             Add the Teleport repository to your repository list:
 
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -304,7 +308,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -327,7 +331,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -350,7 +354,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for cloud.
@@ -410,7 +414,7 @@ run the Teleport Database Service:
       <Tab title="Teleport Enterprise">
         <Tabs>
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -428,13 +432,13 @@ run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo apt-get install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for v16. You'll need to update this
@@ -452,13 +456,13 @@ run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo yum install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7 (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for v16. You'll need to update this
@@ -476,13 +480,13 @@ run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo yum install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for v16. You'll need to update this
@@ -502,13 +506,13 @@ run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo dnf install teleport-ent-fips
             ```
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository.
@@ -524,7 +528,7 @@ run the Teleport Database Service:
 
             For FedRAMP/FIPS-compliant installations, install the `teleport-ent-fips` package instead:
 
-            ```code
+            ```bash
             $ sudo zypper install teleport-ent-fips
             ```
           </Tab>
@@ -534,7 +538,7 @@ run the Teleport Database Service:
             value (`amd64`, `arm64`, or `arm`). All example commands using this variable
             will update after one is filled out.
 
-            ```code
+            ```bash
             $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz.sha256
             # <checksum> <filename>
             $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-bin.tar.gz
@@ -548,7 +552,7 @@ run the Teleport Database Service:
             For FedRAMP/FIPS-compliant installations of Teleport Enterprise, package URLs
             will be slightly different:
 
-            ```code
+            ```bash
             $ curl https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz.sha256
             # <checksum> <filename>
             $ curl -O https://cdn.teleport.dev/teleport-ent-v16.0.0-dev-linux-$SYSTEM_ARCH-fips-bin.tar.gz
@@ -578,7 +582,7 @@ run the Teleport Database Service:
           <Tab title="Debian 9+/Ubuntu 16.04+ (apt)">
             Add the Teleport repository to your repository list:
 
-            ```code
+            ```bash
             # Download Teleport's PGP public key
             $ sudo curl https://apt.releases.teleport.dev/gpg \
             -o /usr/share/keyrings/teleport-archive-keyring.asc
@@ -600,7 +604,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2/RHEL 7/CentOS 7 (yum)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -623,7 +627,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="Amazon Linux 2023/RHEL 8+ (dnf)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport YUM repository for cloud.
@@ -646,7 +650,7 @@ run the Teleport Database Service:
           </Tab>
 
           <Tab title="SLES 12 SP5+ and 15 SP5+ (zypper)">
-            ```code
+            ```bash
             # Source variables about OS version
             $ source /etc/os-release
             # Add the Teleport Zypper repository for cloud.
@@ -717,7 +721,7 @@ run the Teleport Database Service:
 
     <Tabs>
       <Tab title="HTTP">
-        ```code
+        ```bash
         $ teleport db configure create \
            -o file \
            --token=/tmp/token \
@@ -730,7 +734,7 @@ run the Teleport Database Service:
       </Tab>
 
       <Tab title="Native (TCP)">
-        ```code
+        ```bash
         $ teleport db configure create \
            -o file \
            --token=/tmp/token \
@@ -751,7 +755,7 @@ run the Teleport Database Service:
       <Tab title="Package Manager">
         On the host where you will run the Teleport Database Service, enable and start Teleport:
 
-        ```code
+        ```bash
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
         ```
@@ -761,7 +765,7 @@ run the Teleport Database Service:
         On the host where you will run the Teleport Database Service, create a systemd service
         configuration for Teleport, enable the Teleport service, and start Teleport:
 
-        ```code
+        ```bash
         $ sudo teleport install systemd -o /etc/systemd/system/teleport.service
         $ sudo systemctl enable teleport
         $ sudo systemctl start teleport
@@ -780,14 +784,14 @@ run the Teleport Database Service:
 
     Allow Helm to install charts that are hosted in the Teleport Helm repository:
 
-    ```code
+    ```bash
     $ helm repo add teleport https://charts.releases.teleport.dev
     ```
 
     Update the cache of charts from the remote repository so you can upgrade to all
     available releases:
 
-    ```code
+    ```bash
     $ helm repo update
     ```
 
@@ -796,7 +800,7 @@ run the Teleport Database Service:
 
     <Tabs>
       <Tab title="HTTP">
-        ```code
+        ```bash
         $ JOIN_TOKEN=$(cat /tmp/token)
         $ helm install teleport-kube-agent teleport/teleport-kube-agent \
           --create-namespace \
@@ -813,7 +817,7 @@ run the Teleport Database Service:
       </Tab>
 
       <Tab title="Native (TCP)">
-        ```code
+        ```bash
         $ JOIN_TOKEN=$(cat /tmp/token)
         $ helm install teleport-kube-agent teleport/teleport-kube-agent \
           --create-namespace \
@@ -833,6 +837,10 @@ run the Teleport Database Service:
 </Tabs>
 
 <Tip>
+  <p>
+    **Tip**
+  </p>
+
   A single Teleport process can run multiple services, for example
   multiple Database Service instances as well as other services such the
   SSH Service or Application Service.
@@ -848,7 +856,7 @@ databases:
     Log in to Teleport and list the databases you can connect to. You should see the
     ClickHouse database you enrolled earlier:
 
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
     $ tsh db ls
     # Name                      Description Allowed Users Labels  Connect
@@ -859,7 +867,7 @@ databases:
     Create an authenticated proxy tunnel so you can connect to ClickHouse via a GUI
     database client, or send a request via `curl`:
 
-    ```code
+    ```bash
     $ tsh proxy db --db-user=alice --tunnel example-clickhouse-http
     # Started authenticated tunnel for the Clickhouse (HTTP) database "clickhouse-http" in cluster "teleport.example.com" on 127.0.0.1:59215.
     # To avoid port randomization, you can choose the listening port using the --port flag.
@@ -870,14 +878,14 @@ databases:
 
     To test the connection you can run the following command:
 
-    ```code
+    ```bash
     $ echo 'select currentUser();' | curl http://localhost:59215/  --data-binary @-
     # alice
     ```
 
     To log out of the database and remove credentials:
 
-    ```code
+    ```bash
     # Remove credentials for a particular database instance.
     $ tsh db logout example-clickhouse-http
     # Remove credentials for all database instances.
@@ -889,7 +897,7 @@ databases:
     Log in to Teleport and list the databases you can connect to. You should see the
     ClickHouse database you enrolled earlier:
 
-    ```code
+    ```bash
     $ tsh login --proxy=teleport.example.com --user=alice
     $ tsh db ls
     # Name                    Description Allowed Users Labels  Connect
@@ -899,7 +907,7 @@ databases:
 
     Connect to the database:
 
-    ```code
+    ```bash
     $ tsh db connect --db-user=alice example-clickhouse
     # ClickHouse client version 22.7.2.1.
     # Connecting to localhost:59502 as user default.
@@ -922,7 +930,7 @@ databases:
 
     To log out of the database and remove credentials:
 
-    ```code
+    ```bash
     # Remove credentials for a particular database instance.
     $ tsh db logout example-clickhouse
     # Remove credentials for all database instances.

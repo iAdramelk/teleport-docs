@@ -1,7 +1,7 @@
 ---
 title: Machine ID with tctl
 description: How to use Machine ID with tctl to manage your Teleport configuration
-version: '16.x'
+version: "16.x"
 ---
 
 `tctl` is the Teleport cluster management CLI tool. Whilst it usually uses the
@@ -17,7 +17,7 @@ then use `tctl` to deploy Teleport roles defined in files.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/ver/16.x/index) guide.
+      [Getting Started](/docs/ver/16.x) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 16.0.0-dev.
 
@@ -26,7 +26,7 @@ then use `tctl` to deploy Teleport roles defined in files.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -48,7 +48,7 @@ then use `tctl` to deploy Teleport roles defined in files.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -72,7 +72,7 @@ then use `tctl` to deploy Teleport roles defined in files.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v16.0.0-dev git:api/14.0.0-gd1e081e go1.22
       
@@ -95,7 +95,7 @@ then use `tctl` to deploy Teleport roles defined in files.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.22
       
@@ -112,7 +112,7 @@ then use `tctl` to deploy Teleport roles defined in files.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -219,13 +219,13 @@ Run `tctl`, replacing `example.teleport.sh:443` with the address of your
 Teleport Proxy or Auth Server and `/opt/machine-id/identity` with the path to
 the generated identity file if you have modified this:
 
-```code
+```bash
 $ tctl --auth-server example.teleport.sh:443 -i /opt/machine-id/identity create -f roles/*.yaml
 ```
 
 Check your Teleport cluster, ensuring the role has been created.
 
-```code
+```bash
 $ tctl get role/tctl-test
 ```
 

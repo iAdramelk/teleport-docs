@@ -1,7 +1,7 @@
 ---
 title: Machine ID with the Teleport Terraform Provider
 description: How to use Machine ID with the Teleport Terraform provider to manage your Teleport configuration as IaC
-version: '15.x'
+version: "15.x"
 ---
 
 The Teleport Terraform provider can be used to configure your Teleport cluster
@@ -16,7 +16,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
 <Tabs>
   <Tab title="Teleport Community Edition">
     - A running Teleport cluster. For details on how to set this up, see the
-      [Getting Started](/docs/index) guide.
+      [Getting Started](/docs) guide.
 
     - The `tctl` admin tool and `tsh` client tool version >= 15.0.2.
 
@@ -25,7 +25,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -47,7 +47,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -71,7 +71,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v15.0.2 git:api/14.0.0-gd1e081e go1.21
       
@@ -94,7 +94,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
     To check version information, run the `tctl version` and `tsh version` commands.
     For example:
 
-    ```code
+    ```bash
     $ tctl version
     # Teleport Enterprise v14.3.6 git:api/14.0.0-gd1e081e go1.21
       
@@ -111,7 +111,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
   `tctl` is supported on macOS and Linux machines.
 
   For example:
-  ```code
+  ```bash
   $ tsh login --proxy=teleport.example.com --user=email@example.com
   $ tctl status
   # Cluster  teleport.example.com
@@ -125,7 +125,7 @@ Terraform Provider and use Terraform to configure a Teleport role.
 
 - [Terraform >= 1.0.0+](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 
-  ```code
+  ```bash
   $ terraform version
   # Terraform v1.0.0
   ```
@@ -212,7 +212,7 @@ authenticate with the Teleport Auth Server.
 
 Start by creating a new Terraform working directory:
 
-```code
+```bash
 $ mkdir ./my-terraform && cd ./my-terraform
 $ terraform init
 ```
@@ -270,13 +270,13 @@ then this should also be replaced.
 
 Now, execute Terraform to test the configuration:
 
-```code
+```bash
 $ terraform apply
 ```
 
 Check your Teleport cluster, ensuring the role has been created:
 
-```code
+```bash
 $ tctl get role/terraform-test
 ```
 

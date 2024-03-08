@@ -2,7 +2,7 @@
 title: Teleport Proxy Service
 description: Architecture of Teleport's identity-aware proxy service
 h1: Teleport Identity-Aware Proxy Service
-version: '16.x'
+version: "16.x"
 ---
 
 The Teleport Proxy Service is an identity-aware proxy with a web UI. The Teleport Proxy Service
@@ -34,6 +34,10 @@ target resource, for example SSH server or Desktop:
 <img src="/assets/proxy-web-to-resource@1.2x-9b027c081c.png" alt="Teleport Proxy Web" width="1233.3333333333335" height="1195" />
 
 <Note>
+  <p>
+    **TLS Encryption**
+  </p>
+
   When using the web UI, the Teleport Proxy terminates traffic and re-encodes data for the client connection.
 </Note>
 
@@ -44,6 +48,10 @@ In IAP mode, users initiate the SSO or login flow to sign public keys on their c
 <img src="/assets/proxy-iap-to-resource@1.2x-4b5b122f57.png" alt="Teleport Proxy IAP" width="1233.3333333333335" height="1193.3333333333335" />
 
 <Note>
+  <p>
+    **IAP Mode Security**
+  </p>
+
   We consider IAP mode more secure than Web UI access, because private keys never leave user's client.
   Client's connection to resource is mutually authenticated. This mode is also less vulnerable
   for web-related attacks, like CSRF or cookie hijacking, because browser is used less.
